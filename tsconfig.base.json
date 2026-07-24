@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@amiyo/contracts": ["packages/contracts/src/index.ts"],
+      "@amiyo/domain": ["packages/domain/src/index.ts"],
+      "@amiyo/config": ["packages/config/src/index.ts"],
+      "@amiyo/observability": ["packages/observability/src/index.ts"]
+    }
+  }
+}

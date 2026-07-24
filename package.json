@@ -1,0 +1,31 @@
+{
+  "name": "amiyo-go-app",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "npm@10.8.2",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm --workspace @amiyo/api run dev",
+    "dev:worker": "npm --workspace @amiyo/worker run dev",
+    "dev:mobile": "npm --workspace @amiyo/mobile run start",
+    "build": "npm run build --workspaces --if-present",
+    "type-check": "node ./node_modules/typescript/bin/tsc -b tsconfig.json",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "secret:scan": "node scripts/secret-scan.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "prisma": "^5.22.0",
+    "typescript": "^5.5.4"
+  }
+}

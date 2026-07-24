@@ -1,0 +1,197 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum RoleName {
+  CUSTOMER
+  VENDOR_OWNER
+  VENDOR_MANAGER
+  VENDOR_STAFF
+  SUPPORT_AGENT
+  FINANCE_ADMIN
+  OPERATIONS_ADMIN
+  SUPER_ADMIN
+}
+
+enum ParentOrderStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  PROCESSING
+  READY_TO_SHIP
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURN_REQUESTED
+  RETURNED
+  REFUNDED
+}
+
+enum VendorOrderStatus {
+  PENDING
+  ACCEPTED
+  PROCESSING
+  PACKED
+  READY_TO_SHIP
+  PICKUP_READY
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURN_REQUESTED
+  RETURNED
+  REFUNDED
+}
+
+model User {
+  id              String     @id @default(uuid()) @db.Uuid
+  legacyId        String?    @unique
+  providerSubject String?    @unique
+  email           String?    @unique
+  phone           String?    @unique
+  displayName     String?
+  status          String     @default("active")
+  createdAt       DateTime   @default(now()) @db.Timestamptz
+  updatedAt       DateTime   @updatedAt @db.Timestamptz
+  roles           UserRole[]
+  addresses       Address[]
+  devices         Device[]
+
+  @@map("users")
+}
+
+model Role {
+  id          String     @id @default(uuid()) @db.Uuid
+  name        RoleName   @unique
+  description String?
+  users       UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  userId    String   @db.Uuid
+  roleId    String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz
+  role      Role     @relation(fields: [roleId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model Address {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  label     String
+  line1     String
+  line2     String?
+  district  String?
+  division  String?
+  phone     String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+model Device {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  platform  String
+  pushToken String?
+  revokedAt DateTime? @db.Timestamptz
+  createdAt DateTime @default(now()) @db.Timestamptz
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("devices")
+}
+
+model Vendor {
+  id        String        @id @default(uuid()) @db.Uuid
+  legacyId  String?       @unique
+  name      String
+  status    String        @default("pending")
+  createdAt DateTime      @default(now()) @db.Timestamptz
+  updatedAt DateTime      @updatedAt @db.Timestamptz
+  shops     VendorShop[]
+  orders    VendorOrder[]
+
+  @@map("vendors")
+}
+
+model VendorShop {
+  id        String   @id @default(uuid()) @db.Uuid
+  vendorId  String   @db.Uuid
+  name      String
+  slug      String   @unique
+  status    String   @default("draft")
+  createdAt DateTime @default(now()) @db.Timestamptz
+  vendor    Vendor   @relation(fields: [vendorId], references: [id])
+
+  @@index([vendorId])
+  @@map("vendor_shops")
+}
+
+model Order {
+  id          String            @id @default(uuid()) @db.Uuid
+  legacyId    String?           @unique
+  orderNumber String            @unique
+  userId      String?           @db.Uuid
+  status      ParentOrderStatus @default(PENDING_PAYMENT)
+  currency    String            @default("BDT")
+  totalMinor  BigInt
+  createdAt   DateTime          @default(now()) @db.Timestamptz
+  updatedAt   DateTime          @updatedAt @db.Timestamptz
+  vendorOrders VendorOrder[]
+
+  @@index([userId])
+  @@map("orders")
+}
+
+model VendorOrder {
+  id        String            @id @default(uuid()) @db.Uuid
+  orderId   String            @db.Uuid
+  vendorId  String            @db.Uuid
+  status    VendorOrderStatus @default(PENDING)
+  createdAt DateTime          @default(now()) @db.Timestamptz
+  updatedAt DateTime          @updatedAt @db.Timestamptz
+  order     Order             @relation(fields: [orderId], references: [id])
+  vendor    Vendor            @relation(fields: [vendorId], references: [id])
+
+  @@unique([orderId, vendorId])
+  @@map("vendor_orders")
+}
+
+model IdempotencyRecord {
+  id          String   @id @default(uuid()) @db.Uuid
+  scope       String
+  key         String
+  requestHash String
+  response    Json?
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  @@unique([scope, key])
+  @@map("idempotency_records")
+}
+
+model OutboxEvent {
+  id             String    @id @default(uuid()) @db.Uuid
+  aggregateType  String
+  aggregateId    String
+  eventType      String
+  idempotencyKey String    @unique
+  payload        Json
+  status         String    @default("pending")
+  createdAt      DateTime  @default(now()) @db.Timestamptz
+  processedAt    DateTime? @db.Timestamptz
+
+  @@index([status, createdAt])
+  @@map("outbox_events")
+}
