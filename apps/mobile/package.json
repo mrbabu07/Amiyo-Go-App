@@ -1,0 +1,32 @@
+{
+  "name": "@amiyo/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "type-check": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@amiyo/contracts": "file:../../packages/contracts",
+    "@amiyo/domain": "file:../../packages/domain",
+    "@tanstack/react-query": "^5.51.1",
+    "expo": "~51.0.28",
+    "expo-linking": "~6.3.1",
+    "expo-router": "~3.5.23",
+    "expo-secure-store": "~13.0.2",
+    "expo-status-bar": "~1.12.1",
+    "react": "18.2.0",
+    "react-hook-form": "^7.52.1",
+    "react-native": "0.74.5",
+    "zod": "^3.23.8",
+    "zustand": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/react": "~18.2.79",
+    "typescript": "^5.5.4"
+  }
+}

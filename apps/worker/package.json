@@ -1,0 +1,23 @@
+{
+  "name": "@amiyo/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "type-check": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@amiyo/config": "file:../../packages/config",
+    "@amiyo/domain": "file:../../packages/domain",
+    "@amiyo/observability": "file:../../packages/observability",
+    "bullmq": "^5.12.12",
+    "ioredis": "^5.4.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.16.2"
+  }
+}

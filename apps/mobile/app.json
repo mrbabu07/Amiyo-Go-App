@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "Amiyo-Go",
+    "slug": "amiyo-go",
+    "scheme": "amiyogo",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "android": {
+      "package": "com.amiyo.go"
+    },
+    "ios": {
+      "bundleIdentifier": "com.amiyo.go"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ]
+  }
+}
