@@ -1,11 +1,11 @@
 import { QueueEvents } from "bullmq";
-import IORedis from "ioredis";
+import { Redis } from "ioredis";
 import { parseWorkerEnv } from "@amiyo/config";
 import { createLogger } from "@amiyo/observability";
 
 const env = parseWorkerEnv(process.env);
 const logger = createLogger("amiyo-worker", env.LOG_LEVEL);
-const connection = new IORedis(env.REDIS_URL, { maxRetriesPerRequest: null });
+const connection = new Redis(env.REDIS_URL, { maxRetriesPerRequest: null });
 
 const queues = [
   "order-events",
