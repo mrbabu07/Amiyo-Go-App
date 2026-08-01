@@ -11,11 +11,21 @@ import { createOpenApiRouter } from "./modules/openapi/openapi.routes.js";
 export function createApiApp() {
   const app = express();
   const logger = createLogger("amiyo-api", process.env.LOG_LEVEL || "info");
+  const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:8081,http://localhost:19006")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 
   app.locals.logger = logger;
   app.disable("x-powered-by");
+  app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS || 1));
   app.use(helmet());
-  app.use(cors({ origin: true, credentials: true }));
+  app.use(cors({
+    credentials: true,
+    origin(origin, callback) {
+      callback(null, !origin || allowedOrigins.includes(origin));
+    }
+  }));
   app.use(express.json({ limit: "1mb" }));
   app.use(correlationMiddleware);
   app.use(createHealthRouter());

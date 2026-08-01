@@ -21,4 +21,8 @@ Production rebuild workspace for the Amiyo-Go mobile platform.
 4. Start services with `docker compose up -d`.
 5. Run `npm run dev:api`, `npm run dev:worker`, and `npm run dev:mobile`.
 
+For the current identity setup and Firebase requirements, see `docs/phase-3-identity-and-authorization.md`.
+
+The web app runs at `http://localhost:8081` after `npm run dev`. Use `npm run dev:mobile -- --web` when only the Expo web client is needed.
+
 Never commit real secrets. Rotate any database URL that has been pasted into chat.

@@ -1,24 +1,29 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { usePathname, useRouter } from "expo-router";
 import { colors } from "../../../ui/tokens";
 
 const items = [
-  { label: "Home", icon: "home", active: true },
+  { label: "Home", icon: "home", href: "/" },
   { label: "Categories", icon: "grid-outline" },
   { label: "Cart", icon: "cart-outline" },
   { label: "Orders", icon: "bag-handle-outline" },
-  { label: "Account", icon: "person-outline" }
+  { label: "Account", icon: "person-outline", href: "/account" }
 ];
 
 export function BottomNav() {
+  const pathname = usePathname();
+  const router = useRouter();
   return (
     <View style={styles.nav}>
-      {items.map((item) => (
-        <Pressable key={item.label} style={styles.item}>
-          <Ionicons color={item.active ? colors.primary : colors.muted} name={item.icon as never} size={22} />
-          <Text style={[styles.label, item.active && styles.active]}>{item.label}</Text>
+      {items.map((item) => {
+        const active = item.href ? pathname === item.href : false;
+        return (
+        <Pressable disabled={!item.href} key={item.label} onPress={() => item.href && router.push(item.href as never)} style={styles.item}>
+          <Ionicons color={active ? colors.primary : colors.muted} name={item.icon as never} size={22} />
+          <Text style={[styles.label, active && styles.active]}>{item.label}</Text>
         </Pressable>
-      ))}
+      );})}
     </View>
   );
 }

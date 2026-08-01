@@ -1,10 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { colors, radius, spacing } from "../../../ui/tokens";
 import { BrandLogo } from "./BrandLogo";
 
 export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; viewportWidth: number }) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const innerWidth = Math.min(viewportWidth - spacing.xl, 1200);
   const search = () => {
@@ -23,6 +25,7 @@ export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; view
           </View>
         ) : null}
         <View style={styles.actions}>
+          <Pressable accessibilityLabel="My account" onPress={() => router.push("/account")} style={styles.iconButton}><Ionicons color={colors.text} name="person-outline" size={22} /></Pressable>
           <Pressable accessibilityLabel="Notifications" style={styles.iconButton}><Ionicons color={colors.text} name="notifications-outline" size={22} /></Pressable>
           <Pressable accessibilityLabel="Shopping cart" style={styles.iconButton}>
             <Ionicons color={colors.text} name="cart-outline" size={23} />

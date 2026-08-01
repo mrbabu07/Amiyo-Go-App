@@ -8,7 +8,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "type-check": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit"
+    "type-check": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
+    "test": "node --test \"dist/**/*.test.js\""
   },
   "dependencies": {
     "@amiyo/config": "file:../../packages/config",
@@ -17,7 +18,10 @@
     "@amiyo/observability": "file:../../packages/observability",
     "@prisma/client": "^5.22.0",
     "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
     "express": "^4.19.2",
+    "express-rate-limit": "^8.6.1",
+    "firebase-admin": "^14.2.0",
     "helmet": "^7.1.0",
     "zod": "^3.23.8"
   },
