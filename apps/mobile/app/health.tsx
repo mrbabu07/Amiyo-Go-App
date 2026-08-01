@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { SafeAreaView, StyleSheet, Text } from "react-native";
+import { Text } from "react-native";
 import { healthResponseSchema } from "@amiyo/contracts";
+import { ModuleCard } from "../src/ui/ModuleCard";
+import { Screen } from "../src/ui/Screen";
 
 async function fetchHealth() {
   const baseUrl = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
@@ -11,19 +13,17 @@ async function fetchHealth() {
 
 export default function HealthScreen() {
   const query = useQuery({ queryKey: ["health"], queryFn: fetchHealth, retry: 1 });
+  const statusText = query.isLoading
+    ? "Checking..."
+    : query.isError || !query.data
+      ? "API unavailable"
+      : `${query.data.service}: ${query.data.status}`;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>API Health</Text>
-      <Text style={styles.body}>
-        {query.isLoading ? "Checking..." : query.isError ? "API unavailable" : `${query.data.service}: ${query.data.status}`}
-      </Text>
-    </SafeAreaView>
+    <Screen title="API Health" description="Uses the shared Zod health contract from packages/contracts.">
+      <ModuleCard title="Health result">
+        <Text>{statusText}</Text>
+      </ModuleCard>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 24, backgroundColor: "#f8fafc" },
-  title: { fontSize: 28, fontWeight: "800", color: "#0f172a" },
-  body: { marginTop: 12, fontSize: 16, color: "#475569" }
-});

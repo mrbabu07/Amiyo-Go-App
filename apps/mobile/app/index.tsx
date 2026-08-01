@@ -1,5 +1,7 @@
 import { Link } from "expo-router";
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Text } from "react-native";
+import { ModuleCard } from "../src/ui/ModuleCard";
+import { Screen } from "../src/ui/Screen";
 
 const modules = [
   "Customer discovery",
@@ -11,31 +13,20 @@ const modules = [
 
 export default function HomeScreen() {
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.eyebrow}>Amiyo-Go Mobile</Text>
-        <Text style={styles.title}>Modular production rebuild</Text>
-        <Text style={styles.body}>
-          React Native shell ready for role-aware customer, vendor, admin, and support flows.
-        </Text>
-        <View style={styles.card}>
-          {modules.map((moduleName) => (
-            <Text key={moduleName} style={styles.item}>• {moduleName}</Text>
-          ))}
-        </View>
-        <Link href="/health" style={styles.link}>Open API health check screen</Link>
-      </ScrollView>
-    </SafeAreaView>
+    <Screen
+      eyebrow="Amiyo-Go Mobile"
+      title="Modular production rebuild"
+      description="React Native shell ready for role-aware customer, vendor, admin, and support flows."
+    >
+      <ModuleCard title="Phase 1 modules" meta="Role-aware navigation and shared contracts are wired first.">
+        {modules.map((moduleName) => (
+          <Text key={moduleName}>• {moduleName}</Text>
+        ))}
+      </ModuleCard>
+      <Link href="/health">Open API health check screen</Link>
+      <Link href="/customer/home">Customer home</Link>
+      <Link href="/vendor/dashboard">Vendor dashboard</Link>
+      <Link href="/admin/dashboard">Admin dashboard</Link>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#f8fafc" },
-  container: { padding: 24, gap: 16 },
-  eyebrow: { color: "#0f766e", fontWeight: "700", letterSpacing: 1 },
-  title: { color: "#0f172a", fontSize: 32, fontWeight: "800", lineHeight: 38 },
-  body: { color: "#475569", fontSize: 16, lineHeight: 24 },
-  card: { backgroundColor: "#ffffff", borderRadius: 20, padding: 18, gap: 10 },
-  item: { color: "#1e293b", fontSize: 16 },
-  link: { color: "#2563eb", fontWeight: "700", marginTop: 8 }
-});

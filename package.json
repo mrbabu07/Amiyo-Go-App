@@ -14,7 +14,7 @@
     "dev:api": "npm --workspace @amiyo/api run dev",
     "dev:worker": "npm --workspace @amiyo/worker run dev",
     "dev:mobile": "npm --workspace @amiyo/mobile run start",
-    "build": "npm run build --workspaces --if-present",
+    "build": "node ./node_modules/typescript/bin/tsc -b tsconfig.json",
     "type-check": "node ./node_modules/typescript/bin/tsc -b tsconfig.json",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
