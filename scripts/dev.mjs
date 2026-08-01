@@ -1,8 +1,11 @@
 import { spawn } from "node:child_process";
 import process from "node:process";
 
-const isWindows = process.platform === "win32";
-const npmCommand = isWindows ? "npm.cmd" : "npm";
+const npmCli = process.env.npm_execpath;
+
+if (!npmCli) {
+  throw new Error("npm_execpath is unavailable. Start this script with npm run dev.");
+}
 
 const processes = [
   {
@@ -16,7 +19,7 @@ const processes = [
 ];
 
 const children = processes.map(({ name, args }) => {
-  const child = spawn(npmCommand, args, {
+  const child = spawn(process.execPath, [npmCli, ...args], {
     env: process.env,
     shell: false,
     stdio: ["inherit", "pipe", "pipe"]
