@@ -13,6 +13,7 @@
   "dependencies": {
     "@amiyo/config": "file:../../packages/config",
     "@amiyo/contracts": "file:../../packages/contracts",
+    "@amiyo/domain": "file:../../packages/domain",
     "@amiyo/observability": "file:../../packages/observability",
     "@prisma/client": "^5.22.0",
     "cors": "^2.8.5",

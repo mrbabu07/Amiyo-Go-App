@@ -16,18 +16,26 @@
     "dev:mobile": "npm --workspace @amiyo/mobile run start",
     "build": "node ./node_modules/typescript/bin/tsc -b tsconfig.json",
     "type-check": "node ./node_modules/typescript/bin/tsc -b tsconfig.json",
-    "test": "npm run test --workspaces --if-present",
+    "test": "npm run build && npm run test:workspaces && node --test scripts/*.test.mjs",
+    "test:workspaces": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:seed": "prisma db seed",
+    "openapi:generate": "npm run build --workspace @amiyo/contracts && node scripts/generate-openapi.mjs",
     "secret:scan": "node scripts/secret-scan.mjs",
     "dev": "node scripts/dev.mjs",
     "dev:all": "node scripts/dev.mjs"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.4",
     "@types/node": "^20.14.10",
     "prisma": "^5.22.0",
+    "tsx": "^4.16.2",
     "typescript": "^5.5.4"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }
