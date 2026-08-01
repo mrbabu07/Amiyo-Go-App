@@ -5,7 +5,7 @@ import { colors } from "../../../ui/tokens";
 
 const items = [
   { label: "Home", icon: "home", href: "/" },
-  { label: "Categories", icon: "grid-outline" },
+  { label: "Categories", icon: "grid-outline", href: "/categories" },
   { label: "Cart", icon: "cart-outline" },
   { label: "Orders", icon: "bag-handle-outline" },
   { label: "Account", icon: "person-outline", href: "/account" }

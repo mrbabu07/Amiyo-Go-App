@@ -10,6 +10,7 @@ export const apiEnvSchema = z.object({
   DIRECT_URL: z.string().url().optional(),
   REDIS_URL: z.string().url(),
   FIREBASE_PROJECT_ID: z.string().optional(),
+  OBJECT_STORAGE_PUBLIC_URL: z.string().url().optional(),
   LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "fatal"]).default("info")
 });
 

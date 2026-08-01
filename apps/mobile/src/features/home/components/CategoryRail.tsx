@@ -1,16 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
 import { colors, radius } from "../../../ui/tokens";
-import { categories } from "../home.data";
+import type { HomeCategory } from "../home.data";
 
-export function CategoryRail() {
+export function CategoryRail({ data }: { data: HomeCategory[] }) {
+  const router = useRouter();
   return (
     <ScrollView contentContainerStyle={styles.content} horizontal showsHorizontalScrollIndicator={false}>
-      {categories.map((category) => (
-        <View key={category.id} style={styles.item}>
+      {data.map((category) => (
+        <Pressable accessibilityRole="button" key={category.id} onPress={() => router.push(`/category/${category.id}` as never)} style={styles.item}>
           <View style={[styles.icon, { backgroundColor: category.color }]}><Ionicons color={colors.navy} name={category.icon as never} size={27} /></View>
           <Text numberOfLines={2} style={styles.label}>{category.name}</Text>
-        </View>
+        </Pressable>
       ))}
     </ScrollView>
   );

@@ -7,6 +7,7 @@ import { problemMiddleware } from "./middleware/problem.js";
 import { createHealthRouter } from "./modules/health/health.routes.js";
 import { createIdentityRouter } from "./modules/identity/identity.routes.js";
 import { createOpenApiRouter } from "./modules/openapi/openapi.routes.js";
+import { createCatalogRouter } from "./modules/catalog/catalog.routes.js";
 
 export function createApiApp() {
   const app = express();
@@ -30,6 +31,7 @@ export function createApiApp() {
   app.use(correlationMiddleware);
   app.use(createHealthRouter());
   app.use(createIdentityRouter());
+  app.use(createCatalogRouter());
   app.use(createOpenApiRouter());
   app.use(problemMiddleware);
 

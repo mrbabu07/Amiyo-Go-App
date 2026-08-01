@@ -1,27 +1,69 @@
-import type { PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
+import type { CatalogQuery } from "@amiyo/contracts";
 
-export type ListPublishedProductsInput = {
-  cursor?: string;
-  limit: number;
-};
+export const publicProductInclude = {
+  shop: true,
+  media: { orderBy: { displayOrder: "asc" as const } },
+  variants: { where: { active: true }, orderBy: { priceMinor: "asc" as const }, include: { inventory: true } },
+  _count: { select: { reviews: true } }
+} satisfies Prisma.ProductInclude;
+
+export type PublicProduct = Prisma.ProductGetPayload<{ include: typeof publicProductInclude }>;
 
 export class CatalogRepository {
   constructor(private readonly client: PrismaClient) {}
 
-  async listPublishedProducts({ cursor, limit }: ListPublishedProductsInput) {
+  listCategories() {
+    return this.client.category.findMany({ where: { status: "active" }, orderBy: [{ displayOrder: "asc" }, { name: "asc" }] });
+  }
+
+  async listPublishedProducts(input: CatalogQuery) {
     const rows = await this.client.product.findMany({
-      where: { status: "APPROVED", shop: { status: "ACTIVE" }, vendor: { status: "APPROVED" } },
+      where: {
+        status: "APPROVED",
+        shop: { status: "ACTIVE", ...(input.shop ? { OR: [{ id: input.shop }, { slug: input.shop }] } : {}) },
+        vendor: { status: "APPROVED" },
+        ...(input.category ? { category: { OR: [{ id: input.category }, { slug: input.category }] } } : {}),
+        ...(input.query ? { OR: [
+          { name: { contains: input.query, mode: "insensitive" } },
+          { brand: { contains: input.query, mode: "insensitive" } },
+          { description: { contains: input.query, mode: "insensitive" } }
+        ] } : {})
+      },
       orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
-      ...(cursor ? { cursor: { id: cursor } } : {}),
-      skip: cursor ? 1 : 0,
+      ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+      take: input.limit + 1,
+      include: publicProductInclude
+    });
+    const hasNextPage = rows.length > input.limit;
+    const data = hasNextPage ? rows.slice(0, input.limit) : rows;
+    return { data, pageInfo: { hasNextPage, nextCursor: hasNextPage ? data.at(-1)?.id ?? null : null } };
+  }
+
+  getPublishedProduct(identifier: string) {
+    return this.client.product.findFirst({
+      where: { OR: [{ id: identifier }, { slug: identifier }], status: "APPROVED", shop: { status: "ACTIVE" }, vendor: { status: "APPROVED" } },
+      include: publicProductInclude
+    });
+  }
+
+  async listShops(cursor: string | undefined, limit: number) {
+    const rows = await this.client.vendorShop.findMany({
+      where: { status: "ACTIVE", vendor: { status: "APPROVED" } },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       take: limit + 1,
-      include: {
-        media: { orderBy: { displayOrder: "asc" }, take: 1 },
-        variants: { where: { active: true }, orderBy: { priceMinor: "asc" }, include: { inventory: true } }
-      }
+      include: { _count: { select: { products: { where: { status: "APPROVED" } } } } }
     });
     const hasNextPage = rows.length > limit;
     const data = hasNextPage ? rows.slice(0, limit) : rows;
     return { data, pageInfo: { hasNextPage, nextCursor: hasNextPage ? data.at(-1)?.id ?? null : null } };
+  }
+
+  getShop(identifier: string) {
+    return this.client.vendorShop.findFirst({
+      where: { OR: [{ id: identifier }, { slug: identifier }], status: "ACTIVE", vendor: { status: "APPROVED" } },
+      include: { _count: { select: { products: { where: { status: "APPROVED" } } } } }
+    });
   }
 }

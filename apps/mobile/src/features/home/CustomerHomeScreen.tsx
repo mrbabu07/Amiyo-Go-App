@@ -1,12 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { useQuery } from "@tanstack/react-query";
+import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { flashProducts, recommendedProducts, type HomeProduct } from "./home.data";
+import type { HomeCategory, HomeProduct } from "./home.data";
 import { BottomNav } from "./components/BottomNav";
 import { CategoryRail } from "./components/CategoryRail";
 import { HeroBanner } from "./components/HeroBanner";
 import { ProductCard } from "./components/ProductCard";
 import { StoreHeader } from "./components/StoreHeader";
+import { getCategories, getProducts } from "../catalog/catalog.api";
+import { toHomeProduct } from "../catalog/catalog.view-model";
 
 function SectionTitle({ eyebrow, title, action = "View all" }: { eyebrow?: string; title: string; action?: string }) {
   return (
@@ -38,6 +41,11 @@ export function CustomerHomeScreen() {
   const desktop = width >= 900;
   const columns = width >= 1180 ? 5 : width >= 820 ? 4 : 2;
   const contentWidth = Math.min(width - spacing.xl, 1208);
+  const categoryQuery = useQuery({ queryKey: ["catalog", "categories"], queryFn: getCategories });
+  const productQuery = useQuery({ queryKey: ["catalog", "home-products"], queryFn: () => getProducts({ limit: 20 }) });
+  const categoryIcons = ["shirt-outline", "phone-portrait-outline", "sparkles-outline", "home-outline", "happy-outline", "basket-outline", "football-outline"];
+  const liveCategories: HomeCategory[] = (categoryQuery.data || []).map((category, index) => ({ id: category.slug, name: category.name, icon: categoryIcons[index % categoryIcons.length] || "grid-outline", color: ["#fce7f3", "#dbeafe", "#fef3c7", "#dcfce7", "#f3e8ff", "#ffedd5", "#cffafe"][index % 7] || colors.primarySoft }));
+  const liveProducts = (productQuery.data?.data || []).map(toHomeProduct);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -46,14 +54,14 @@ export function CustomerHomeScreen() {
           <StoreHeader desktop={desktop} viewportWidth={width} />
           <View style={[styles.content, { width: contentWidth }]}>
             <HeroBanner desktop={desktop} />
-            <View style={styles.section}><SectionTitle eyebrow="EXPLORE DEPARTMENTS" title="Shop by category" /><CategoryRail /></View>
+            <View style={styles.section}><SectionTitle eyebrow="EXPLORE DEPARTMENTS" title="Shop by category" />{categoryQuery.isLoading ? <ActivityIndicator color={colors.primary} /> : <CategoryRail data={liveCategories} />}{categoryQuery.error ? <RetryState label="Could not load categories" onRetry={() => categoryQuery.refetch()} /> : null}</View>
 
             <View style={[styles.flashSection, desktop && styles.desktopFlash]}>
               <View style={styles.flashHeading}>
                 <View><View style={styles.flashEyebrowRow}><Ionicons color={colors.accent} name="flash" size={17} /><Text style={styles.flashEyebrow}>FLASH SALE</Text></View><Text style={styles.flashTitle}>Deals end soon</Text></View>
                 <View style={styles.timerRow}>{["08", "24", "39"].map((value, index) => <View key={`${value}-${index}`} style={styles.timerBox}><Text style={styles.timerText}>{value}</Text></View>)}</View>
               </View>
-              <ProductGrid columns={columns} products={flashProducts} />
+              {productQuery.isLoading ? <ActivityIndicator color={colors.surface} /> : <ProductGrid columns={columns} products={liveProducts.slice(0, 5)} />}
             </View>
 
             <View style={styles.promo}>
@@ -62,7 +70,7 @@ export function CustomerHomeScreen() {
               <View style={styles.promoCode}><Text style={styles.promoCodeText}>WELCOME200</Text></View>
             </View>
 
-            <View style={styles.section}><SectionTitle eyebrow="CURATED FOR YOU" title="Just for you" /><ProductGrid columns={columns} products={recommendedProducts} /></View>
+            <View style={styles.section}><SectionTitle eyebrow="CURATED FOR YOU" title="Just for you" />{productQuery.error ? <RetryState label="Could not load live products" onRetry={() => productQuery.refetch()} /> : <ProductGrid columns={columns} products={liveProducts.slice(5).length ? liveProducts.slice(5) : liveProducts} />}{!productQuery.isLoading && !productQuery.error && liveProducts.length === 0 ? <Text style={styles.empty}>No approved products yet. Run the catalog seed or publish a vendor product.</Text> : null}</View>
 
             <View style={styles.benefits}>
               {benefits.map((benefit) => (
@@ -80,6 +88,10 @@ export function CustomerHomeScreen() {
       </View>
     </SafeAreaView>
   );
+}
+
+function RetryState({ label, onRetry }: { label: string; onRetry(): void }) {
+  return <View style={styles.retry}><Text style={styles.empty}>{label}</Text><Pressable onPress={onRetry}><Text style={styles.retryText}>Try again</Text></Pressable></View>;
 }
 
 const styles = StyleSheet.create({
@@ -119,5 +131,6 @@ const styles = StyleSheet.create({
   footer: { alignItems: "center", paddingBottom: 28, paddingTop: 18 },
   footerBrand: { color: colors.primary, fontSize: 22, fontWeight: "900" },
   footerText: { color: colors.muted, fontSize: 11, marginTop: 5, textAlign: "center" },
-  copyright: { color: "#94a3b8", fontSize: 9, marginTop: 12 }
+  copyright: { color: "#94a3b8", fontSize: 9, marginTop: 12 },
+  empty: { color: colors.muted, padding: spacing.lg, textAlign: "center" }, retry: { alignItems: "center", gap: spacing.sm }, retryText: { color: colors.primary, fontWeight: "900" }
 });

@@ -30,6 +30,8 @@ export const productSummarySchema = z.object({
   id: uuidSchema,
   vendorId: uuidSchema,
   shopId: uuidSchema,
+  shopName: z.string(),
+  shopSlug: z.string(),
   categoryId: uuidSchema,
   name: z.string().min(1),
   slug: z.string().min(1),
@@ -58,6 +60,94 @@ export const productDetailSchema = productSummarySchema.extend({
 
 export const productListResponseSchema = paginatedResponseSchema(productSummarySchema);
 
+export const catalogQuerySchema = z.object({
+  cursor: uuidSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+  query: z.string().trim().max(120).optional(),
+  category: z.string().trim().max(100).optional(),
+  shop: z.string().trim().max(100).optional(),
+  sort: z.literal("newest").default("newest")
+});
+
+export const shopSummarySchema = z.object({
+  id: uuidSchema,
+  vendorId: uuidSchema,
+  name: z.string(),
+  slug: z.string(),
+  description: z.string().nullable(),
+  logoUrl: z.string().url().nullable(),
+  bannerUrl: z.string().url().nullable(),
+  productCount: z.number().int().nonnegative(),
+  version: versionSchema
+});
+
+export const shopDetailSchema = shopSummarySchema.extend({
+  products: productListResponseSchema
+});
+export const shopListResponseSchema = paginatedResponseSchema(shopSummarySchema);
+
+export const productVariantInputSchema = z.object({
+  sku: z.string().trim().min(3).max(80),
+  title: z.string().trim().min(1).max(120),
+  attributes: z.record(z.unknown()).nullable().optional(),
+  priceMinor: z.string().regex(/^\d+$/),
+  compareAtMinor: z.string().regex(/^\d+$/).nullable().optional(),
+  currency: z.string().length(3).transform((value) => value.toUpperCase()).default("BDT"),
+  onHand: z.number().int().nonnegative().default(0)
+});
+
+export const createProductSchema = z.object({
+  shopId: uuidSchema,
+  categoryId: uuidSchema,
+  name: z.string().trim().min(3).max(180),
+  slug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(200),
+  description: z.string().trim().max(10_000).nullable().optional(),
+  brand: z.string().trim().max(120).nullable().optional(),
+  dynamicAttributes: z.record(z.unknown()).nullable().optional(),
+  variants: z.array(productVariantInputSchema).min(1).max(100)
+});
+
+export const updateProductSchema = z.object({
+  version: versionSchema,
+  name: z.string().trim().min(3).max(180).optional(),
+  description: z.string().trim().max(10_000).nullable().optional(),
+  brand: z.string().trim().max(120).nullable().optional(),
+  categoryId: uuidSchema.optional(),
+  dynamicAttributes: z.record(z.unknown()).nullable().optional()
+}).refine((value) => Object.keys(value).length > 1, "At least one product field is required");
+
+export const inventoryAdjustmentSchema = z.object({
+  version: versionSchema,
+  onHand: z.number().int().nonnegative(),
+  idempotencyKey: z.string().uuid(),
+  reason: z.string().trim().min(3).max(240)
+});
+
+export const vendorInventorySchema = z.object({
+  id: uuidSchema,
+  variantId: uuidSchema,
+  productId: uuidSchema,
+  productName: z.string(),
+  sku: z.string(),
+  onHand: z.number().int().nonnegative(),
+  reserved: z.number().int().nonnegative(),
+  available: z.number().int().nonnegative(),
+  reorderLevel: z.number().int().nonnegative(),
+  version: versionSchema,
+  updatedAt: timestampSchema
+});
+
+export const moderationInputSchema = z.object({
+  status: z.enum(["APPROVED", "REJECTED"]),
+  reason: z.string().trim().min(3).max(500)
+});
+
 export type CategoryDto = z.infer<typeof categorySchema>;
 export type ProductSummaryDto = z.infer<typeof productSummarySchema>;
 export type ProductDetailDto = z.infer<typeof productDetailSchema>;
+export type CatalogQuery = z.infer<typeof catalogQuerySchema>;
+export type ShopSummaryDto = z.infer<typeof shopSummarySchema>;
+export type CreateProductInput = z.infer<typeof createProductSchema>;
+export type UpdateProductInput = z.infer<typeof updateProductSchema>;
+export type InventoryAdjustmentInput = z.infer<typeof inventoryAdjustmentSchema>;
+export type ModerationInput = z.infer<typeof moderationInputSchema>;

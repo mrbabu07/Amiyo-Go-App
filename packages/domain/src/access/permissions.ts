@@ -76,7 +76,8 @@ const rolePermissionMap: Record<Role, Permission[]> = {
     "orders:read",
     "orders:manage",
     "returns:manage",
-    "admin:read"
+    "admin:read",
+    "admin:manage"
   ],
   SUPER_ADMIN: [...permissions]
 };

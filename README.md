@@ -23,6 +23,8 @@ Production rebuild workspace for the Amiyo-Go mobile platform.
 
 For the current identity setup and Firebase requirements, see `docs/phase-3-identity-and-authorization.md`.
 
+Catalog, search, shops, vendor inventory, and mobile discovery are documented in `docs/phase-4-catalog-search-and-discovery.md`.
+
 The web app runs at `http://localhost:8081` after `npm run dev`. Use `npm run dev:mobile -- --web` when only the Expo web client is needed.
 
 Never commit real secrets. Rotate any database URL that has been pasted into chat.

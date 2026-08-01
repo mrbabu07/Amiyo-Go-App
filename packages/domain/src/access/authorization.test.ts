@@ -30,3 +30,9 @@ test("super admin bypasses resource scopes but not account status", () => {
   assert.equal(authorize(admin, { permission: "settings:manage", vendorId: "missing" }), true);
   assert.equal(authorize({ ...admin, status: "DEACTIVATED" }, { permission: "settings:manage" }), false);
 });
+
+test("operations admin can moderate catalog but vendors cannot", () => {
+  const operations: AuthorizationContext = { userId: "ops", status: "ACTIVE", roles: ["OPERATIONS_ADMIN"], vendorMemberships: [] };
+  assert.equal(authorize(operations, { permission: "admin:manage" }), true);
+  assert.equal(authorize(vendorStaff, { permission: "admin:manage" }), false);
+});

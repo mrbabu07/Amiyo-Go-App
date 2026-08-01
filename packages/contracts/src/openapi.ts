@@ -1,6 +1,6 @@
 import { OpenAPIRegistry, OpenApiGeneratorV31, extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
 import { z } from "zod";
-import { categorySchema, productDetailSchema, productListResponseSchema } from "./catalog.js";
+import { catalogQuerySchema, categorySchema, createProductSchema, inventoryAdjustmentSchema, moderationInputSchema, productDetailSchema, productListResponseSchema, shopDetailSchema, shopListResponseSchema, updateProductSchema, vendorInventorySchema } from "./catalog.js";
 import { healthResponseSchema } from "./health.js";
 import { addressInputSchema, addressSchema, deviceInputSchema, deviceSchema, sessionSchema, updateProfileSchema } from "./identity.js";
 import { orderSchema } from "./orders.js";
@@ -14,6 +14,9 @@ const health = registry.register("Health", healthResponseSchema);
 const category = registry.register("Category", categorySchema);
 const product = registry.register("Product", productDetailSchema);
 const productList = registry.register("ProductList", productListResponseSchema);
+const shop = registry.register("Shop", shopDetailSchema);
+const shopList = registry.register("ShopList", shopListResponseSchema);
+const vendorInventory = registry.register("VendorInventory", vendorInventorySchema);
 const order = registry.register("Order", orderSchema);
 const session = registry.register("IdentitySession", sessionSchema);
 const address = registry.register("Address", addressSchema);
@@ -113,8 +116,67 @@ registry.registerPath({
   method: "get",
   path: "/api/v2/catalog/products/{id}",
   tags: ["Catalog"],
-  request: { params: z.object({ id: z.string().uuid() }) },
+  request: { params: z.object({ id: z.string().min(1) }) },
   responses: { 200: { description: "Product detail", content: { "application/json": { schema: product } } }, ...errorResponses }
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/v2/catalog/search",
+  tags: ["Catalog"],
+  request: { query: catalogQuerySchema },
+  responses: { 200: { description: "Search results", content: { "application/json": { schema: productList } } } }
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/v2/shops",
+  tags: ["Shops"],
+  responses: { 200: { description: "Active shops", content: { "application/json": { schema: shopList } } } }
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/v2/shops/{id}",
+  tags: ["Shops"],
+  request: { params: z.object({ id: z.string().min(1) }) },
+  responses: { 200: { description: "Shop and products", content: { "application/json": { schema: shop } } }, ...errorResponses }
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/v2/vendor/products",
+  tags: ["Vendor Catalog"],
+  security: firebaseSecurity,
+  request: { body: { content: { "application/json": { schema: createProductSchema } } } },
+  responses: { 201: { description: "Draft product created" }, ...errorResponses }
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/v2/vendor/products/{id}",
+  tags: ["Vendor Catalog"],
+  security: firebaseSecurity,
+  request: { params: z.object({ id: z.string().uuid() }), body: { content: { "application/json": { schema: updateProductSchema } } } },
+  responses: { 200: { description: "Draft product updated" }, ...errorResponses }
+});
+
+registry.registerPath({
+  method: "put",
+  path: "/api/v2/vendor/inventory/{id}",
+  tags: ["Vendor Catalog"],
+  security: firebaseSecurity,
+  request: { params: z.object({ id: z.string().uuid() }), body: { content: { "application/json": { schema: inventoryAdjustmentSchema } } } },
+  responses: { 200: { description: "Inventory adjusted", content: { "application/json": { schema: vendorInventory } } }, ...errorResponses }
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/v2/admin/catalog/products/{id}/moderate",
+  tags: ["Catalog Moderation"],
+  security: firebaseSecurity,
+  request: { params: z.object({ id: z.string().uuid() }), body: { content: { "application/json": { schema: moderationInputSchema } } } },
+  responses: { 200: { description: "Product approved or rejected" }, ...errorResponses }
 });
 
 registry.registerPath({
@@ -130,6 +192,6 @@ export function createOpenApiDocument() {
     openapi: "3.1.0",
     info: { title: "Amiyo-Go API", version: "0.2.0", description: "Typed API contract for the Amiyo-Go mobile platform." },
     servers: [{ url: "http://localhost:4000", description: "Local development" }],
-    tags: [{ name: "Operations" }, { name: "Identity" }, { name: "Catalog" }, { name: "Orders" }]
+    tags: [{ name: "Operations" }, { name: "Identity" }, { name: "Catalog" }, { name: "Shops" }, { name: "Vendor Catalog" }, { name: "Catalog Moderation" }, { name: "Orders" }]
   });
 }

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { addressInputSchema, createOpenApiDocument, deviceInputSchema, minorUnitSchema, moneySchema, vendorOrderStatusSchema } from "./index.js";
+import { addressInputSchema, catalogQuerySchema, createOpenApiDocument, createProductSchema, deviceInputSchema, minorUnitSchema, moneySchema, vendorOrderStatusSchema } from "./index.js";
 
 test("money contracts preserve bigint-safe minor units", () => {
   assert.deepEqual(moneySchema.parse({ amountMinor: "249000", currency: "bdt" }), { amountMinor: "249000", currency: "BDT" });
@@ -25,4 +25,10 @@ test("OpenAPI document exposes typed v2 resources", () => {
 test("identity mutation contracts reject incomplete data", () => {
   assert.equal(addressInputSchema.safeParse({ label: "Home" }).success, false);
   assert.equal(deviceInputSchema.safeParse({ installationId: "install-123", platform: "web", pushToken: "token-value" }).success, false);
+});
+
+test("catalog contracts enforce bounded pagination and integer money", () => {
+  assert.equal(catalogQuerySchema.safeParse({ limit: 51 }).success, false);
+  assert.equal(catalogQuerySchema.parse({ limit: 20, query: " headphones " }).query, "headphones");
+  assert.equal(createProductSchema.safeParse({ shopId: crypto.randomUUID(), categoryId: crypto.randomUUID(), name: "Test product", slug: "test-product", variants: [{ sku: "SKU-1", title: "Default", priceMinor: "12.50" }] }).success, false);
 });
