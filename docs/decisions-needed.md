@@ -26,6 +26,8 @@ These decisions block production implementation. Do not guess them in code.
 | Vendor pickup address | TBD | Confirm required phone/address/geography fields stored in shop settings before production dispatch. |
 | Rider contact exposure | TBD | Confirm whether customer tracking may display rider name and masked phone. |
 | Vendor payout | TBD | Schedule, minimum balance, hold/dispute rules. |
+| COD split collection | TBD | Confirm whether one parent payment is collected once or each vendor shipment records a separate COD collection. Automatic delivery settlement remains disabled until approved. |
+| Commission precedence | TBD | Confirm vendor/category/global rule precedence, fixed-fee application unit, and refund reversal behavior before automatic vendor settlement. |
 | KYC | TBD | Required documents, expiry, rejection/resubmission workflow. |
 | Geography | TBD | Division/district/upazila/union and serviceability source. |
 | Notifications | TBD | Push, in-app, SMS, email event matrix. |

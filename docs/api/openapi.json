@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Amiyo-Go API",
-    "version": "0.4.0",
+    "version": "0.7.0",
     "description": "Typed API contract for the Amiyo-Go mobile platform."
   },
   "servers": [
@@ -14,6 +14,9 @@
   "tags": [
     {
       "name": "Operations"
+    },
+    {
+      "name": "Returns & Finance"
     },
     {
       "name": "Identity"
@@ -5429,6 +5432,1591 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/orders/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Returns & Finance"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 500
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "reason",
+                  "expectedVersion"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cancelled order and released active reservations"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/returns": {
+      "get": {
+        "tags": [
+          "Returns & Finance"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer returns",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "orderId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "vendorOrderId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "REQUESTED",
+                          "REVIEWING",
+                          "APPROVED",
+                          "REJECTED",
+                          "PICKUP_SCHEDULED",
+                          "RECEIVED",
+                          "INSPECTED",
+                          "REFUND_PENDING",
+                          "REFUNDED",
+                          "CLOSED"
+                        ]
+                      },
+                      "reasonCode": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "reasonDetail": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "requestedAmount": {
+                        "type": "object",
+                        "properties": {
+                          "amountMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "currency": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 3,
+                            "default": "BDT"
+                          }
+                        },
+                        "required": [
+                          "amountMinor"
+                        ]
+                      },
+                      "approvedAmount": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "amountMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "currency": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 3,
+                            "default": "BDT"
+                          }
+                        },
+                        "required": [
+                          "amountMinor"
+                        ]
+                      },
+                      "version": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "orderItemId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "quantity": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0
+                            },
+                            "requestedAmount": {
+                              "type": "object",
+                              "properties": {
+                                "amountMinor": {
+                                  "type": "string",
+                                  "pattern": "^\\d+$"
+                                },
+                                "currency": {
+                                  "type": "string",
+                                  "minLength": 3,
+                                  "maxLength": 3,
+                                  "default": "BDT"
+                                }
+                              },
+                              "required": [
+                                "amountMinor"
+                              ]
+                            },
+                            "inspection": {
+                              "type": [
+                                "object",
+                                "null"
+                              ],
+                              "additionalProperties": {}
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "orderItemId",
+                            "quantity",
+                            "requestedAmount",
+                            "inspection"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "orderId",
+                      "vendorOrderId",
+                      "status",
+                      "reasonCode",
+                      "reasonDetail",
+                      "requestedAmount",
+                      "approvedAmount",
+                      "version",
+                      "createdAt",
+                      "items"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Returns & Finance"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "vendorOrderId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "reasonCode": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 80
+                  },
+                  "reasonDetail": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 1000
+                  },
+                  "refundMethod": {
+                    "type": "string",
+                    "enum": [
+                      "ORIGINAL_PAYMENT",
+                      "MANUAL"
+                    ],
+                    "default": "ORIGINAL_PAYMENT"
+                  },
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "orderItemId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0
+                        }
+                      },
+                      "required": [
+                        "orderItemId",
+                        "quantity"
+                      ]
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "vendorOrderId",
+                  "reasonCode",
+                  "items"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Return requested",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "orderId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "vendorOrderId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "REQUESTED",
+                        "REVIEWING",
+                        "APPROVED",
+                        "REJECTED",
+                        "PICKUP_SCHEDULED",
+                        "RECEIVED",
+                        "INSPECTED",
+                        "REFUND_PENDING",
+                        "REFUNDED",
+                        "CLOSED"
+                      ]
+                    },
+                    "reasonCode": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "reasonDetail": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "requestedAmount": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "approvedAmount": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "orderItemId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "quantity": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          },
+                          "requestedAmount": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "minLength": 3,
+                                "maxLength": 3,
+                                "default": "BDT"
+                              }
+                            },
+                            "required": [
+                              "amountMinor"
+                            ]
+                          },
+                          "inspection": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "additionalProperties": {}
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "orderItemId",
+                          "quantity",
+                          "requestedAmount",
+                          "inspection"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "orderId",
+                    "vendorOrderId",
+                    "status",
+                    "reasonCode",
+                    "reasonDetail",
+                    "requestedAmount",
+                    "approvedAmount",
+                    "version",
+                    "createdAt",
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/vendor/finance": {
+      "get": {
+        "tags": [
+          "Returns & Finance"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Derived vendor balance and ledger",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "vendorId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "balance": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "direction": {
+                            "type": "string",
+                            "enum": [
+                              "CREDIT",
+                              "DEBIT"
+                            ]
+                          },
+                          "amount": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "minLength": 3,
+                                "maxLength": 3,
+                                "default": "BDT"
+                              }
+                            },
+                            "required": [
+                              "amountMinor"
+                            ]
+                          },
+                          "entryType": {
+                            "type": "string"
+                          },
+                          "referenceType": {
+                            "type": "string"
+                          },
+                          "referenceId": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "direction",
+                          "amount",
+                          "entryType",
+                          "referenceType",
+                          "referenceId",
+                          "createdAt"
+                        ]
+                      }
+                    },
+                    "payoutRequests": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "bankAccountId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "amount": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "minLength": 3,
+                                "maxLength": 3,
+                                "default": "BDT"
+                              }
+                            },
+                            "required": [
+                              "amountMinor"
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "REQUESTED",
+                              "REVIEWING",
+                              "APPROVED",
+                              "PROCESSING",
+                              "PAID",
+                              "REJECTED",
+                              "FAILED",
+                              "CANCELLED"
+                            ]
+                          },
+                          "requestedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "bankAccountId",
+                          "amount",
+                          "status",
+                          "requestedAt"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "vendorId",
+                    "balance",
+                    "entries",
+                    "payoutRequests"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/vendor/payouts": {
+      "post": {
+        "tags": [
+          "Returns & Finance"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "bankAccountId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "amountMinor": {
+                    "type": "string",
+                    "pattern": "^[1-9]\\d*$"
+                  }
+                },
+                "required": [
+                  "bankAccountId",
+                  "amountMinor"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Payout requested and balance reserved"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/returns/{id}/transitions": {
+      "post": {
+        "tags": [
+          "Operations"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "REQUESTED",
+                      "REVIEWING",
+                      "APPROVED",
+                      "REJECTED",
+                      "PICKUP_SCHEDULED",
+                      "RECEIVED",
+                      "INSPECTED",
+                      "REFUND_PENDING",
+                      "REFUNDED",
+                      "CLOSED"
+                    ]
+                  },
+                  "note": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 1000
+                  },
+                  "approvedAmountMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  }
+                },
+                "required": [
+                  "expectedVersion",
+                  "status"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Return workflow transitioned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "orderId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "vendorOrderId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "REQUESTED",
+                        "REVIEWING",
+                        "APPROVED",
+                        "REJECTED",
+                        "PICKUP_SCHEDULED",
+                        "RECEIVED",
+                        "INSPECTED",
+                        "REFUND_PENDING",
+                        "REFUNDED",
+                        "CLOSED"
+                      ]
+                    },
+                    "reasonCode": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "reasonDetail": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "requestedAmount": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "approvedAmount": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "orderItemId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "quantity": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          },
+                          "requestedAmount": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "minLength": 3,
+                                "maxLength": 3,
+                                "default": "BDT"
+                              }
+                            },
+                            "required": [
+                              "amountMinor"
+                            ]
+                          },
+                          "inspection": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "additionalProperties": {}
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "orderItemId",
+                          "quantity",
+                          "requestedAmount",
+                          "inspection"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "orderId",
+                    "vendorOrderId",
+                    "status",
+                    "reasonCode",
+                    "reasonDetail",
+                    "requestedAmount",
+                    "approvedAmount",
+                    "version",
+                    "createdAt",
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/returns/{id}/refund-completion": {
+      "post": {
+        "tags": [
+          "Operations"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "providerRefundId": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "providerRefundId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Provider-confirmed refund completed"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/payouts/{id}/review": {
+      "post": {
+        "tags": [
+          "Operations"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "APPROVE",
+                      "REJECT"
+                    ]
+                  },
+                  "reason": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "expectedVersion",
+                  "action"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payout request reviewed"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/payouts/{id}/completion": {
+      "post": {
+        "tags": [
+          "Operations"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "provider": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 80
+                  },
+                  "providerRef": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "provider",
+                  "providerRef"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Provider-confirmed payout completed"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/cod/reconciliations": {
+      "post": {
+        "tags": [
+          "Operations"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "periodStart": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "periodEnd": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "periodStart",
+                  "periodEnd"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "COD period reconciled"
           },
           "400": {
             "description": "Invalid request",

@@ -463,6 +463,7 @@ model VendorBankAccount {
   verifiedAt          DateTime? @map("verified_at") @db.Timestamptz(3)
   createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   vendor              Vendor    @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  payoutRequests      VendorPayoutRequest[]
 
   @@index([vendorId])
   @@map("vendor_bank_accounts")
@@ -506,10 +507,15 @@ model VendorPayoutRequest {
   status        PayoutStatus   @default(REQUESTED)
   requestedAt   DateTime       @default(now()) @map("requested_at") @db.Timestamptz(3)
   reviewedAt    DateTime?      @map("reviewed_at") @db.Timestamptz(3)
+  reviewedBy    String?        @map("reviewed_by") @db.Uuid
+  rejectionReason String?      @map("rejection_reason")
+  version       Int            @default(1)
   vendor        Vendor         @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  bankAccount   VendorBankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Restrict)
   payouts       VendorPayout[]
 
   @@index([vendorId, status])
+  @@index([bankAccountId])
   @@map("vendor_payout_requests")
 }
 

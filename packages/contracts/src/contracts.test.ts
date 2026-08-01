@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { addCartItemSchema, addressInputSchema, catalogQuerySchema, checkoutInputSchema, createOpenApiDocument, createProductSchema, deviceInputSchema, minorUnitSchema, moneySchema, vendorOrderStatusSchema } from "./index.js";
+import { addCartItemSchema, addressInputSchema, catalogQuerySchema, checkoutInputSchema, createOpenApiDocument, createProductSchema, createReturnSchema, deviceInputSchema, minorUnitSchema, moneySchema, vendorOrderStatusSchema } from "./index.js";
 
 test("money contracts preserve bigint-safe minor units", () => {
   assert.deepEqual(moneySchema.parse({ amountMinor: "249000", currency: "bdt" }), { amountMinor: "249000", currency: "BDT" });
@@ -24,6 +24,15 @@ test("OpenAPI document exposes typed v2 resources", () => {
   assert.ok(document.paths?.["/api/v2/checkout/orders"]);
   assert.ok(document.paths?.["/api/v2/vendor/orders/{id}/transitions"]);
   assert.ok(document.paths?.["/api/v2/orders/{id}/tracking"]);
+  assert.ok(document.paths?.["/api/v2/returns"]);
+  assert.ok(document.paths?.["/api/v2/vendor/finance"]);
+  assert.ok(document.paths?.["/api/v2/admin/cod/reconciliations"]);
+});
+
+test("return contracts reject duplicate items and invalid quantities", () => {
+  const item = { orderItemId: crypto.randomUUID(), quantity: 1 };
+  assert.equal(createReturnSchema.safeParse({ vendorOrderId: crypto.randomUUID(), reasonCode: "damaged", items: [item] }).success, true);
+  assert.equal(createReturnSchema.safeParse({ vendorOrderId: crypto.randomUUID(), reasonCode: "damaged", items: [item, item] }).success, false);
 });
 
 test("commerce contracts enforce quantities and supported payments", () => {

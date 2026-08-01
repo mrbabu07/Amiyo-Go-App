@@ -7,6 +7,8 @@ import { healthResponseSchema } from "./health.js";
 import { addressInputSchema, addressSchema, deviceInputSchema, deviceSchema, sessionSchema, updateProfileSchema } from "./identity.js";
 import { orderSchema } from "./orders.js";
 import { problemSchema } from "./problem.js";
+import { cancelOrderSchema, createReturnSchema, returnSchema, returnTransitionSchema } from "./returns.js";
+import { codReconciliationInputSchema, completePayoutSchema, completeRefundSchema, createPayoutRequestSchema, reviewPayoutSchema, vendorFinanceSchema } from "./finance.js";
 
 extendZodWithOpenApi(z);
 
@@ -245,12 +247,22 @@ registry.registerPath({ method: "get", path: "/api/v2/orders/{id}/tracking", tag
 registry.registerPath({ method: "get", path: "/api/v2/vendor/orders", tags: ["Vendor Orders"], security: firebaseSecurity, responses: { 200: { description: "Vendor-scoped fulfillment queue", content: { "application/json": { schema: z.array(vendorOrderDetail) } } }, ...errorResponses } });
 registry.registerPath({ method: "get", path: "/api/v2/vendor/orders/{id}", tags: ["Vendor Orders"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: { description: "Vendor order detail", content: { "application/json": { schema: vendorOrderDetail } } }, ...errorResponses } });
 registry.registerPath({ method: "post", path: "/api/v2/vendor/orders/{id}/transitions", tags: ["Vendor Orders"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }), headers: z.object({ "idempotency-key": z.string().uuid() }), body: { content: { "application/json": { schema: vendorOrderTransitionSchema } } } }, responses: { 200: { description: "Transitioned vendor order", content: { "application/json": { schema: vendorOrderDetail } } }, ...errorResponses } });
+registry.registerPath({ method: "post", path: "/api/v2/orders/{id}/cancel", tags: ["Returns & Finance"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }), headers: z.object({ "idempotency-key": z.string().uuid() }), body: { content: { "application/json": { schema: cancelOrderSchema } } } }, responses: { 200: { description: "Cancelled order and released active reservations" }, ...errorResponses } });
+registry.registerPath({ method: "get", path: "/api/v2/returns", tags: ["Returns & Finance"], security: firebaseSecurity, responses: { 200: { description: "Customer returns", content: { "application/json": { schema: z.array(returnSchema) } } }, ...errorResponses } });
+registry.registerPath({ method: "post", path: "/api/v2/returns", tags: ["Returns & Finance"], security: firebaseSecurity, request: { headers: z.object({ "idempotency-key": z.string().uuid() }), body: { content: { "application/json": { schema: createReturnSchema } } } }, responses: { 201: { description: "Return requested", content: { "application/json": { schema: returnSchema } } }, ...errorResponses } });
+registry.registerPath({ method: "get", path: "/api/v2/vendor/finance", tags: ["Returns & Finance"], security: firebaseSecurity, responses: { 200: { description: "Derived vendor balance and ledger", content: { "application/json": { schema: vendorFinanceSchema } } }, ...errorResponses } });
+registry.registerPath({ method: "post", path: "/api/v2/vendor/payouts", tags: ["Returns & Finance"], security: firebaseSecurity, request: { headers: z.object({ "idempotency-key": z.string().uuid() }), body: { content: { "application/json": { schema: createPayoutRequestSchema } } } }, responses: { 201: { description: "Payout requested and balance reserved" }, ...errorResponses } });
+registry.registerPath({ method: "post", path: "/api/v2/admin/returns/{id}/transitions", tags: ["Operations"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }), headers: z.object({ "idempotency-key": z.string().uuid() }), body: { content: { "application/json": { schema: returnTransitionSchema } } } }, responses: { 200: { description: "Return workflow transitioned", content: { "application/json": { schema: returnSchema } } }, ...errorResponses } });
+registry.registerPath({ method: "post", path: "/api/v2/admin/returns/{id}/refund-completion", tags: ["Operations"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }), headers: z.object({ "idempotency-key": z.string().uuid() }), body: { content: { "application/json": { schema: completeRefundSchema } } } }, responses: { 200: { description: "Provider-confirmed refund completed" }, ...errorResponses } });
+registry.registerPath({ method: "post", path: "/api/v2/admin/payouts/{id}/review", tags: ["Operations"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }), headers: z.object({ "idempotency-key": z.string().uuid() }), body: { content: { "application/json": { schema: reviewPayoutSchema } } } }, responses: { 200: { description: "Payout request reviewed" }, ...errorResponses } });
+registry.registerPath({ method: "post", path: "/api/v2/admin/payouts/{id}/completion", tags: ["Operations"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }), headers: z.object({ "idempotency-key": z.string().uuid() }), body: { content: { "application/json": { schema: completePayoutSchema } } } }, responses: { 200: { description: "Provider-confirmed payout completed" }, ...errorResponses } });
+registry.registerPath({ method: "post", path: "/api/v2/admin/cod/reconciliations", tags: ["Operations"], security: firebaseSecurity, request: { headers: z.object({ "idempotency-key": z.string().uuid() }), body: { content: { "application/json": { schema: codReconciliationInputSchema } } } }, responses: { 201: { description: "COD period reconciled" }, ...errorResponses } });
 
 export function createOpenApiDocument() {
   return new OpenApiGeneratorV31(registry.definitions).generateDocument({
     openapi: "3.1.0",
-    info: { title: "Amiyo-Go API", version: "0.4.0", description: "Typed API contract for the Amiyo-Go mobile platform." },
+    info: { title: "Amiyo-Go API", version: "0.7.0", description: "Typed API contract for the Amiyo-Go mobile platform." },
     servers: [{ url: "http://localhost:4000", description: "Local development" }],
-    tags: [{ name: "Operations" }, { name: "Identity" }, { name: "Catalog" }, { name: "Shops" }, { name: "Vendor Catalog" }, { name: "Catalog Moderation" }, { name: "Commerce" }, { name: "Orders" }, { name: "Vendor Orders" }, { name: "Delivery" }]
+    tags: [{ name: "Operations" }, { name: "Returns & Finance" }, { name: "Identity" }, { name: "Catalog" }, { name: "Shops" }, { name: "Vendor Catalog" }, { name: "Catalog Moderation" }, { name: "Commerce" }, { name: "Orders" }, { name: "Vendor Orders" }, { name: "Delivery" }]
   });
 }

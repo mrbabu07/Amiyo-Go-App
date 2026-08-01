@@ -16,7 +16,7 @@
     "dev:mobile": "npm --workspace @amiyo/mobile run start",
     "build": "node ./node_modules/typescript/bin/tsc -b tsconfig.json",
     "type-check": "node ./node_modules/typescript/bin/tsc -b tsconfig.json",
-    "test": "npm run build && npm run test:workspaces && node --test scripts/*.test.mjs",
+    "test": "npm run build && npm run test:workspaces && node --test --test-concurrency=1 scripts/*.test.mjs",
     "test:workspaces": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "prisma:generate": "prisma generate",

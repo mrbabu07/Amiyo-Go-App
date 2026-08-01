@@ -10,6 +10,7 @@ import { createOpenApiRouter } from "./modules/openapi/openapi.routes.js";
 import { createCatalogRouter } from "./modules/catalog/catalog.routes.js";
 import { createCommerceRouter } from "./modules/commerce/commerce.routes.js";
 import { createOrderRouter } from "./modules/orders/order.routes.js";
+import { createOperationsRouter } from "./modules/operations/operations.routes.js";
 
 export function createApiApp() {
   const app = express();
@@ -36,6 +37,7 @@ export function createApiApp() {
   app.use(createCatalogRouter());
   app.use(createCommerceRouter());
   app.use(createOrderRouter());
+  app.use(createOperationsRouter());
   app.use(createOpenApiRouter());
   app.use(problemMiddleware);
 

@@ -29,6 +29,8 @@ Cart, transactional checkout, payment webhooks, and the local payment sandbox ar
 
 Vendor fulfillment, transactional delivery dispatch, Amiyo Delivery callbacks, and customer tracking are documented in `docs/phase-6-vendor-orders-and-delivery.md`.
 
+Cancellation, returns/refunds, vendor ledger/payouts, COD reconciliation, and mobile operations queues are documented in `docs/phase-7-returns-finance-operations.md`.
+
 The web app runs at `http://localhost:8081` after `npm run dev`. Use `npm run dev:mobile -- --web` when only the Expo web client is needed.
 
 Never commit real secrets. Rotate any database URL that has been pasted into chat.
