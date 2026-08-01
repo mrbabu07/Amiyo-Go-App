@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Amiyo-Go API",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "description": "Typed API contract for the Amiyo-Go mobile platform."
   },
   "servers": [
@@ -29,6 +29,9 @@
     },
     {
       "name": "Catalog Moderation"
+    },
+    {
+      "name": "Commerce"
     },
     {
       "name": "Orders"
@@ -899,6 +902,902 @@
           "updatedAt"
         ]
       },
+      "Cart": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "productId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "variantId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "productName": {
+                  "type": "string"
+                },
+                "variantTitle": {
+                  "type": "string"
+                },
+                "sku": {
+                  "type": "string"
+                },
+                "thumbnailUrl": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uri"
+                },
+                "quantity": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "unitPrice": {
+                  "type": "object",
+                  "properties": {
+                    "amountMinor": {
+                      "type": "string",
+                      "pattern": "^\\d+$"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "minLength": 3,
+                      "maxLength": 3,
+                      "default": "BDT"
+                    }
+                  },
+                  "required": [
+                    "amountMinor"
+                  ]
+                },
+                "lineTotal": {
+                  "type": "object",
+                  "properties": {
+                    "amountMinor": {
+                      "type": "string",
+                      "pattern": "^\\d+$"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "minLength": 3,
+                      "maxLength": 3,
+                      "default": "BDT"
+                    }
+                  },
+                  "required": [
+                    "amountMinor"
+                  ]
+                },
+                "availableQuantity": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "id",
+                "productId",
+                "variantId",
+                "productName",
+                "variantTitle",
+                "sku",
+                "thumbnailUrl",
+                "quantity",
+                "unitPrice",
+                "lineTotal",
+                "availableQuantity"
+              ]
+            }
+          },
+          "subtotal": {
+            "type": "object",
+            "properties": {
+              "amountMinor": {
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "currency": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 3,
+                "default": "BDT"
+              }
+            },
+            "required": [
+              "amountMinor"
+            ]
+          },
+          "itemCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "currency",
+          "items",
+          "subtotal",
+          "itemCount",
+          "updatedAt"
+        ]
+      },
+      "CheckoutQuote": {
+        "type": "object",
+        "properties": {
+          "cart": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "currency": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 3
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "productId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "variantId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "productName": {
+                      "type": "string"
+                    },
+                    "variantTitle": {
+                      "type": "string"
+                    },
+                    "sku": {
+                      "type": "string"
+                    },
+                    "thumbnailUrl": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "uri"
+                    },
+                    "quantity": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "unitPrice": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "lineTotal": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "availableQuantity": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "productId",
+                    "variantId",
+                    "productName",
+                    "variantTitle",
+                    "sku",
+                    "thumbnailUrl",
+                    "quantity",
+                    "unitPrice",
+                    "lineTotal",
+                    "availableQuantity"
+                  ]
+                }
+              },
+              "subtotal": {
+                "type": "object",
+                "properties": {
+                  "amountMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3,
+                    "default": "BDT"
+                  }
+                },
+                "required": [
+                  "amountMinor"
+                ]
+              },
+              "itemCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "id",
+              "currency",
+              "items",
+              "subtotal",
+              "itemCount",
+              "updatedAt"
+            ]
+          },
+          "subtotal": {
+            "type": "object",
+            "properties": {
+              "amountMinor": {
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "currency": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 3,
+                "default": "BDT"
+              }
+            },
+            "required": [
+              "amountMinor"
+            ]
+          },
+          "discount": {
+            "type": "object",
+            "properties": {
+              "amountMinor": {
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "currency": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 3,
+                "default": "BDT"
+              }
+            },
+            "required": [
+              "amountMinor"
+            ]
+          },
+          "delivery": {
+            "type": "object",
+            "properties": {
+              "amountMinor": {
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "currency": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 3,
+                "default": "BDT"
+              }
+            },
+            "required": [
+              "amountMinor"
+            ]
+          },
+          "tax": {
+            "type": "object",
+            "properties": {
+              "amountMinor": {
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "currency": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 3,
+                "default": "BDT"
+              }
+            },
+            "required": [
+              "amountMinor"
+            ]
+          },
+          "total": {
+            "type": "object",
+            "properties": {
+              "amountMinor": {
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "currency": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 3,
+                "default": "BDT"
+              }
+            },
+            "required": [
+              "amountMinor"
+            ]
+          },
+          "vendorCount": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "cart",
+          "subtotal",
+          "discount",
+          "delivery",
+          "tax",
+          "total",
+          "vendorCount",
+          "expiresAt"
+        ]
+      },
+      "CheckoutResult": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "orderNumber": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "PENDING_PAYMENT",
+                  "CONFIRMED",
+                  "PROCESSING",
+                  "READY_TO_SHIP",
+                  "SHIPPED",
+                  "DELIVERED",
+                  "CANCELLED",
+                  "RETURN_REQUESTED",
+                  "RETURNED",
+                  "REFUNDED"
+                ]
+              },
+              "subtotal": {
+                "type": "object",
+                "properties": {
+                  "amountMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3,
+                    "default": "BDT"
+                  }
+                },
+                "required": [
+                  "amountMinor"
+                ]
+              },
+              "discount": {
+                "type": "object",
+                "properties": {
+                  "amountMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3,
+                    "default": "BDT"
+                  }
+                },
+                "required": [
+                  "amountMinor"
+                ]
+              },
+              "delivery": {
+                "type": "object",
+                "properties": {
+                  "amountMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3,
+                    "default": "BDT"
+                  }
+                },
+                "required": [
+                  "amountMinor"
+                ]
+              },
+              "tax": {
+                "type": "object",
+                "properties": {
+                  "amountMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3,
+                    "default": "BDT"
+                  }
+                },
+                "required": [
+                  "amountMinor"
+                ]
+              },
+              "total": {
+                "type": "object",
+                "properties": {
+                  "amountMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3,
+                    "default": "BDT"
+                  }
+                },
+                "required": [
+                  "amountMinor"
+                ]
+              },
+              "version": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "vendorOrders": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "vendorId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "shopId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PLACED",
+                        "ACCEPTED",
+                        "REJECTED",
+                        "PROCESSING",
+                        "READY_TO_SHIP",
+                        "PICKED_UP",
+                        "IN_TRANSIT",
+                        "DELIVERED",
+                        "CANCELLED"
+                      ]
+                    },
+                    "subtotal": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "discount": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "delivery": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "total": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "commission": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "productId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "variantId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "productName": {
+                            "type": "string"
+                          },
+                          "sku": {
+                            "type": "string"
+                          },
+                          "attributes": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "additionalProperties": {}
+                          },
+                          "quantity": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          },
+                          "unitPrice": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "minLength": 3,
+                                "maxLength": 3,
+                                "default": "BDT"
+                              }
+                            },
+                            "required": [
+                              "amountMinor"
+                            ]
+                          },
+                          "discount": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "minLength": 3,
+                                "maxLength": 3,
+                                "default": "BDT"
+                              }
+                            },
+                            "required": [
+                              "amountMinor"
+                            ]
+                          },
+                          "lineTotal": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "minLength": 3,
+                                "maxLength": 3,
+                                "default": "BDT"
+                              }
+                            },
+                            "required": [
+                              "amountMinor"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "productId",
+                          "variantId",
+                          "productName",
+                          "sku",
+                          "attributes",
+                          "quantity",
+                          "unitPrice",
+                          "discount",
+                          "lineTotal"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "vendorId",
+                    "shopId",
+                    "status",
+                    "subtotal",
+                    "discount",
+                    "delivery",
+                    "total",
+                    "commission",
+                    "version",
+                    "items"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "id",
+              "orderNumber",
+              "status",
+              "subtotal",
+              "discount",
+              "delivery",
+              "tax",
+              "total",
+              "version",
+              "createdAt",
+              "vendorOrders"
+            ]
+          },
+          "payment": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "orderId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "provider": {
+                "type": "string",
+                "minLength": 1
+              },
+              "method": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "INITIATED",
+                  "REQUIRES_ACTION",
+                  "AUTHORIZED",
+                  "CAPTURED",
+                  "PARTIALLY_REFUNDED",
+                  "REFUNDED",
+                  "FAILED",
+                  "CANCELLED",
+                  "EXPIRED"
+                ]
+              },
+              "amount": {
+                "type": "object",
+                "properties": {
+                  "amountMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3,
+                    "default": "BDT"
+                  }
+                },
+                "required": [
+                  "amountMinor"
+                ]
+              },
+              "refunded": {
+                "type": "object",
+                "properties": {
+                  "amountMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3,
+                    "default": "BDT"
+                  }
+                },
+                "required": [
+                  "amountMinor"
+                ]
+              },
+              "version": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "id",
+              "orderId",
+              "provider",
+              "method",
+              "status",
+              "amount",
+              "refunded",
+              "version",
+              "createdAt"
+            ]
+          },
+          "invoiceNumber": {
+            "type": "string"
+          },
+          "actionUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
+          "instructions": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "order",
+          "payment",
+          "invoiceNumber",
+          "actionUrl",
+          "instructions"
+        ]
+      },
       "Order": {
         "type": "object",
         "properties": {
@@ -1597,6 +2496,492 @@
     "parameters": {}
   },
   "paths": {
+    "/api/v2/cart": {
+      "get": {
+        "tags": [
+          "Commerce"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authoritative active cart",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cart"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/cart/items": {
+      "post": {
+        "tags": [
+          "Commerce"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "variantId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "quantity": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 99,
+                    "default": 1
+                  }
+                },
+                "required": [
+                  "variantId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Cart with added item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cart"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/cart/items/{id}": {
+      "put": {
+        "tags": [
+          "Commerce"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "quantity": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 99
+                  }
+                },
+                "required": [
+                  "quantity"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated cart",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cart"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Commerce"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cart after item removal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cart"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/checkout/quote": {
+      "post": {
+        "tags": [
+          "Commerce"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Short-lived authoritative checkout quote",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutQuote"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/checkout/orders": {
+      "post": {
+        "tags": [
+          "Commerce"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "addressId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "paymentMethod": {
+                    "type": "string",
+                    "enum": [
+                      "COD",
+                      "BKASH",
+                      "NAGAD",
+                      "SSLCOMMERZ"
+                    ]
+                  }
+                },
+                "required": [
+                  "addressId",
+                  "paymentMethod"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Durable order and payment initiation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": [

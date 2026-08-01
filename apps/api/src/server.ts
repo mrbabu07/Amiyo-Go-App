@@ -8,6 +8,7 @@ import { createHealthRouter } from "./modules/health/health.routes.js";
 import { createIdentityRouter } from "./modules/identity/identity.routes.js";
 import { createOpenApiRouter } from "./modules/openapi/openapi.routes.js";
 import { createCatalogRouter } from "./modules/catalog/catalog.routes.js";
+import { createCommerceRouter } from "./modules/commerce/commerce.routes.js";
 
 export function createApiApp() {
   const app = express();
@@ -27,11 +28,12 @@ export function createApiApp() {
       callback(null, !origin || allowedOrigins.includes(origin));
     }
   }));
-  app.use(express.json({ limit: "1mb" }));
+  app.use(express.json({ limit: "1mb", verify(req, _res, buffer) { (req as express.Request).rawBody = Buffer.from(buffer); } }));
   app.use(correlationMiddleware);
   app.use(createHealthRouter());
   app.use(createIdentityRouter());
   app.use(createCatalogRouter());
+  app.use(createCommerceRouter());
   app.use(createOpenApiRouter());
   app.use(problemMiddleware);
 

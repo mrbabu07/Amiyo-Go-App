@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { addressInputSchema, catalogQuerySchema, createOpenApiDocument, createProductSchema, deviceInputSchema, minorUnitSchema, moneySchema, vendorOrderStatusSchema } from "./index.js";
+import { addCartItemSchema, addressInputSchema, catalogQuerySchema, checkoutInputSchema, createOpenApiDocument, createProductSchema, deviceInputSchema, minorUnitSchema, moneySchema, vendorOrderStatusSchema } from "./index.js";
 
 test("money contracts preserve bigint-safe minor units", () => {
   assert.deepEqual(moneySchema.parse({ amountMinor: "249000", currency: "bdt" }), { amountMinor: "249000", currency: "BDT" });
@@ -20,6 +20,14 @@ test("OpenAPI document exposes typed v2 resources", () => {
   assert.ok(document.paths?.["/api/v2/orders/{id}"]);
   assert.ok(document.paths?.["/api/v2/auth/session"]);
   assert.ok(document.paths?.["/api/v2/me/addresses"]);
+  assert.ok(document.paths?.["/api/v2/cart"]);
+  assert.ok(document.paths?.["/api/v2/checkout/orders"]);
+});
+
+test("commerce contracts enforce quantities and supported payments", () => {
+  assert.equal(addCartItemSchema.safeParse({ variantId: crypto.randomUUID(), quantity: 0 }).success, false);
+  assert.equal(checkoutInputSchema.safeParse({ addressId: crypto.randomUUID(), paymentMethod: "BKASH" }).success, true);
+  assert.equal(checkoutInputSchema.safeParse({ addressId: crypto.randomUUID(), paymentMethod: "BITCOIN" }).success, false);
 });
 
 test("identity mutation contracts reject incomplete data", () => {
