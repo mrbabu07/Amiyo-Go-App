@@ -22,6 +22,8 @@ test("OpenAPI document exposes typed v2 resources", () => {
   assert.ok(document.paths?.["/api/v2/me/addresses"]);
   assert.ok(document.paths?.["/api/v2/cart"]);
   assert.ok(document.paths?.["/api/v2/checkout/orders"]);
+  assert.ok(document.paths?.["/api/v2/vendor/orders/{id}/transitions"]);
+  assert.ok(document.paths?.["/api/v2/orders/{id}/tracking"]);
 });
 
 test("commerce contracts enforce quantities and supported payments", () => {

@@ -959,7 +959,7 @@ model OrderStatusEvent {
 
 model Shipment {
   id             String          @id @default(uuid()) @db.Uuid
-  vendorOrderId  String          @map("vendor_order_id") @db.Uuid
+  vendorOrderId  String          @unique @map("vendor_order_id") @db.Uuid
   status         ShipmentStatus  @default(PENDING)
   provider       String?
   trackingNumber String?         @unique @map("tracking_number")

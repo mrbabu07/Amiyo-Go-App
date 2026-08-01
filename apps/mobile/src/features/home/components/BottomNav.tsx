@@ -7,7 +7,7 @@ const items = [
   { label: "Home", icon: "home", href: "/" },
   { label: "Categories", icon: "grid-outline", href: "/categories" },
   { label: "Cart", icon: "cart-outline", href: "/cart" },
-  { label: "Orders", icon: "bag-handle-outline" },
+  { label: "Orders", icon: "bag-handle-outline", href: "/orders" },
   { label: "Account", icon: "person-outline", href: "/account" }
 ];
 

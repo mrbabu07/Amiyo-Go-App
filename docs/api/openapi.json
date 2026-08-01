@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Amiyo-Go API",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "description": "Typed API contract for the Amiyo-Go mobile platform."
   },
   "servers": [
@@ -35,6 +35,12 @@
     },
     {
       "name": "Orders"
+    },
+    {
+      "name": "Vendor Orders"
+    },
+    {
+      "name": "Delivery"
     }
   ],
   "components": {
@@ -1796,6 +1802,555 @@
           "invoiceNumber",
           "actionUrl",
           "instructions"
+        ]
+      },
+      "VendorOrderDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "vendorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PLACED",
+              "ACCEPTED",
+              "REJECTED",
+              "PROCESSING",
+              "READY_TO_SHIP",
+              "PICKED_UP",
+              "IN_TRANSIT",
+              "DELIVERED",
+              "CANCELLED"
+            ]
+          },
+          "subtotal": {
+            "type": "object",
+            "properties": {
+              "amountMinor": {
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "currency": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 3,
+                "default": "BDT"
+              }
+            },
+            "required": [
+              "amountMinor"
+            ]
+          },
+          "discount": {
+            "type": "object",
+            "properties": {
+              "amountMinor": {
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "currency": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 3,
+                "default": "BDT"
+              }
+            },
+            "required": [
+              "amountMinor"
+            ]
+          },
+          "delivery": {
+            "type": "object",
+            "properties": {
+              "amountMinor": {
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "currency": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 3,
+                "default": "BDT"
+              }
+            },
+            "required": [
+              "amountMinor"
+            ]
+          },
+          "total": {
+            "type": "object",
+            "properties": {
+              "amountMinor": {
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "currency": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 3,
+                "default": "BDT"
+              }
+            },
+            "required": [
+              "amountMinor"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "productId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "variantId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "productName": {
+                  "type": "string"
+                },
+                "sku": {
+                  "type": "string"
+                },
+                "attributes": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "additionalProperties": {}
+                },
+                "quantity": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "unitPrice": {
+                  "type": "object",
+                  "properties": {
+                    "amountMinor": {
+                      "type": "string",
+                      "pattern": "^\\d+$"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "minLength": 3,
+                      "maxLength": 3,
+                      "default": "BDT"
+                    }
+                  },
+                  "required": [
+                    "amountMinor"
+                  ]
+                },
+                "discount": {
+                  "type": "object",
+                  "properties": {
+                    "amountMinor": {
+                      "type": "string",
+                      "pattern": "^\\d+$"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "minLength": 3,
+                      "maxLength": 3,
+                      "default": "BDT"
+                    }
+                  },
+                  "required": [
+                    "amountMinor"
+                  ]
+                },
+                "lineTotal": {
+                  "type": "object",
+                  "properties": {
+                    "amountMinor": {
+                      "type": "string",
+                      "pattern": "^\\d+$"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "minLength": 3,
+                      "maxLength": 3,
+                      "default": "BDT"
+                    }
+                  },
+                  "required": [
+                    "amountMinor"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "productId",
+                "variantId",
+                "productName",
+                "sku",
+                "attributes",
+                "quantity",
+                "unitPrice",
+                "discount",
+                "lineTotal"
+              ]
+            }
+          },
+          "shipment": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "PENDING",
+                  "READY_TO_SHIP",
+                  "PICKED_UP",
+                  "IN_TRANSIT",
+                  "DELIVERED",
+                  "FAILED",
+                  "CANCELLED"
+                ]
+              },
+              "provider": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "trackingNumber": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "events": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PENDING",
+                        "READY_TO_SHIP",
+                        "PICKED_UP",
+                        "IN_TRANSIT",
+                        "DELIVERED",
+                        "FAILED",
+                        "CANCELLED"
+                      ]
+                    },
+                    "description": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "location": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "occurredAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status",
+                    "description",
+                    "location",
+                    "occurredAt"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "provider",
+              "trackingNumber",
+              "events"
+            ]
+          },
+          "dispatchStatus": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "PENDING",
+              "DISPATCHED",
+              "ACCEPTED",
+              "FAILED",
+              "CANCELLED"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "orderId",
+          "orderNumber",
+          "vendorId",
+          "shopId",
+          "shopName",
+          "status",
+          "subtotal",
+          "discount",
+          "delivery",
+          "total",
+          "version",
+          "createdAt",
+          "items",
+          "shipment",
+          "dispatchStatus"
+        ]
+      },
+      "CustomerOrderSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING_PAYMENT",
+              "CONFIRMED",
+              "PROCESSING",
+              "READY_TO_SHIP",
+              "SHIPPED",
+              "DELIVERED",
+              "CANCELLED",
+              "RETURN_REQUESTED",
+              "RETURNED",
+              "REFUNDED"
+            ]
+          },
+          "total": {
+            "type": "object",
+            "properties": {
+              "amountMinor": {
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "currency": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 3,
+                "default": "BDT"
+              }
+            },
+            "required": [
+              "amountMinor"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "vendorOrderCount": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "orderNumber",
+          "status",
+          "total",
+          "createdAt",
+          "vendorOrderCount"
+        ]
+      },
+      "OrderTracking": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING_PAYMENT",
+              "CONFIRMED",
+              "PROCESSING",
+              "READY_TO_SHIP",
+              "SHIPPED",
+              "DELIVERED",
+              "CANCELLED",
+              "RETURN_REQUESTED",
+              "RETURNED",
+              "REFUNDED"
+            ]
+          },
+          "shipments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "vendorOrderId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "shopName": {
+                  "type": "string"
+                },
+                "shipment": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PENDING",
+                        "READY_TO_SHIP",
+                        "PICKED_UP",
+                        "IN_TRANSIT",
+                        "DELIVERED",
+                        "FAILED",
+                        "CANCELLED"
+                      ]
+                    },
+                    "provider": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "trackingNumber": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "PENDING",
+                              "READY_TO_SHIP",
+                              "PICKED_UP",
+                              "IN_TRANSIT",
+                              "DELIVERED",
+                              "FAILED",
+                              "CANCELLED"
+                            ]
+                          },
+                          "description": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "location": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "occurredAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "status",
+                          "description",
+                          "location",
+                          "occurredAt"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status",
+                    "provider",
+                    "trackingNumber",
+                    "events"
+                  ]
+                }
+              },
+              "required": [
+                "vendorOrderId",
+                "shopName",
+                "shipment"
+              ]
+            }
+          }
+        },
+        "required": [
+          "orderId",
+          "orderNumber",
+          "status",
+          "shipments"
         ]
       },
       "Order": {
@@ -4437,10 +4992,82 @@
         }
       }
     },
+    "/api/v2/orders": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current customer orders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustomerOrderSummary"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/orders/{id}": {
       "get": {
         "tags": [
           "Orders"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
         ],
         "parameters": [
           {
@@ -4455,11 +5082,350 @@
         ],
         "responses": {
           "200": {
-            "description": "Order detail",
+            "description": "Customer order detail",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/orders/{id}/tracking": {
+      "get": {
+        "tags": [
+          "Delivery"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer shipment tracking",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderTracking"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/vendor/orders": {
+      "get": {
+        "tags": [
+          "Vendor Orders"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vendor-scoped fulfillment queue",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VendorOrderDetail"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/vendor/orders/{id}": {
+      "get": {
+        "tags": [
+          "Vendor Orders"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vendor order detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendorOrderDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/vendor/orders/{id}/transitions": {
+      "post": {
+        "tags": [
+          "Vendor Orders"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "PLACED",
+                      "ACCEPTED",
+                      "REJECTED",
+                      "PROCESSING",
+                      "READY_TO_SHIP",
+                      "PICKED_UP",
+                      "IN_TRANSIT",
+                      "DELIVERED",
+                      "CANCELLED"
+                    ]
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 300
+                  }
+                },
+                "required": [
+                  "status",
+                  "expectedVersion"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transitioned vendor order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendorOrderDetail"
                 }
               }
             }

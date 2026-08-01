@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 const nodeEnvSchema = z.enum(["development", "test", "staging", "production"]).default("development");
+const optionalUrlSchema = z.preprocess((value) => value === "" ? undefined : value, z.string().url().optional());
+const optionalSecretSchema = z.preprocess((value) => value === "" ? undefined : value, z.string().min(12).optional());
 
 export const apiEnvSchema = z.object({
   NODE_ENV: nodeEnvSchema,
@@ -15,7 +17,11 @@ export const apiEnvSchema = z.object({
 });
 
 export const workerEnvSchema = apiEnvSchema.extend({
-  WORKER_CONCURRENCY: z.coerce.number().int().positive().default(5)
+  WORKER_CONCURRENCY: z.coerce.number().int().positive().default(5),
+  AMIYO_DELIVERY_API_URL: optionalUrlSchema,
+  AMIYO_DELIVERY_INTEGRATION_TOKEN: optionalSecretSchema,
+  AMIYO_DELIVERY_WEBHOOK_SECRET: optionalSecretSchema,
+  AMIYO_DELIVERY_TIMEOUT_MS: z.coerce.number().int().positive().default(12000)
 });
 
 export const mobilePublicEnvSchema = z.object({

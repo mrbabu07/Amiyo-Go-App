@@ -54,3 +54,5 @@ export const orderSchema = z.object({
 export const orderListResponseSchema = paginatedResponseSchema(orderSchema.omit({ vendorOrders: true }));
 
 export type OrderDto = z.infer<typeof orderSchema>;
+export type VendorOrderStatus = z.infer<typeof vendorOrderStatusSchema>;
+export type ParentOrderStatus = z.infer<typeof parentOrderStatusSchema>;

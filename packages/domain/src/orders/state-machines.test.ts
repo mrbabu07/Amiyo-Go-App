@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { canTransitionPayment, canTransitionReturn, canTransitionVendorOrder, deliveryOutboxKey } from "./state-machines.js";
+import { canTransitionPayment, canTransitionReturn, canTransitionVendorOrder, deliveryOutboxKey, deriveParentOrderStatus } from "./state-machines.js";
 
 test("vendor order follows the approved fulfillment sequence", () => {
   assert.equal(canTransitionVendorOrder("PLACED", "ACCEPTED"), true);
@@ -26,4 +26,12 @@ test("return requires review before approval", () => {
 
 test("delivery outbox key follows production idempotency rule", () => {
   assert.equal(deliveryOutboxKey("vendor-order-123"), "delivery-create:vendor-order-123");
+});
+
+test("parent status advances only when every active vendor reaches the delivery gate", () => {
+  assert.equal(deriveParentOrderStatus(["PROCESSING", "READY_TO_SHIP"]), "PROCESSING");
+  assert.equal(deriveParentOrderStatus(["READY_TO_SHIP", "READY_TO_SHIP"]), "READY_TO_SHIP");
+  assert.equal(deriveParentOrderStatus(["PICKED_UP", "DELIVERED"]), "SHIPPED");
+  assert.equal(deriveParentOrderStatus(["DELIVERED", "DELIVERED"]), "DELIVERED");
+  assert.equal(deriveParentOrderStatus(["REJECTED", "CANCELLED"]), "CANCELLED");
 });

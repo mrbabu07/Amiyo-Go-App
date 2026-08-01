@@ -8,12 +8,15 @@
     "dev": "tsx watch src/index.ts",
     "build": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "type-check": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit"
+    "type-check": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
+    "test": "node --test \"dist/**/*.test.js\""
   },
   "dependencies": {
     "@amiyo/config": "file:../../packages/config",
+    "@amiyo/contracts": "file:../../packages/contracts",
     "@amiyo/domain": "file:../../packages/domain",
     "@amiyo/observability": "file:../../packages/observability",
+    "@prisma/client": "^5.22.0",
     "bullmq": "^5.12.12",
     "ioredis": "^5.4.1"
   },

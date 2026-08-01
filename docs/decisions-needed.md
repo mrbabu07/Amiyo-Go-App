@@ -22,7 +22,9 @@ These decisions block production implementation. Do not guess them in code.
 | Cancellation | TBD | Allowed states and actor-specific reason list. |
 | Returns | TBD | Window, eligibility, evidence, pickup, refund order. |
 | Delivery | TBD | Amiyo Delivery, external courier, self pickup, manual fallback. |
-| READY_TO_SHIP trigger | Proposed | Vendor transition only emits outbox once with `delivery-create:<orderId>`. Needs approval. |
+| READY_TO_SHIP trigger | Implemented | Vendor transition emits one transactional outbox event with `delivery-create:<vendorOrderId>`; external credentials still require staging approval. |
+| Vendor pickup address | TBD | Confirm required phone/address/geography fields stored in shop settings before production dispatch. |
+| Rider contact exposure | TBD | Confirm whether customer tracking may display rider name and masked phone. |
 | Vendor payout | TBD | Schedule, minimum balance, hold/dispute rules. |
 | KYC | TBD | Required documents, expiry, rejection/resubmission workflow. |
 | Geography | TBD | Division/district/upazila/union and serviceability source. |

@@ -2,6 +2,7 @@ import { OpenAPIRegistry, OpenApiGeneratorV31, extendZodWithOpenApi } from "@ast
 import { z } from "zod";
 import { catalogQuerySchema, categorySchema, createProductSchema, inventoryAdjustmentSchema, moderationInputSchema, productDetailSchema, productListResponseSchema, shopDetailSchema, shopListResponseSchema, updateProductSchema, vendorInventorySchema } from "./catalog.js";
 import { addCartItemSchema, cartSchema, checkoutInputSchema, checkoutQuoteSchema, checkoutResultSchema, updateCartItemSchema } from "./commerce.js";
+import { customerOrderSummarySchema, orderTrackingSchema, vendorOrderDetailSchema, vendorOrderTransitionSchema } from "./delivery.js";
 import { healthResponseSchema } from "./health.js";
 import { addressInputSchema, addressSchema, deviceInputSchema, deviceSchema, sessionSchema, updateProfileSchema } from "./identity.js";
 import { orderSchema } from "./orders.js";
@@ -21,6 +22,9 @@ const vendorInventory = registry.register("VendorInventory", vendorInventorySche
 const cart = registry.register("Cart", cartSchema);
 const checkoutQuote = registry.register("CheckoutQuote", checkoutQuoteSchema);
 const checkoutResult = registry.register("CheckoutResult", checkoutResultSchema);
+const vendorOrderDetail = registry.register("VendorOrderDetail", vendorOrderDetailSchema);
+const customerOrderSummary = registry.register("CustomerOrderSummary", customerOrderSummarySchema);
+const orderTracking = registry.register("OrderTracking", orderTrackingSchema);
 const order = registry.register("Order", orderSchema);
 const session = registry.register("IdentitySession", sessionSchema);
 const address = registry.register("Address", addressSchema);
@@ -235,19 +239,18 @@ registry.registerPath({
   responses: { 200: { description: "Product approved or rejected" }, ...errorResponses }
 });
 
-registry.registerPath({
-  method: "get",
-  path: "/api/v2/orders/{id}",
-  tags: ["Orders"],
-  request: { params: z.object({ id: z.string().uuid() }) },
-  responses: { 200: { description: "Order detail", content: { "application/json": { schema: order } } }, ...errorResponses }
-});
+registry.registerPath({ method: "get", path: "/api/v2/orders", tags: ["Orders"], security: firebaseSecurity, responses: { 200: { description: "Current customer orders", content: { "application/json": { schema: z.array(customerOrderSummary) } } }, ...errorResponses } });
+registry.registerPath({ method: "get", path: "/api/v2/orders/{id}", tags: ["Orders"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: { description: "Customer order detail", content: { "application/json": { schema: order } } }, ...errorResponses } });
+registry.registerPath({ method: "get", path: "/api/v2/orders/{id}/tracking", tags: ["Delivery"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: { description: "Customer shipment tracking", content: { "application/json": { schema: orderTracking } } }, ...errorResponses } });
+registry.registerPath({ method: "get", path: "/api/v2/vendor/orders", tags: ["Vendor Orders"], security: firebaseSecurity, responses: { 200: { description: "Vendor-scoped fulfillment queue", content: { "application/json": { schema: z.array(vendorOrderDetail) } } }, ...errorResponses } });
+registry.registerPath({ method: "get", path: "/api/v2/vendor/orders/{id}", tags: ["Vendor Orders"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: { description: "Vendor order detail", content: { "application/json": { schema: vendorOrderDetail } } }, ...errorResponses } });
+registry.registerPath({ method: "post", path: "/api/v2/vendor/orders/{id}/transitions", tags: ["Vendor Orders"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }), headers: z.object({ "idempotency-key": z.string().uuid() }), body: { content: { "application/json": { schema: vendorOrderTransitionSchema } } } }, responses: { 200: { description: "Transitioned vendor order", content: { "application/json": { schema: vendorOrderDetail } } }, ...errorResponses } });
 
 export function createOpenApiDocument() {
   return new OpenApiGeneratorV31(registry.definitions).generateDocument({
     openapi: "3.1.0",
-    info: { title: "Amiyo-Go API", version: "0.3.0", description: "Typed API contract for the Amiyo-Go mobile platform." },
+    info: { title: "Amiyo-Go API", version: "0.4.0", description: "Typed API contract for the Amiyo-Go mobile platform." },
     servers: [{ url: "http://localhost:4000", description: "Local development" }],
-    tags: [{ name: "Operations" }, { name: "Identity" }, { name: "Catalog" }, { name: "Shops" }, { name: "Vendor Catalog" }, { name: "Catalog Moderation" }, { name: "Commerce" }, { name: "Orders" }]
+    tags: [{ name: "Operations" }, { name: "Identity" }, { name: "Catalog" }, { name: "Shops" }, { name: "Vendor Catalog" }, { name: "Catalog Moderation" }, { name: "Commerce" }, { name: "Orders" }, { name: "Vendor Orders" }, { name: "Delivery" }]
   });
 }

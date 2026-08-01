@@ -88,3 +88,13 @@ export function canTransitionReturn(from: ReturnStatus, to: ReturnStatus) {
 export function deliveryOutboxKey(vendorOrderId: string) {
   return `delivery-create:${vendorOrderId}`;
 }
+
+export function deriveParentOrderStatus(statuses: readonly VendorOrderStatus[]): ParentOrderStatus {
+  const active = statuses.filter((status) => status !== "REJECTED" && status !== "CANCELLED");
+  if (!active.length) return "CANCELLED";
+  if (active.every((status) => status === "DELIVERED")) return "DELIVERED";
+  if (active.every((status) => ["PICKED_UP", "IN_TRANSIT", "DELIVERED"].includes(status))) return "SHIPPED";
+  if (active.every((status) => ["READY_TO_SHIP", "PICKED_UP", "IN_TRANSIT", "DELIVERED"].includes(status))) return "READY_TO_SHIP";
+  if (active.some((status) => ["ACCEPTED", "PROCESSING", "READY_TO_SHIP", "PICKED_UP", "IN_TRANSIT", "DELIVERED"].includes(status))) return "PROCESSING";
+  return "CONFIRMED";
+}
