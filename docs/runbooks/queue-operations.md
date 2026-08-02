@@ -13,4 +13,4 @@
 5. Retry only after confirming the dispatch does not already have a successful external order ID. Provider calls use the dispatch idempotency key.
 6. Verify one delivery dispatch, shipment, external order ID, attempt history, and processed outbox state.
 
-Failed BullMQ jobs are retained. Use `GET /api/v2/admin/delivery-queue` to inspect recent pending/failed dispatches and `POST /api/v2/admin/delivery-queue/{id}/retry` with an `Idempotency-Key` to retry an eligible failure. A mobile admin UI and queue metrics/alerts are still required before release; direct Redis mutation is prohibited.
+Failed BullMQ jobs are retained. Use the mobile Admin Operations screen or `GET /api/v2/admin/delivery-queue` to inspect recent pending/failed dispatches. Retrying requires an operator reason and uses `POST /api/v2/admin/delivery-queue/{id}/retry` with an `Idempotency-Key`. Queue metrics/alerts are still required before release; direct Redis mutation is prohibited.
