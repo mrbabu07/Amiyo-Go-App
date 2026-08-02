@@ -12,7 +12,7 @@ These decisions block production implementation. Do not guess them in code.
 | Currency and rounding | TBD | Confirm BDT-only and minor-unit rounding policy. |
 | Release-one roles | TBD | Confirm customer, vendor owner/manager/staff, support, finance, operations, super admin. |
 | Guest checkout | TBD | Enabled/disabled and account-linking behavior. |
-| Authentication | TBD | Firebase email/password, phone OTP, social login, or mixed. |
+| Authentication | PARTIAL | Firebase web project is configured locally. Confirm enabled email/password, phone OTP, social providers, test identities, and server Admin credentials. |
 | Product approval | TBD | Draft/submitted/approved/rejected transitions and owner actions. |
 | Inventory policy | TBD | Reservation duration, overselling, backorder rules. |
 | Order split | Proposed | One parent order and one vendor order per vendor. Needs approval. |

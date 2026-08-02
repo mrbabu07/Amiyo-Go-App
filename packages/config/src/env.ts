@@ -27,7 +27,13 @@ export const workerEnvSchema = apiEnvSchema.extend({
 export const mobilePublicEnvSchema = z.object({
   EXPO_PUBLIC_API_URL: z.string().url(),
   EXPO_PUBLIC_FIREBASE_API_KEY: z.string().optional(),
+  EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: z.string().optional(),
   EXPO_PUBLIC_FIREBASE_PROJECT_ID: z.string().optional(),
+  EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: z.string().optional(),
+  EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: z.string().optional(),
+  EXPO_PUBLIC_FIREBASE_APP_ID: z.string().optional(),
+  EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID: z.string().optional(),
+  EXPO_PUBLIC_FIREBASE_ANALYTICS_ENABLED: z.enum(["true", "false"]).default("false"),
   EXPO_PUBLIC_SENTRY_DSN: z.string().optional()
 });
 

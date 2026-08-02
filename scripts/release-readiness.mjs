@@ -21,7 +21,7 @@ const requiredFiles = [
 
 await Promise.all(requiredFiles.map((file) => access(new URL(`../${file}`, import.meta.url))));
 const decisions = await readFile(new URL("../docs/decisions-needed.md", import.meta.url), "utf8");
-const blockers = decisions.split("\n").filter((line) => /^\|.*\| (TBD|BLOCKED) \|/.test(line));
+const blockers = decisions.split("\n").filter((line) => /^\|.*\| (TBD|PARTIAL|BLOCKED) \|/.test(line));
 const result = { status: blockers.length === 0 ? "ready" : "blocked", unresolvedDecisions: blockers.length, checkedFiles: requiredFiles.length };
 console.log(JSON.stringify(result, null, 2));
 if (process.env.REQUIRE_PRODUCTION_READY === "true" && blockers.length > 0) process.exitCode = 1;

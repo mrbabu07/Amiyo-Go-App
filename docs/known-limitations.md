@@ -6,6 +6,7 @@
 - Phase 9 lacks two production-scale rehearsals and signed reconciliation approval.
 - No managed staging/production deployment, alert dashboard, backup restore evidence, load/security report, or real-device E2E evidence is available.
 - EAS/store projects, final brand assets, signing ownership, metadata, and privacy disclosures are not configured.
+- Firebase web configuration is available locally, but server Admin credentials, approved sign-in methods, native app registrations, authorized domains, Analytics consent, and test identities are not complete.
 
 ## Technical debt
 
