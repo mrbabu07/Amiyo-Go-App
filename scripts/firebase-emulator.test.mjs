@@ -21,3 +21,20 @@ test("Firebase Auth E2E verifies emulator tokens through the API adapter", async
   assert.match(harness, /FirebaseTokenVerifier/);
   assert.match(harness, /INVALID_ACCESS_TOKEN/);
 });
+
+test("local demo identities align Firebase users, database roles, and login shortcuts", async () => {
+  const authSeed = await readFile(new URL("seed-firebase-demo-users.mjs", import.meta.url), "utf8");
+  const databaseSeed = await readFile(new URL("../prisma/seed.ts", import.meta.url), "utf8");
+  const authScreen = await readFile(new URL("../apps/mobile/src/features/auth/AuthScreen.tsx", import.meta.url), "utf8");
+  const setup = await readFile(new URL("demo-setup.mjs", import.meta.url), "utf8");
+  for (const identity of ["amiyo-demo-customer", "amiyo-demo-vendor", "amiyo-demo-admin"]) {
+    assert.match(authSeed, new RegExp(identity));
+    assert.match(databaseSeed, new RegExp(identity));
+  }
+  assert.match(authSeed, /loopback Firebase Auth Emulator/);
+  assert.match(authScreen, /Local demo accounts/);
+  assert.match(authScreen, /EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL/);
+  assert.match(setup, /apps\/api\/\.env/);
+  assert.match(setup, /prisma:migrate:deploy/);
+  assert.doesNotMatch(setup, /db push/);
+});

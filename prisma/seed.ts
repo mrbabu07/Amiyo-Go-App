@@ -19,6 +19,8 @@ const rolePermissions: Record<RoleName, string[]> = {
 
 const ids = {
   user: "00000000-0000-4000-8000-000000000001",
+  customerUser: "00000000-0000-4000-8000-000000000002",
+  adminUser: "00000000-0000-4000-8000-000000000003",
   vendor: "00000000-0000-4000-8000-000000000101",
   shop: "00000000-0000-4000-8000-000000000201",
   categoryFashion: "00000000-0000-4000-8000-000000000301",
@@ -49,17 +51,20 @@ async function seedAccessControl() {
 async function seedDemoCatalog() {
   const customerRole = await prisma.role.findUniqueOrThrow({ where: { name: RoleName.CUSTOMER } });
   const ownerRole = await prisma.role.findUniqueOrThrow({ where: { name: RoleName.VENDOR_OWNER } });
-  await prisma.user.upsert({
-    where: { id: ids.user },
-    update: {},
-    create: {
-      id: ids.user,
-      providerSubject: "seed:vendor-owner",
-      normalizedEmail: "owner@example.test",
-      profile: { create: { displayName: "Amiyo Demo Seller", firstName: "Amiyo", lastName: "Seller" } },
-      roles: { create: [{ roleId: customerRole.id }, { roleId: ownerRole.id }] }
-    }
-  });
+  const adminRole = await prisma.role.findUniqueOrThrow({ where: { name: RoleName.SUPER_ADMIN } });
+  const demoUsers = [
+    { id: ids.customerUser, subject: "amiyo-demo-customer", email: "customer@amiyo.test", displayName: "Demo Customer", roleIds: [customerRole.id] },
+    { id: ids.user, subject: "amiyo-demo-vendor", email: "vendor@amiyo.test", displayName: "Demo Vendor", roleIds: [customerRole.id, ownerRole.id] },
+    { id: ids.adminUser, subject: "amiyo-demo-admin", email: "admin@amiyo.test", displayName: "Demo Admin", roleIds: [customerRole.id, adminRole.id] }
+  ];
+  for (const demoUser of demoUsers) {
+    await prisma.user.upsert({
+      where: { id: demoUser.id },
+      update: { providerSubject: demoUser.subject, normalizedEmail: demoUser.email, profile: { upsert: { create: { displayName: demoUser.displayName }, update: { displayName: demoUser.displayName } } } },
+      create: { id: demoUser.id, providerSubject: demoUser.subject, normalizedEmail: demoUser.email, profile: { create: { displayName: demoUser.displayName } } }
+    });
+    await prisma.userRole.createMany({ data: demoUser.roleIds.map((roleId) => ({ userId: demoUser.id, roleId })), skipDuplicates: true });
+  }
 
   await prisma.vendor.upsert({
     where: { id: ids.vendor },

@@ -28,6 +28,16 @@ Choose exactly one server mode:
 
 Run `npm run test:firebase-auth-e2e` to start an isolated Auth Emulator, create a temporary email/password identity, verify its ID token through the API's Firebase Admin adapter, and confirm invalid tokens are rejected. This check does not require PostgreSQL, Redis, Firebase login, or service-account credentials.
 
+For local role testing, keep `npm run dev:firebase` running and execute `npm run demo:setup` in another terminal. This applies committed migrations, seeds categories/products, and creates three Auth Emulator identities that match the PostgreSQL roles:
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Customer | `customer@amiyo.test` | `AmiyoDemo123!` |
+| Vendor owner | `vendor@amiyo.test` | `AmiyoDemo123!` |
+| Super admin | `admin@amiyo.test` | `AmiyoDemo123!` |
+
+These accounts are local emulator fixtures only and must never be created in a shared or production Firebase project.
+
 For a physical phone, replace the mobile emulator URL host with the computer's LAN IP and allow the port through the local firewall. Never expose the emulator to an untrusted network.
 
 Never commit a service-account JSON file or private key. Restart the API after rotating credentials and verify login, token expiry/revocation, logout, and role synchronization.

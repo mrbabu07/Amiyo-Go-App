@@ -23,6 +23,8 @@
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:seed": "prisma db seed",
+    "demo:users": "node scripts/seed-firebase-demo-users.mjs",
+    "demo:setup": "node scripts/demo-setup.mjs",
     "openapi:generate": "npm run build --workspace @amiyo/contracts && node scripts/generate-openapi.mjs",
     "secret:scan": "node scripts/secret-scan.mjs",
     "dev": "node scripts/dev.mjs",

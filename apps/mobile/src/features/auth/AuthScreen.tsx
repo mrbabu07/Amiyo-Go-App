@@ -13,6 +13,8 @@ export function AuthScreen() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const emulatorEnabled = Boolean(process.env.EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL);
+  const demoPassword = "AmiyoDemo123!";
 
   async function submit() {
     if (!firebaseAuth) return;
@@ -46,6 +48,7 @@ export function AuthScreen() {
           {mode === "register" ? <Field label="Full name" value={name} onChangeText={setName} placeholder="Your name" /> : null}
           <Field autoCapitalize="none" keyboardType="email-address" label="Email" value={email} onChangeText={setEmail} placeholder="you@example.com" />
           <Field autoCapitalize="none" label="Password" value={password} onChangeText={setPassword} placeholder="Minimum 6 characters" secureTextEntry />
+          {emulatorEnabled && mode === "login" ? <View style={styles.demoPanel}><Text style={styles.demoTitle}>Local demo accounts</Text><View style={styles.demoRow}>{[{ label: "Customer", email: "customer@amiyo.test" }, { label: "Vendor", email: "vendor@amiyo.test" }, { label: "Admin", email: "admin@amiyo.test" }].map((account) => <Pressable key={account.label} onPress={() => { setEmail(account.email); setPassword(demoPassword); }} style={styles.demoButton}><Text style={styles.demoButtonText}>{account.label}</Text></Pressable>)}</View><Text style={styles.demoHint}>Password: {demoPassword}</Text></View> : null}
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <Pressable disabled={busy || !firebaseConfigured || !email || password.length < 6} onPress={submit} style={({ pressed }) => [styles.primary, (pressed || busy) && styles.pressed]}>
             {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>{mode === "login" ? "Sign in" : "Create account"}</Text>}
@@ -77,6 +80,7 @@ const styles = StyleSheet.create({
   label: { color: colors.text, fontSize: 12, fontWeight: "800" },
   input: { backgroundColor: "#f8fafc", borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, fontSize: 15, minHeight: 48, paddingHorizontal: 14 },
   error: { color: colors.danger, marginBottom: spacing.md },
+  demoPanel: { backgroundColor: colors.primarySoft, borderRadius: radius.md, marginBottom: spacing.md, padding: spacing.md }, demoTitle: { color: colors.text, fontSize: 12, fontWeight: "900" }, demoRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: spacing.sm }, demoButton: { backgroundColor: colors.surface, borderColor: colors.primary, borderRadius: radius.sm, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8 }, demoButtonText: { color: colors.primary, fontSize: 11, fontWeight: "900" }, demoHint: { color: colors.muted, fontSize: 10, marginTop: spacing.sm },
   primary: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, justifyContent: "center", minHeight: 50 },
   pressed: { opacity: 0.7 },
   primaryText: { color: "#fff", fontSize: 15, fontWeight: "900" },

@@ -55,7 +55,7 @@ export function CustomerHomeScreen() {
           <StoreHeader desktop={desktop} viewportWidth={width} />
           <View style={[styles.content, { width: contentWidth }]}>
             <View style={styles.heroShowcase}><View style={styles.heroMain}><HeroBanner desktop={desktop} /></View>{desktop ? <PromoTiles campaigns={growthQuery.data?.campaigns || []} couponCode={growthQuery.data?.coupons[0]?.code} /> : null}</View>
-            <View style={styles.section}><HomeSectionTitle eyebrow="EXPLORE DEPARTMENTS" href="/categories" title="Shop by category" />{categoryQuery.isLoading ? <ActivityIndicator color={colors.primary} /> : <CategoryRail data={liveCategories} />}{categoryQuery.error ? <RetryState label="Could not load categories" onRetry={() => categoryQuery.refetch()} /> : null}</View>
+            <View style={styles.section}><HomeSectionTitle eyebrow="EXPLORE DEPARTMENTS" href="/categories" title="Shop by category" />{categoryQuery.isLoading ? <ActivityIndicator color={colors.primary} /> : <CategoryRail data={liveCategories} />}{categoryQuery.error ? <RetryState label="Categories unavailable. Start the API and run npm run demo:setup." onRetry={() => categoryQuery.refetch()} /> : null}</View>
 
             {activeFlashSale ? <View style={[styles.flashSection, desktop && styles.desktopFlash]}>
               <View style={styles.flashHeading}>

@@ -23,6 +23,8 @@ Production rebuild workspace for the Amiyo-Go mobile platform.
 
 For the current identity setup and Firebase requirements, see `docs/phase-3-identity-and-authorization.md`.
 
+For a populated local marketplace, start the Firebase Auth Emulator with `npm run dev:firebase`, configure the ignored `apps/api/.env`, then run `npm run demo:setup`. This seeds categories/products and creates Customer, Vendor, and Admin test accounts documented in `docs/runbooks/firebase-auth-setup.md`.
+
 Catalog, search, shops, vendor inventory, and mobile discovery are documented in `docs/phase-4-catalog-search-and-discovery.md`.
 
 Cart, transactional checkout, payment webhooks, and the local payment sandbox are documented in `docs/phase-5-checkout-and-payments.md`.
