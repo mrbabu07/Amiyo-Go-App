@@ -15,6 +15,7 @@ This index is the operator and maintainer entry point for the production rebuild
 
 - Local installation and service startup: `README.md`
 - Environment variable contract: `docs/environment-reference.md`
+- Firebase Auth setup: `docs/runbooks/firebase-auth-setup.md`
 - Safe placeholders: `.env.example`, `apps/api/.env.example`, `apps/worker/.env.example`, and `apps/mobile/.env.example`
 - CI and immutable image release flow: `.github/workflows/ci.yml`, `.github/workflows/deploy.yml`, and `docs/runbooks/release.md`
 

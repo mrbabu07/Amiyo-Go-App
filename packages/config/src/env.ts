@@ -4,7 +4,7 @@ const nodeEnvSchema = z.enum(["development", "test", "staging", "production"]).d
 const optionalUrlSchema = z.preprocess((value) => value === "" ? undefined : value, z.string().url().optional());
 const optionalSecretSchema = z.preprocess((value) => value === "" ? undefined : value, z.string().min(12).optional());
 
-export const apiEnvSchema = z.object({
+const apiEnvObject = z.object({
   NODE_ENV: nodeEnvSchema,
   PORT: z.coerce.number().int().positive().default(4000),
   API_PUBLIC_URL: z.string().url(),
@@ -12,11 +12,24 @@ export const apiEnvSchema = z.object({
   DIRECT_URL: z.string().url().optional(),
   REDIS_URL: z.string().url(),
   FIREBASE_PROJECT_ID: z.string().optional(),
+  FIREBASE_CLIENT_EMAIL: z.string().email().optional(),
+  FIREBASE_PRIVATE_KEY: z.string().optional(),
+  FIREBASE_USE_APPLICATION_DEFAULT: z.enum(["true", "false"]).default("false"),
+  FIREBASE_AUTH_EMULATOR_HOST: z.string().optional(),
   OBJECT_STORAGE_PUBLIC_URL: z.string().url().optional(),
   LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "fatal"]).default("info")
 });
 
-export const workerEnvSchema = apiEnvSchema.extend({
+function validateFirebaseAdmin(env: z.infer<typeof apiEnvObject>, context: z.RefinementCtx) {
+  const serviceAccountComplete = Boolean(env.FIREBASE_PROJECT_ID && env.FIREBASE_CLIENT_EMAIL && env.FIREBASE_PRIVATE_KEY);
+  const applicationDefaultComplete = Boolean(env.FIREBASE_PROJECT_ID && env.FIREBASE_USE_APPLICATION_DEFAULT === "true");
+  if (env.NODE_ENV === "production" && env.FIREBASE_AUTH_EMULATOR_HOST) context.addIssue({ code: z.ZodIssueCode.custom, path: ["FIREBASE_AUTH_EMULATOR_HOST"], message: "Firebase Auth emulator is forbidden in production" });
+  if (["staging", "production"].includes(env.NODE_ENV) && !serviceAccountComplete && !applicationDefaultComplete) context.addIssue({ code: z.ZodIssueCode.custom, path: ["FIREBASE_PROJECT_ID"], message: "Firebase Admin credentials or application-default mode are required" });
+}
+
+export const apiEnvSchema = apiEnvObject.superRefine(validateFirebaseAdmin);
+
+export const workerEnvSchema = apiEnvObject.extend({
   WORKER_CONCURRENCY: z.coerce.number().int().positive().default(5),
   AMIYO_DELIVERY_API_URL: optionalUrlSchema,
   AMIYO_DELIVERY_INTEGRATION_TOKEN: optionalSecretSchema,

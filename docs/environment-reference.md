@@ -25,6 +25,8 @@ Real values belong in local ignored files or encrypted environment managers. `EX
 | `FIREBASE_PROJECT_ID` | Authentication project | Required for authenticated flows |
 | `FIREBASE_CLIENT_EMAIL` | Firebase Admin identity | Secret |
 | `FIREBASE_PRIVATE_KEY` | Firebase Admin signing key | Secret; preserve escaped newlines |
+| `FIREBASE_USE_APPLICATION_DEFAULT` | Select workload identity/ADC instead of key material | Explicit `true` only on configured hosts |
+| `FIREBASE_AUTH_EMULATOR_HOST` | Local Auth emulator endpoint | Development/test only; forbidden in production |
 | `PAYMENT_WEBHOOK_SECRET` | HMAC webhook verification | Required for online payments; secret |
 | `AMIYO_DELIVERY_CALLBACK_API_SECRET` | Delivery callback API-key verification | Required; secret |
 | `AMIYO_DELIVERY_CALLBACK_SECRET` | Delivery callback HMAC verification | Required; secret |
