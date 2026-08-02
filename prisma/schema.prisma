@@ -201,7 +201,9 @@ model User {
   supportTickets    SupportTicket[]
   supportMessages   SupportMessage[]
   chatMessages      ChatMessage[]
+  chatParticipations ChatParticipant[]
   notifications     Notification[]
+  loyaltyAccount    LoyaltyAccount?
 
   @@map("users")
 }
@@ -1461,6 +1463,7 @@ model Review {
   status      String        @default("published")
   createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  version     Int           @default(1)
   user        User          @relation(fields: [userId], references: [id], onDelete: Restrict)
   product     Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
   media       ReviewMedia[]
@@ -1609,9 +1612,24 @@ model ChatThread {
   updatedAt DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
   vendor    Vendor?       @relation(fields: [vendorId], references: [id], onDelete: Restrict)
   messages  ChatMessage[]
+  participants ChatParticipant[]
 
   @@index([vendorId, updatedAt])
   @@map("chat_threads")
+}
+
+model ChatParticipant {
+  threadId   String     @map("thread_id") @db.Uuid
+  userId     String     @map("user_id") @db.Uuid
+  role       String
+  lastReadAt DateTime?  @map("last_read_at") @db.Timestamptz(3)
+  joinedAt   DateTime   @default(now()) @map("joined_at") @db.Timestamptz(3)
+  thread     ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([threadId, userId])
+  @@index([userId, joinedAt])
+  @@map("chat_participants")
 }
 
 model ChatMessage {
@@ -1688,11 +1706,41 @@ model Notification {
   data       Json?
   readAt     DateTime?              @map("read_at") @db.Timestamptz(3)
   createdAt  DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  idempotencyKey String?             @unique @map("idempotency_key")
   user       User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
   deliveries NotificationDelivery[]
 
   @@index([userId, readAt, createdAt])
   @@map("notifications")
+}
+
+model LoyaltyAccount {
+  id            String               @id @default(uuid()) @db.Uuid
+  userId        String               @unique @map("user_id") @db.Uuid
+  pointsBalance BigInt               @default(0) @map("points_balance")
+  version       Int                  @default(1)
+  createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  transactions  LoyaltyTransaction[]
+
+  @@map("loyalty_accounts")
+}
+
+model LoyaltyTransaction {
+  id             String         @id @default(uuid()) @db.Uuid
+  accountId      String         @map("account_id") @db.Uuid
+  points         BigInt
+  entryType      String         @map("entry_type")
+  referenceType  String         @map("reference_type")
+  referenceId    String         @map("reference_id")
+  idempotencyKey String         @unique @map("idempotency_key")
+  expiresAt      DateTime?      @map("expires_at") @db.Timestamptz(3)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  account        LoyaltyAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  @@index([accountId, createdAt])
+  @@map("loyalty_transactions")
 }
 
 model NotificationDelivery {

@@ -31,6 +31,9 @@ These decisions block production implementation. Do not guess them in code.
 | KYC | TBD | Required documents, expiry, rejection/resubmission workflow. |
 | Geography | TBD | Division/district/upazila/union and serviceability source. |
 | Notifications | TBD | Push, in-app, SMS, email event matrix. |
+| Push provider | TBD | Approve Expo Push/FCM/APNs routing, retries, quiet hours, and opt-out behavior. In-app delivery is enabled; push stays pending. |
+| Loyalty | TBD | Approve earning rates, tiers, expiry, redemption value, reversals, and fraud holds before points mutations are enabled. |
+| Promotion stacking | TBD | Approve coupon/voucher/promotion/flash-sale precedence and stacking before automatic checkout discounts are enabled. |
 | Data retention | TBD | Per table/file/log retention periods. |
 | Account deletion | TBD | Anonymization, legal retention, recovery window. |
 | Migration cutover | TBD | Maintenance window, rollback duration, read-only Mongo window. |
