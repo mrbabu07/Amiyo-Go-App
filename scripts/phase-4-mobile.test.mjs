@@ -27,3 +27,15 @@ test("customer home mirrors the live marketplace discovery hierarchy", async () 
   assert.match(source, /setInterval/);
   assert.match(source, /getShops/);
 });
+
+test("web cards use boxShadow without sending deprecated shadow props to React Native Web", async () => {
+  const files = await Promise.all([
+    readFile(new URL("../apps/mobile/src/features/auth/AuthScreen.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../apps/mobile/src/features/home/components/BottomNav.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../apps/mobile/src/features/home/components/ProductCard.tsx", import.meta.url), "utf8")
+  ]);
+  for (const source of files) {
+    assert.match(source, /Platform\.select/);
+    assert.match(source, /boxShadow/);
+  }
+});

@@ -33,7 +33,9 @@ const children = processes.map(({ name, args }) => {
   child.stderr.on("data", (chunk) => process.stderr.write(`[${name}] ${chunk}`));
   child.on("exit", (code) => {
     if (code && code !== 0) {
-      console.error(`[${name}] exited with code ${code}`);
+      console.error(`[${name}] exited with code ${code}; stopping the remaining development services.`);
+      shutdown();
+      process.exit(code);
     }
   });
 

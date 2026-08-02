@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, radius } from "../../../ui/tokens";
 import type { HomeProduct } from "../home.data";
 
@@ -29,7 +29,7 @@ export function ProductCard({ product }: { product: HomeProduct }) {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flex: 1, overflow: "hidden", shadowColor: "#0f172a", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.06, shadowRadius: 8 },
+  card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flex: 1, overflow: "hidden", ...Platform.select({ web: { boxShadow: "0 3px 8px rgba(15,23,42,0.06)" }, default: { shadowColor: "#0f172a", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.06, shadowRadius: 8 } }) },
   pressed: { opacity: 0.88, transform: [{ scale: 0.99 }] }, imageWrap: { aspectRatio: 1, backgroundColor: "#f1f5f9", position: "relative", width: "100%" }, image: { height: "100%", width: "100%" },
   discount: { backgroundColor: colors.danger, borderRadius: 4, left: 7, paddingHorizontal: 6, paddingVertical: 4, position: "absolute", top: 7 }, discountText: { color: colors.surface, fontSize: 9, fontWeight: "900" },
   heart: { alignItems: "center", backgroundColor: "rgba(255,255,255,0.93)", borderRadius: radius.pill, height: 32, justifyContent: "center", position: "absolute", right: 7, top: 7, width: 32 },

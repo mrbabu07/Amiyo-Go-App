@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
   page: { backgroundColor: colors.background, flex: 1 },
   content: { alignSelf: "center", justifyContent: "center", minHeight: "100%", padding: spacing.lg, width: "100%", maxWidth: 520 },
   back: { color: colors.primary, fontWeight: "800", marginBottom: spacing.md },
-  card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl, borderWidth: 1, padding: spacing.xl, shadowColor: colors.navy, shadowOpacity: 0.08, shadowRadius: 20 },
+  card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl, borderWidth: 1, padding: spacing.xl, ...Platform.select({ web: { boxShadow: "0 10px 24px rgba(26,26,46,0.08)" }, default: { shadowColor: colors.navy, shadowOpacity: 0.08, shadowRadius: 20 } }) },
   brand: { color: colors.primary, fontSize: 20, fontWeight: "900" },
   title: { color: colors.text, fontSize: 28, fontWeight: "900", marginTop: spacing.lg },
   subtitle: { color: colors.muted, lineHeight: 21, marginBottom: spacing.lg, marginTop: spacing.sm },
