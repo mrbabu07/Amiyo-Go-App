@@ -5,6 +5,7 @@ dist-ci/
 build/
 .expo/
 .turbo/
+.firebase-data/
 coverage/
 *.log
 *.tsbuildinfo

@@ -30,11 +30,14 @@
     "migration:dry-run": "tsx scripts/migration/dry-run.ts",
     "migration:apply": "tsx scripts/migration/apply-plan.ts",
     "release:check": "node scripts/release-readiness.mjs",
-    "smoke:load": "node scripts/load-smoke.mjs"
+    "smoke:load": "node scripts/load-smoke.mjs",
+    "dev:firebase": "firebase emulators:start --only auth --project amiyo-app",
+    "test:firebase-emulator": "firebase emulators:exec --only auth --project amiyo-app \"node scripts/firebase-emulator-smoke.mjs\""
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.4",
     "@types/node": "^20.14.10",
+    "firebase-tools": "15.25.1",
     "prisma": "^5.22.0",
     "tsx": "^4.16.2",
     "typescript": "^5.5.4"

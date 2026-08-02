@@ -47,6 +47,7 @@ export const mobilePublicEnvSchema = z.object({
   EXPO_PUBLIC_FIREBASE_APP_ID: z.string().optional(),
   EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID: z.string().optional(),
   EXPO_PUBLIC_FIREBASE_ANALYTICS_ENABLED: z.enum(["true", "false"]).default("false"),
+  EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL: optionalUrlSchema,
   EXPO_PUBLIC_SENTRY_DSN: z.string().optional()
 });
 
