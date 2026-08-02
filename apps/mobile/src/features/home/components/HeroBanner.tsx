@@ -1,8 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { ImageBackground, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, radius, spacing } from "../../../ui/tokens";
 
 export function HeroBanner({ desktop }: { desktop: boolean }) {
+  const router = useRouter();
   return (
     <ImageBackground imageStyle={styles.image} source={{ uri: "https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=1600&h=800&fit=crop" }} style={[styles.hero, desktop && styles.desktopHero]}>
       <View style={styles.overlay} />
@@ -10,7 +12,7 @@ export function HeroBanner({ desktop }: { desktop: boolean }) {
         <View style={styles.badge}><Text style={styles.badgeText}>MARKETPLACE PICKS</Text></View>
         <Text style={[styles.title, desktop && styles.desktopTitle]}>Shop smarter across Bangladesh</Text>
         <Text style={styles.subtitle}>Trusted sellers, fresh deals and everyday essentials—delivered to your door.</Text>
-        <Pressable style={styles.cta}><Text style={styles.ctaText}>Shop now</Text><Ionicons color={colors.surface} name="arrow-forward" size={17} /></Pressable>
+        <Pressable accessibilityRole="button" onPress={() => router.push("/search")} style={styles.cta}><Text style={styles.ctaText}>Shop now</Text><Ionicons color={colors.surface} name="arrow-forward" size={17} /></Pressable>
       </View>
       <View style={styles.dots}><View style={[styles.dot, styles.activeDot]} /><View style={styles.dot} /><View style={styles.dot} /></View>
     </ImageBackground>

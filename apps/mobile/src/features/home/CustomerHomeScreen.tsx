@@ -5,21 +5,16 @@ import { colors, radius, spacing } from "../../ui/tokens";
 import type { HomeCategory, HomeProduct } from "./home.data";
 import { BottomNav } from "./components/BottomNav";
 import { CategoryRail } from "./components/CategoryRail";
+import { FlashSaleCountdown } from "./components/FlashSaleCountdown";
 import { HeroBanner } from "./components/HeroBanner";
+import { HomeSectionTitle } from "./components/HomeSectionTitle";
 import { ProductCard } from "./components/ProductCard";
+import { PromoTiles } from "./components/PromoTiles";
+import { ShopRail } from "./components/ShopRail";
 import { StoreHeader } from "./components/StoreHeader";
-import { getCategories, getProducts } from "../catalog/catalog.api";
+import { getCategories, getProducts, getShops } from "../catalog/catalog.api";
 import { toHomeProduct } from "../catalog/catalog.view-model";
 import { getGrowthFeed } from "../engagement/engagement.api";
-
-function SectionTitle({ eyebrow, title, action = "View all" }: { eyebrow?: string; title: string; action?: string }) {
-  return (
-    <View style={styles.sectionTitleRow}>
-      <View>{eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}<Text style={styles.sectionTitle}>{title}</Text></View>
-      <Text style={styles.sectionAction}>{action}  ›</Text>
-    </View>
-  );
-}
 
 function ProductGrid({ columns, products }: { columns: number; products: HomeProduct[] }) {
   const cardWidth = `${100 / columns}%` as `${number}%`;
@@ -44,10 +39,14 @@ export function CustomerHomeScreen() {
   const contentWidth = Math.min(width - spacing.xl, 1208);
   const categoryQuery = useQuery({ queryKey: ["catalog", "categories"], queryFn: getCategories });
   const productQuery = useQuery({ queryKey: ["catalog", "home-products"], queryFn: () => getProducts({ limit: 20 }) });
+  const shopQuery = useQuery({ queryKey: ["catalog", "home-shops"], queryFn: getShops });
   const growthQuery = useQuery({ queryKey: ["growth", "feed"], queryFn: getGrowthFeed });
   const categoryIcons = ["shirt-outline", "phone-portrait-outline", "sparkles-outline", "home-outline", "happy-outline", "basket-outline", "football-outline"];
   const liveCategories: HomeCategory[] = (categoryQuery.data || []).map((category, index) => ({ id: category.slug, name: category.name, icon: categoryIcons[index % categoryIcons.length] || "grid-outline", color: ["#fce7f3", "#dbeafe", "#fef3c7", "#dcfce7", "#f3e8ff", "#ffedd5", "#cffafe"][index % 7] || colors.primarySoft }));
   const liveProducts = (productQuery.data?.data || []).map(toHomeProduct);
+  const activeFlashSale = growthQuery.data?.flashSales[0];
+  const flashPriceByProduct = new Map(activeFlashSale?.products.map((product) => [product.productId, Number(product.price.amountMinor) / 100]) || []);
+  const flashProducts = liveProducts.filter((product) => flashPriceByProduct.has(product.id)).map((product) => ({ ...product, originalPrice: product.price, price: flashPriceByProduct.get(product.id) ?? product.price }));
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -55,16 +54,16 @@ export function CustomerHomeScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <StoreHeader desktop={desktop} viewportWidth={width} />
           <View style={[styles.content, { width: contentWidth }]}>
-            <HeroBanner desktop={desktop} />
-            <View style={styles.section}><SectionTitle eyebrow="EXPLORE DEPARTMENTS" title="Shop by category" />{categoryQuery.isLoading ? <ActivityIndicator color={colors.primary} /> : <CategoryRail data={liveCategories} />}{categoryQuery.error ? <RetryState label="Could not load categories" onRetry={() => categoryQuery.refetch()} /> : null}</View>
+            <View style={styles.heroShowcase}><View style={styles.heroMain}><HeroBanner desktop={desktop} /></View>{desktop ? <PromoTiles campaigns={growthQuery.data?.campaigns || []} couponCode={growthQuery.data?.coupons[0]?.code} /> : null}</View>
+            <View style={styles.section}><HomeSectionTitle eyebrow="EXPLORE DEPARTMENTS" href="/categories" title="Shop by category" />{categoryQuery.isLoading ? <ActivityIndicator color={colors.primary} /> : <CategoryRail data={liveCategories} />}{categoryQuery.error ? <RetryState label="Could not load categories" onRetry={() => categoryQuery.refetch()} /> : null}</View>
 
-            <View style={[styles.flashSection, desktop && styles.desktopFlash]}>
+            {activeFlashSale ? <View style={[styles.flashSection, desktop && styles.desktopFlash]}>
               <View style={styles.flashHeading}>
-                <View><View style={styles.flashEyebrowRow}><Ionicons color={colors.accent} name="flash" size={17} /><Text style={styles.flashEyebrow}>FLASH SALE</Text></View><Text style={styles.flashTitle}>{growthQuery.data?.flashSales[0]?.name || "Current marketplace offers"}</Text></View>
-                <View style={styles.timerRow}>{["08", "24", "39"].map((value, index) => <View key={`${value}-${index}`} style={styles.timerBox}><Text style={styles.timerText}>{value}</Text></View>)}</View>
+                <View><View style={styles.flashEyebrowRow}><Ionicons color={colors.accent} name="flash" size={17} /><Text style={styles.flashEyebrow}>FLASH SALE</Text></View><Text style={styles.flashTitle}>{activeFlashSale.name}</Text></View>
+                <FlashSaleCountdown endAt={activeFlashSale.endsAt} />
               </View>
-              {productQuery.isLoading ? <ActivityIndicator color={colors.surface} /> : <ProductGrid columns={columns} products={liveProducts.slice(0, 5)} />}
-            </View>
+              {productQuery.isLoading ? <ActivityIndicator color={colors.surface} /> : <ProductGrid columns={columns} products={flashProducts} />}
+            </View> : null}
 
             <View style={styles.promo}>
               <View style={styles.promoIcon}><Ionicons color={colors.surface} name="gift-outline" size={30} /></View>
@@ -72,7 +71,11 @@ export function CustomerHomeScreen() {
               <View style={styles.promoCode}><Text style={styles.promoCodeText}>{growthQuery.data?.coupons[0]?.code || `${growthQuery.data?.campaigns.length || 0} LIVE`}</Text></View>
             </View>
 
-            <View style={styles.section}><SectionTitle eyebrow="CURATED FOR YOU" title="Just for you" />{productQuery.error ? <RetryState label="Could not load live products" onRetry={() => productQuery.refetch()} /> : <ProductGrid columns={columns} products={liveProducts.slice(5).length ? liveProducts.slice(5) : liveProducts} />}{!productQuery.isLoading && !productQuery.error && liveProducts.length === 0 ? <Text style={styles.empty}>No approved products yet. Run the catalog seed or publish a vendor product.</Text> : null}</View>
+            <View style={styles.section}><HomeSectionTitle eyebrow="MARKETPLACE FEED" href="/search" title="Trending now" />{productQuery.error ? <RetryState label="Could not load live products" onRetry={() => productQuery.refetch()} /> : <ProductGrid columns={columns} products={liveProducts.slice(0, 10)} />}{!productQuery.isLoading && !productQuery.error && liveProducts.length === 0 ? <Text style={styles.empty}>No approved products yet. Run the catalog seed or publish a vendor product.</Text> : null}</View>
+
+            {shopQuery.data?.data.length ? <View style={styles.section}><HomeSectionTitle eyebrow="FEATURED BRANDS" href="/shops" title="Shop trusted sellers" /><ShopRail shops={shopQuery.data.data} /></View> : null}
+
+            {liveProducts.length > 5 ? <View style={styles.section}><HomeSectionTitle eyebrow="CURATED FOR YOU" href="/search" title="Recommended for you" /><ProductGrid columns={columns} products={liveProducts.slice(5)} /></View> : null}
 
             <View style={styles.benefits}>
               {benefits.map((benefit) => (
@@ -102,19 +105,13 @@ const styles = StyleSheet.create({
   scrollContent: { backgroundColor: colors.background, paddingBottom: 4 },
   content: { alignSelf: "center", gap: 18, paddingVertical: spacing.md },
   section: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, padding: spacing.md },
-  sectionTitleRow: { alignItems: "flex-end", flexDirection: "row", justifyContent: "space-between", marginBottom: spacing.md },
-  eyebrow: { color: colors.accent, fontSize: 10, fontWeight: "900", letterSpacing: 0.8 },
-  sectionTitle: { color: colors.text, fontSize: 22, fontWeight: "900", letterSpacing: -0.5, marginTop: 2 },
-  sectionAction: { color: colors.primary, fontSize: 12, fontWeight: "900", paddingBottom: 3 },
+  heroShowcase: { flexDirection: "row", gap: spacing.md }, heroMain: { flex: 1 },
   flashSection: { backgroundColor: colors.navy, borderRadius: radius.lg, overflow: "hidden", padding: spacing.md },
   desktopFlash: { padding: spacing.lg },
   flashHeading: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginBottom: spacing.md },
   flashEyebrowRow: { alignItems: "center", flexDirection: "row", gap: 5 },
   flashEyebrow: { color: colors.accent, fontSize: 10, fontWeight: "900", letterSpacing: 0.8 },
   flashTitle: { color: colors.surface, fontSize: 22, fontWeight: "900", marginTop: 2 },
-  timerRow: { flexDirection: "row", gap: 5 },
-  timerBox: { alignItems: "center", backgroundColor: colors.surface, borderRadius: 5, minWidth: 34, paddingHorizontal: 7, paddingVertical: 8 },
-  timerText: { color: colors.navy, fontSize: 12, fontWeight: "900" },
   grid: { flexDirection: "row", flexWrap: "wrap", marginHorizontal: -6, rowGap: 12 },
   cardSlot: { paddingHorizontal: 6 },
   promo: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.lg, flexDirection: "row", flexWrap: "wrap", gap: 14, padding: 20 },
