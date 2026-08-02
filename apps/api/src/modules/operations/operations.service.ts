@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { Prisma, type PrismaClient, type ReturnStatus } from "@prisma/client";
-import type { CancelOrder, CodReconciliationInput, CompletePayout, CompleteRefund, CreatePayoutRequest, CreateReturn, ReturnTransition, ReviewPayout, Session } from "@amiyo/contracts";
+import type { CancelOrder, CodReconciliationInput, CompletePayout, CompleteRefund, CreatePayoutRequest, CreateReturn, DeliveryRetryInput, ReturnTransition, ReviewPayout, Session } from "@amiyo/contracts";
 import { assertAvailableBalance, assertRefundLimit, calculateLedgerBalance, canTransitionReturn } from "@amiyo/domain";
 import { withSerializableTransaction, type TransactionClient } from "../../infrastructure/database/transaction.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
@@ -10,6 +10,7 @@ const json = (value: unknown) => JSON.parse(JSON.stringify(value)) as Prisma.Inp
 const money = (amountMinor: bigint, currency = "BDT") => ({ amountMinor: amountMinor.toString(), currency });
 const requestHash = (input: unknown) => createHash("sha256").update(JSON.stringify(input)).digest("hex");
 const elevated = (session: Session) => session.principal.roles.some((role) => ["FINANCE_ADMIN", "OPERATIONS_ADMIN", "SUPER_ADMIN"].includes(role));
+const deliveryOperator = (session: Session) => session.principal.roles.some((role) => ["OPERATIONS_ADMIN", "SUPER_ADMIN"].includes(role));
 
 function requirePermission(session: Session, permission: string) {
   if (session.status !== "ACTIVE" || !session.permissions.includes(permission)) throw new ApiProblem(403, "OPERATION_FORBIDDEN", "You cannot perform this operation");
@@ -176,6 +177,29 @@ export class OperationsService {
       const prior = await replay(transaction, scope, key, input); if (prior.response) return prior.response; const periodStart = new Date(input.periodStart); const periodEnd = new Date(input.periodEnd);
       const collections = await transaction.codCollection.findMany({ where: { collectedAt: { gte: periodStart, lt: periodEnd } }, include: { payment: true } }); const expected = collections.reduce((sum, row) => sum + row.payment.amountMinor, 0n); const received = collections.reduce((sum, row) => sum + row.collectedMinor, 0n);
       const reconciliation = await transaction.codReconciliation.create({ data: { periodStart, periodEnd, expectedMinor: expected, receivedMinor: received, status: expected === received ? "reconciled" : "variance", items: { create: collections.map((row) => ({ collectionId: row.id, varianceMinor: row.collectedMinor - row.payment.amountMinor })) } } }); const result = { id: reconciliation.id, expected: money(expected), received: money(received), variance: money(received - expected), status: reconciliation.status }; await remember(transaction, scope, key, prior.hash, result); return result;
+    });
+  }
+
+  async deliveryQueue(session: Session) {
+    requirePermission(session, "admin:read"); if (!deliveryOperator(session)) throw new ApiProblem(403, "ADMIN_REQUIRED", "Operations access is required");
+    const rows = await this.client.deliveryDispatch.findMany({ where: { status: { in: ["PENDING", "FAILED"] } }, include: { vendorOrder: { include: { order: true } }, attempts: { orderBy: { attemptNumber: "desc" }, take: 1 } }, orderBy: { updatedAt: "asc" }, take: 100 });
+    return rows.map((row) => ({ id: row.id, vendorOrderId: row.vendorOrderId, orderNumber: row.vendorOrder.order.orderNumber, dispatchKey: row.dispatchKey, status: row.status, externalOrderId: row.externalOrderId, attempts: row.attempts[0]?.attemptNumber ?? 0, lastError: row.attempts[0]?.errorMessage ?? null, updatedAt: row.updatedAt.toISOString() }));
+  }
+
+  async retryDelivery(session: Session, id: string, input: DeliveryRetryInput, key: string, correlationId?: string) {
+    requirePermission(session, "admin:manage"); if (!deliveryOperator(session)) throw new ApiProblem(403, "ADMIN_REQUIRED", "Operations access is required"); const scope = `delivery-retry:${id}`;
+    return withSerializableTransaction(this.client, async (transaction) => {
+      const prior = await replay(transaction, scope, key, input); if (prior.response) return prior.response;
+      const dispatch = await transaction.deliveryDispatch.findUnique({ where: { id } });
+      if (!dispatch) throw new ApiProblem(404, "DELIVERY_DISPATCH_NOT_FOUND", "Delivery dispatch was not found");
+      if (dispatch.status !== "FAILED" || dispatch.externalOrderId) throw new ApiProblem(409, "DELIVERY_RETRY_NOT_ALLOWED", "Only failed dispatches without an external order can be retried");
+      const event = await transaction.outboxEvent.findFirst({ where: { aggregateType: "delivery_dispatch", aggregateId: id, eventType: "delivery.dispatch.requested" } });
+      if (!event) throw new ApiProblem(409, "DELIVERY_OUTBOX_MISSING", "Delivery dispatch does not have a durable outbox event");
+      const claimed = await transaction.deliveryDispatch.updateMany({ where: { id, status: "FAILED", externalOrderId: null }, data: { status: "PENDING" } });
+      if (!claimed.count) throw new ApiProblem(409, "DELIVERY_RETRY_CONFLICT", "Delivery dispatch changed; refresh and try again");
+      await transaction.outboxEvent.update({ where: { id: event.id }, data: { status: "pending", availableAt: new Date(), processedAt: null } });
+      await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "admin", action: "delivery.dispatch.retried", resourceType: "delivery_dispatch", resourceId: id, ...(correlationId ? { correlationId } : {}), before: json({ status: dispatch.status }), after: json({ status: "PENDING", reason: input.reason, outboxEventId: event.id }) } });
+      const result = { id, status: "PENDING" as const, queued: true as const }; await remember(transaction, scope, key, prior.hash, result); return result;
     });
   }
 

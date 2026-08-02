@@ -2,7 +2,7 @@ import { OpenAPIRegistry, OpenApiGeneratorV31, extendZodWithOpenApi } from "@ast
 import { z } from "zod";
 import { catalogQuerySchema, categorySchema, createProductSchema, inventoryAdjustmentSchema, moderationInputSchema, productDetailSchema, productListResponseSchema, shopDetailSchema, shopListResponseSchema, updateProductSchema, vendorInventorySchema } from "./catalog.js";
 import { addCartItemSchema, cartSchema, checkoutInputSchema, checkoutQuoteSchema, checkoutResultSchema, updateCartItemSchema } from "./commerce.js";
-import { customerOrderSummarySchema, orderTrackingSchema, vendorOrderDetailSchema, vendorOrderTransitionSchema } from "./delivery.js";
+import { customerOrderSummarySchema, deliveryQueueItemSchema, deliveryRetryInputSchema, deliveryRetryResultSchema, orderTrackingSchema, vendorOrderDetailSchema, vendorOrderTransitionSchema } from "./delivery.js";
 import { healthResponseSchema } from "./health.js";
 import { addressInputSchema, addressSchema, deviceInputSchema, deviceSchema, sessionSchema, updateProfileSchema } from "./identity.js";
 import { orderSchema } from "./orders.js";
@@ -258,6 +258,8 @@ registry.registerPath({ method: "post", path: "/api/v2/admin/returns/{id}/refund
 registry.registerPath({ method: "post", path: "/api/v2/admin/payouts/{id}/review", tags: ["Operations"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }), headers: z.object({ "idempotency-key": z.string().uuid() }), body: { content: { "application/json": { schema: reviewPayoutSchema } } } }, responses: { 200: { description: "Payout request reviewed" }, ...errorResponses } });
 registry.registerPath({ method: "post", path: "/api/v2/admin/payouts/{id}/completion", tags: ["Operations"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }), headers: z.object({ "idempotency-key": z.string().uuid() }), body: { content: { "application/json": { schema: completePayoutSchema } } } }, responses: { 200: { description: "Provider-confirmed payout completed" }, ...errorResponses } });
 registry.registerPath({ method: "post", path: "/api/v2/admin/cod/reconciliations", tags: ["Operations"], security: firebaseSecurity, request: { headers: z.object({ "idempotency-key": z.string().uuid() }), body: { content: { "application/json": { schema: codReconciliationInputSchema } } } }, responses: { 201: { description: "COD period reconciled" }, ...errorResponses } });
+registry.registerPath({ method: "get", path: "/api/v2/admin/delivery-queue", tags: ["Operations"], security: firebaseSecurity, responses: { 200: { description: "Recent pending and failed delivery dispatches", content: { "application/json": { schema: z.array(deliveryQueueItemSchema) } } }, ...errorResponses } });
+registry.registerPath({ method: "post", path: "/api/v2/admin/delivery-queue/{id}/retry", tags: ["Operations"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }), headers: z.object({ "idempotency-key": z.string().uuid() }), body: { content: { "application/json": { schema: deliveryRetryInputSchema } } } }, responses: { 200: { description: "Failed delivery dispatch requeued with its original stable job identity", content: { "application/json": { schema: deliveryRetryResultSchema } } }, ...errorResponses } });
 registry.registerPath({ method: "get", path: "/api/v2/growth/feed", tags: ["Engagement & Growth"], responses: { 200: { description: "Active campaigns and flash sales", content: { "application/json": { schema: growthFeedSchema } } }, ...errorResponses } });
 registry.registerPath({ method: "get", path: "/api/v2/wishlist", tags: ["Engagement & Growth"], security: firebaseSecurity, responses: { 200: { description: "Current customer wishlist", content: { "application/json": { schema: wishlistSchema } } }, ...errorResponses } });
 registry.registerPath({ method: "post", path: "/api/v2/wishlist/items", tags: ["Engagement & Growth"], security: firebaseSecurity, request: { body: { content: { "application/json": { schema: wishlistItemInputSchema } } } }, responses: { 201: { description: "Product saved", content: { "application/json": { schema: wishlistSchema } } }, ...errorResponses } });
@@ -276,7 +278,7 @@ registry.registerPath({ method: "post", path: "/api/v2/admin/promotions", tags: 
 export function createOpenApiDocument() {
   return new OpenApiGeneratorV31(registry.definitions).generateDocument({
     openapi: "3.1.0",
-    info: { title: "Amiyo-Go API", version: "0.8.0", description: "Typed API contract for the Amiyo-Go mobile platform." },
+    info: { title: "Amiyo-Go API", version: "0.9.0", description: "Typed API contract for the Amiyo-Go mobile platform." },
     servers: [{ url: "http://localhost:4000", description: "Local development" }],
     tags: [{ name: "Operations" }, { name: "Returns & Finance" }, { name: "Engagement & Growth" }, { name: "Identity" }, { name: "Catalog" }, { name: "Shops" }, { name: "Vendor Catalog" }, { name: "Catalog Moderation" }, { name: "Commerce" }, { name: "Orders" }, { name: "Vendor Orders" }, { name: "Delivery" }]
   });

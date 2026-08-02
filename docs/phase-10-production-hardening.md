@@ -12,6 +12,7 @@ The complete production Definition of Done must pass with staging/provider/devic
 - Non-root API and worker container definitions, Expo development/staging/production build profiles, configurable load smoke tooling, and release-readiness reporting.
 - Expo SDK 57 dependency alignment removes all known critical/high npm audit findings; remaining moderate transitive tooling findings stay visible in the audit report.
 - Incident response, backup/restore drill, release, migration cutover, and rollback procedures.
+- Authenticated delivery queue inspection/retry APIs reset the original transactional outbox event and retry the retained stable BullMQ job without creating another provider identity.
 
 ## Gate status: blocked
 

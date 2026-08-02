@@ -64,6 +64,22 @@ export const orderTrackingSchema = z.object({
 
 export const deliveryDispatchJobSchema = z.object({ dispatchId: uuidSchema, idempotencyKey: z.string().startsWith("delivery-create:") });
 
+export const deliveryRetryInputSchema = z.object({ reason: z.string().trim().min(3).max(300) });
+
+export const deliveryQueueItemSchema = z.object({
+  id: uuidSchema,
+  vendorOrderId: uuidSchema,
+  orderNumber: z.string(),
+  dispatchKey: z.string(),
+  status: dispatchStatusSchema,
+  externalOrderId: z.string().nullable(),
+  attempts: z.number().int().nonnegative(),
+  lastError: z.string().nullable(),
+  updatedAt: timestampSchema
+});
+
+export const deliveryRetryResultSchema = z.object({ id: uuidSchema, status: z.literal("PENDING"), queued: z.literal(true) });
+
 export const amiyoDeliveryCallbackSchema = z.object({
   eventId: z.string().trim().min(1).max(200),
   externalOrderId: z.string().trim().min(1).max(200),
@@ -80,4 +96,7 @@ export type VendorOrderTransition = z.infer<typeof vendorOrderTransitionSchema>;
 export type CustomerOrderSummary = z.infer<typeof customerOrderSummarySchema>;
 export type OrderTracking = z.infer<typeof orderTrackingSchema>;
 export type DeliveryDispatchJob = z.infer<typeof deliveryDispatchJobSchema>;
+export type DeliveryRetryInput = z.infer<typeof deliveryRetryInputSchema>;
+export type DeliveryQueueItem = z.infer<typeof deliveryQueueItemSchema>;
+export type DeliveryRetryResult = z.infer<typeof deliveryRetryResultSchema>;
 export type AmiyoDeliveryCallback = z.infer<typeof amiyoDeliveryCallbackSchema>;

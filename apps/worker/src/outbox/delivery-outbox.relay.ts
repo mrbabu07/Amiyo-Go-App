@@ -23,7 +23,15 @@ export class DeliveryOutboxRelay {
         if (!claimed.count) continue;
         try {
           const data = deliveryDispatchJobSchema.parse(event.payload);
-          await this.queue.add("DELIVERY_READY_TO_SHIP", data, { jobId: `delivery-${data.dispatchId}`, attempts: 8, backoff: { type: "exponential", delay: 1_000 }, removeOnComplete: { age: 7 * 24 * 60 * 60, count: 10_000 }, removeOnFail: false });
+          const jobId = `delivery-${data.dispatchId}`;
+          const existing = await this.queue.getJob(jobId);
+          if (existing) {
+            const state = await existing.getState();
+            if (state === "failed") await existing.retry("failed");
+            else if (state === "completed") throw new Error(`Completed delivery job ${jobId} cannot be retried`);
+          } else {
+            await this.queue.add("DELIVERY_READY_TO_SHIP", data, { jobId, attempts: 8, backoff: { type: "exponential", delay: 1_000 }, removeOnComplete: { age: 7 * 24 * 60 * 60, count: 10_000 }, removeOnFail: false });
+          }
           await this.client.outboxEvent.update({ where: { id: event.id }, data: { status: "processed", processedAt: new Date() } });
         } catch (error) {
           await this.client.outboxEvent.update({ where: { id: event.id }, data: { status: "pending", availableAt: new Date(Date.now() + 5_000) } });

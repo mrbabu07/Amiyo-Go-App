@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { cancelOrderSchema, codReconciliationInputSchema, completePayoutSchema, completeRefundSchema, createPayoutRequestSchema, createReturnSchema, returnTransitionSchema, reviewPayoutSchema } from "@amiyo/contracts";
+import { cancelOrderSchema, codReconciliationInputSchema, completePayoutSchema, completeRefundSchema, createPayoutRequestSchema, createReturnSchema, deliveryRetryInputSchema, returnTransitionSchema, reviewPayoutSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
 import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
@@ -26,6 +26,8 @@ export function createOperationsRouter() {
   router.post("/api/v2/admin/payouts/:id/review", async (req, res, next) => { try { res.json(await service.reviewPayout(requireSession(req), idSchema.parse(req.params).id, reviewPayoutSchema.parse(req.body), key(req.header("idempotency-key")))); } catch (error) { next(error); } });
   router.post("/api/v2/admin/payouts/:id/completion", async (req, res, next) => { try { res.json(await service.completePayout(requireSession(req), idSchema.parse(req.params).id, completePayoutSchema.parse(req.body), key(req.header("idempotency-key")))); } catch (error) { next(error); } });
   router.post("/api/v2/admin/cod/reconciliations", async (req, res, next) => { try { res.status(201).json(await service.reconcileCod(requireSession(req), codReconciliationInputSchema.parse(req.body), key(req.header("idempotency-key")))); } catch (error) { next(error); } });
+  router.get("/api/v2/admin/delivery-queue", async (req, res, next) => { try { res.json(await service.deliveryQueue(requireSession(req))); } catch (error) { next(error); } });
+  router.post("/api/v2/admin/delivery-queue/:id/retry", async (req, res, next) => { try { res.json(await service.retryDelivery(requireSession(req), idSchema.parse(req.params).id, deliveryRetryInputSchema.parse(req.body), key(req.header("idempotency-key")), req.header("x-correlation-id"))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/audit", async (req, res, next) => { try { res.json(await service.audit(requireSession(req))); } catch (error) { next(error); } });
   return router;
 }
