@@ -9,6 +9,10 @@ if (!npmCli) {
 
 const processes = [
   {
+    name: "firebase",
+    args: ["run", "dev:firebase"]
+  },
+  {
     name: "api",
     args: ["--workspace", "@amiyo/api", "run", "dev"]
   },

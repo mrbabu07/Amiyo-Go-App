@@ -7,7 +7,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json",
-    "type-check": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit"
+    "type-check": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
+    "test": "node --test \"dist/**/*.test.js\""
   },
   "dependencies": {
     "zod": "^3.23.8"

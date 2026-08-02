@@ -38,6 +38,8 @@ For local role testing, keep `npm run dev:firebase` running and execute `npm run
 
 These accounts are local emulator fixtures only and must never be created in a shared or production Firebase project.
 
+`npm run dev` starts Firebase Auth, API, and Expo together. When Firebase shuts down normally, local emulator accounts are exported to ignored `.firebase-data` and restored on the next run.
+
 For a physical phone, replace the mobile emulator URL host with the computer's LAN IP and allow the port through the local firewall. Never expose the emulator to an untrusted network.
 
 Never commit a service-account JSON file or private key. Restart the API after rotating credentials and verify login, token expiry/revocation, logout, and role synchronization.

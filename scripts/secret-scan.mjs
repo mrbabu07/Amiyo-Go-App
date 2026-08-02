@@ -1,8 +1,7 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { execFileSync } from "node:child_process";
+import { readFileSync, statSync } from "node:fs";
 
 const root = process.cwd();
-const ignored = new Set(["node_modules", ".git", "dist", "build", "coverage", ".expo"]);
 const patterns = [
   new RegExp("postgresql:\\/\\/[^:\\s]+:[^@\\s]+@", "i"),
   new RegExp("mongodb(?:\\+srv)?:\\/\\/[^:\\s]+:[^@\\s]+@", "i"),
@@ -12,15 +11,10 @@ const patterns = [
 
 const findings = [];
 
-function walk(directory) {
-  for (const entry of readdirSync(directory)) {
-    if (ignored.has(entry)) continue;
-    const path = join(directory, entry);
+function scanRepositoryFiles() {
+  const paths = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "-z"], { cwd: root, encoding: "utf8" }).split("\0").filter(Boolean);
+  for (const path of paths) {
     const stat = statSync(path);
-    if (stat.isDirectory()) {
-      walk(path);
-      continue;
-    }
     if (stat.size > 1024 * 1024) continue;
     const text = readFileSync(path, "utf8");
     patterns.forEach((pattern) => {
@@ -29,7 +23,7 @@ function walk(directory) {
   }
 }
 
-walk(root);
+scanRepositoryFiles();
 
 if (findings.length > 0) {
   console.error("Potential secrets detected:");

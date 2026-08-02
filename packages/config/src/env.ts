@@ -3,20 +3,22 @@ import { z } from "zod";
 const nodeEnvSchema = z.enum(["development", "test", "staging", "production"]).default("development");
 const optionalUrlSchema = z.preprocess((value) => value === "" ? undefined : value, z.string().url().optional());
 const optionalSecretSchema = z.preprocess((value) => value === "" ? undefined : value, z.string().min(12).optional());
+const optionalStringSchema = z.preprocess((value) => value === "" ? undefined : value, z.string().optional());
+const optionalEmailSchema = z.preprocess((value) => value === "" ? undefined : value, z.string().email().optional());
 
 const apiEnvObject = z.object({
   NODE_ENV: nodeEnvSchema,
   PORT: z.coerce.number().int().positive().default(4000),
   API_PUBLIC_URL: z.string().url(),
   DATABASE_URL: z.string().url(),
-  DIRECT_URL: z.string().url().optional(),
+  DIRECT_URL: optionalUrlSchema,
   REDIS_URL: z.string().url(),
-  FIREBASE_PROJECT_ID: z.string().optional(),
-  FIREBASE_CLIENT_EMAIL: z.string().email().optional(),
-  FIREBASE_PRIVATE_KEY: z.string().optional(),
+  FIREBASE_PROJECT_ID: optionalStringSchema,
+  FIREBASE_CLIENT_EMAIL: optionalEmailSchema,
+  FIREBASE_PRIVATE_KEY: optionalStringSchema,
   FIREBASE_USE_APPLICATION_DEFAULT: z.enum(["true", "false"]).default("false"),
-  FIREBASE_AUTH_EMULATOR_HOST: z.string().optional(),
-  OBJECT_STORAGE_PUBLIC_URL: z.string().url().optional(),
+  FIREBASE_AUTH_EMULATOR_HOST: optionalStringSchema,
+  OBJECT_STORAGE_PUBLIC_URL: optionalUrlSchema,
   LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "fatal"]).default("info")
 });
 
