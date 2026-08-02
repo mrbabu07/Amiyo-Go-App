@@ -1,0 +1,39 @@
+{
+  "sourceCounts": {
+    "users": 1,
+    "categories": 1,
+    "vendors": 1,
+    "products": 1,
+    "orders": 1,
+    "payments": 1
+  },
+  "targetCounts": {
+    "categories": 1,
+    "inventory_items": 1,
+    "order_items": 1,
+    "orders": 1,
+    "payments": 1,
+    "product_variants": 1,
+    "products": 1,
+    "user_profiles": 1,
+    "user_roles": 1,
+    "users": 1,
+    "vendor_members": 1,
+    "vendor_orders": 1,
+    "vendor_shops": 1,
+    "vendors": 1
+  },
+  "rejectedCounts": {},
+  "monetaryTotals": {
+    "order_items.lineTotalMinor": "25100",
+    "orders.subtotalMinor": "25100",
+    "orders.totalMinor": "25100",
+    "payments.amountMinor": "25100",
+    "payments.refundedMinor": "0",
+    "vendor_orders.subtotalMinor": "25100",
+    "vendor_orders.totalMinor": "25100"
+  },
+  "accepted": 14,
+  "rejected": 0,
+  "digest": "d8be14c26d89df9363fc98010b7b4dcaa21a56007a7d797e72b343599c91e09e"
+}

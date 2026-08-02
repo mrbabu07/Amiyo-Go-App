@@ -1,0 +1,1 @@
+[{"_id":"legacy-user-001","firebaseUid":"synthetic-firebase-user-001","email":"migration@example.invalid","status":"active","profile":{"firstName":"Migration","lastName":"Fixture","phone":"+8800000000000"},"createdAt":"2025-01-01T00:00:00.000Z","updatedAt":"2025-01-02T00:00:00.000Z"}]

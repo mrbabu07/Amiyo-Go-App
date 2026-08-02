@@ -5,6 +5,7 @@
     { "path": "packages/domain" },
     { "path": "packages/config" },
     { "path": "packages/observability" },
+    { "path": "packages/migration" },
     { "path": "prisma" },
     { "path": "apps/api" },
     { "path": "apps/worker" }

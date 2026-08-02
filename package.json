@@ -26,7 +26,9 @@
     "openapi:generate": "npm run build --workspace @amiyo/contracts && node scripts/generate-openapi.mjs",
     "secret:scan": "node scripts/secret-scan.mjs",
     "dev": "node scripts/dev.mjs",
-    "dev:all": "node scripts/dev.mjs"
+    "dev:all": "node scripts/dev.mjs",
+    "migration:dry-run": "tsx scripts/migration/dry-run.ts",
+    "migration:apply": "tsx scripts/migration/apply-plan.ts"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.4",

@@ -33,6 +33,8 @@ Cancellation, returns/refunds, vendor ledger/payouts, COD reconciliation, and mo
 
 Wishlists, alerts, reviews, Q&A, chat, notifications, loyalty, campaigns, flash sales, and promotion controls are documented in `docs/phase-8-engagement-and-growth.md`.
 
+Deterministic migration tooling, synthetic dry runs, mapping coverage, and cutover/rollback requirements are documented in `docs/phase-9-data-migration.md` and `docs/migration/`.
+
 The web app runs at `http://localhost:8081` after `npm run dev`. Use `npm run dev:mobile -- --web` when only the Expo web client is needed.
 
 Never commit real secrets. Rotate any database URL that has been pasted into chat.

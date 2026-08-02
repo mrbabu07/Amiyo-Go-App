@@ -1,0 +1,7 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { runMigration } from "./runner.js";
+
+const fixture = { users: [{ _id: "user-1", firebaseUid: "firebase-1", email: "USER@example.com", profile: { firstName: "Test" } }], categories: [{ _id: "category-1", name: "Food", slug: "food" }], vendors: [{ _id: "vendor-1", ownerUserId: "user-1", shopName: "Test Shop", businessName: "Test Shop Ltd", slug: "test-shop", status: "approved" }], products: [{ _id: "product-1", vendorId: "vendor-1", categoryId: "category-1", title: "Rice", slug: "rice", sku: "RICE-1", price: "125.50", stock: 10 }], orders: [{ _id: "order-1", orderNumber: "AGO-1", userId: "user-1", status: "delivered", subtotal: "251.00", total: "251.00", products: [{ productId: "product-1", vendorId: "vendor-1", title: "Rice", sku: "RICE-1", price: "125.50", quantity: 2 }] }], payments: [{ _id: "payment-1", orderId: "order-1", paymentMethod: "cod", status: "completed", amount: "251.00" }] };
+test("migration output and IDs are repeatable", () => { const first = runMigration(fixture); const second = runMigration(fixture); assert.equal(first.reconciliation.digest, second.reconciliation.digest); assert.deepEqual(first.idMap, second.idMap); assert.equal(first.reconciliation.rejected, 0); });
+test("unsafe money is rejected instead of rounded", () => { const result = runMigration({ ...fixture, products: [{ ...fixture.products[0], price: 1.234 }] }); assert.equal(result.reconciliation.rejected, 1); assert.match(result.rejectedRows[0]?.detail || "", /price/); });

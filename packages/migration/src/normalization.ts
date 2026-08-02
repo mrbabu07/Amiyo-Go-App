@@ -1,0 +1,9 @@
+import { createHash } from "node:crypto";
+
+export function legacyId(value: unknown) { if (typeof value === "string" && value.trim()) return value.trim(); if (value && typeof value === "object" && "$oid" in value && typeof value.$oid === "string") return value.$oid; throw new Error("Missing legacy _id"); }
+export function deterministicUuid(collection: string, value: string, suffix = "") { const hex = createHash("sha256").update(`amiyo-go:${collection}:${value}:${suffix}`).digest("hex"); return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20, 32)}`; }
+export function requiredString(value: unknown, field: string) { if (typeof value !== "string" || !value.trim()) throw new Error(`Missing ${field}`); return value.trim(); }
+export function optionalString(value: unknown) { return typeof value === "string" && value.trim() ? value.trim() : null; }
+export function decimalToMinor(value: unknown, field: string) { const text = typeof value === "number" || typeof value === "string" ? String(value).trim() : ""; if (!/^\d+(?:\.\d{1,2})?$/.test(text)) throw new Error(`Invalid ${field}; expected non-negative amount with at most 2 decimals`); const [whole = "0", fraction = ""] = text.split("."); return (BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"))).toString(); }
+export function dateString(value: unknown, fallback: Date) { const date = value instanceof Date ? value : typeof value === "string" ? new Date(value) : fallback; if (Number.isNaN(date.getTime())) throw new Error("Invalid timestamp"); return date.toISOString(); }
+export function slug(value: unknown, fallback: string) { const normalized = String(value || fallback).toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""); if (!normalized) throw new Error("Missing slug"); return normalized; }

@@ -1,0 +1,26 @@
+{
+  "users": {
+    "records": 1,
+    "sha256": "aa34a8fe3df4ff78de06bdf5b6272a1421d1be37ce6507f8959f88333ab30c4e"
+  },
+  "categories": {
+    "records": 1,
+    "sha256": "dbb238fa09e9606e28c08d2d4008d785e9e5d996698051a3e82ee9507e837b90"
+  },
+  "vendors": {
+    "records": 1,
+    "sha256": "dc9dbc9d9b2c5427f1560be6250e0a9517994fb6401f5ef22336076f37b6a5c1"
+  },
+  "products": {
+    "records": 1,
+    "sha256": "7862a24596b4b9558bbd664f04f01a37fdd36799386610ad0e2d1ac3e820278e"
+  },
+  "orders": {
+    "records": 1,
+    "sha256": "3dbd4fa71197c281da60bb300eabcbd4dea4923c99d8630b60a39c983cda179c"
+  },
+  "payments": {
+    "records": 1,
+    "sha256": "bef22e19efc55ffdfbad6434591daaaafe7899759cf75e19f72bff4bc304291a"
+  }
+}

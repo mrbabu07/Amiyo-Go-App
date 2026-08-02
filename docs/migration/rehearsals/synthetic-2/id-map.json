@@ -1,0 +1,86 @@
+[
+  {
+    "sourceCollection": "categories",
+    "legacyId": "legacy-category-001",
+    "targetTable": "categories",
+    "targetId": "6ec50ff9-5a37-45d0-8649-383cf65537ea"
+  },
+  {
+    "sourceCollection": "products",
+    "legacyId": "legacy-product-001",
+    "targetTable": "inventory_items",
+    "targetId": "5807367d-45f2-420f-8480-be830a6a3edf"
+  },
+  {
+    "sourceCollection": "orders",
+    "legacyId": "legacy-order-001",
+    "targetTable": "order_items",
+    "targetId": "b617e356-6ffc-46a5-82cc-d2c7b98fc486"
+  },
+  {
+    "sourceCollection": "orders",
+    "legacyId": "legacy-order-001",
+    "targetTable": "orders",
+    "targetId": "d6a2f0cd-511d-457b-8667-3b88ccea2355"
+  },
+  {
+    "sourceCollection": "payments",
+    "legacyId": "legacy-payment-001",
+    "targetTable": "payments",
+    "targetId": "afb33901-ac59-41fa-8e7c-fbd1b00549d5"
+  },
+  {
+    "sourceCollection": "products",
+    "legacyId": "legacy-product-001",
+    "targetTable": "product_variants",
+    "targetId": "5cb24349-fc42-4f68-8833-0d200f4eb828"
+  },
+  {
+    "sourceCollection": "products",
+    "legacyId": "legacy-product-001",
+    "targetTable": "products",
+    "targetId": "ceb27ec3-9ac3-4d34-8cfc-65843fab0a54"
+  },
+  {
+    "sourceCollection": "users",
+    "legacyId": "legacy-user-001",
+    "targetTable": "user_profiles",
+    "targetId": "2ffc431c-8020-4ce9-8163-f242a7f4162c"
+  },
+  {
+    "sourceCollection": "users",
+    "legacyId": "legacy-user-001",
+    "targetTable": "user_roles",
+    "targetId": "c03c2185-a820-48f4-8909-83eb6758e0da"
+  },
+  {
+    "sourceCollection": "users",
+    "legacyId": "legacy-user-001",
+    "targetTable": "users",
+    "targetId": "2ffc431c-8020-4ce9-8163-f242a7f4162c"
+  },
+  {
+    "sourceCollection": "vendors",
+    "legacyId": "legacy-vendor-001",
+    "targetTable": "vendor_members",
+    "targetId": "48225741-1d21-4c9a-8a33-7f13a09261cc"
+  },
+  {
+    "sourceCollection": "orders",
+    "legacyId": "legacy-order-001",
+    "targetTable": "vendor_orders",
+    "targetId": "5e998faa-625c-4c1f-8573-56fe7276ecca"
+  },
+  {
+    "sourceCollection": "vendors",
+    "legacyId": "legacy-vendor-001",
+    "targetTable": "vendor_shops",
+    "targetId": "93cafbb0-a5c7-463f-822e-2464db386a3e"
+  },
+  {
+    "sourceCollection": "vendors",
+    "legacyId": "legacy-vendor-001",
+    "targetTable": "vendors",
+    "targetId": "a4a0be70-a395-412a-8d04-10c948681f0b"
+  }
+]
