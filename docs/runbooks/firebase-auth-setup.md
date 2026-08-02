@@ -26,6 +26,8 @@ Choose exactly one server mode:
 3. Run `npm run prisma:migrate:dev`, then `npm run dev:api` and `npm run dev:mobile -- --web`.
 4. Copy `apps/api/.env.example` to ignored `apps/api/.env`, set the local PostgreSQL/Redis URLs, `FIREBASE_PROJECT_ID=amiyo-app`, and `FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099`. The existing ignored mobile env points the client to `http://127.0.0.1:9099`.
 
+Run `npm run test:firebase-auth-e2e` to start an isolated Auth Emulator, create a temporary email/password identity, verify its ID token through the API's Firebase Admin adapter, and confirm invalid tokens are rejected. This check does not require PostgreSQL, Redis, Firebase login, or service-account credentials.
+
 For a physical phone, replace the mobile emulator URL host with the computer's LAN IP and allow the port through the local firewall. Never expose the emulator to an untrusted network.
 
 Never commit a service-account JSON file or private key. Restart the API after rotating credentials and verify login, token expiry/revocation, logout, and role synchronization.

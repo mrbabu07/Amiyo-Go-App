@@ -32,7 +32,8 @@
     "release:check": "node scripts/release-readiness.mjs",
     "smoke:load": "node scripts/load-smoke.mjs",
     "dev:firebase": "firebase emulators:start --only auth --project amiyo-app",
-    "test:firebase-emulator": "firebase emulators:exec --only auth --project amiyo-app \"node scripts/firebase-emulator-smoke.mjs\""
+    "test:firebase-emulator": "firebase emulators:exec --only auth --project amiyo-app \"node scripts/firebase-emulator-smoke.mjs\"",
+    "test:firebase-auth-e2e": "npm run build --workspace @amiyo/api && firebase emulators:exec --only auth --project amiyo-app \"node scripts/firebase-auth-e2e.mjs\""
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.4",

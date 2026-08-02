@@ -11,3 +11,13 @@ test("local Firebase Auth emulator has aligned API and mobile contracts", async 
   assert.match(mobile, /EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL/);
   assert.match(apiExample, /FIREBASE_AUTH_EMULATOR_HOST=/);
 });
+
+test("Firebase Auth E2E verifies emulator tokens through the API adapter", async () => {
+  const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  const harness = await readFile(new URL("firebase-auth-e2e.mjs", import.meta.url), "utf8");
+
+  assert.match(packageJson.scripts["test:firebase-auth-e2e"], /firebase emulators:exec --only auth/);
+  assert.match(harness, /accounts:signUp/);
+  assert.match(harness, /FirebaseTokenVerifier/);
+  assert.match(harness, /INVALID_ACCESS_TOKEN/);
+});
