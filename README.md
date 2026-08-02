@@ -37,6 +37,8 @@ Deterministic migration tooling, synthetic dry runs, mapping coverage, and cutov
 
 Production hardening automation, release blockers, and operational runbooks are documented in `docs/phase-10-production-hardening.md` and `docs/runbooks/`.
 
+The complete maintainer and operations handover index is available at `docs/handover.md`.
+
 The web app runs at `http://localhost:8081` after `npm run dev`. Use `npm run dev:mobile -- --web` when only the Expo web client is needed.
 
 Never commit real secrets. Rotate any database URL that has been pasted into chat.

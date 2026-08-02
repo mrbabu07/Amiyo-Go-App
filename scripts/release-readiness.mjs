@@ -8,7 +8,15 @@ const requiredFiles = [
   "apps/mobile/eas.json",
   "docs/runbooks/backup-restore.md",
   "docs/runbooks/incident-response.md",
-  "docs/runbooks/release.md"
+  "docs/runbooks/release.md",
+  "docs/runbooks/queue-operations.md",
+  "docs/runbooks/payment-operations.md",
+  "docs/runbooks/delivery-operations.md",
+  "docs/handover.md",
+  "docs/environment-reference.md",
+  "docs/test-strategy-and-evidence.md",
+  "docs/store-release-guide.md",
+  "docs/known-limitations.md"
 ];
 
 await Promise.all(requiredFiles.map((file) => access(new URL(`../${file}`, import.meta.url))));
