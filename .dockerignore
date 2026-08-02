@@ -1,0 +1,14 @@
+.git
+.github
+.expo
+node_modules
+**/node_modules
+dist
+**/dist
+coverage
+.env
+.env.*
+!.env.example
+*.log
+docs
+migration

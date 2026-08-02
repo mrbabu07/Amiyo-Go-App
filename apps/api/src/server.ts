@@ -12,8 +12,9 @@ import { createCommerceRouter } from "./modules/commerce/commerce.routes.js";
 import { createOrderRouter } from "./modules/orders/order.routes.js";
 import { createOperationsRouter } from "./modules/operations/operations.routes.js";
 import { createEngagementRouter } from "./modules/engagement/engagement.routes.js";
+import type { ReadinessCheck } from "./modules/health/health.routes.js";
 
-export function createApiApp() {
+export function createApiApp(options: { readinessCheck?: ReadinessCheck } = {}) {
   const app = express();
   const logger = createLogger("amiyo-api", process.env.LOG_LEVEL || "info");
   const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:8081,http://localhost:19006")
@@ -33,7 +34,7 @@ export function createApiApp() {
   }));
   app.use(express.json({ limit: "1mb", verify(req, _res, buffer) { (req as express.Request).rawBody = Buffer.from(buffer); } }));
   app.use(correlationMiddleware);
-  app.use(createHealthRouter());
+  app.use(createHealthRouter(options.readinessCheck));
   app.use(createIdentityRouter());
   app.use(createCatalogRouter());
   app.use(createCommerceRouter());

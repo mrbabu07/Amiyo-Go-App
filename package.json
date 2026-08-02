@@ -28,7 +28,9 @@
     "dev": "node scripts/dev.mjs",
     "dev:all": "node scripts/dev.mjs",
     "migration:dry-run": "tsx scripts/migration/dry-run.ts",
-    "migration:apply": "tsx scripts/migration/apply-plan.ts"
+    "migration:apply": "tsx scripts/migration/apply-plan.ts",
+    "release:check": "node scripts/release-readiness.mjs",
+    "smoke:load": "node scripts/load-smoke.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.4",

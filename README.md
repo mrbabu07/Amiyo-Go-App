@@ -35,6 +35,8 @@ Wishlists, alerts, reviews, Q&A, chat, notifications, loyalty, campaigns, flash 
 
 Deterministic migration tooling, synthetic dry runs, mapping coverage, and cutover/rollback requirements are documented in `docs/phase-9-data-migration.md` and `docs/migration/`.
 
+Production hardening automation, release blockers, and operational runbooks are documented in `docs/phase-10-production-hardening.md` and `docs/runbooks/`.
+
 The web app runs at `http://localhost:8081` after `npm run dev`. Use `npm run dev:mobile -- --web` when only the Expo web client is needed.
 
 Never commit real secrets. Rotate any database URL that has been pasted into chat.

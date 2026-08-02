@@ -4,13 +4,19 @@
     "slug": "amiyo-go",
     "scheme": "amiyogo",
     "version": "0.1.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "android": {
-      "package": "com.amiyo.go"
+      "package": "com.amiyo.go",
+      "versionCode": 1
     },
     "ios": {
-      "bundleIdentifier": "com.amiyo.go"
+      "bundleIdentifier": "com.amiyo.go",
+      "buildNumber": "1",
+      "supportsTablet": true
     },
     "plugins": [
       "expo-router",
