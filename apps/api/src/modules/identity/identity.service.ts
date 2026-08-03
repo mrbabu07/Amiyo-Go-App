@@ -1,5 +1,5 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
-import type { AddressInput, DeviceInput, Session, UpdateProfile } from "@amiyo/contracts";
+import type { AccountDeletionInput, AddressInput, DeviceInput, Session, UpdateProfile } from "@amiyo/contracts";
 import { ApiProblem } from "../../middleware/api-problem.js";
 import { withSerializableTransaction, type TransactionClient } from "../../infrastructure/database/transaction.js";
 import type { VerifiedIdentity } from "./identity.types.js";
@@ -325,5 +325,22 @@ export class IdentityService {
       });
       return serializeDevice(updated);
     });
+  }
+
+  async getDeletionRequest(userId: string) {
+    const row = await this.client.accountDeletionRequest.findFirst({ where: { userId, status: { in: ["requested", "scheduled"] } }, orderBy: { requestedAt: "desc" } });
+    return row ? { ...row, requestedAt: row.requestedAt.toISOString(), executeAfter: row.executeAfter.toISOString(), completedAt: row.completedAt?.toISOString() ?? null } : null;
+  }
+
+  async requestDeletion(userId: string, input: AccountDeletionInput, correlationId?: string) {
+    const existing = await this.client.accountDeletionRequest.findFirst({ where: { userId, status: { in: ["requested", "scheduled"] } } });
+    if (existing) return { ...existing, requestedAt: existing.requestedAt.toISOString(), executeAfter: existing.executeAfter.toISOString(), completedAt: existing.completedAt?.toISOString() ?? null };
+    const executeAfter = new Date(Date.now() + 30 * 24 * 60 * 60_000);
+    const row = await withSerializableTransaction(this.client, async (transaction) => {
+      const created = await transaction.accountDeletionRequest.create({ data: { userId, reason: input.reason ?? null, executeAfter } });
+      await writeAudit(transaction, { actorUserId: userId, action: "identity.deletion.requested", resourceType: "user", resourceId: userId, ...(correlationId ? { correlationId } : {}), after: { executeAfter: executeAfter.toISOString() } });
+      return created;
+    });
+    return { ...row, requestedAt: row.requestedAt.toISOString(), executeAfter: row.executeAfter.toISOString(), completedAt: row.completedAt?.toISOString() ?? null };
   }
 }

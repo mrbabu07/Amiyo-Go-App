@@ -95,6 +95,9 @@ export const deviceSchema = z.object({
   updatedAt: timestampSchema
 });
 
+export const accountDeletionInputSchema = z.object({ reason: z.string().trim().min(3).max(1000).nullable().optional() });
+export const accountDeletionSchema = z.object({ id: uuidSchema, status: z.string(), reason: z.string().nullable(), requestedAt: timestampSchema, executeAfter: timestampSchema, completedAt: timestampSchema.nullable() });
+
 export type Role = z.infer<typeof roleSchema>;
 export type Principal = z.infer<typeof principalSchema>;
 export type Session = z.infer<typeof sessionSchema>;
@@ -102,3 +105,4 @@ export type UpdateProfile = z.infer<typeof updateProfileSchema>;
 export type AddressInput = z.infer<typeof addressInputSchema>;
 export type Address = z.infer<typeof addressSchema>;
 export type DeviceInput = z.infer<typeof deviceInputSchema>;
+export type AccountDeletionInput = z.infer<typeof accountDeletionInputSchema>;

@@ -1,4 +1,4 @@
-import { chatThreadSchema, growthFeedSchema, notificationSchema, reviewSchema, wishlistSchema } from "@amiyo/contracts";
+import { chatThreadSchema, growthFeedSchema, notificationSchema, questionSchema, reviewSchema, wishlistSchema, type ContentModerationInput } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
@@ -15,3 +15,10 @@ export async function sendMessage(user: User, threadId: string, body: string) { 
 export async function getAlerts(user: User) { return await request(user, "/api/v2/alerts") as Array<{ id: string; productId: string; productName: string; target: { amountMinor: string; currency: string } | null; createdAt: string }> ; }
 export async function getPromotions(user: User) { return await request(user, "/api/v2/admin/promotions") as Array<{ id: string; name: string; status: string; priority: number; startsAt: string; endsAt: string }> ; }
 export async function getGrowthFeed() { const response = await fetch(`${apiUrl}/api/v2/growth/feed`); if (!response.ok) throw new Error("Could not load offers"); return growthFeedSchema.parse(await response.json()); }
+export async function getVendorReviews(user: User) { return reviewSchema.array().parse(await request(user, "/api/v2/vendor/engagement/reviews")); }
+export async function getVendorQuestions(user: User) { return questionSchema.array().parse(await request(user, "/api/v2/vendor/engagement/questions")); }
+export async function answerVendorQuestion(user: User, id: string, body: string) { return await request(user, `/api/v2/questions/${id}/answers`, { method: "POST", body: JSON.stringify({ body }) }); }
+export async function getAdminReviews(user: User) { return reviewSchema.array().parse(await request(user, "/api/v2/admin/content/reviews")); }
+export async function moderateAdminReview(user: User, id: string, input: ContentModerationInput) { return await request(user, `/api/v2/admin/content/reviews/${id}`, { method: "PATCH", body: JSON.stringify(input) }); }
+export async function getAdminQuestions(user: User) { return questionSchema.array().parse(await request(user, "/api/v2/admin/content/questions")); }
+export async function moderateAdminQuestion(user: User, id: string, input: ContentModerationInput) { return await request(user, `/api/v2/admin/content/questions/${id}`, { method: "PATCH", body: JSON.stringify(input) }); }

@@ -1,4 +1,4 @@
-import { addressSchema, sessionSchema, type AddressInput, type Session, type UpdateProfile } from "@amiyo/contracts";
+import { accountDeletionSchema, addressSchema, sessionSchema, type AccountDeletionInput, type AddressInput, type Session, type UpdateProfile } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
@@ -35,3 +35,6 @@ export async function getMyAddresses(user: User) {
 export async function createMyAddress(user: User, input: AddressInput) {
   return addressSchema.parse(await authenticatedRequest<unknown>(user, "/api/v2/me/addresses", { method: "POST", body: JSON.stringify(input) }));
 }
+
+export async function getDeletionRequest(user: User) { const value = await authenticatedRequest<unknown>(user, "/api/v2/me/deletion-request"); return value === null ? null : accountDeletionSchema.parse(value); }
+export async function requestAccountDeletion(user: User, input: AccountDeletionInput) { return accountDeletionSchema.parse(await authenticatedRequest<unknown>(user, "/api/v2/me/deletion-request", { method: "POST", body: JSON.stringify(input) })); }

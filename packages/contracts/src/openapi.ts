@@ -4,12 +4,12 @@ import { catalogQuerySchema, categorySchema, createProductSchema, inventoryAdjus
 import { addCartItemSchema, cartSchema, checkoutInputSchema, checkoutQuoteSchema, checkoutResultSchema, updateCartItemSchema } from "./commerce.js";
 import { customerOrderSummarySchema, deliveryQueueItemSchema, deliveryRetryInputSchema, deliveryRetryResultSchema, orderTrackingSchema, vendorOrderDetailSchema, vendorOrderTransitionSchema } from "./delivery.js";
 import { healthResponseSchema } from "./health.js";
-import { addressInputSchema, addressSchema, deviceInputSchema, deviceSchema, sessionSchema, updateProfileSchema } from "./identity.js";
+import { accountDeletionInputSchema, accountDeletionSchema, addressInputSchema, addressSchema, deviceInputSchema, deviceSchema, sessionSchema, updateProfileSchema } from "./identity.js";
 import { orderSchema } from "./orders.js";
 import { problemSchema } from "./problem.js";
 import { cancelOrderSchema, createReturnSchema, returnSchema, returnTransitionSchema } from "./returns.js";
 import { codReconciliationInputSchema, completePayoutSchema, completeRefundSchema, createPayoutRequestSchema, reviewPayoutSchema, vendorFinanceSchema } from "./finance.js";
-import { answerInputSchema, chatMessageInputSchema, chatThreadInputSchema, chatThreadSchema, createPromotionSchema, growthFeedSchema, notificationSchema, questionInputSchema, questionSchema, reviewInputSchema, reviewSchema, stockAlertInputSchema, wishlistItemInputSchema, wishlistSchema } from "./engagement.js";
+import { answerInputSchema, chatMessageInputSchema, chatThreadInputSchema, chatThreadSchema, contentModerationInputSchema, createPromotionSchema, growthFeedSchema, notificationSchema, questionInputSchema, questionSchema, reviewInputSchema, reviewSchema, stockAlertInputSchema, wishlistItemInputSchema, wishlistSchema } from "./engagement.js";
 import { createSupportTicketSchema, supportMessageInputSchema, supportTicketSchema, supportTicketStatusInputSchema } from "./support.js";
 import { saveVendorBankAccountSchema, submitVendorKycSchema, updateVendorShopSchema, vendorWorkspaceSchema } from "./vendor.js";
 import { adminKycReviewInputSchema, adminUserStatusInputSchema, adminVendorStatusInputSchema, adminWorkspaceSchema, trustCaseActionInputSchema } from "./admin.js";
@@ -153,6 +153,8 @@ registry.registerPath({
   security: firebaseSecurity,
   responses: { 200: { description: "Registered devices", content: { "application/json": { schema: z.array(device) } } }, ...errorResponses }
 });
+registry.registerPath({ method: "get", path: "/api/v2/me/deletion-request", tags: ["Identity"], security: firebaseSecurity, responses: { 200: { description: "Active account deletion request", content: { "application/json": { schema: accountDeletionSchema.nullable() } } }, ...errorResponses } });
+registry.registerPath({ method: "post", path: "/api/v2/me/deletion-request", tags: ["Identity"], security: firebaseSecurity, request: { body: { content: { "application/json": { schema: accountDeletionInputSchema } } } }, responses: { 201: { description: "Account deletion scheduled", content: { "application/json": { schema: accountDeletionSchema } } }, ...errorResponses } });
 
 registry.registerPath({
   method: "post",
@@ -273,6 +275,12 @@ registry.registerPath({ method: "post", path: "/api/v2/reviews", tags: ["Engagem
 registry.registerPath({ method: "get", path: "/api/v2/catalog/products/{productId}/questions", tags: ["Engagement & Growth"], request: { params: z.object({ productId: z.string().uuid() }) }, responses: { 200: { description: "Product questions and answers", content: { "application/json": { schema: z.array(questionSchema) } } }, ...errorResponses } });
 registry.registerPath({ method: "post", path: "/api/v2/catalog/products/{productId}/questions", tags: ["Engagement & Growth"], security: firebaseSecurity, request: { params: z.object({ productId: z.string().uuid() }), body: { content: { "application/json": { schema: questionInputSchema } } } }, responses: { 201: { description: "Question created", content: { "application/json": { schema: questionSchema } } }, ...errorResponses } });
 registry.registerPath({ method: "post", path: "/api/v2/questions/{id}/answers", tags: ["Engagement & Growth"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }), body: { content: { "application/json": { schema: answerInputSchema } } } }, responses: { 201: { description: "Vendor answer created" }, ...errorResponses } });
+registry.registerPath({ method: "get", path: "/api/v2/vendor/engagement/reviews", tags: ["Engagement & Growth"], security: firebaseSecurity, responses: { 200: { description: "Vendor product reviews", content: { "application/json": { schema: z.array(reviewSchema) } } }, ...errorResponses } });
+registry.registerPath({ method: "get", path: "/api/v2/vendor/engagement/questions", tags: ["Engagement & Growth"], security: firebaseSecurity, responses: { 200: { description: "Vendor product questions", content: { "application/json": { schema: z.array(questionSchema) } } }, ...errorResponses } });
+registry.registerPath({ method: "get", path: "/api/v2/admin/content/reviews", tags: ["Admin Trust"], security: firebaseSecurity, responses: { 200: { description: "Review moderation queue", content: { "application/json": { schema: z.array(reviewSchema) } } }, ...errorResponses } });
+registry.registerPath({ method: "patch", path: "/api/v2/admin/content/reviews/{id}", tags: ["Admin Trust"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }), body: { content: { "application/json": { schema: contentModerationInputSchema } } } }, responses: { 200: { description: "Review moderated" }, ...errorResponses } });
+registry.registerPath({ method: "get", path: "/api/v2/admin/content/questions", tags: ["Admin Trust"], security: firebaseSecurity, responses: { 200: { description: "Question moderation queue", content: { "application/json": { schema: z.array(questionSchema) } } }, ...errorResponses } });
+registry.registerPath({ method: "patch", path: "/api/v2/admin/content/questions/{id}", tags: ["Admin Trust"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }), body: { content: { "application/json": { schema: contentModerationInputSchema } } } }, responses: { 200: { description: "Question moderated" }, ...errorResponses } });
 registry.registerPath({ method: "get", path: "/api/v2/notifications", tags: ["Engagement & Growth"], security: firebaseSecurity, responses: { 200: { description: "Current user notifications", content: { "application/json": { schema: z.array(notificationSchema) } } }, ...errorResponses } });
 registry.registerPath({ method: "get", path: "/api/v2/chat/threads", tags: ["Engagement & Growth"], security: firebaseSecurity, responses: { 200: { description: "Participant-scoped chat threads", content: { "application/json": { schema: z.array(chatThreadSchema) } } }, ...errorResponses } });
 registry.registerPath({ method: "post", path: "/api/v2/chat/threads", tags: ["Engagement & Growth"], security: firebaseSecurity, request: { body: { content: { "application/json": { schema: chatThreadInputSchema } } } }, responses: { 201: { description: "Secure vendor chat created" }, ...errorResponses } });

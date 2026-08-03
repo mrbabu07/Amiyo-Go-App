@@ -4211,6 +4211,230 @@
         }
       }
     },
+    "/api/v2/me/deletion-request": {
+      "get": {
+        "tags": [
+          "Identity"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active account deletion request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "requestedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "executeAfter": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "completedAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status",
+                    "reason",
+                    "requestedAt",
+                    "executeAfter",
+                    "completedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Identity"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "minLength": 3,
+                    "maxLength": 1000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Account deletion scheduled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "requestedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "executeAfter": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "completedAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status",
+                    "reason",
+                    "requestedAt",
+                    "executeAfter",
+                    "completedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/catalog/categories": {
       "get": {
         "tags": [
@@ -8015,6 +8239,9 @@
                           "null"
                         ]
                       },
+                      "status": {
+                        "type": "string"
+                      },
                       "verifiedPurchase": {
                         "type": "boolean"
                       },
@@ -8134,6 +8361,9 @@
                           "string",
                           "null"
                         ]
+                      },
+                      "status": {
+                        "type": "string"
                       },
                       "verifiedPurchase": {
                         "type": "boolean"
@@ -8290,6 +8520,9 @@
                         "null"
                       ]
                     },
+                    "status": {
+                      "type": "string"
+                    },
                     "verifiedPurchase": {
                       "type": "boolean"
                     },
@@ -8391,6 +8624,9 @@
                       "productId": {
                         "type": "string",
                         "format": "uuid"
+                      },
+                      "productName": {
+                        "type": "string"
                       },
                       "body": {
                         "type": "string"
@@ -8549,6 +8785,9 @@
                       "type": "string",
                       "format": "uuid"
                     },
+                    "productName": {
+                      "type": "string"
+                    },
                     "body": {
                       "type": "string"
                     },
@@ -8694,6 +8933,710 @@
         "responses": {
           "201": {
             "description": "Vendor answer created"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/vendor/engagement/reviews": {
+      "get": {
+        "tags": [
+          "Engagement & Growth"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vendor product reviews",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "productId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "productName": {
+                        "type": "string"
+                      },
+                      "productSlug": {
+                        "type": "string"
+                      },
+                      "rating": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                      },
+                      "title": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "body": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "verifiedPurchase": {
+                        "type": "boolean"
+                      },
+                      "authorName": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "productId",
+                      "rating",
+                      "title",
+                      "body",
+                      "verifiedPurchase",
+                      "authorName",
+                      "createdAt"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/vendor/engagement/questions": {
+      "get": {
+        "tags": [
+          "Engagement & Growth"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vendor product questions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "productId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "productName": {
+                        "type": "string"
+                      },
+                      "body": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "authorName": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "answers": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "body": {
+                              "type": "string"
+                            },
+                            "accepted": {
+                              "type": "boolean"
+                            },
+                            "authorName": {
+                              "type": "string"
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "body",
+                            "accepted",
+                            "authorName",
+                            "createdAt"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "productId",
+                      "body",
+                      "status",
+                      "authorName",
+                      "createdAt",
+                      "answers"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/content/reviews": {
+      "get": {
+        "tags": [
+          "Admin Trust"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review moderation queue",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "productId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "productName": {
+                        "type": "string"
+                      },
+                      "productSlug": {
+                        "type": "string"
+                      },
+                      "rating": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                      },
+                      "title": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "body": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "verifiedPurchase": {
+                        "type": "boolean"
+                      },
+                      "authorName": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "productId",
+                      "rating",
+                      "title",
+                      "body",
+                      "verifiedPurchase",
+                      "authorName",
+                      "createdAt"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/content/reviews/{id}": {
+      "patch": {
+        "tags": [
+          "Admin Trust"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "published",
+                      "hidden"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "status",
+                  "reason"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review moderated"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/content/questions": {
+      "get": {
+        "tags": [
+          "Admin Trust"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Question moderation queue",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "productId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "productName": {
+                        "type": "string"
+                      },
+                      "body": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "authorName": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "answers": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "body": {
+                              "type": "string"
+                            },
+                            "accepted": {
+                              "type": "boolean"
+                            },
+                            "authorName": {
+                              "type": "string"
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "body",
+                            "accepted",
+                            "authorName",
+                            "createdAt"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "productId",
+                      "body",
+                      "status",
+                      "authorName",
+                      "createdAt",
+                      "answers"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/content/questions/{id}": {
+      "patch": {
+        "tags": [
+          "Admin Trust"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "published",
+                      "hidden"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "status",
+                  "reason"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Question moderated"
           },
           "400": {
             "description": "Invalid request",

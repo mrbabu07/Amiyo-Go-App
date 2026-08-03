@@ -1,0 +1,3 @@
+import assert from "node:assert/strict"; import test from "node:test"; import { accountDeletionInputSchema } from "./identity.js"; import { contentModerationInputSchema } from "./engagement.js";
+test("account deletion reason is optional but bounded", () => { assert.deepEqual(accountDeletionInputSchema.parse({}), {}); assert.throws(() => accountDeletionInputSchema.parse({ reason: "no" })); });
+test("content moderation requires a durable reason", () => { assert.equal(contentModerationInputSchema.parse({ status: "hidden", reason: "Policy violation" }).status, "hidden"); assert.throws(() => contentModerationInputSchema.parse({ status: "deleted", reason: "Policy violation" })); });

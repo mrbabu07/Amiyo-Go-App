@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
-import { addressInputSchema, deviceInputSchema, updateProfileSchema } from "@amiyo/contracts";
+import { accountDeletionInputSchema, addressInputSchema, deviceInputSchema, updateProfileSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { FirebaseTokenVerifier } from "./firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "./identity.middleware.js";
@@ -115,6 +115,14 @@ export function createIdentityRouter(options?: { service?: IdentityService; veri
     } catch (error) {
       next(error);
     }
+  });
+
+  router.get("/api/v2/me/deletion-request", async (req, res, next) => {
+    try { res.json(await service.getDeletionRequest(requireSession(req).principal.userId)); } catch (error) { next(error); }
+  });
+
+  router.post("/api/v2/me/deletion-request", async (req, res, next) => {
+    try { const session = requireSession(req); res.status(201).json(await service.requestDeletion(session.principal.userId, accountDeletionInputSchema.parse(req.body), correlationId(req.headers))); } catch (error) { next(error); }
   });
 
   return router;
