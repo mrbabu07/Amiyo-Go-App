@@ -33,6 +33,6 @@ This matrix tracks the rebuild against the read-only legacy `Client` and `Server
 | Support | Implemented | Cross-customer ticket queue and status workflow |
 | Trust and safety | Implemented | Mobile user access, vendor approval, KYC review, product moderation and trust-case action queues |
 | Content moderation | Implemented | Review and product-question visibility queues with audited actions |
-| Platform operations | Implemented | Payment verification, category creation, marketing visibility and full audit activity |
+| Platform operations | Implemented | Payment verification, category creation, dynamic category attributes, marketing visibility and full audit activity |
 
 The rebuild covers the primary purchase, after-sales and model-backed marketplace operations end to end. Remaining production gates require approved external providers, credentials, business-policy decisions, real-device evidence and store submission access.

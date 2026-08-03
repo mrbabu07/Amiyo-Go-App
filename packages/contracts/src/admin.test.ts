@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { adminCategoryInputSchema, adminKycReviewInputSchema, adminUserStatusInputSchema, paymentVerificationReviewSchema, trustCaseActionInputSchema } from "./admin.js";
+import { adminCategoryAttributesInputSchema, adminCategoryInputSchema, adminKycReviewInputSchema, adminUserStatusInputSchema, paymentVerificationReviewSchema, trustCaseActionInputSchema } from "./admin.js";
 
 test("admin user status mutations require an operational reason", () => {
   assert.equal(adminUserStatusInputSchema.parse({ status: "SUSPENDED", reason: "Fraud review" }).status, "SUSPENDED");
@@ -18,3 +18,8 @@ test("trust actions use a bounded workflow", () => {
 });
 test("payment rejection requires a review reason", () => { assert.equal(paymentVerificationReviewSchema.parse({ status: "approved", reason: "Evidence verified" }).status, "approved"); assert.throws(() => paymentVerificationReviewSchema.parse({ status: "rejected", reason: "no" })); });
 test("admin category slugs remain URL safe", () => { assert.equal(adminCategoryInputSchema.parse({ name: "Home Appliances", slug: "home-appliances" }).displayOrder, 0); assert.throws(() => adminCategoryInputSchema.parse({ name: "Home Appliances", slug: "Home Appliances" })); });
+test("dynamic category attributes reject ambiguous configurations", () => {
+  assert.equal(adminCategoryAttributesInputSchema.safeParse({ attributes: [{ key: "size", label: "Size", dataType: "select", options: ["Small", "Large"] }] }).success, true);
+  assert.equal(adminCategoryAttributesInputSchema.safeParse({ attributes: [{ key: "size", label: "Size", dataType: "select", options: [] }] }).success, false);
+  assert.equal(adminCategoryAttributesInputSchema.safeParse({ attributes: [{ key: "size", label: "Size", dataType: "text" }, { key: "size", label: "Other size", dataType: "text" }] }).success, false);
+});

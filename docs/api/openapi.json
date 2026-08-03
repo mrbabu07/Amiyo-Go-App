@@ -15960,6 +15960,80 @@
                           "productCount": {
                             "type": "integer",
                             "minimum": 0
+                          },
+                          "attributes": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "key": {
+                                  "type": "string"
+                                },
+                                "label": {
+                                  "type": "string"
+                                },
+                                "dataType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "text",
+                                    "number",
+                                    "boolean",
+                                    "select",
+                                    "multiselect"
+                                  ]
+                                },
+                                "required": {
+                                  "type": "boolean"
+                                },
+                                "filterable": {
+                                  "type": "boolean"
+                                },
+                                "displayOrder": {
+                                  "type": "integer"
+                                },
+                                "options": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                      },
+                                      "value": {
+                                        "type": "string"
+                                      },
+                                      "label": {
+                                        "type": "string"
+                                      },
+                                      "displayOrder": {
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "value",
+                                      "label",
+                                      "displayOrder"
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "key",
+                                "label",
+                                "dataType",
+                                "required",
+                                "filterable",
+                                "displayOrder",
+                                "options"
+                              ]
+                            }
                           }
                         },
                         "required": [
@@ -15968,7 +16042,8 @@
                           "slug",
                           "status",
                           "displayOrder",
-                          "productCount"
+                          "productCount",
+                          "attributes"
                         ]
                       }
                     },
@@ -16327,6 +16402,80 @@
                           "productCount": {
                             "type": "integer",
                             "minimum": 0
+                          },
+                          "attributes": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "key": {
+                                  "type": "string"
+                                },
+                                "label": {
+                                  "type": "string"
+                                },
+                                "dataType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "text",
+                                    "number",
+                                    "boolean",
+                                    "select",
+                                    "multiselect"
+                                  ]
+                                },
+                                "required": {
+                                  "type": "boolean"
+                                },
+                                "filterable": {
+                                  "type": "boolean"
+                                },
+                                "displayOrder": {
+                                  "type": "integer"
+                                },
+                                "options": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                      },
+                                      "value": {
+                                        "type": "string"
+                                      },
+                                      "label": {
+                                        "type": "string"
+                                      },
+                                      "displayOrder": {
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "value",
+                                      "label",
+                                      "displayOrder"
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "key",
+                                "label",
+                                "dataType",
+                                "required",
+                                "filterable",
+                                "displayOrder",
+                                "options"
+                              ]
+                            }
                           }
                         },
                         "required": [
@@ -16335,7 +16484,8 @@
                           "slug",
                           "status",
                           "displayOrder",
-                          "productCount"
+                          "productCount",
+                          "attributes"
                         ]
                       }
                     },
@@ -16691,6 +16841,80 @@
                           "productCount": {
                             "type": "integer",
                             "minimum": 0
+                          },
+                          "attributes": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "key": {
+                                  "type": "string"
+                                },
+                                "label": {
+                                  "type": "string"
+                                },
+                                "dataType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "text",
+                                    "number",
+                                    "boolean",
+                                    "select",
+                                    "multiselect"
+                                  ]
+                                },
+                                "required": {
+                                  "type": "boolean"
+                                },
+                                "filterable": {
+                                  "type": "boolean"
+                                },
+                                "displayOrder": {
+                                  "type": "integer"
+                                },
+                                "options": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                      },
+                                      "value": {
+                                        "type": "string"
+                                      },
+                                      "label": {
+                                        "type": "string"
+                                      },
+                                      "displayOrder": {
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "value",
+                                      "label",
+                                      "displayOrder"
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "key",
+                                "label",
+                                "dataType",
+                                "required",
+                                "filterable",
+                                "displayOrder",
+                                "options"
+                              ]
+                            }
                           }
                         },
                         "required": [
@@ -16699,7 +16923,495 @@
                           "slug",
                           "status",
                           "displayOrder",
+                          "productCount",
+                          "attributes"
+                        ]
+                      }
+                    },
+                    "banners": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "placement": {
+                            "type": "string"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "placement",
+                          "active",
+                          "startsAt",
+                          "endsAt"
+                        ]
+                      }
+                    },
+                    "vouchers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "ownerType": {
+                            "type": "string"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "code",
+                          "ownerType",
+                          "active",
+                          "startsAt",
+                          "endsAt"
+                        ]
+                      }
+                    },
+                    "flashSales": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "productCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "status",
+                          "startsAt",
+                          "endsAt",
                           "productCount"
+                        ]
+                      }
+                    },
+                    "audit": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "actorType": {
+                            "type": "string"
+                          },
+                          "action": {
+                            "type": "string"
+                          },
+                          "resourceType": {
+                            "type": "string"
+                          },
+                          "resourceId": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "actorType",
+                          "action",
+                          "resourceType",
+                          "resourceId",
+                          "createdAt"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "paymentVerifications",
+                    "categories",
+                    "banners",
+                    "vouchers",
+                    "flashSales",
+                    "audit"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/workspace/categories/{id}/attributes": {
+      "put": {
+        "tags": [
+          "Admin Platform"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "attributes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80,
+                          "pattern": "^[a-z][a-z0-9_]*$"
+                        },
+                        "label": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 120
+                        },
+                        "dataType": {
+                          "type": "string",
+                          "enum": [
+                            "text",
+                            "number",
+                            "boolean",
+                            "select",
+                            "multiselect"
+                          ]
+                        },
+                        "required": {
+                          "type": "boolean",
+                          "default": false
+                        },
+                        "filterable": {
+                          "type": "boolean",
+                          "default": false
+                        },
+                        "displayOrder": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "default": 0
+                        },
+                        "options": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 100
+                          },
+                          "maxItems": 100,
+                          "default": []
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "label",
+                        "dataType"
+                      ]
+                    },
+                    "maxItems": 100
+                  }
+                },
+                "required": [
+                  "attributes"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Category attributes replaced atomically",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "paymentVerifications": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "paymentId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "orderId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "orderNumber": {
+                            "type": "string"
+                          },
+                          "provider": {
+                            "type": "string"
+                          },
+                          "amountMinor": {
+                            "type": "string"
+                          },
+                          "currency": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "transactionRef": {
+                            "type": "string"
+                          },
+                          "senderMasked": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "evidenceStorageKey": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "paymentId",
+                          "orderId",
+                          "orderNumber",
+                          "provider",
+                          "amountMinor",
+                          "currency",
+                          "status",
+                          "transactionRef",
+                          "senderMasked",
+                          "evidenceStorageKey",
+                          "createdAt"
+                        ]
+                      }
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "displayOrder": {
+                            "type": "integer"
+                          },
+                          "productCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "attributes": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "key": {
+                                  "type": "string"
+                                },
+                                "label": {
+                                  "type": "string"
+                                },
+                                "dataType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "text",
+                                    "number",
+                                    "boolean",
+                                    "select",
+                                    "multiselect"
+                                  ]
+                                },
+                                "required": {
+                                  "type": "boolean"
+                                },
+                                "filterable": {
+                                  "type": "boolean"
+                                },
+                                "displayOrder": {
+                                  "type": "integer"
+                                },
+                                "options": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                      },
+                                      "value": {
+                                        "type": "string"
+                                      },
+                                      "label": {
+                                        "type": "string"
+                                      },
+                                      "displayOrder": {
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "value",
+                                      "label",
+                                      "displayOrder"
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "key",
+                                "label",
+                                "dataType",
+                                "required",
+                                "filterable",
+                                "displayOrder",
+                                "options"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "slug",
+                          "status",
+                          "displayOrder",
+                          "productCount",
+                          "attributes"
                         ]
                       }
                     },
@@ -17048,6 +17760,80 @@
                           "productCount": {
                             "type": "integer",
                             "minimum": 0
+                          },
+                          "attributes": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "key": {
+                                  "type": "string"
+                                },
+                                "label": {
+                                  "type": "string"
+                                },
+                                "dataType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "text",
+                                    "number",
+                                    "boolean",
+                                    "select",
+                                    "multiselect"
+                                  ]
+                                },
+                                "required": {
+                                  "type": "boolean"
+                                },
+                                "filterable": {
+                                  "type": "boolean"
+                                },
+                                "displayOrder": {
+                                  "type": "integer"
+                                },
+                                "options": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                      },
+                                      "value": {
+                                        "type": "string"
+                                      },
+                                      "label": {
+                                        "type": "string"
+                                      },
+                                      "displayOrder": {
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "value",
+                                      "label",
+                                      "displayOrder"
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "key",
+                                "label",
+                                "dataType",
+                                "required",
+                                "filterable",
+                                "displayOrder",
+                                "options"
+                              ]
+                            }
                           }
                         },
                         "required": [
@@ -17056,7 +17842,8 @@
                           "slug",
                           "status",
                           "displayOrder",
-                          "productCount"
+                          "productCount",
+                          "attributes"
                         ]
                       }
                     },
@@ -17405,6 +18192,80 @@
                           "productCount": {
                             "type": "integer",
                             "minimum": 0
+                          },
+                          "attributes": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "key": {
+                                  "type": "string"
+                                },
+                                "label": {
+                                  "type": "string"
+                                },
+                                "dataType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "text",
+                                    "number",
+                                    "boolean",
+                                    "select",
+                                    "multiselect"
+                                  ]
+                                },
+                                "required": {
+                                  "type": "boolean"
+                                },
+                                "filterable": {
+                                  "type": "boolean"
+                                },
+                                "displayOrder": {
+                                  "type": "integer"
+                                },
+                                "options": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                      },
+                                      "value": {
+                                        "type": "string"
+                                      },
+                                      "label": {
+                                        "type": "string"
+                                      },
+                                      "displayOrder": {
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "value",
+                                      "label",
+                                      "displayOrder"
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "key",
+                                "label",
+                                "dataType",
+                                "required",
+                                "filterable",
+                                "displayOrder",
+                                "options"
+                              ]
+                            }
                           }
                         },
                         "required": [
@@ -17413,7 +18274,8 @@
                           "slug",
                           "status",
                           "displayOrder",
-                          "productCount"
+                          "productCount",
+                          "attributes"
                         ]
                       }
                     },
@@ -17762,6 +18624,80 @@
                           "productCount": {
                             "type": "integer",
                             "minimum": 0
+                          },
+                          "attributes": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "key": {
+                                  "type": "string"
+                                },
+                                "label": {
+                                  "type": "string"
+                                },
+                                "dataType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "text",
+                                    "number",
+                                    "boolean",
+                                    "select",
+                                    "multiselect"
+                                  ]
+                                },
+                                "required": {
+                                  "type": "boolean"
+                                },
+                                "filterable": {
+                                  "type": "boolean"
+                                },
+                                "displayOrder": {
+                                  "type": "integer"
+                                },
+                                "options": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                      },
+                                      "value": {
+                                        "type": "string"
+                                      },
+                                      "label": {
+                                        "type": "string"
+                                      },
+                                      "displayOrder": {
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "value",
+                                      "label",
+                                      "displayOrder"
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "key",
+                                "label",
+                                "dataType",
+                                "required",
+                                "filterable",
+                                "displayOrder",
+                                "options"
+                              ]
+                            }
                           }
                         },
                         "required": [
@@ -17770,7 +18706,8 @@
                           "slug",
                           "status",
                           "displayOrder",
-                          "productCount"
+                          "productCount",
+                          "attributes"
                         ]
                       }
                     },
