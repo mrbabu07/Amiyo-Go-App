@@ -11,6 +11,7 @@ import { cancelOrderSchema, createReturnSchema, returnSchema, returnTransitionSc
 import { codReconciliationInputSchema, completePayoutSchema, completeRefundSchema, createPayoutRequestSchema, reviewPayoutSchema, vendorFinanceSchema } from "./finance.js";
 import { answerInputSchema, chatMessageInputSchema, chatThreadInputSchema, chatThreadSchema, createPromotionSchema, growthFeedSchema, notificationSchema, questionInputSchema, questionSchema, reviewInputSchema, reviewSchema, stockAlertInputSchema, wishlistItemInputSchema, wishlistSchema } from "./engagement.js";
 import { createSupportTicketSchema, supportMessageInputSchema, supportTicketSchema, supportTicketStatusInputSchema } from "./support.js";
+import { saveVendorBankAccountSchema, submitVendorKycSchema, updateVendorShopSchema, vendorWorkspaceSchema } from "./vendor.js";
 
 extendZodWithOpenApi(z);
 
@@ -281,12 +282,16 @@ registry.registerPath({ method: "post", path: "/api/v2/support/tickets", tags: [
 registry.registerPath({ method: "post", path: "/api/v2/support/tickets/{id}/messages", tags: ["Support"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }), body: { content: { "application/json": { schema: supportMessageInputSchema } } } }, responses: { 201: { description: "Support reply created", content: { "application/json": { schema: supportTicketSchema } } }, ...errorResponses } });
 registry.registerPath({ method: "get", path: "/api/v2/admin/support/tickets", tags: ["Support"], security: firebaseSecurity, responses: { 200: { description: "Support staff ticket queue", content: { "application/json": { schema: z.array(supportTicketSchema) } } }, ...errorResponses } });
 registry.registerPath({ method: "patch", path: "/api/v2/admin/support/tickets/{id}/status", tags: ["Support"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }), body: { content: { "application/json": { schema: supportTicketStatusInputSchema } } } }, responses: { 200: { description: "Support ticket status updated", content: { "application/json": { schema: supportTicketSchema } } }, ...errorResponses } });
+registry.registerPath({ method: "get", path: "/api/v2/vendor/workspace", tags: ["Vendor Workspace"], security: firebaseSecurity, responses: { 200: { description: "Vendor profile, shops, KYC and masked payout accounts", content: { "application/json": { schema: vendorWorkspaceSchema } } }, ...errorResponses } });
+registry.registerPath({ method: "patch", path: "/api/v2/vendor/workspace/shops/{id}", tags: ["Vendor Workspace"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }), body: { content: { "application/json": { schema: updateVendorShopSchema } } } }, responses: { 200: { description: "Updated vendor workspace", content: { "application/json": { schema: vendorWorkspaceSchema } } }, ...errorResponses } });
+registry.registerPath({ method: "post", path: "/api/v2/vendor/workspace/kyc", tags: ["Vendor Workspace"], security: firebaseSecurity, request: { body: { content: { "application/json": { schema: submitVendorKycSchema } } } }, responses: { 201: { description: "KYC submitted for review", content: { "application/json": { schema: vendorWorkspaceSchema } } }, ...errorResponses } });
+registry.registerPath({ method: "post", path: "/api/v2/vendor/workspace/bank-accounts", tags: ["Vendor Workspace"], security: firebaseSecurity, request: { body: { content: { "application/json": { schema: saveVendorBankAccountSchema } } } }, responses: { 201: { description: "Encrypted payout account saved", content: { "application/json": { schema: vendorWorkspaceSchema } } }, ...errorResponses } });
 
 export function createOpenApiDocument() {
   return new OpenApiGeneratorV31(registry.definitions).generateDocument({
     openapi: "3.1.0",
     info: { title: "Amiyo-Go API", version: "0.9.0", description: "Typed API contract for the Amiyo-Go mobile platform." },
     servers: [{ url: "http://localhost:4000", description: "Local development" }],
-    tags: [{ name: "Operations" }, { name: "Returns & Finance" }, { name: "Engagement & Growth" }, { name: "Support" }, { name: "Identity" }, { name: "Catalog" }, { name: "Shops" }, { name: "Vendor Catalog" }, { name: "Catalog Moderation" }, { name: "Commerce" }, { name: "Orders" }, { name: "Vendor Orders" }, { name: "Delivery" }]
+    tags: [{ name: "Operations" }, { name: "Returns & Finance" }, { name: "Engagement & Growth" }, { name: "Support" }, { name: "Vendor Workspace" }, { name: "Identity" }, { name: "Catalog" }, { name: "Shops" }, { name: "Vendor Catalog" }, { name: "Catalog Moderation" }, { name: "Commerce" }, { name: "Orders" }, { name: "Vendor Orders" }, { name: "Delivery" }]
   });
 }

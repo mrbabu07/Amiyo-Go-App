@@ -19,7 +19,8 @@ This matrix tracks the rebuild against the read-only legacy `Client` and `Server
 | Dashboard | Implemented | Vendor overview and scoped navigation |
 | Orders | Implemented | Vendor order queue, detail and fulfillment transitions |
 | Finance | Implemented | Balance, ledger and payout requests |
-| Catalog operations | API implemented | Product creation, updates and inventory adjustment; expanded mobile management UI remains iterative |
+| Catalog operations | Implemented | Mobile product creation/submission, moderation status and concurrency-safe inventory adjustment |
+| Vendor workspace | Implemented | Shop profile, KYC submission and encrypted masked payout account management |
 
 ## Admin experience
 

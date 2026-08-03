@@ -1,4 +1,5 @@
-import { categorySchema, productDetailSchema, productListResponseSchema, shopDetailSchema, shopListResponseSchema, type CatalogQuery } from "@amiyo/contracts";
+import { categorySchema, productDetailSchema, productListResponseSchema, shopDetailSchema, shopListResponseSchema, vendorInventorySchema, type CatalogQuery, type CreateProductInput, type InventoryAdjustmentInput } from "@amiyo/contracts";
+import type { User } from "firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
 
@@ -10,6 +11,8 @@ async function publicRequest(path: string) {
   }
   return response.json() as Promise<unknown>;
 }
+
+async function authenticatedRequest(user: User, path: string, init?: RequestInit) { const token = await user.getIdToken(); const response = await fetch(`${apiUrl}${path}`, { ...init, headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...init?.headers } }); if (!response.ok) { const problem = await response.json().catch(() => null) as { title?: string; detail?: string } | null; throw new Error(problem?.detail || problem?.title || `Catalog request failed (${response.status})`); } return response.json() as Promise<unknown>; }
 
 function queryString(input: Partial<CatalogQuery>) {
   const params = new URLSearchParams();
@@ -43,3 +46,9 @@ export async function getShop(identifier: string) {
 export async function getShops() {
   return shopListResponseSchema.parse(await publicRequest("/api/v2/shops?limit=30"));
 }
+
+export async function getVendorProducts(user: User) { return productDetailSchema.array().parse(await authenticatedRequest(user, "/api/v2/vendor/products")); }
+export async function createVendorProduct(user: User, input: CreateProductInput) { return await authenticatedRequest(user, "/api/v2/vendor/products", { method: "POST", body: JSON.stringify(input) }); }
+export async function submitVendorProduct(user: User, id: string) { return await authenticatedRequest(user, `/api/v2/vendor/products/${id}/submit`, { method: "POST" }); }
+export async function getVendorInventory(user: User) { return vendorInventorySchema.array().parse(await authenticatedRequest(user, "/api/v2/vendor/inventory")); }
+export async function adjustVendorInventory(user: User, variantId: string, input: InventoryAdjustmentInput) { return vendorInventorySchema.parse(await authenticatedRequest(user, `/api/v2/vendor/inventory/${variantId}`, { method: "PUT", body: JSON.stringify(input) })); }
