@@ -33,6 +33,7 @@ export function createOrderRouter() {
   router.get("/api/v2/orders/:id/invoice", async (req, res, next) => { try { res.json(await service.invoice(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   router.get("/api/v2/vendor/orders", async (req, res, next) => { try { res.json(await service.vendorOrders(requireSession(req), listSchema.parse(req.query).status)); } catch (error) { next(error); } });
   router.get("/api/v2/vendor/orders/:id", async (req, res, next) => { try { res.json(await service.vendorOrder(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
+  router.get("/api/v2/vendor/orders/:id/documents", async (req, res, next) => { try { res.json(await service.fulfillmentDocument(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   router.post("/api/v2/vendor/orders/:id/transitions", async (req, res, next) => {
     try {
       const key = req.header("idempotency-key");

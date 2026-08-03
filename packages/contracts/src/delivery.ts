@@ -61,6 +61,7 @@ export const orderTrackingSchema = z.object({
   status: parentOrderStatusSchema,
   shipments: z.array(z.object({ vendorOrderId: uuidSchema, shopName: z.string(), shipment: shipmentSchema.nullable() }))
 });
+export const fulfillmentDocumentSchema = z.object({ parcelId: z.string(), orderId: uuidSchema, orderNumber: z.string(), vendorOrderId: uuidSchema, shopName: z.string(), status: vendorOrderStatusSchema, createdAt: timestampSchema, customer: z.object({ name: z.string(), phone: z.string(), address: z.string() }), pickup: z.object({ name: z.string(), phone: z.string(), address: z.string() }), payment: z.object({ method: z.string(), collectAmount: moneySchema }), subtotal: moneySchema, delivery: moneySchema, discount: moneySchema, total: moneySchema, trackingNumber: z.string().nullable(), items: z.array(z.object({ id: uuidSchema, name: z.string(), sku: z.string(), quantity: z.number().int().positive(), unitPrice: moneySchema, lineTotal: moneySchema })) });
 
 export const deliveryDispatchJobSchema = z.object({ dispatchId: uuidSchema, idempotencyKey: z.string().startsWith("delivery-create:") });
 
@@ -95,6 +96,7 @@ export type VendorOrderDetail = z.infer<typeof vendorOrderDetailSchema>;
 export type VendorOrderTransition = z.infer<typeof vendorOrderTransitionSchema>;
 export type CustomerOrderSummary = z.infer<typeof customerOrderSummarySchema>;
 export type OrderTracking = z.infer<typeof orderTrackingSchema>;
+export type FulfillmentDocument = z.infer<typeof fulfillmentDocumentSchema>;
 export type DeliveryDispatchJob = z.infer<typeof deliveryDispatchJobSchema>;
 export type DeliveryRetryInput = z.infer<typeof deliveryRetryInputSchema>;
 export type DeliveryQueueItem = z.infer<typeof deliveryQueueItemSchema>;

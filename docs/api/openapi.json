@@ -6396,6 +6396,348 @@
         }
       }
     },
+    "/api/v2/vendor/orders/{id}/documents": {
+      "get": {
+        "tags": [
+          "Vendor Orders"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Print-ready packing slip and parcel label data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "parcelId": {
+                      "type": "string"
+                    },
+                    "orderId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "orderNumber": {
+                      "type": "string"
+                    },
+                    "vendorOrderId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "shopName": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PLACED",
+                        "ACCEPTED",
+                        "REJECTED",
+                        "PROCESSING",
+                        "READY_TO_SHIP",
+                        "PICKED_UP",
+                        "IN_TRANSIT",
+                        "DELIVERED",
+                        "CANCELLED"
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "customer": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "phone": {
+                          "type": "string"
+                        },
+                        "address": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "phone",
+                        "address"
+                      ]
+                    },
+                    "pickup": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "phone": {
+                          "type": "string"
+                        },
+                        "address": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "phone",
+                        "address"
+                      ]
+                    },
+                    "payment": {
+                      "type": "object",
+                      "properties": {
+                        "method": {
+                          "type": "string"
+                        },
+                        "collectAmount": {
+                          "type": "object",
+                          "properties": {
+                            "amountMinor": {
+                              "type": "string",
+                              "pattern": "^\\d+$"
+                            },
+                            "currency": {
+                              "type": "string",
+                              "minLength": 3,
+                              "maxLength": 3,
+                              "default": "BDT"
+                            }
+                          },
+                          "required": [
+                            "amountMinor"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "method",
+                        "collectAmount"
+                      ]
+                    },
+                    "subtotal": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "delivery": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "discount": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "total": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "trackingNumber": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "sku": {
+                            "type": "string"
+                          },
+                          "quantity": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          },
+                          "unitPrice": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "minLength": 3,
+                                "maxLength": 3,
+                                "default": "BDT"
+                              }
+                            },
+                            "required": [
+                              "amountMinor"
+                            ]
+                          },
+                          "lineTotal": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "minLength": 3,
+                                "maxLength": 3,
+                                "default": "BDT"
+                              }
+                            },
+                            "required": [
+                              "amountMinor"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "sku",
+                          "quantity",
+                          "unitPrice",
+                          "lineTotal"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "parcelId",
+                    "orderId",
+                    "orderNumber",
+                    "vendorOrderId",
+                    "shopName",
+                    "status",
+                    "createdAt",
+                    "customer",
+                    "pickup",
+                    "payment",
+                    "subtotal",
+                    "delivery",
+                    "discount",
+                    "total",
+                    "trackingNumber",
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/vendor/orders/{id}/transitions": {
       "post": {
         "tags": [
