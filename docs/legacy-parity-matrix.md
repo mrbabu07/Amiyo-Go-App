@@ -33,5 +33,6 @@ This matrix tracks the rebuild against the read-only legacy `Client` and `Server
 | Support | Implemented | Cross-customer ticket queue and status workflow |
 | Trust and safety | Implemented | Mobile user access, vendor approval, KYC review, product moderation and trust-case action queues |
 | Content moderation | Implemented | Review and product-question visibility queues with audited actions |
+| Platform operations | Implemented | Payment verification, category creation, marketing visibility and full audit activity |
 
 The rebuild now covers the primary purchase and after-sales journey end to end. Remaining legacy parity work is concentrated in advanced vendor catalog tooling and deep admin trust-and-safety workflows.
