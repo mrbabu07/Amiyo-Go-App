@@ -369,6 +369,7 @@ model Vendor {
   vendorOrders    VendorOrder[]
   commissionRules CommissionRule[]
   chatThreads     ChatThread[]
+  categoryRequests VendorCategoryRequest[]
 
   @@index([status, createdAt])
   @@map("vendors")
@@ -557,9 +558,30 @@ model Category {
   attributes        CategoryAttribute[]
   products          Product[]
   commissionRules   CommissionRule[]
+  vendorRequests    VendorCategoryRequest[]
 
   @@index([parentId, displayOrder])
   @@map("categories")
+}
+
+model VendorCategoryRequest {
+  id           String    @id @default(uuid()) @db.Uuid
+  vendorId     String    @map("vendor_id") @db.Uuid
+  categoryId   String    @map("category_id") @db.Uuid
+  status       String    @default("pending")
+  reason       String
+  description  String?
+  reviewedBy   String?   @map("reviewed_by") @db.Uuid
+  reviewedAt   DateTime? @map("reviewed_at") @db.Timestamptz(3)
+  reviewReason String?   @map("review_reason")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  vendor       Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  category     Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@unique([vendorId, categoryId])
+  @@index([status, createdAt])
+  @@map("vendor_category_requests")
 }
 
 model CategoryAttribute {

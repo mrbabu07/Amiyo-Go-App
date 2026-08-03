@@ -1,4 +1,4 @@
-import { returnSchema, vendorReportSchema, vendorStaffSchema, vendorVoucherSchema, vendorWorkspaceSchema, type CreateVendorVoucher, type SaveVendorBankAccount, type SubmitVendorKyc, type UpdateVendorShop, type UpdateVendorStaff } from "@amiyo/contracts";
+import { returnSchema, vendorCategoryRequestSchema, vendorReportSchema, vendorStaffSchema, vendorVoucherSchema, vendorWorkspaceSchema, type CreateVendorCategoryRequest, type CreateVendorVoucher, type SaveVendorBankAccount, type SubmitVendorKyc, type UpdateVendorShop, type UpdateVendorStaff } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
@@ -13,3 +13,5 @@ export async function getVendorVouchers(user: User) { return vendorVoucherSchema
 export async function createVendorVoucher(user: User, input: CreateVendorVoucher) { return vendorVoucherSchema.array().parse(await request(user, "/api/v2/vendor/workspace/vouchers", { method: "POST", body: JSON.stringify(input) })); }
 export async function getVendorReport(user: User) { return vendorReportSchema.parse(await request(user, "/api/v2/vendor/workspace/report")); }
 export async function getVendorReturns(user: User) { return returnSchema.array().parse(await request(user, "/api/v2/vendor/workspace/returns")); }
+export async function getVendorCategoryRequests(user: User) { return vendorCategoryRequestSchema.array().parse(await request(user, "/api/v2/vendor/workspace/category-requests")); }
+export async function createVendorCategoryRequest(user: User, input: CreateVendorCategoryRequest) { return vendorCategoryRequestSchema.array().parse(await request(user, "/api/v2/vendor/workspace/category-requests", { method: "POST", body: JSON.stringify(input) })); }

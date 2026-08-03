@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
-import { createVendorVoucherSchema, saveVendorBankAccountSchema, submitVendorKycSchema, updateVendorShopSchema, updateVendorStaffSchema } from "@amiyo/contracts";
+import { createVendorCategoryRequestSchema, createVendorVoucherSchema, saveVendorBankAccountSchema, submitVendorKycSchema, updateVendorShopSchema, updateVendorStaffSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "../identity/identity.middleware.js";
@@ -23,5 +23,7 @@ export function createVendorRouter() {
   router.post("/api/v2/vendor/workspace/vouchers", writeLimit, async (req, res, next) => { try { res.status(201).json(await service.createVoucher(requireSession(req), createVendorVoucherSchema.parse(req.body))); } catch (error) { next(error); } });
   router.get("/api/v2/vendor/workspace/report", async (req, res, next) => { try { res.json(await service.report(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/vendor/workspace/returns", async (req, res, next) => { try { res.json(await service.returns(requireSession(req))); } catch (error) { next(error); } });
+  router.get("/api/v2/vendor/workspace/category-requests", async (req, res, next) => { try { res.json(await service.categoryRequests(requireSession(req))); } catch (error) { next(error); } });
+  router.post("/api/v2/vendor/workspace/category-requests", writeLimit, async (req, res, next) => { try { res.status(201).json(await service.createCategoryRequest(requireSession(req), createVendorCategoryRequestSchema.parse(req.body))); } catch (error) { next(error); } });
   return router;
 }

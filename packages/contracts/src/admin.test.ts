@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { adminAnalyticsQuerySchema, adminCategoryAttributesInputSchema, adminCategoryInputSchema, adminKycReviewInputSchema, adminUserStatusInputSchema, paymentVerificationReviewSchema, trustCaseActionInputSchema } from "./admin.js";
+import { adminAnalyticsQuerySchema, adminCategoryAttributesInputSchema, adminCategoryInputSchema, adminCategoryRequestReviewSchema, adminKycReviewInputSchema, adminUserStatusInputSchema, paymentVerificationReviewSchema, trustCaseActionInputSchema } from "./admin.js";
 
 test("admin user status mutations require an operational reason", () => {
   assert.equal(adminUserStatusInputSchema.parse({ status: "SUSPENDED", reason: "Fraud review" }).status, "SUSPENDED");
@@ -24,3 +24,4 @@ test("dynamic category attributes reject ambiguous configurations", () => {
   assert.equal(adminCategoryAttributesInputSchema.safeParse({ attributes: [{ key: "size", label: "Size", dataType: "text" }, { key: "size", label: "Other size", dataType: "text" }] }).success, false);
 });
 test("admin analytics uses bounded reporting windows", () => { assert.equal(adminAnalyticsQuerySchema.parse({}).range, "30d"); assert.equal(adminAnalyticsQuerySchema.parse({ range: "90d" }).range, "90d"); assert.throws(() => adminAnalyticsQuerySchema.parse({ range: "all" })); });
+test("category request reviews use final bounded decisions", () => { assert.equal(adminCategoryRequestReviewSchema.safeParse({ status: "approved", reason: "Catalog verified" }).success, true); assert.equal(adminCategoryRequestReviewSchema.safeParse({ status: "pending", reason: "Wait" }).success, false); });

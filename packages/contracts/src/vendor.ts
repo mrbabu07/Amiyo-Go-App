@@ -60,9 +60,12 @@ export const updateVendorStaffSchema = z.object({ status: z.enum(["active", "sus
 export const vendorVoucherSchema = z.object({ id: uuidSchema, code: z.string(), active: z.boolean(), startsAt: timestampSchema, endsAt: timestampSchema, version: versionSchema, rules: z.record(z.unknown()) });
 export const createVendorVoucherSchema = z.object({ code: z.string().trim().min(3).max(40).transform((value) => value.toUpperCase()), discountType: z.enum(["PERCENT", "FIXED"]), value: z.number().int().positive(), startsAt: z.string().datetime(), endsAt: z.string().datetime() }).refine((value) => value.startsAt < value.endsAt, "startsAt must precede endsAt");
 export const vendorReportSchema = z.object({ orderCount: z.number().int().nonnegative(), deliveredCount: z.number().int().nonnegative(), grossSalesMinor: z.string(), productCount: z.number().int().nonnegative(), lowStockCount: z.number().int().nonnegative(), statusCounts: z.record(z.number().int().nonnegative()), recentOrders: z.array(z.object({ id: uuidSchema, status: z.string(), totalMinor: z.string(), createdAt: timestampSchema })) });
+export const vendorCategoryRequestSchema = z.object({ id: uuidSchema, vendorId: uuidSchema, vendorName: z.string(), categoryId: uuidSchema, categoryName: z.string(), categoryPath: z.string(), status: z.enum(["pending", "approved", "rejected"]), reason: z.string(), description: z.string().nullable(), reviewReason: z.string().nullable(), reviewedAt: timestampSchema.nullable(), createdAt: timestampSchema });
+export const createVendorCategoryRequestSchema = z.object({ categoryId: uuidSchema, reason: z.string().trim().min(5).max(500), description: z.string().trim().max(1000).nullable().optional() });
 
 export type UpdateVendorShop = z.infer<typeof updateVendorShopSchema>;
 export type SubmitVendorKyc = z.infer<typeof submitVendorKycSchema>;
 export type SaveVendorBankAccount = z.infer<typeof saveVendorBankAccountSchema>;
 export type UpdateVendorStaff = z.infer<typeof updateVendorStaffSchema>;
 export type CreateVendorVoucher = z.infer<typeof createVendorVoucherSchema>;
+export type CreateVendorCategoryRequest = z.infer<typeof createVendorCategoryRequestSchema>;
