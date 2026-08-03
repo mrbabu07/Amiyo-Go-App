@@ -49,3 +49,4 @@ export type AdminCategoryInput = z.infer<typeof adminCategoryInputSchema>;
 export type AdminCategoryAttributesInput = z.infer<typeof adminCategoryAttributesInputSchema>;
 export type AdminAnalyticsQuery = z.infer<typeof adminAnalyticsQuerySchema>;
 export type AdminCategoryRequestReview = z.infer<typeof adminCategoryRequestReviewSchema>;
+export type AdminAnalyticsDto = z.infer<typeof adminAnalyticsSchema>;
