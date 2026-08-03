@@ -10,7 +10,7 @@ export function CategoryRail({ data }: { data: HomeCategory[] }) {
     <ScrollView contentContainerStyle={styles.content} horizontal showsHorizontalScrollIndicator={false}>
       {data.map((category) => (
         <Pressable accessibilityRole="button" key={category.id} onPress={() => router.push(`/category/${category.id}` as never)} style={styles.item}>
-          <View style={[styles.icon, { backgroundColor: category.color }]}><Ionicons color={colors.navy} name={category.icon as never} size={27} /></View>
+          <View style={[styles.icon, { backgroundColor: category.color }]}><Ionicons color={category.foreground} name={category.icon as never} size={27} /></View>
           <Text numberOfLines={2} style={styles.label}>{category.name}</Text>
         </Pressable>
       ))}

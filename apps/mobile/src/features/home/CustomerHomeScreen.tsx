@@ -13,6 +13,7 @@ import { PromoTiles } from "./components/PromoTiles";
 import { ShopRail } from "./components/ShopRail";
 import { StoreHeader } from "./components/StoreHeader";
 import { getCategories, getProducts, getShops } from "../catalog/catalog.api";
+import { getCategoryVisual } from "../catalog/category-visuals";
 import { toHomeProduct } from "../catalog/catalog.view-model";
 import { getGrowthFeed } from "../engagement/engagement.api";
 
@@ -41,8 +42,7 @@ export function CustomerHomeScreen() {
   const productQuery = useQuery({ queryKey: ["catalog", "home-products"], queryFn: () => getProducts({ limit: 20 }) });
   const shopQuery = useQuery({ queryKey: ["catalog", "home-shops"], queryFn: getShops });
   const growthQuery = useQuery({ queryKey: ["growth", "feed"], queryFn: getGrowthFeed });
-  const categoryIcons = ["shirt-outline", "phone-portrait-outline", "sparkles-outline", "home-outline", "happy-outline", "basket-outline", "football-outline"];
-  const liveCategories: HomeCategory[] = (categoryQuery.data || []).map((category, index) => ({ id: category.slug, name: category.name, icon: categoryIcons[index % categoryIcons.length] || "grid-outline", color: ["#fce7f3", "#dbeafe", "#fef3c7", "#dcfce7", "#f3e8ff", "#ffedd5", "#cffafe"][index % 7] || colors.primarySoft }));
+  const liveCategories: HomeCategory[] = (categoryQuery.data || []).map((category, index) => { const visual = getCategoryVisual(category, index); return { id: category.slug, name: category.name, icon: visual.icon, color: visual.background, foreground: visual.foreground }; });
   const liveProducts = (productQuery.data?.data || []).map(toHomeProduct);
   const activeFlashSale = growthQuery.data?.flashSales[0];
   const flashPriceByProduct = new Map(activeFlashSale?.products.map((product) => [product.productId, Number(product.price.amountMinor) / 100]) || []);

@@ -3,6 +3,7 @@ export type HomeCategory = {
   name: string;
   icon: string;
   color: string;
+  foreground: string;
 };
 
 export type HomeProduct = {
