@@ -4,8 +4,8 @@ import { catalogQuerySchema, categorySchema, createProductSchema, inventoryAdjus
 import { addCartItemSchema, cartSchema, checkoutInputSchema, checkoutQuoteSchema, checkoutResultSchema, updateCartItemSchema } from "./commerce.js";
 import { customerOrderSummarySchema, deliveryQueueItemSchema, deliveryRetryInputSchema, deliveryRetryResultSchema, orderTrackingSchema, vendorOrderDetailSchema, vendorOrderTransitionSchema } from "./delivery.js";
 import { healthResponseSchema } from "./health.js";
-import { accountDeletionInputSchema, accountDeletionSchema, addressInputSchema, addressSchema, deviceInputSchema, deviceSchema, sessionSchema, updateProfileSchema } from "./identity.js";
-import { orderSchema } from "./orders.js";
+import { accountDataExportSchema, accountDeletionInputSchema, accountDeletionSchema, addressInputSchema, addressSchema, deviceInputSchema, deviceSchema, sessionSchema, updateProfileSchema } from "./identity.js";
+import { invoiceSchema, orderSchema } from "./orders.js";
 import { problemSchema } from "./problem.js";
 import { cancelOrderSchema, createReturnSchema, returnSchema, returnTransitionSchema } from "./returns.js";
 import { codReconciliationInputSchema, completePayoutSchema, completeRefundSchema, createPayoutRequestSchema, reviewPayoutSchema, vendorFinanceSchema } from "./finance.js";
@@ -32,6 +32,8 @@ const vendorOrderDetail = registry.register("VendorOrderDetail", vendorOrderDeta
 const customerOrderSummary = registry.register("CustomerOrderSummary", customerOrderSummarySchema);
 const orderTracking = registry.register("OrderTracking", orderTrackingSchema);
 const order = registry.register("Order", orderSchema);
+const invoice = registry.register("Invoice", invoiceSchema);
+const accountDataExport = registry.register("AccountDataExport", accountDataExportSchema);
 const session = registry.register("IdentitySession", sessionSchema);
 const address = registry.register("Address", addressSchema);
 const device = registry.register("Device", deviceSchema);
@@ -154,6 +156,7 @@ registry.registerPath({
   responses: { 200: { description: "Registered devices", content: { "application/json": { schema: z.array(device) } } }, ...errorResponses }
 });
 registry.registerPath({ method: "get", path: "/api/v2/me/deletion-request", tags: ["Identity"], security: firebaseSecurity, responses: { 200: { description: "Active account deletion request", content: { "application/json": { schema: accountDeletionSchema.nullable() } } }, ...errorResponses } });
+registry.registerPath({ method: "get", path: "/api/v2/me/export", tags: ["Identity"], security: firebaseSecurity, responses: { 200: { description: "Portable account data export", content: { "application/json": { schema: accountDataExport } } }, ...errorResponses } });
 registry.registerPath({ method: "post", path: "/api/v2/me/deletion-request", tags: ["Identity"], security: firebaseSecurity, request: { body: { content: { "application/json": { schema: accountDeletionInputSchema } } } }, responses: { 201: { description: "Account deletion scheduled", content: { "application/json": { schema: accountDeletionSchema } } }, ...errorResponses } });
 
 registry.registerPath({
@@ -249,6 +252,7 @@ registry.registerPath({
 
 registry.registerPath({ method: "get", path: "/api/v2/orders", tags: ["Orders"], security: firebaseSecurity, responses: { 200: { description: "Current customer orders", content: { "application/json": { schema: z.array(customerOrderSummary) } } }, ...errorResponses } });
 registry.registerPath({ method: "get", path: "/api/v2/orders/{id}", tags: ["Orders"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: { description: "Customer order detail", content: { "application/json": { schema: order } } }, ...errorResponses } });
+registry.registerPath({ method: "get", path: "/api/v2/orders/{id}/invoice", tags: ["Orders"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: { description: "Customer invoice for an owned order", content: { "application/json": { schema: invoice } } }, ...errorResponses } });
 registry.registerPath({ method: "get", path: "/api/v2/orders/{id}/tracking", tags: ["Delivery"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: { description: "Customer shipment tracking", content: { "application/json": { schema: orderTracking } } }, ...errorResponses } });
 registry.registerPath({ method: "get", path: "/api/v2/vendor/orders", tags: ["Vendor Orders"], security: firebaseSecurity, responses: { 200: { description: "Vendor-scoped fulfillment queue", content: { "application/json": { schema: z.array(vendorOrderDetail) } } }, ...errorResponses } });
 registry.registerPath({ method: "get", path: "/api/v2/vendor/orders/{id}", tags: ["Vendor Orders"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: { description: "Vendor order detail", content: { "application/json": { schema: vendorOrderDetail } } }, ...errorResponses } });

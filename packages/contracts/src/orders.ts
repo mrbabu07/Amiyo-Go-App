@@ -52,6 +52,7 @@ export const orderSchema = z.object({
 });
 
 export const orderListResponseSchema = paginatedResponseSchema(orderSchema.omit({ vendorOrders: true }));
+export const invoiceSchema = z.object({ id: uuidSchema, number: z.string(), issuedAt: timestampSchema, storageUrl: z.string().url().nullable(), order: orderSchema });
 
 export type OrderDto = z.infer<typeof orderSchema>;
 export type VendorOrderStatus = z.infer<typeof vendorOrderStatusSchema>;

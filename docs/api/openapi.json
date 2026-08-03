@@ -2754,6 +2754,476 @@
           "vendorOrders"
         ]
       },
+      "Invoice": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "type": "string"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "storageUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
+          "order": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "orderNumber": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "PENDING_PAYMENT",
+                  "CONFIRMED",
+                  "PROCESSING",
+                  "READY_TO_SHIP",
+                  "SHIPPED",
+                  "DELIVERED",
+                  "CANCELLED",
+                  "RETURN_REQUESTED",
+                  "RETURNED",
+                  "REFUNDED"
+                ]
+              },
+              "subtotal": {
+                "type": "object",
+                "properties": {
+                  "amountMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3,
+                    "default": "BDT"
+                  }
+                },
+                "required": [
+                  "amountMinor"
+                ]
+              },
+              "discount": {
+                "type": "object",
+                "properties": {
+                  "amountMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3,
+                    "default": "BDT"
+                  }
+                },
+                "required": [
+                  "amountMinor"
+                ]
+              },
+              "delivery": {
+                "type": "object",
+                "properties": {
+                  "amountMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3,
+                    "default": "BDT"
+                  }
+                },
+                "required": [
+                  "amountMinor"
+                ]
+              },
+              "tax": {
+                "type": "object",
+                "properties": {
+                  "amountMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3,
+                    "default": "BDT"
+                  }
+                },
+                "required": [
+                  "amountMinor"
+                ]
+              },
+              "total": {
+                "type": "object",
+                "properties": {
+                  "amountMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3,
+                    "default": "BDT"
+                  }
+                },
+                "required": [
+                  "amountMinor"
+                ]
+              },
+              "version": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "vendorOrders": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "vendorId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "shopId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PLACED",
+                        "ACCEPTED",
+                        "REJECTED",
+                        "PROCESSING",
+                        "READY_TO_SHIP",
+                        "PICKED_UP",
+                        "IN_TRANSIT",
+                        "DELIVERED",
+                        "CANCELLED"
+                      ]
+                    },
+                    "subtotal": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "discount": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "delivery": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "total": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "commission": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "productId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "variantId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "productName": {
+                            "type": "string"
+                          },
+                          "sku": {
+                            "type": "string"
+                          },
+                          "attributes": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "additionalProperties": {}
+                          },
+                          "quantity": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          },
+                          "unitPrice": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "minLength": 3,
+                                "maxLength": 3,
+                                "default": "BDT"
+                              }
+                            },
+                            "required": [
+                              "amountMinor"
+                            ]
+                          },
+                          "discount": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "minLength": 3,
+                                "maxLength": 3,
+                                "default": "BDT"
+                              }
+                            },
+                            "required": [
+                              "amountMinor"
+                            ]
+                          },
+                          "lineTotal": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "minLength": 3,
+                                "maxLength": 3,
+                                "default": "BDT"
+                              }
+                            },
+                            "required": [
+                              "amountMinor"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "productId",
+                          "variantId",
+                          "productName",
+                          "sku",
+                          "attributes",
+                          "quantity",
+                          "unitPrice",
+                          "discount",
+                          "lineTotal"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "vendorId",
+                    "shopId",
+                    "status",
+                    "subtotal",
+                    "discount",
+                    "delivery",
+                    "total",
+                    "commission",
+                    "version",
+                    "items"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "id",
+              "orderNumber",
+              "status",
+              "subtotal",
+              "discount",
+              "delivery",
+              "tax",
+              "total",
+              "version",
+              "createdAt",
+              "vendorOrders"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "issuedAt",
+          "storageUrl",
+          "order"
+        ]
+      },
+      "AccountDataExport": {
+        "type": "object",
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "profile": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "addresses": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "orders": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "returns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "reviews": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "supportTickets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "generatedAt",
+          "profile",
+          "addresses",
+          "orders",
+          "returns",
+          "reviews",
+          "supportTickets"
+        ]
+      },
       "IdentitySession": {
         "type": "object",
         "properties": {
@@ -4438,6 +4908,70 @@
         }
       }
     },
+    "/api/v2/me/export": {
+      "get": {
+        "tags": [
+          "Identity"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Portable account data export",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDataExport"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/catalog/categories": {
       "get": {
         "tags": [
@@ -5329,6 +5863,81 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/orders/{id}/invoice": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer invoice for an owned order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Invoice"
                 }
               }
             }

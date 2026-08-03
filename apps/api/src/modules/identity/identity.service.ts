@@ -343,4 +343,9 @@ export class IdentityService {
     });
     return { ...row, requestedAt: row.requestedAt.toISOString(), executeAfter: row.executeAfter.toISOString(), completedAt: row.completedAt?.toISOString() ?? null };
   }
+  async exportAccount(userId: string) {
+    const user = await this.client.user.findUnique({ where: { id: userId }, include: { profile: true, addresses: true, orders: { orderBy: { createdAt: "desc" }, take: 500 }, returnRequests: { orderBy: { createdAt: "desc" }, take: 500 }, reviews: { orderBy: { createdAt: "desc" }, take: 500 }, supportTickets: { include: { messages: true }, orderBy: { createdAt: "desc" }, take: 500 } } });
+    if (!user) throw new ApiProblem(404, "USER_NOT_FOUND", "User not found");
+    return { generatedAt: new Date().toISOString(), profile: { id: user.id, email: user.normalizedEmail, phone: user.normalizedPhone, status: user.status, ...user.profile }, addresses: user.addresses, orders: user.orders.map((order) => ({ ...order, subtotalMinor: order.subtotalMinor.toString(), discountMinor: order.discountMinor.toString(), deliveryMinor: order.deliveryMinor.toString(), taxMinor: order.taxMinor.toString(), totalMinor: order.totalMinor.toString() })), returns: user.returnRequests.map((item) => ({ ...item, requestedMinor: item.requestedMinor.toString(), approvedMinor: item.approvedMinor?.toString() ?? null })), reviews: user.reviews, supportTickets: user.supportTickets };
+  }
 }

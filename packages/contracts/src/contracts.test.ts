@@ -20,10 +20,12 @@ test("OpenAPI document exposes typed v2 resources", () => {
   assert.ok(document.paths?.["/api/v2/orders/{id}"]);
   assert.ok(document.paths?.["/api/v2/auth/session"]);
   assert.ok(document.paths?.["/api/v2/me/addresses"]);
+  assert.ok(document.paths?.["/api/v2/me/export"]);
   assert.ok(document.paths?.["/api/v2/cart"]);
   assert.ok(document.paths?.["/api/v2/checkout/orders"]);
   assert.ok(document.paths?.["/api/v2/vendor/orders/{id}/transitions"]);
   assert.ok(document.paths?.["/api/v2/orders/{id}/tracking"]);
+  assert.ok(document.paths?.["/api/v2/orders/{id}/invoice"]);
   assert.ok(document.paths?.["/api/v2/returns"]);
   assert.ok(document.paths?.["/api/v2/vendor/finance"]);
   assert.ok(document.paths?.["/api/v2/admin/cod/reconciliations"]);

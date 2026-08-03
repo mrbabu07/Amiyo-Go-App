@@ -114,6 +114,12 @@ export class OrderService {
     if (!order) throw new ApiProblem(404, "ORDER_NOT_FOUND", "Order not found");
     return { id: order.id, orderNumber: order.orderNumber, status: order.status, subtotal: money(order.subtotalMinor, order.currency), discount: money(order.discountMinor, order.currency), delivery: money(order.deliveryMinor, order.currency), tax: money(order.taxMinor, order.currency), total: money(order.totalMinor, order.currency), version: order.version, createdAt: order.createdAt.toISOString(), vendorOrders: order.vendorOrders.map((vendor) => ({ id: vendor.id, vendorId: vendor.vendorId, shopId: vendor.shopId, status: vendor.status, subtotal: money(vendor.subtotalMinor, order.currency), discount: money(vendor.discountMinor, order.currency), delivery: money(vendor.deliveryMinor, order.currency), total: money(vendor.totalMinor, order.currency), commission: money(vendor.commissionMinor, order.currency), version: vendor.version, items: vendor.items.map((item) => ({ id: item.id, productId: item.productId, variantId: item.variantId, productName: item.productNameSnapshot, sku: item.skuSnapshot, attributes: item.attributesSnapshot as Record<string, unknown> | null, quantity: item.quantity, unitPrice: money(item.unitPriceMinor, item.currency), discount: money(item.discountMinor, item.currency), lineTotal: money(item.lineTotalMinor, item.currency) })) })) };
   }
+  async invoice(session: Session, id: string) {
+    const detail = await this.customerOrder(session, id);
+    const invoice = await this.client.invoice.upsert({ where: { orderId: id }, create: { orderId: id, number: `INV-${detail.orderNumber}` }, update: {} });
+    const base = process.env.OBJECT_STORAGE_PUBLIC_URL?.replace(/\/$/, ""); const storageUrl = invoice.storageKey && base ? `${base}/${invoice.storageKey.replace(/^\//, "")}` : null;
+    return { id: invoice.id, number: invoice.number, issuedAt: invoice.issuedAt.toISOString(), storageUrl, order: detail };
+  }
 
   async tracking(session: Session, id: string) {
     const order = await this.client.order.findFirst({ where: { id, userId: session.principal.userId }, include: { vendorOrders: { include: { shop: true, shipments: { orderBy: { createdAt: "desc" }, take: 1, include: { events: { orderBy: { occurredAt: "asc" } } } } } } } });

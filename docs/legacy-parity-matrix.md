@@ -7,8 +7,8 @@ This matrix tracks the rebuild against the read-only legacy `Client` and `Server
 | Area | Status | Rebuild coverage |
 | --- | --- | --- |
 | Store discovery | Implemented | Home, categories, search, shops, campaigns, flash sales, product detail |
-| Commerce | Implemented | Cart, checkout, orders, tracking, cancellation, returns and refunds |
-| Account | Implemented | Firebase session, profile, delivery addresses, role-aware navigation and scheduled account deletion |
+| Commerce | Implemented | Cart, checkout, orders, invoices, tracking, cancellation, returns and refunds |
+| Account | Implemented | Firebase session, profile, full delivery-address management, portable data export, role-aware navigation and scheduled account deletion |
 | Engagement | Implemented | Wishlist sharing, alerts, loyalty, notifications, vendor messages, product Q&A and personal reviews |
 | Support | Implemented | Ticket creation, threaded customer replies and status tracking |
 
@@ -35,4 +35,4 @@ This matrix tracks the rebuild against the read-only legacy `Client` and `Server
 | Content moderation | Implemented | Review and product-question visibility queues with audited actions |
 | Platform operations | Implemented | Payment verification, category creation, marketing visibility and full audit activity |
 
-The rebuild now covers the primary purchase and after-sales journey end to end. Remaining legacy parity work is concentrated in advanced vendor catalog tooling and deep admin trust-and-safety workflows.
+The rebuild covers the primary purchase, after-sales and model-backed marketplace operations end to end. Remaining production gates require approved external providers, credentials, business-policy decisions, real-device evidence and store submission access.
