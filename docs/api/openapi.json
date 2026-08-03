@@ -16254,6 +16254,371 @@
         }
       }
     },
+    "/api/v2/admin/workspace/analytics": {
+      "get": {
+        "tags": [
+          "Admin Platform"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "7d",
+                "30d",
+                "90d"
+              ],
+              "default": "30d"
+            },
+            "required": false,
+            "name": "range",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Marketplace analytics and customer insights",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "range": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string",
+                          "enum": [
+                            "7d",
+                            "30d",
+                            "90d"
+                          ]
+                        },
+                        "startsAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "endsAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "startsAt",
+                        "endsAt"
+                      ]
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "totalCustomers": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "newCustomers": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "purchasingCustomers": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "orders": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "gmv": {
+                          "type": "object",
+                          "properties": {
+                            "amountMinor": {
+                              "type": "string",
+                              "pattern": "^\\d+$"
+                            },
+                            "currency": {
+                              "type": "string",
+                              "enum": [
+                                "BDT"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "amountMinor",
+                            "currency"
+                          ]
+                        },
+                        "averageOrderValue": {
+                          "type": "object",
+                          "properties": {
+                            "amountMinor": {
+                              "type": "string",
+                              "pattern": "^\\d+$"
+                            },
+                            "currency": {
+                              "type": "string",
+                              "enum": [
+                                "BDT"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "amountMinor",
+                            "currency"
+                          ]
+                        },
+                        "repeatPurchaseRate": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 100
+                        }
+                      },
+                      "required": [
+                        "totalCustomers",
+                        "newCustomers",
+                        "purchasingCustomers",
+                        "orders",
+                        "gmv",
+                        "averageOrderValue",
+                        "repeatPurchaseRate"
+                      ]
+                    },
+                    "trend": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "date": {
+                            "type": "string"
+                          },
+                          "orders": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "revenue": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "enum": [
+                                  "BDT"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "amountMinor",
+                              "currency"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "date",
+                          "orders",
+                          "revenue"
+                        ]
+                      }
+                    },
+                    "segments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string",
+                            "enum": [
+                              "new",
+                              "regular",
+                              "vip"
+                            ]
+                          },
+                          "customers": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "orders": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "revenue": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "enum": [
+                                  "BDT"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "amountMinor",
+                              "currency"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "customers",
+                          "orders",
+                          "revenue"
+                        ]
+                      }
+                    },
+                    "topProducts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "quantity": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "revenue": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "enum": [
+                                  "BDT"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "amountMinor",
+                              "currency"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "quantity",
+                          "revenue"
+                        ]
+                      }
+                    },
+                    "topVendors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "orders": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "revenue": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "enum": [
+                                  "BDT"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "amountMinor",
+                              "currency"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "orders",
+                          "revenue"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "range",
+                    "summary",
+                    "trend",
+                    "segments",
+                    "topProducts",
+                    "topVendors"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/admin/workspace/payment-verifications/{id}": {
       "patch": {
         "tags": [

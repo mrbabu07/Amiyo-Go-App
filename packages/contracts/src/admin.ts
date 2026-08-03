@@ -17,6 +17,16 @@ export const adminCategoryAttributeSchema = z.object({ id: uuidSchema, key: z.st
 const adminCategoryAttributeInputSchema = z.object({ key: z.string().trim().min(1).max(80).regex(/^[a-z][a-z0-9_]*$/), label: z.string().trim().min(1).max(120), dataType: z.enum(["text", "number", "boolean", "select", "multiselect"]), required: z.boolean().default(false), filterable: z.boolean().default(false), displayOrder: z.number().int().nonnegative().default(0), options: z.array(z.string().trim().min(1).max(100)).max(100).default([]) }).superRefine((value, context) => { const normalized = value.options.map((option) => option.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")); if (normalized.some((option) => !option)) context.addIssue({ code: "custom", message: "Attribute options require a URL-safe value", path: ["options"] }); if (new Set(normalized).size !== normalized.length) context.addIssue({ code: "custom", message: "Attribute options must be unique", path: ["options"] }); if ((value.dataType === "select" || value.dataType === "multiselect") && value.options.length === 0) context.addIssue({ code: "custom", message: "Select attributes require options", path: ["options"] }); if (value.dataType !== "select" && value.dataType !== "multiselect" && value.options.length > 0) context.addIssue({ code: "custom", message: "Only select attributes may define options", path: ["options"] }); });
 export const adminCategoryAttributesInputSchema = z.object({ attributes: z.array(adminCategoryAttributeInputSchema).max(100) }).superRefine((value, context) => { const keys = value.attributes.map((attribute) => attribute.key.toLowerCase()); if (new Set(keys).size !== keys.length) context.addIssue({ code: "custom", message: "Attribute keys must be unique", path: ["attributes"] }); });
 export const adminToggleInputSchema = z.object({ active: z.boolean() });
+export const adminAnalyticsQuerySchema = z.object({ range: z.enum(["7d", "30d", "90d"]).default("30d") });
+const analyticsAmountSchema = z.object({ amountMinor: z.string().regex(/^\d+$/), currency: z.literal("BDT") });
+export const adminAnalyticsSchema = z.object({
+  range: z.object({ key: z.enum(["7d", "30d", "90d"]), startsAt: timestampSchema, endsAt: timestampSchema }),
+  summary: z.object({ totalCustomers: z.number().int().nonnegative(), newCustomers: z.number().int().nonnegative(), purchasingCustomers: z.number().int().nonnegative(), orders: z.number().int().nonnegative(), gmv: analyticsAmountSchema, averageOrderValue: analyticsAmountSchema, repeatPurchaseRate: z.number().min(0).max(100) }),
+  trend: z.array(z.object({ date: z.string(), orders: z.number().int().nonnegative(), revenue: analyticsAmountSchema })),
+  segments: z.array(z.object({ key: z.enum(["new", "regular", "vip"]), customers: z.number().int().nonnegative(), orders: z.number().int().nonnegative(), revenue: analyticsAmountSchema })),
+  topProducts: z.array(z.object({ id: uuidSchema, name: z.string(), quantity: z.number().int().nonnegative(), revenue: analyticsAmountSchema })),
+  topVendors: z.array(z.object({ id: uuidSchema, name: z.string(), orders: z.number().int().nonnegative(), revenue: analyticsAmountSchema }))
+});
 export const adminPlatformSchema = z.object({
   paymentVerifications: z.array(paymentVerificationSchema),
   categories: z.array(z.object({ id: uuidSchema, name: z.string(), slug: z.string(), status: z.string(), displayOrder: z.number().int(), productCount: z.number().int().nonnegative(), attributes: z.array(adminCategoryAttributeSchema) })),
@@ -33,3 +43,4 @@ export type TrustCaseActionInput = z.infer<typeof trustCaseActionInputSchema>;
 export type PaymentVerificationReview = z.infer<typeof paymentVerificationReviewSchema>;
 export type AdminCategoryInput = z.infer<typeof adminCategoryInputSchema>;
 export type AdminCategoryAttributesInput = z.infer<typeof adminCategoryAttributesInputSchema>;
+export type AdminAnalyticsQuery = z.infer<typeof adminAnalyticsQuerySchema>;
