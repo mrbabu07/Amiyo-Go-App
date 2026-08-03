@@ -1,6 +1,6 @@
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { Prisma, type PrismaClient } from "@prisma/client";
-import type { SaveVendorBankAccount, Session, SubmitVendorKyc, UpdateVendorShop } from "@amiyo/contracts";
+import type { CreateVendorVoucher, SaveVendorBankAccount, Session, SubmitVendorKyc, UpdateVendorShop, UpdateVendorStaff } from "@amiyo/contracts";
 import { ApiProblem } from "../../middleware/api-problem.js";
 
 function vendorId(session: Session) {
@@ -63,4 +63,25 @@ export class VendorService {
     });
     return this.getWorkspace(session);
   }
+  async staff(session: Session) {
+    const id = vendorId(session); requirePermission(session, "vendor:read");
+    const rows = await this.client.vendorMember.findMany({ where: { vendorId: id }, include: { user: { include: { profile: true } }, permissions: true }, orderBy: { createdAt: "asc" } });
+    return rows.map((member) => ({ id: member.id, userId: member.userId, displayName: member.user.profile?.displayName ?? null, email: member.user.normalizedEmail, role: member.role, status: member.status, permissions: member.permissions.filter((item) => item.granted).map((item) => item.permissionKey) }));
+  }
+  async updateStaff(session: Session, memberId: string, input: UpdateVendorStaff) {
+    const id = vendorId(session); requirePermission(session, "vendor:manage");
+    const member = await this.client.vendorMember.findFirst({ where: { id: memberId, vendorId: id } }); if (!member) throw new ApiProblem(404, "VENDOR_STAFF_NOT_FOUND", "Vendor staff member not found");
+    if (member.userId === session.principal.userId) throw new ApiProblem(409, "VENDOR_SELF_STAFF_CHANGE_FORBIDDEN", "You cannot change your own vendor membership");
+    await this.client.$transaction(async (transaction) => { await transaction.vendorMember.update({ where: { id: memberId }, data: { status: input.status } }); await transaction.vendorStaffPermission.deleteMany({ where: { memberId } }); if (input.permissions.length) await transaction.vendorStaffPermission.createMany({ data: input.permissions.map((permissionKey) => ({ memberId, permissionKey })) }); await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "vendor.staff.updated", resourceType: "vendor_member", resourceId: memberId, after: json(input) } }); });
+    return this.staff(session);
+  }
+  async vouchers(session: Session) { const id = vendorId(session); requirePermission(session, "vendor:read"); const rows = await this.client.voucher.findMany({ where: { ownerType: "vendor", ownerId: id }, orderBy: { startsAt: "desc" }, take: 100 }); return rows.map((row) => ({ ...row, startsAt: row.startsAt.toISOString(), endsAt: row.endsAt.toISOString() })); }
+  async createVoucher(session: Session, input: CreateVendorVoucher) { const id = vendorId(session); requirePermission(session, "vendor:manage"); const row = await this.client.voucher.create({ data: { ownerType: "vendor", ownerId: id, code: input.code, rules: json({ discountType: input.discountType, value: input.value }), startsAt: new Date(input.startsAt), endsAt: new Date(input.endsAt) } }); await this.client.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "vendor.voucher.created", resourceType: "voucher", resourceId: row.id, after: json({ code: row.code }) } }); return this.vouchers(session); }
+  async report(session: Session) {
+    const id = vendorId(session); requirePermission(session, "vendor:read");
+    const [orders, productCount, lowStockCount] = await Promise.all([this.client.vendorOrder.findMany({ where: { vendorId: id }, orderBy: { createdAt: "desc" }, take: 500 }), this.client.product.count({ where: { vendorId: id } }), this.client.inventoryItem.count({ where: { variant: { product: { vendorId: id } }, onHand: { lte: 5 } } })]);
+    const statusCounts = orders.reduce<Record<string, number>>((result, order) => ({ ...result, [order.status]: (result[order.status] ?? 0) + 1 }), {}); const delivered = orders.filter((order) => order.status === "DELIVERED");
+    return { orderCount: orders.length, deliveredCount: delivered.length, grossSalesMinor: delivered.reduce((sum, order) => sum + order.totalMinor, 0n).toString(), productCount, lowStockCount, statusCounts, recentOrders: orders.slice(0, 10).map((order) => ({ id: order.id, status: order.status, totalMinor: order.totalMinor.toString(), createdAt: order.createdAt.toISOString() })) };
+  }
+  async returns(session: Session) { const id = vendorId(session); requirePermission(session, "orders:read"); const rows = await this.client.return.findMany({ where: { vendorOrder: { vendorId: id } }, include: { items: true }, orderBy: { createdAt: "desc" }, take: 100 }); return rows.map((row) => ({ id: row.id, orderId: row.orderId, vendorOrderId: row.vendorOrderId, status: row.status, reasonCode: row.reasonCode, reasonDetail: row.reasonDetail, requestedAmount: { amountMinor: row.requestedMinor.toString(), currency: row.currency }, approvedAmount: row.approvedMinor === null ? null : { amountMinor: row.approvedMinor.toString(), currency: row.currency }, version: row.version, createdAt: row.createdAt.toISOString(), items: row.items.map((item) => ({ id: item.id, orderItemId: item.orderItemId, quantity: item.quantity, requestedAmount: { amountMinor: item.requestedMinor.toString(), currency: row.currency }, inspection: item.inspection })) })); }
 }

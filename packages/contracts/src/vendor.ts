@@ -55,6 +55,14 @@ export const saveVendorBankAccountSchema = z.object({
   isDefault: z.boolean().default(true)
 });
 
+export const vendorStaffSchema = z.object({ id: uuidSchema, userId: uuidSchema, displayName: z.string().nullable(), email: z.string().nullable(), role: z.string(), status: z.string(), permissions: z.array(z.string()) });
+export const updateVendorStaffSchema = z.object({ status: z.enum(["active", "suspended"]), permissions: z.array(z.enum(["orders:read", "orders:manage", "products:manage", "inventory:manage", "finance:read", "support:manage"])).max(12) });
+export const vendorVoucherSchema = z.object({ id: uuidSchema, code: z.string(), active: z.boolean(), startsAt: timestampSchema, endsAt: timestampSchema, version: versionSchema, rules: z.record(z.unknown()) });
+export const createVendorVoucherSchema = z.object({ code: z.string().trim().min(3).max(40).transform((value) => value.toUpperCase()), discountType: z.enum(["PERCENT", "FIXED"]), value: z.number().int().positive(), startsAt: z.string().datetime(), endsAt: z.string().datetime() }).refine((value) => value.startsAt < value.endsAt, "startsAt must precede endsAt");
+export const vendorReportSchema = z.object({ orderCount: z.number().int().nonnegative(), deliveredCount: z.number().int().nonnegative(), grossSalesMinor: z.string(), productCount: z.number().int().nonnegative(), lowStockCount: z.number().int().nonnegative(), statusCounts: z.record(z.number().int().nonnegative()), recentOrders: z.array(z.object({ id: uuidSchema, status: z.string(), totalMinor: z.string(), createdAt: timestampSchema })) });
+
 export type UpdateVendorShop = z.infer<typeof updateVendorShopSchema>;
 export type SubmitVendorKyc = z.infer<typeof submitVendorKycSchema>;
 export type SaveVendorBankAccount = z.infer<typeof saveVendorBankAccountSchema>;
+export type UpdateVendorStaff = z.infer<typeof updateVendorStaffSchema>;
+export type CreateVendorVoucher = z.infer<typeof createVendorVoucherSchema>;
