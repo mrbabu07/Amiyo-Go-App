@@ -1,4 +1,4 @@
-import { chatThreadSchema, growthFeedSchema, notificationSchema, wishlistSchema } from "@amiyo/contracts";
+import { chatThreadSchema, growthFeedSchema, notificationSchema, reviewSchema, wishlistSchema } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
@@ -7,6 +7,7 @@ export async function getWishlist(user: User) { return wishlistSchema.parse(awai
 export async function removeWishlistItem(user: User, productId: string) { return wishlistSchema.parse(await request(user, `/api/v2/wishlist/items/${productId}`, { method: "DELETE" })); }
 export async function shareWishlist(user: User) { return wishlistSchema.parse(await request(user, "/api/v2/wishlist/share", { method: "POST" })); }
 export async function getNotifications(user: User) { return notificationSchema.array().parse(await request(user, "/api/v2/notifications")); }
+export async function getMyReviews(user: User) { return reviewSchema.array().parse(await request(user, "/api/v2/reviews")); }
 export async function readNotification(user: User, id: string) { return notificationSchema.array().parse(await request(user, `/api/v2/notifications/${id}/read`, { method: "POST" })); }
 export async function getLoyalty(user: User) { return await request(user, "/api/v2/loyalty") as { id: string; pointsBalance: string; version: number; transactions: Array<{ id: string; points: string; entryType: string; createdAt: string }> }; }
 export async function getThreads(user: User) { return chatThreadSchema.array().parse(await request(user, "/api/v2/chat/threads")); }
