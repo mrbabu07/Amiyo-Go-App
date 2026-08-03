@@ -107,6 +107,9 @@ export const createProductSchema = z.object({
   variants: z.array(productVariantInputSchema).min(1).max(100)
 });
 
+export const bulkProductCsvInputSchema = z.object({ shopId: uuidSchema, categoryId: uuidSchema, csv: z.string().min(1).max(2_000_000) });
+export const bulkProductImportResultSchema = z.object({ created: z.number().int().positive(), products: z.array(z.object({ id: uuidSchema, name: z.string(), slug: z.string(), sku: z.string() })) });
+
 export const updateProductSchema = z.object({
   version: versionSchema,
   name: z.string().trim().min(3).max(180).optional(),
@@ -148,6 +151,7 @@ export type ProductDetailDto = z.infer<typeof productDetailSchema>;
 export type CatalogQuery = z.infer<typeof catalogQuerySchema>;
 export type ShopSummaryDto = z.infer<typeof shopSummarySchema>;
 export type CreateProductInput = z.infer<typeof createProductSchema>;
+export type BulkProductCsvInput = z.infer<typeof bulkProductCsvInputSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
 export type InventoryAdjustmentInput = z.infer<typeof inventoryAdjustmentSchema>;
 export type ModerationInput = z.infer<typeof moderationInputSchema>;

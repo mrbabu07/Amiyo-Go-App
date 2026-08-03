@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { catalogQuerySchema, createProductSchema, cursorPaginationQuerySchema, inventoryAdjustmentSchema, moderationInputSchema, updateProductSchema } from "@amiyo/contracts";
+import { bulkProductCsvInputSchema, catalogQuerySchema, createProductSchema, cursorPaginationQuerySchema, inventoryAdjustmentSchema, moderationInputSchema, updateProductSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "../identity/identity.middleware.js";
@@ -56,6 +56,9 @@ export function createCatalogRouter() {
   router.get("/api/v2/vendor/products", async (req, res, next) => {
     try { res.json(await service.vendorProducts(requireSession(req), vendorScopeSchema.parse(req.query).vendorId)); } catch (error) { next(error); }
   });
+
+  router.post("/api/v2/vendor/products/import", async (req, res, next) => { try { res.status(201).json(await service.importProducts(requireSession(req), bulkProductCsvInputSchema.parse(req.body), correlationId(req.headers))); } catch (error) { next(error); } });
+  router.get("/api/v2/vendor/products/export.csv", async (req, res, next) => { try { const csv = await service.exportProducts(requireSession(req), vendorScopeSchema.parse(req.query).vendorId); res.type("text/csv").attachment("amiyo-products.csv").send(csv); } catch (error) { next(error); } });
 
   router.get("/api/v2/vendor/inventory", async (req, res, next) => {
     try { res.json(await service.vendorInventory(requireSession(req), vendorScopeSchema.parse(req.query).vendorId)); } catch (error) { next(error); }

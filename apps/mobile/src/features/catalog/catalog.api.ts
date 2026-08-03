@@ -1,4 +1,4 @@
-import { categorySchema, productDetailSchema, productListResponseSchema, shopDetailSchema, shopListResponseSchema, vendorInventorySchema, type CatalogQuery, type CreateProductInput, type InventoryAdjustmentInput, type ModerationInput } from "@amiyo/contracts";
+import { bulkProductImportResultSchema, categorySchema, productDetailSchema, productListResponseSchema, shopDetailSchema, shopListResponseSchema, vendorInventorySchema, type BulkProductCsvInput, type CatalogQuery, type CreateProductInput, type InventoryAdjustmentInput, type ModerationInput } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
@@ -50,6 +50,8 @@ export async function getShops() {
 export async function getVendorProducts(user: User) { return productDetailSchema.array().parse(await authenticatedRequest(user, "/api/v2/vendor/products")); }
 export async function createVendorProduct(user: User, input: CreateProductInput) { return await authenticatedRequest(user, "/api/v2/vendor/products", { method: "POST", body: JSON.stringify(input) }); }
 export async function submitVendorProduct(user: User, id: string) { return await authenticatedRequest(user, `/api/v2/vendor/products/${id}/submit`, { method: "POST" }); }
+export async function importVendorProducts(user: User, input: BulkProductCsvInput) { return bulkProductImportResultSchema.parse(await authenticatedRequest(user, "/api/v2/vendor/products/import", { method: "POST", body: JSON.stringify(input) })); }
+export async function exportVendorProducts(user: User) { const token = await user.getIdToken(); const response = await fetch(`${apiUrl}/api/v2/vendor/products/export.csv`, { headers: { Authorization: `Bearer ${token}` } }); if (!response.ok) throw new Error(`Product export failed (${response.status})`); return response.text(); }
 export async function getVendorInventory(user: User) { return vendorInventorySchema.array().parse(await authenticatedRequest(user, "/api/v2/vendor/inventory")); }
 export async function adjustVendorInventory(user: User, variantId: string, input: InventoryAdjustmentInput) { return vendorInventorySchema.parse(await authenticatedRequest(user, `/api/v2/vendor/inventory/${variantId}`, { method: "PUT", body: JSON.stringify(input) })); }
 export async function getAdminProducts(user: User) { return productDetailSchema.array().parse(await authenticatedRequest(user, "/api/v2/admin/catalog/products")); }

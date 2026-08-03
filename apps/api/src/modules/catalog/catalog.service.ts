@@ -1,9 +1,10 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { authorize, type Permission, type Role } from "@amiyo/domain";
-import type { CatalogQuery, CreateProductInput, InventoryAdjustmentInput, ModerationInput, Session, UpdateProductInput } from "@amiyo/contracts";
+import type { BulkProductCsvInput, CatalogQuery, CreateProductInput, InventoryAdjustmentInput, ModerationInput, Session, UpdateProductInput } from "@amiyo/contracts";
 import { withSerializableTransaction, type TransactionClient } from "../../infrastructure/database/transaction.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
 import { CatalogRepository, publicProductInclude, type PublicProduct } from "./catalog.repository.js";
+import { parseProductCsv, serializeProductCsv } from "./product-csv.js";
 
 function mediaUrl(storageKey: string | null) {
   if (!storageKey) return null;
@@ -161,6 +162,13 @@ export class CatalogService {
     const rows = await this.client.product.findMany({ where: { vendorId: resolvedVendorId }, orderBy: { updatedAt: "desc" }, include: publicProductInclude });
     return rows.map(productDetail);
   }
+
+  async importProducts(session: Session, input: BulkProductCsvInput, correlationId?: string) {
+    const products = parseProductCsv(input); const shop = await this.client.vendorShop.findUnique({ where: { id: input.shopId } }); if (!shop) throw new ApiProblem(404, "SHOP_NOT_FOUND", "Shop not found"); requireAuthorization(session, "products:manage", shop.vendorId); const category = await this.client.category.findUnique({ where: { id: input.categoryId } }); if (!category) throw new ApiProblem(404, "CATEGORY_NOT_FOUND", "Category not found"); const slugs = products.map((product) => product.slug); const skus = products.flatMap((product) => product.variants.map((variant) => variant.sku)); const [existingProduct, existingVariant] = await Promise.all([this.client.product.findFirst({ where: { slug: { in: slugs } }, select: { slug: true } }), this.client.productVariant.findFirst({ where: { sku: { in: skus } }, select: { sku: true } })]); if (existingProduct) throw new ApiProblem(409, "PRODUCT_SLUG_EXISTS", `Product slug '${existingProduct.slug}' already exists`); if (existingVariant) throw new ApiProblem(409, "PRODUCT_SKU_EXISTS", `SKU '${existingVariant.sku}' already exists`);
+    return withSerializableTransaction(this.client, async (transaction) => { const created: Array<{ id: string; name: string; slug: string; sku: string }> = []; for (const inputProduct of products) { const product = await transaction.product.create({ data: { vendorId: shop.vendorId, shopId: input.shopId, categoryId: input.categoryId, name: inputProduct.name, slug: inputProduct.slug, description: inputProduct.description ?? null, brand: inputProduct.brand ?? null, dynamicAttributes: inputProduct.dynamicAttributes === undefined ? Prisma.JsonNull : json(inputProduct.dynamicAttributes), variants: { create: inputProduct.variants.map((variant) => ({ sku: variant.sku, title: variant.title, attributes: variant.attributes === undefined ? Prisma.JsonNull : json(variant.attributes), priceMinor: BigInt(variant.priceMinor), compareAtMinor: variant.compareAtMinor ? BigInt(variant.compareAtMinor) : null, currency: variant.currency, inventory: { create: { onHand: variant.onHand } } })) } } }); created.push({ id: product.id, name: product.name, slug: product.slug, sku: inputProduct.variants[0]!.sku }); } await audit(transaction, { actorUserId: session.principal.userId, action: "catalog.products.bulk_imported", resourceId: shop.vendorId, ...(correlationId ? { correlationId } : {}), after: { count: created.length, productIds: created.map((product) => product.id) } }); return { created: created.length, products: created }; });
+  }
+
+  async exportProducts(session: Session, vendorId?: string) { const resolvedVendorId = vendorId ?? session.vendorMemberships[0]?.vendorId; if (!resolvedVendorId) throw new ApiProblem(400, "VENDOR_SCOPE_REQUIRED", "A vendor scope is required"); requireAuthorization(session, "products:manage", resolvedVendorId); const products = await this.client.product.findMany({ where: { vendorId: resolvedVendorId }, orderBy: { createdAt: "asc" }, include: { variants: { orderBy: { createdAt: "asc" }, include: { inventory: true } } } }); return serializeProductCsv(products); }
 
   async vendorInventory(session: Session, vendorId?: string) {
     const resolvedVendorId = vendorId ?? session.vendorMemberships[0]?.vendorId;

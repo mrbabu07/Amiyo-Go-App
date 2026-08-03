@@ -1,6 +1,6 @@
 import { OpenAPIRegistry, OpenApiGeneratorV31, extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
 import { z } from "zod";
-import { catalogQuerySchema, categorySchema, createProductSchema, inventoryAdjustmentSchema, moderationInputSchema, productDetailSchema, productListResponseSchema, shopDetailSchema, shopListResponseSchema, updateProductSchema, vendorInventorySchema } from "./catalog.js";
+import { bulkProductCsvInputSchema, bulkProductImportResultSchema, catalogQuerySchema, categorySchema, createProductSchema, inventoryAdjustmentSchema, moderationInputSchema, productDetailSchema, productListResponseSchema, shopDetailSchema, shopListResponseSchema, updateProductSchema, vendorInventorySchema } from "./catalog.js";
 import { addCartItemSchema, cartSchema, checkoutInputSchema, checkoutQuoteSchema, checkoutResultSchema, updateCartItemSchema } from "./commerce.js";
 import { customerOrderSummarySchema, deliveryQueueItemSchema, deliveryRetryInputSchema, deliveryRetryResultSchema, orderTrackingSchema, vendorOrderDetailSchema, vendorOrderTransitionSchema } from "./delivery.js";
 import { healthResponseSchema } from "./health.js";
@@ -130,6 +130,9 @@ registry.registerPath({
   request: { body: { content: { "application/json": { schema: updateProfileSchema } } } },
   responses: { 200: { description: "Updated profile", content: { "application/json": { schema: session } } }, ...errorResponses }
 });
+
+registry.registerPath({ method: "post", path: "/api/v2/vendor/products/import", tags: ["Vendor Catalog"], security: firebaseSecurity, request: { body: { content: { "application/json": { schema: bulkProductCsvInputSchema } } } }, responses: { 201: { description: "Products imported atomically from CSV", content: { "application/json": { schema: bulkProductImportResultSchema } } }, ...errorResponses } });
+registry.registerPath({ method: "get", path: "/api/v2/vendor/products/export.csv", tags: ["Vendor Catalog"], security: firebaseSecurity, responses: { 200: { description: "Vendor catalog CSV export", content: { "text/csv": { schema: z.string() } } }, ...errorResponses } });
 
 registry.registerPath({
   method: "get",

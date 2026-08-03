@@ -35,6 +35,8 @@ test("OpenAPI document exposes typed v2 resources", () => {
   assert.ok(document.paths?.["/api/v2/chat/threads"]);
   assert.ok(document.paths?.["/api/v2/admin/workspace/categories/{id}/attributes"]);
   assert.ok(document.paths?.["/api/v2/admin/workspace/analytics"]);
+  assert.ok(document.paths?.["/api/v2/vendor/products/import"]);
+  assert.ok(document.paths?.["/api/v2/vendor/products/export.csv"]);
 });
 
 test("return contracts reject duplicate items and invalid quantities", () => {
