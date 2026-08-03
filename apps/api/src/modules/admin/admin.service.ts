@@ -1,5 +1,5 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
-import type { AdminAnalyticsQuery, AdminCategoryAttributesInput, AdminCategoryInput, AdminCategoryRequestReview, AdminKycReviewInput, AdminUserStatusInput, AdminVendorStatusInput, PaymentVerificationReview, Session, TrustCaseActionInput } from "@amiyo/contracts";
+import type { AdminAnalyticsQuery, AdminCategoryAttributesInput, AdminCategoryInput, AdminCategoryRequestReview, AdminKycReviewInput, AdminUserRolesInput, AdminUserStatusInput, AdminVendorStatusInput, PaymentVerificationReview, Session, TrustCaseActionInput } from "@amiyo/contracts";
 import { ApiProblem } from "../../middleware/api-problem.js";
 
 function requireAdmin(session: Session, write = false) {
@@ -7,6 +7,7 @@ function requireAdmin(session: Session, write = false) {
   if (session.status !== "ACTIVE" || !session.permissions.includes(permission)) throw new ApiProblem(403, "ADMIN_ACCESS_REQUIRED", `${permission} access is required`);
 }
 function json(value: unknown) { return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue; }
+const assignableRoles = ["SUPPORT_AGENT", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "SUPER_ADMIN"] as const;
 
 export class AdminService {
   constructor(private readonly client: PrismaClient) {}
@@ -29,6 +30,25 @@ export class AdminService {
     requireAdmin(session, true); if (userId === session.principal.userId) throw new ApiProblem(409, "SELF_STATUS_CHANGE_FORBIDDEN", "You cannot change your own account status");
     const before = await this.client.user.findUnique({ where: { id: userId } }); if (!before) throw new ApiProblem(404, "USER_NOT_FOUND", "User not found");
     await this.client.$transaction([this.client.user.update({ where: { id: userId }, data: { status: input.status } }), this.client.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "admin", action: "admin.user.status_changed", resourceType: "user", resourceId: userId, before: json({ status: before.status }), after: json(input) } })]);
+    return this.workspace(session);
+  }
+  async updateUserRoles(session: Session, userId: string, input: AdminUserRolesInput) {
+    requireAdmin(session, true);
+    if (userId === session.principal.userId) throw new ApiProblem(409, "SELF_ROLE_CHANGE_FORBIDDEN", "You cannot change your own platform roles");
+    const user = await this.client.user.findUnique({ where: { id: userId }, include: { roles: { include: { role: true } } } });
+    if (!user) throw new ApiProblem(404, "USER_NOT_FOUND", "User not found");
+    const before = user.roles.map(({ role }) => role.name);
+    if (before.includes("SUPER_ADMIN") && !input.roles.includes("SUPER_ADMIN")) {
+      const superAdminCount = await this.client.userRole.count({ where: { role: { name: "SUPER_ADMIN" }, user: { status: "ACTIVE" } } });
+      if (superAdminCount <= 1) throw new ApiProblem(409, "LAST_SUPER_ADMIN_REQUIRED", "At least one active super admin must remain");
+    }
+    const roles = await this.client.role.findMany({ where: { name: { in: input.roles } } });
+    if (roles.length !== input.roles.length) throw new ApiProblem(503, "ROLE_CONFIGURATION_INCOMPLETE", "One or more platform roles have not been seeded");
+    await this.client.$transaction(async (transaction) => {
+      await transaction.userRole.deleteMany({ where: { userId, role: { name: { in: [...assignableRoles] } } } });
+      if (roles.length) await transaction.userRole.createMany({ data: roles.map((role) => ({ userId, roleId: role.id })) });
+      await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "admin", action: "admin.user.roles_changed", resourceType: "user", resourceId: userId, before: json({ roles: before }), after: json(input) } });
+    });
     return this.workspace(session);
   }
   async updateVendor(session: Session, vendorId: string, input: AdminVendorStatusInput) {

@@ -31,7 +31,7 @@ This matrix tracks the rebuild against the read-only legacy `Client` and `Server
 | Operations | Implemented | Delivery retry, return/refund, payout, COD and audit-oriented queues |
 | Promotions | Implemented | Promotion and campaign management |
 | Support | Implemented | Cross-customer ticket queue and status workflow |
-| Trust and safety | Implemented | Mobile user access, vendor approval, KYC review, product moderation and trust-case action queues |
+| Trust and safety | Implemented | Mobile user access, protected platform staff role assignment, vendor approval, KYC review, product moderation and trust-case action queues |
 | Content moderation | Implemented | Review and product-question visibility queues with audited actions |
 | Platform operations | Implemented | Payment verification, category creation, dynamic category attributes, marketing visibility and full audit activity |
 | Analytics and insights | Implemented | Period GMV, order and customer metrics, daily trends, purchasing segments, top products and top vendors |

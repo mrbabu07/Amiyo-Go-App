@@ -1,10 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { adminAnalyticsQuerySchema, adminCategoryAttributesInputSchema, adminCategoryInputSchema, adminCategoryRequestReviewSchema, adminKycReviewInputSchema, adminUserStatusInputSchema, paymentVerificationReviewSchema, trustCaseActionInputSchema } from "./admin.js";
+import { adminAnalyticsQuerySchema, adminCategoryAttributesInputSchema, adminCategoryInputSchema, adminCategoryRequestReviewSchema, adminKycReviewInputSchema, adminUserRolesInputSchema, adminUserStatusInputSchema, paymentVerificationReviewSchema, trustCaseActionInputSchema } from "./admin.js";
 
 test("admin user status mutations require an operational reason", () => {
   assert.equal(adminUserStatusInputSchema.parse({ status: "SUSPENDED", reason: "Fraud review" }).status, "SUSPENDED");
   assert.throws(() => adminUserStatusInputSchema.parse({ status: "SUSPENDED", reason: "no" }));
+});
+
+test("platform staff roles are bounded and unique", () => {
+  assert.deepEqual(adminUserRolesInputSchema.parse({ roles: ["SUPPORT_AGENT", "FINANCE_ADMIN"], reason: "Operations staffing change" }).roles, ["SUPPORT_AGENT", "FINANCE_ADMIN"]);
+  assert.throws(() => adminUserRolesInputSchema.parse({ roles: ["CUSTOMER"], reason: "Operations staffing change" }));
+  assert.throws(() => adminUserRolesInputSchema.parse({ roles: ["SUPPORT_AGENT", "SUPPORT_AGENT"], reason: "Operations staffing change" }));
 });
 
 test("KYC rejection cannot omit its reason", () => {
