@@ -233,4 +233,10 @@ export class CatalogService {
       return after;
     });
   }
+
+  async adminProducts(session: Session) {
+    requireAuthorization(session, "admin:read");
+    const rows = await this.client.product.findMany({ where: { status: "SUBMITTED" }, orderBy: { updatedAt: "asc" }, include: publicProductInclude, take: 100 });
+    return rows.map(productDetail);
+  }
 }

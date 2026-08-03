@@ -1,4 +1,4 @@
-import { categorySchema, productDetailSchema, productListResponseSchema, shopDetailSchema, shopListResponseSchema, vendorInventorySchema, type CatalogQuery, type CreateProductInput, type InventoryAdjustmentInput } from "@amiyo/contracts";
+import { categorySchema, productDetailSchema, productListResponseSchema, shopDetailSchema, shopListResponseSchema, vendorInventorySchema, type CatalogQuery, type CreateProductInput, type InventoryAdjustmentInput, type ModerationInput } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
@@ -52,3 +52,5 @@ export async function createVendorProduct(user: User, input: CreateProductInput)
 export async function submitVendorProduct(user: User, id: string) { return await authenticatedRequest(user, `/api/v2/vendor/products/${id}/submit`, { method: "POST" }); }
 export async function getVendorInventory(user: User) { return vendorInventorySchema.array().parse(await authenticatedRequest(user, "/api/v2/vendor/inventory")); }
 export async function adjustVendorInventory(user: User, variantId: string, input: InventoryAdjustmentInput) { return vendorInventorySchema.parse(await authenticatedRequest(user, `/api/v2/vendor/inventory/${variantId}`, { method: "PUT", body: JSON.stringify(input) })); }
+export async function getAdminProducts(user: User) { return productDetailSchema.array().parse(await authenticatedRequest(user, "/api/v2/admin/catalog/products")); }
+export async function moderateAdminProduct(user: User, id: string, input: ModerationInput) { return await authenticatedRequest(user, `/api/v2/admin/catalog/products/${id}/moderate`, { method: "POST", body: JSON.stringify(input) }); }

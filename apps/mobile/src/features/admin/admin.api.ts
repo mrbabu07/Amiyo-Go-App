@@ -1,0 +1,9 @@
+import { adminWorkspaceSchema, type AdminKycReviewInput, type AdminUserStatusInput, type AdminVendorStatusInput, type TrustCaseActionInput } from "@amiyo/contracts";
+import type { User } from "firebase/auth";
+const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
+async function request(user: User, path: string, init?: RequestInit) { const token = await user.getIdToken(); const response = await fetch(`${apiUrl}${path}`, { ...init, headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...init?.headers } }); if (!response.ok) { const problem = await response.json().catch(() => null) as { title?: string; detail?: string } | null; throw new Error(problem?.detail || problem?.title || `Admin request failed (${response.status})`); } return adminWorkspaceSchema.parse(await response.json()); }
+export async function getAdminWorkspace(user: User) { return request(user, "/api/v2/admin/workspace"); }
+export async function updateAdminUser(user: User, id: string, input: AdminUserStatusInput) { return request(user, `/api/v2/admin/workspace/users/${id}/status`, { method: "PATCH", body: JSON.stringify(input) }); }
+export async function updateAdminVendor(user: User, id: string, input: AdminVendorStatusInput) { return request(user, `/api/v2/admin/workspace/vendors/${id}/status`, { method: "PATCH", body: JSON.stringify(input) }); }
+export async function reviewAdminKyc(user: User, id: string, input: AdminKycReviewInput) { return request(user, `/api/v2/admin/workspace/kyc/${id}`, { method: "PATCH", body: JSON.stringify(input) }); }
+export async function actOnTrustCase(user: User, id: string, input: TrustCaseActionInput) { return request(user, `/api/v2/admin/workspace/trust-cases/${id}/actions`, { method: "POST", body: JSON.stringify(input) }); }

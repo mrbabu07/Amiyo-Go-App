@@ -76,6 +76,9 @@ export function createCatalogRouter() {
   router.post("/api/v2/admin/catalog/products/:id/moderate", async (req, res, next) => {
     try { res.json(await service.moderate(requireSession(req), identifierSchema.parse(req.params).id, moderationInputSchema.parse(req.body), correlationId(req.headers))); } catch (error) { next(error); }
   });
+  router.get("/api/v2/admin/catalog/products", async (req, res, next) => {
+    try { res.json(await service.adminProducts(requireSession(req))); } catch (error) { next(error); }
+  });
 
   return router;
 }
