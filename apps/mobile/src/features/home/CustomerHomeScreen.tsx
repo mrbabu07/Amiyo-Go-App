@@ -8,6 +8,7 @@ import { CategoryRail } from "./components/CategoryRail";
 import { FlashSaleCountdown } from "./components/FlashSaleCountdown";
 import { HeroBanner } from "./components/HeroBanner";
 import { HomeSectionTitle } from "./components/HomeSectionTitle";
+import { NewsletterSignup } from "./components/NewsletterSignup";
 import { ProductCard } from "./components/ProductCard";
 import { PromoTiles } from "./components/PromoTiles";
 import { ShopRail } from "./components/ShopRail";
@@ -86,6 +87,7 @@ export function CustomerHomeScreen() {
               ))}
             </View>
 
+            <NewsletterSignup />
             <View style={styles.footer}><Text style={styles.footerBrand}>Amiyo-Go</Text><Text style={styles.footerText}>Your trusted marketplace for everyday shopping.</Text><Text style={styles.copyright}>© 2026 Amiyo-Go. Made for Bangladesh.</Text></View>
           </View>
         </ScrollView>

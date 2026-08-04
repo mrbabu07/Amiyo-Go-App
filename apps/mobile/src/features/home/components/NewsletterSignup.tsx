@@ -1,0 +1,12 @@
+import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { colors, radius, spacing } from "../../../ui/tokens";
+import { subscribeNewsletter } from "../../engagement/engagement.api";
+
+export function NewsletterSignup() {
+  const [email, setEmail] = useState("");
+  const subscribe = useMutation({ mutationFn: () => subscribeNewsletter(email.trim()), onSuccess: () => setEmail("") });
+  return <View style={styles.card}><View style={styles.copy}><Text style={styles.eyebrow}>STAY UPDATED</Text><Text style={styles.title}>Deals and new arrivals in your inbox</Text><Text style={styles.text}>Get verified offers from Amiyo-Go. No spam, and you can unsubscribe anytime.</Text></View><View style={styles.form}><TextInput accessibilityLabel="Newsletter email" autoCapitalize="none" keyboardType="email-address" onChangeText={setEmail} placeholder="Enter your email address" placeholderTextColor={colors.muted} style={styles.input} value={email} /><Pressable accessibilityRole="button" disabled={subscribe.isPending || !email.includes("@")} onPress={() => subscribe.mutate()} style={styles.button}><Text style={styles.buttonText}>{subscribe.isPending ? "Subscribing…" : "Subscribe"}</Text></Pressable>{subscribe.isSuccess ? <Text style={styles.success}>Thanks for subscribing!</Text> : null}{subscribe.error ? <Text style={styles.error}>{subscribe.error.message}</Text> : null}</View></View>;
+}
+const styles = StyleSheet.create({ card: { backgroundColor: "#eef6ff", borderColor: "#bfdbfe", borderRadius: radius.xl, borderWidth: 1, flexDirection: "row", flexWrap: "wrap", gap: spacing.lg, padding: spacing.lg }, copy: { flex: 1, minWidth: 240 }, eyebrow: { color: colors.primary, fontSize: 10, fontWeight: "900", letterSpacing: 1 }, title: { color: colors.text, fontSize: 22, fontWeight: "900", marginTop: spacing.xs }, text: { color: colors.muted, lineHeight: 20, marginTop: spacing.sm }, form: { flex: 1, minWidth: 240 }, input: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, height: 48, paddingHorizontal: spacing.md }, button: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, marginTop: spacing.sm, padding: 14 }, buttonText: { color: colors.surface, fontWeight: "900" }, success: { color: colors.success, fontWeight: "800", marginTop: spacing.sm }, error: { color: colors.danger, marginTop: spacing.sm } });

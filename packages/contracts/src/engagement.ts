@@ -21,6 +21,11 @@ export const promotionEffectSchema = z.discriminatedUnion("type", [z.object({ ty
 export const promotionCandidateSchema = z.object({ id: uuidSchema, priority: z.number().int(), minimumSubtotalMinor: z.string().regex(/^\d+$/).default("0"), effect: promotionEffectSchema });
 export const createPromotionSchema = z.object({ name: z.string().trim().min(2).max(160), priority: z.number().int().default(0), startsAt: z.string().datetime(), endsAt: z.string().datetime(), candidate: promotionCandidateSchema.omit({ id: true, priority: true }) }).refine((value) => value.startsAt < value.endsAt, "startsAt must precede endsAt");
 export const growthFeedSchema = z.object({ coupons: z.array(z.object({ id: uuidSchema, code: z.string(), discountType: z.string(), value: z.number().int(), minimumSpend: moneySchema, startsAt: timestampSchema, endsAt: timestampSchema })), campaigns: z.array(z.object({ id: uuidSchema, name: z.string(), slug: z.string(), href: z.string(), startsAt: timestampSchema, endsAt: timestampSchema })), flashSales: z.array(z.object({ id: uuidSchema, name: z.string(), href: z.string(), startsAt: timestampSchema, endsAt: timestampSchema, products: z.array(z.object({ productId: uuidSchema, price: moneySchema, quantityRemaining: z.number().int().nonnegative().nullable() })) })) });
+export const newsletterSubscribeInputSchema = z.object({ email: z.string().trim().toLowerCase().email().max(320), source: z.string().trim().min(2).max(40).default("app") });
+export const newsletterSubscriberSchema = z.object({ id: uuidSchema, email: z.string().email(), source: z.string(), active: z.boolean(), createdAt: timestampSchema, unsubscribedAt: timestampSchema.nullable() });
+export const newsletterBroadcastInputSchema = z.object({ subject: z.string().trim().min(2).max(180), previewText: z.string().trim().max(240).nullable().optional(), body: z.string().trim().min(3).max(100_000), scheduledAt: timestampSchema.nullable().optional() }).superRefine((value, context) => { if (value.scheduledAt && new Date(value.scheduledAt).getTime() <= Date.now()) context.addIssue({ code: "custom", message: "scheduledAt must be in the future", path: ["scheduledAt"] }); });
+export const newsletterBroadcastSchema = z.object({ id: uuidSchema, subject: z.string(), previewText: z.string().nullable(), body: z.string(), status: z.string(), scheduledAt: timestampSchema.nullable(), recipientCount: z.number().int().nonnegative(), sentCount: z.number().int().nonnegative(), failedCount: z.number().int().nonnegative(), openCount: z.number().int().nonnegative(), createdAt: timestampSchema });
+export const newsletterWorkspaceSchema = z.object({ activeSubscriberCount: z.number().int().nonnegative(), subscribers: z.array(newsletterSubscriberSchema), broadcasts: z.array(newsletterBroadcastSchema) });
 
 export type ReviewInput = z.infer<typeof reviewInputSchema>;
 export type QuestionInput = z.infer<typeof questionInputSchema>;
@@ -30,3 +35,5 @@ export type ChatThreadInput = z.infer<typeof chatThreadInputSchema>;
 export type ChatMessageInput = z.infer<typeof chatMessageInputSchema>;
 export type PromotionCandidate = z.infer<typeof promotionCandidateSchema>;
 export type CreatePromotion = z.infer<typeof createPromotionSchema>;
+export type NewsletterSubscribeInput = z.infer<typeof newsletterSubscribeInputSchema>;
+export type NewsletterBroadcastInput = z.infer<typeof newsletterBroadcastInputSchema>;
