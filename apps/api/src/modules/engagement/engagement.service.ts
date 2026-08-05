@@ -13,7 +13,7 @@ export class EngagementService {
   constructor(private readonly client: PrismaClient) {}
 
   private async notify(userId: string, eventType: keyof typeof import("@amiyo/domain").notificationMatrix, title: string, body: string, href: string, key: string) {
-    const channels = notificationChannels(eventType); return this.client.notification.upsert({ where: { idempotencyKey: key }, update: {}, create: { userId, type: eventType, title, body, data: { href }, idempotencyKey: key, deliveries: { create: channels.map((channel) => ({ channel: channel.toLowerCase(), status: channel === "IN_APP" ? "DELIVERED" : "PENDING", ...(channel === "IN_APP" ? { deliveredAt: new Date() } : {}) })) } } });
+    const channels = notificationChannels(eventType); return this.client.$transaction(async (transaction) => { const notification = await transaction.notification.upsert({ where: { idempotencyKey: key }, update: {}, create: { userId, type: eventType, title, body, data: { href }, idempotencyKey: key, deliveries: { create: channels.map((channel) => ({ channel: channel.toLowerCase(), status: channel === "IN_APP" ? "DELIVERED" : "PENDING", ...(channel === "IN_APP" ? { deliveredAt: new Date() } : {}) })) } }, include: { deliveries: true } }); for (const delivery of notification.deliveries.filter((item) => item.status === "PENDING")) await transaction.outboxEvent.upsert({ where: { idempotencyKey: `notification-delivery:${delivery.id}` }, create: { aggregateType: "notification_delivery", aggregateId: delivery.id, eventType: "notification.delivery.requested", idempotencyKey: `notification-delivery:${delivery.id}`, payload: { notificationDeliveryId: delivery.id } }, update: {} }); return notification; });
   }
 
   private async defaultWishlist(userId: string) {

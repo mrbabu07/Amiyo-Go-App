@@ -27,7 +27,8 @@
           "photosPermission": "Allow Amiyo-Go to select marketplace images."
         }
       ],
-      "expo-document-picker"
+      "expo-document-picker",
+      "expo-notifications"
     ]
   }
 }
