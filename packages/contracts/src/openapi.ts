@@ -13,6 +13,7 @@ import { answerInputSchema, chatMessageInputSchema, chatThreadInputSchema, chatT
 import { createSupportTicketSchema, supportMessageInputSchema, supportTicketSchema, supportTicketStatusInputSchema } from "./support.js";
 import { createVendorCategoryRequestSchema, createVendorVoucherSchema, saveVendorBankAccountSchema, submitVendorKycSchema, updateVendorShopSchema, updateVendorStaffSchema, vendorCategoryRequestSchema, vendorReportSchema, vendorStaffSchema, vendorVoucherSchema, vendorWorkspaceSchema } from "./vendor.js";
 import { adminAnalyticsQuerySchema, adminAnalyticsSchema, adminBannerInputSchema, adminCategoryAttributesInputSchema, adminCategoryInputSchema, adminCategoryRequestReviewSchema, adminKycReviewInputSchema, adminPlatformSchema, adminToggleInputSchema, adminUserRolesInputSchema, adminUserStatusInputSchema, adminVendorStatusInputSchema, adminWorkspaceSchema, paymentVerificationReviewSchema, trustCaseActionInputSchema } from "./admin.js";
+import { mediaUploadInputSchema, mediaUploadResultSchema, mediaUploadTicketSchema } from "./media.js";
 
 extendZodWithOpenApi(z);
 
@@ -336,12 +337,14 @@ registry.registerPath({ method: "put", path: "/api/v2/admin/workspace/banners/{i
 registry.registerPath({ method: "delete", path: "/api/v2/admin/workspace/banners/{id}", tags: ["Admin Platform"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: { description: "Banner deleted", content: { "application/json": { schema: adminPlatformSchema } } }, ...errorResponses } });
 for (const resource of ["banners", "vouchers", "flash-sales"] as const) registry.registerPath({ method: "patch", path: `/api/v2/admin/workspace/${resource}/{id}`, tags: ["Admin Platform"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }), body: { content: { "application/json": { schema: adminToggleInputSchema } } } }, responses: { 200: { description: `${resource} visibility updated`, content: { "application/json": { schema: adminPlatformSchema } } }, ...errorResponses } });
 registry.registerPath({ method: "get", path: "/api/v2/admin/catalog/products", tags: ["Catalog Moderation"], security: firebaseSecurity, responses: { 200: { description: "Submitted product moderation queue", content: { "application/json": { schema: z.array(product) } } }, ...errorResponses } });
+registry.registerPath({ method: "post", path: "/api/v2/media/uploads", tags: ["Media"], security: firebaseSecurity, request: { body: { content: { "application/json": { schema: mediaUploadInputSchema } } } }, responses: { 201: { description: "Short-lived signed upload ticket", content: { "application/json": { schema: mediaUploadTicketSchema } } }, ...errorResponses } });
+registry.registerPath({ method: "post", path: "/api/v2/media/uploads/{id}/complete", tags: ["Media"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: { description: "Uploaded object verified and queued for processing", content: { "application/json": { schema: mediaUploadResultSchema } } }, ...errorResponses } });
 
 export function createOpenApiDocument() {
   return new OpenApiGeneratorV31(registry.definitions).generateDocument({
     openapi: "3.1.0",
     info: { title: "Amiyo-Go API", version: "0.9.0", description: "Typed API contract for the Amiyo-Go mobile platform." },
     servers: [{ url: "http://localhost:4000", description: "Local development" }],
-    tags: [{ name: "Operations" }, { name: "Returns & Finance" }, { name: "Engagement & Growth" }, { name: "Support" }, { name: "Vendor Workspace" }, { name: "Admin Trust" }, { name: "Admin Platform" }, { name: "Identity" }, { name: "Catalog" }, { name: "Shops" }, { name: "Vendor Catalog" }, { name: "Catalog Moderation" }, { name: "Commerce" }, { name: "Orders" }, { name: "Vendor Orders" }, { name: "Delivery" }]
+    tags: [{ name: "Operations" }, { name: "Returns & Finance" }, { name: "Engagement & Growth" }, { name: "Support" }, { name: "Vendor Workspace" }, { name: "Admin Trust" }, { name: "Admin Platform" }, { name: "Identity" }, { name: "Media" }, { name: "Catalog" }, { name: "Shops" }, { name: "Vendor Catalog" }, { name: "Catalog Moderation" }, { name: "Commerce" }, { name: "Orders" }, { name: "Vendor Orders" }, { name: "Delivery" }]
   });
 }

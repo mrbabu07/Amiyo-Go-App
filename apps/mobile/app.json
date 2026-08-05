@@ -20,7 +20,14 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Amiyo-Go to select marketplace images."
+        }
+      ],
+      "expo-document-picker"
     ]
   }
 }

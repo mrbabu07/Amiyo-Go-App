@@ -15,6 +15,7 @@ import { createEngagementRouter } from "./modules/engagement/engagement.routes.j
 import { createSupportRouter } from "./modules/support/support.routes.js";
 import { createVendorRouter } from "./modules/vendor/vendor.routes.js";
 import { createAdminRouter } from "./modules/admin/admin.routes.js";
+import { createMediaRouter } from "./modules/media/media.routes.js";
 import type { ReadinessCheck } from "./modules/health/health.routes.js";
 
 export function createApiApp(options: { readinessCheck?: ReadinessCheck } = {}) {
@@ -47,6 +48,7 @@ export function createApiApp(options: { readinessCheck?: ReadinessCheck } = {}) 
   app.use(createSupportRouter());
   app.use(createVendorRouter());
   app.use(createAdminRouter());
+  app.use(createMediaRouter());
   app.use(createOpenApiRouter());
   app.use(problemMiddleware);
 

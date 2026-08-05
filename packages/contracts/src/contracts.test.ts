@@ -40,6 +40,7 @@ test("OpenAPI document exposes typed v2 resources", () => {
   assert.ok(document.paths?.["/api/v2/vendor/workspace/category-requests"]);
   assert.ok(document.paths?.["/api/v2/admin/workspace/category-requests/{id}"]);
   assert.ok(document.paths?.["/api/v2/vendor/orders/{id}/documents"]);
+  assert.ok(document.paths?.["/api/v2/media/uploads"]);
 });
 
 test("return contracts reject duplicate items and invalid quantities", () => {

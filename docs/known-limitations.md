@@ -13,7 +13,7 @@
 - npm audit has moderate transitive findings in mobile/native tooling; critical/high findings are blocked by CI.
 - Failed BullMQ jobs are durable and have authenticated API/mobile retry controls, but complete queue metrics and alert dashboards are still required.
 - Push delivery, automatic loyalty mutation, promotion stacking, automatic settlement, provider-specific refunds, and several operations flows intentionally remain disabled pending approved rules/providers.
-- Object-storage upload/media processing and final Sentry/OTel exporters require selected providers.
+- Firebase Storage signed uploads and worker content validation are implemented; production service-account IAM, bucket CORS/CDN policy, and final Sentry/OTel exporters still require operator configuration.
 - Current automated mobile coverage validates source semantics and web export; Android/iOS component and Maestro/Detox suites still require devices and staging identities.
 
 Do not remove a limitation merely because code exists. Close it only with the required external evidence and named approval.

@@ -38,7 +38,7 @@ These decisions block production implementation. Do not guess them in code.
 | Account deletion | TBD | Anonymization, legal retention, recovery window. |
 | Migration cutover | TBD | Maintenance window, rollback duration, read-only Mongo window. |
 | Migration exports | BLOCKED | Provide sanitized production-shaped exports for every legacy collection, expected row/money totals, two production-scale staging environments, and named reconciliation approvers. |
-| Object storage | TBD | Provider, bucket layout, CDN, signed upload/read policy. |
+| Object storage | Firebase Storage selected | Authenticated 10-minute V4 signed uploads, private evidence prefixes, public marketplace prefixes, worker content validation, and optional CDN base are implemented. Production service-account IAM and bucket CORS remain operator configuration. |
 | Deployment targets | TBD | API, worker, PostgreSQL, Redis, EAS, monitoring providers. |
 
 ## Immediate Security Decision

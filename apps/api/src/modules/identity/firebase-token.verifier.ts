@@ -4,16 +4,17 @@ import { ApiProblem } from "../../middleware/api-problem.js";
 import { requireFirebaseAdminConfiguration } from "./firebase-admin.config.js";
 import type { IdentityTokenVerifier, VerifiedIdentity } from "./identity.types.js";
 
-function getFirebaseApp() {
+export function getFirebaseApp() {
   const existing = getApps()[0];
   if (existing) return existing;
 
   const configuration = requireFirebaseAdminConfiguration(process.env);
-  if (configuration.mode === "emulator") return initializeApp({ projectId: configuration.projectId });
+  const storage = process.env.FIREBASE_STORAGE_BUCKET ? { storageBucket: process.env.FIREBASE_STORAGE_BUCKET } : {};
+  if (configuration.mode === "emulator") return initializeApp({ projectId: configuration.projectId, ...storage });
   const credential = configuration.mode === "service_account"
     ? cert({ projectId: configuration.projectId, clientEmail: configuration.clientEmail, privateKey: configuration.privateKey })
     : applicationDefault();
-  return initializeApp({ credential, projectId: configuration.projectId });
+  return initializeApp({ credential, projectId: configuration.projectId, ...storage });
 }
 
 export class FirebaseTokenVerifier implements IdentityTokenVerifier {

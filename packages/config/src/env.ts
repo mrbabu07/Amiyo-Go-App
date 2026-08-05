@@ -16,6 +16,7 @@ const apiEnvObject = z.object({
   FIREBASE_PROJECT_ID: optionalStringSchema,
   FIREBASE_CLIENT_EMAIL: optionalEmailSchema,
   FIREBASE_PRIVATE_KEY: optionalStringSchema,
+  FIREBASE_STORAGE_BUCKET: optionalStringSchema,
   FIREBASE_USE_APPLICATION_DEFAULT: z.enum(["true", "false"]).default("false"),
   FIREBASE_AUTH_EMULATOR_HOST: optionalStringSchema,
   OBJECT_STORAGE_PUBLIC_URL: optionalUrlSchema,
@@ -27,6 +28,7 @@ function validateFirebaseAdmin(env: z.infer<typeof apiEnvObject>, context: z.Ref
   const applicationDefaultComplete = Boolean(env.FIREBASE_PROJECT_ID && env.FIREBASE_USE_APPLICATION_DEFAULT === "true");
   if (env.NODE_ENV === "production" && env.FIREBASE_AUTH_EMULATOR_HOST) context.addIssue({ code: z.ZodIssueCode.custom, path: ["FIREBASE_AUTH_EMULATOR_HOST"], message: "Firebase Auth emulator is forbidden in production" });
   if (["staging", "production"].includes(env.NODE_ENV) && !serviceAccountComplete && !applicationDefaultComplete) context.addIssue({ code: z.ZodIssueCode.custom, path: ["FIREBASE_PROJECT_ID"], message: "Firebase Admin credentials or application-default mode are required" });
+  if (["staging", "production"].includes(env.NODE_ENV) && !env.FIREBASE_STORAGE_BUCKET) context.addIssue({ code: z.ZodIssueCode.custom, path: ["FIREBASE_STORAGE_BUCKET"], message: "Firebase Storage bucket is required" });
 }
 
 export const apiEnvSchema = apiEnvObject.superRefine(validateFirebaseAdmin);
