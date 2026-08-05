@@ -1,4 +1,4 @@
-import { accountDataExportSchema, accountDeletionSchema, addressSchema, sessionSchema, type AccountDeletionInput, type AddressInput, type Session, type UpdateProfile } from "@amiyo/contracts";
+import { accountDataExportSchema, accountDeletionSchema, addressSchema, deviceSchema, sessionSchema, type AccountDeletionInput, type AddressInput, type Session, type UpdateProfile } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
@@ -42,3 +42,5 @@ export async function cancelAccountDeletion(user: User) { return accountDeletion
 export async function exportMyAccount(user: User) { return accountDataExportSchema.parse(await authenticatedRequest<unknown>(user, "/api/v2/me/export")); }
 export async function updateMyAddress(user: User, id: string, input: AddressInput) { return addressSchema.parse(await authenticatedRequest<unknown>(user, `/api/v2/me/addresses/${id}`, { method: "PUT", body: JSON.stringify(input) })); }
 export async function deleteMyAddress(user: User, id: string) { return authenticatedRequest<void>(user, `/api/v2/me/addresses/${id}`, { method: "DELETE" }); }
+export async function getMyDevices(user: User) { return deviceSchema.array().parse(await authenticatedRequest<unknown>(user, "/api/v2/devices")); }
+export async function revokeMyDevice(user: User, id: string) { return deviceSchema.parse(await authenticatedRequest<unknown>(user, `/api/v2/devices/${id}`, { method: "DELETE" })); }

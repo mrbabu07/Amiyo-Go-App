@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
   hero: { borderRadius: radius.lg, height: 330, justifyContent: "center", overflow: "hidden" },
   desktopHero: { height: 430 },
   image: { borderRadius: radius.lg },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(26,26,46,0.67)" },
+  overlay: { backgroundColor: "rgba(26,26,46,0.67)", bottom: 0, left: 0, position: "absolute", right: 0, top: 0 },
   content: { maxWidth: 650, padding: spacing.lg, zIndex: 1 },
   badge: { alignSelf: "flex-start", backgroundColor: colors.accent, borderRadius: radius.sm, marginBottom: 14, paddingHorizontal: 10, paddingVertical: 6 },
   badgeText: { color: colors.surface, fontSize: 10, fontWeight: "900", letterSpacing: 0.8 },

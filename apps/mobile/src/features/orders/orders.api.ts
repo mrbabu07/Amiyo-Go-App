@@ -1,9 +1,10 @@
-import { customerOrderSummarySchema, fulfillmentDocumentSchema, invoiceSchema, orderTrackingSchema, vendorOrderDetailSchema, type VendorOrderTransition } from "@amiyo/contracts";
+import { customerOrderSummarySchema, fulfillmentDocumentSchema, invoiceSchema, orderSchema, orderTrackingSchema, vendorOrderDetailSchema, type VendorOrderTransition } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
 async function request(user: User, path: string, init?: RequestInit) { const token = await user.getIdToken(); const response = await fetch(`${apiUrl}${path}`, { ...init, headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...init?.headers } }); if (!response.ok) { const problem = await response.json().catch(() => null) as { title?: string; detail?: string } | null; throw new Error(problem?.detail || problem?.title || `Order request failed (${response.status})`); } return response.json() as Promise<unknown>; }
 export async function getCustomerOrders(user: User) { return customerOrderSummarySchema.array().parse(await request(user, "/api/v2/orders")); }
+export async function getCustomerOrder(user: User, id: string) { return orderSchema.parse(await request(user, `/api/v2/orders/${id}`)); }
 export async function getOrderTracking(user: User, id: string) { return orderTrackingSchema.parse(await request(user, `/api/v2/orders/${id}/tracking`)); }
 export async function getVendorOrders(user: User) { return vendorOrderDetailSchema.array().parse(await request(user, "/api/v2/vendor/orders")); }
 export async function getVendorOrder(user: User, id: string) { return vendorOrderDetailSchema.parse(await request(user, `/api/v2/vendor/orders/${id}`)); }

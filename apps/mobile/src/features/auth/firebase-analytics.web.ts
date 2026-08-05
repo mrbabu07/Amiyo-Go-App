@@ -5,6 +5,7 @@ let analytics: Promise<Analytics | null> | null = null;
 
 export function getFirebaseAnalytics() {
   if (!firebaseApp || !firebaseAnalyticsEnabled) return Promise.resolve(null);
-  analytics ??= isSupported().then((supported) => supported ? getAnalytics(firebaseApp) : null).catch(() => null);
+  const app = firebaseApp;
+  analytics ??= isSupported().then((supported) => supported ? getAnalytics(app) : null).catch(() => null);
   return analytics;
 }
