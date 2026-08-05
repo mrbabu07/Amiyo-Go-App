@@ -28,7 +28,8 @@
         }
       ],
       "expo-document-picker",
-      "expo-notifications"
+      "expo-notifications",
+      "@sentry/react-native"
     ]
   }
 }

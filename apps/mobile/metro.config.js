@@ -1,7 +1,7 @@
 const path = require("node:path");
-const { getDefaultConfig } = require("expo/metro-config");
+const { getSentryExpoConfig } = require("@sentry/react-native/metro");
 
-const config = getDefaultConfig(__dirname);
+const config = getSentryExpoConfig(__dirname);
 const packagesDirectory = `${path.resolve(__dirname, "../../packages")}${path.sep}`;
 
 config.resolver.resolveRequest = (context, moduleName, platform) => {
