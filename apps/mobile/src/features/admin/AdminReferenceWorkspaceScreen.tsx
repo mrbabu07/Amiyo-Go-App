@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { firebaseAuth } from "../auth/firebase";
-import { getAdminQueues, reviewAdminPayout, transitionAdminReturn } from "../operations/operations.api";
+import { completeAdminPayout, completeAdminRefund, getAdminQueues, reviewAdminPayout, transitionAdminReturn, type AdminReturnStatus } from "../operations/operations.api";
 import { getAdminPlatform, getAdminWorkspace, reviewAdminKyc, reviewPaymentVerification, toggleAdminResource, updateAdminUser, updateAdminUserRoles, updateAdminVendor } from "./admin.api";
 
 export type AdminWorkspaceKind = "vendors" | "vendor-requests" | "kyc" | "customers" | "users" | "staff" | "payouts" | "payout-requests" | "returns" | "payments" | "vouchers" | "flash-sales" | "audit";
@@ -30,6 +31,7 @@ const definitions: Record<AdminWorkspaceKind, { description: string; eyebrow: st
 
 export function AdminReferenceWorkspaceScreen({ kind }: { kind: AdminWorkspaceKind }) {
   const user = firebaseAuth?.currentUser ?? null;
+  const router = useRouter();
   const cache = useQueryClient();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("ALL");
@@ -45,13 +47,15 @@ export function AdminReferenceWorkspaceScreen({ kind }: { kind: AdminWorkspaceKi
   const paymentAction = useMutation({ mutationFn: ({ id, next }: { id: string; next: "approved" | "rejected" }) => reviewPaymentVerification(user!, id, { status: next, reason: `Payment ${next} after evidence review` }), onSuccess: invalidate });
   const toggleAction = useMutation({ mutationFn: ({ id, resource, active }: { id: string; resource: "vouchers" | "flash-sales"; active: boolean }) => toggleAdminResource(user!, resource, id, active), onSuccess: invalidate });
   const payoutAction = useMutation({ mutationFn: ({ id, version, action }: { id: string; version: number; action: "APPROVE" | "REJECT" }) => reviewAdminPayout(user!, id, version, action), onSuccess: invalidate });
-  const returnAction = useMutation({ mutationFn: ({ id, version, next, amount }: { id: string; version: number; next: "REVIEWING" | "APPROVED" | "REJECTED"; amount: string }) => transitionAdminReturn(user!, id, version, next, amount), onSuccess: invalidate });
+  const payoutCompletion = useMutation({ mutationFn: (id: string) => completeAdminPayout(user!, id), onSuccess: invalidate });
+  const returnAction = useMutation({ mutationFn: ({ id, version, next, amount }: { id: string; version: number; next: AdminReturnStatus; amount: string }) => transitionAdminReturn(user!, id, version, next, amount), onSuccess: invalidate });
+  const refundCompletion = useMutation({ mutationFn: (id: string) => completeAdminRefund(user!, id), onSuccess: invalidate });
   const definition = definitions[kind];
-  const rows = useMemo(() => buildRows(kind, { kycAction, paymentAction, payoutAction, platform: platform.data, queues: queues.data, returnAction, roleAction, toggleAction, userAction, vendorAction, workspace: workspace.data }), [kind, kycAction, paymentAction, payoutAction, platform.data, queues.data, returnAction, roleAction, toggleAction, userAction, vendorAction, workspace.data]);
+  const rows = useMemo(() => buildRows(kind, { kycAction, paymentAction, payoutAction, payoutCompletion, platform: platform.data, queues: queues.data, refundCompletion, returnAction, roleAction, toggleAction, userAction, vendorAction, workspace: workspace.data, open: (href) => router.push(href as never) }), [kind, kycAction, paymentAction, payoutAction, payoutCompletion, platform.data, queues.data, refundCompletion, returnAction, roleAction, router, toggleAction, userAction, vendorAction, workspace.data]);
   const statuses = ["ALL", ...Array.from(new Set(rows.map((row) => row.status.toUpperCase())))] as string[];
   const filtered = rows.filter((row) => (status === "ALL" || row.status.toUpperCase() === status) && `${row.primary} ${row.secondary} ${row.cells.join(" ")}`.toLowerCase().includes(search.trim().toLowerCase()));
   const loading = workspace.isLoading || platform.isLoading || queues.isLoading;
-  const error = workspace.error || platform.error || queues.error || vendorAction.error || userAction.error || roleAction.error || kycAction.error || paymentAction.error || toggleAction.error || payoutAction.error || returnAction.error;
+  const error = workspace.error || platform.error || queues.error || vendorAction.error || userAction.error || roleAction.error || kycAction.error || paymentAction.error || toggleAction.error || payoutAction.error || payoutCompletion.error || returnAction.error || refundCompletion.error;
 
   return <Screen eyebrow={definition.eyebrow} title={definition.title} description={definition.description}>
     <View style={styles.summaryRow}><Summary icon={definition.icon} label="Total records" value={rows.length} /><Summary icon="alert-circle-outline" label="Needs attention" value={rows.filter((row) => ["PENDING", "REQUESTED", "SUBMITTED", "REVIEWING"].includes(row.status.toUpperCase())).length} /><Summary icon="checkmark-circle-outline" label="Visible now" value={filtered.length} /></View>
@@ -78,20 +82,36 @@ type Data = {
   paymentAction: { mutate(input: { id: string; next: "approved" | "rejected" }): void };
   toggleAction: { mutate(input: { id: string; resource: "vouchers" | "flash-sales"; active: boolean }): void };
   payoutAction: { mutate(input: { id: string; version: number; action: "APPROVE" | "REJECT" }): void };
-  returnAction: { mutate(input: { id: string; version: number; next: "REVIEWING" | "APPROVED" | "REJECTED"; amount: string }): void };
+  payoutCompletion: { mutate(id: string): void };
+  returnAction: { mutate(input: { id: string; version: number; next: AdminReturnStatus; amount: string }): void };
+  refundCompletion: { mutate(id: string): void };
+  open(href: string): void;
 };
 function buildRows(kind: AdminWorkspaceKind, data: Data): TableRow[] {
   const date = (value?: string | null) => value ? new Date(value).toLocaleDateString("en-BD") : "—";
   const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
-  if (kind === "vendors" || kind === "vendor-requests") return (data.workspace?.vendors ?? []).filter((item) => kind === "vendors" || item.status === "PENDING").map((item) => ({ id: item.id, primary: item.displayName, secondary: item.legalName, status: item.status, cells: [String(item.shopCount), String(item.memberCount), item.latestKycStatus ?? "Not submitted", item.status], actions: item.status === "PENDING" ? [{ label: "Approve", onPress: () => data.vendorAction.mutate({ id: item.id, next: "APPROVED" }) }, { danger: true, label: "Reject", onPress: () => data.vendorAction.mutate({ id: item.id, next: "REJECTED" }) }] : [{ danger: item.status === "APPROVED", label: item.status === "APPROVED" ? "Suspend" : "Approve", onPress: () => data.vendorAction.mutate({ id: item.id, next: item.status === "APPROVED" ? "SUSPENDED" : "APPROVED" }) }] }));
+  if (kind === "vendors" || kind === "vendor-requests") return (data.workspace?.vendors ?? []).filter((item) => kind === "vendors" || item.status === "PENDING").map((item) => ({ id: item.id, primary: item.displayName, secondary: item.legalName, status: item.status, cells: [String(item.shopCount), String(item.memberCount), item.latestKycStatus ?? "Not submitted", item.status], actions: [{ label: "View", onPress: () => data.open(`/admin/vendors/${item.id}`) }, ...(item.status === "PENDING" ? [{ label: "Approve", onPress: () => data.vendorAction.mutate({ id: item.id, next: "APPROVED" as const }) }, { danger: true, label: "Reject", onPress: () => data.vendorAction.mutate({ id: item.id, next: "REJECTED" as const }) }] : [{ danger: item.status === "APPROVED", label: item.status === "APPROVED" ? "Suspend" : "Approve", onPress: () => data.vendorAction.mutate({ id: item.id, next: item.status === "APPROVED" ? "SUSPENDED" : "APPROVED" }) }])] }));
   if (kind === "kyc") return (data.workspace?.kyc ?? []).map((item) => ({ id: item.id, primary: item.vendorName, secondary: item.vendorId, status: item.status, cells: [String(item.documents.length), date(item.submittedAt), item.rejectionReason ?? "Awaiting decision", item.status], actions: [{ label: "Review", onPress: () => data.kycAction.mutate({ id: item.id, next: "REVIEWING" }) }, { label: "Approve", onPress: () => data.kycAction.mutate({ id: item.id, next: "APPROVED" }) }, { danger: true, label: "Reject", onPress: () => data.kycAction.mutate({ id: item.id, next: "REJECTED" }) }] }));
   if (kind === "customers" || kind === "users" || kind === "staff") return (data.workspace?.users ?? []).filter((item) => kind === "users" || (kind === "staff" ? item.roles.some((role) => role.includes("ADMIN") || role === "SUPPORT_AGENT") : !item.roles.some((role) => role.includes("ADMIN") || role === "SUPPORT_AGENT"))).map((item) => { const platformRoles = item.roles.filter((role): role is "SUPPORT_AGENT" | "FINANCE_ADMIN" | "OPERATIONS_ADMIN" | "SUPER_ADMIN" => ["SUPPORT_AGENT", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "SUPER_ADMIN"].includes(role)); const actions: RowAction[] = item.status === "ACTIVE" ? [{ danger: true, label: "Suspend", onPress: () => data.userAction.mutate({ id: item.id, next: "SUSPENDED" }) }] : [{ label: "Activate", onPress: () => data.userAction.mutate({ id: item.id, next: "ACTIVE" }) }]; if (kind !== "customers") { for (const role of ["SUPPORT_AGENT", "FINANCE_ADMIN", "OPERATIONS_ADMIN"] as const) actions.push({ label: platformRoles.includes(role) ? `Remove ${role.split("_")[0]}` : `Add ${role.split("_")[0]}`, onPress: () => data.roleAction.mutate({ id: item.id, roles: platformRoles.includes(role) ? platformRoles.filter((itemRole) => itemRole !== role) : [...platformRoles, role] }) }); } return { id: item.id, primary: item.displayName || "Unnamed account", secondary: item.id, status: item.status, cells: [item.email || item.phone || "No contact", date(item.createdAt), item.roles.join(", ") || "CUSTOMER", item.status], actions }; });
   if (kind === "payments") return (data.platform?.paymentVerifications ?? []).map((item) => ({ id: item.id, primary: item.orderNumber, secondary: item.paymentId, status: item.status, cells: [money(item.amountMinor), item.provider, item.transactionRef, item.status], actions: item.status === "pending" ? [{ label: "Approve", onPress: () => data.paymentAction.mutate({ id: item.id, next: "approved" }) }, { danger: true, label: "Reject", onPress: () => data.paymentAction.mutate({ id: item.id, next: "rejected" }) }] : [] }));
   if (kind === "vouchers") return (data.platform?.vouchers ?? []).map((item) => ({ id: item.id, primary: item.code, secondary: item.id, status: item.active ? "ACTIVE" : "INACTIVE", cells: [item.ownerType, date(item.startsAt), date(item.endsAt), item.active ? "ACTIVE" : "INACTIVE"], actions: [{ danger: item.active, label: item.active ? "Disable" : "Enable", onPress: () => data.toggleAction.mutate({ id: item.id, resource: "vouchers", active: !item.active }) }] }));
   if (kind === "flash-sales") return (data.platform?.flashSales ?? []).map((item) => ({ id: item.id, primary: item.name, secondary: item.id, status: item.status, cells: [String(item.productCount), date(item.startsAt), date(item.endsAt), item.status], actions: [{ danger: item.status === "active", label: item.status === "active" ? "Disable" : "Enable", onPress: () => data.toggleAction.mutate({ id: item.id, resource: "flash-sales", active: item.status !== "active" }) }] }));
-  if (kind === "payouts" || kind === "payout-requests") return (data.queues?.payouts ?? []).filter((item) => kind === "payouts" || item.status === "REQUESTED").map((item) => ({ id: item.id, primary: item.vendor.legalName, secondary: item.id, status: item.status, cells: [money(item.amount.amountMinor), date(item.requestedAt), item.bankAccount?.accountNumberMasked ?? "—", item.status], actions: item.status === "REQUESTED" ? [{ label: "Approve", onPress: () => data.payoutAction.mutate({ id: item.id, version: item.version, action: "APPROVE" }) }, { danger: true, label: "Reject", onPress: () => data.payoutAction.mutate({ id: item.id, version: item.version, action: "REJECT" }) }] : [] }));
-  if (kind === "returns") return (data.queues?.returns ?? []).map((item) => ({ id: item.id, primary: `#${item.id.slice(0, 8)}`, secondary: item.orderId, status: item.status, cells: [money(item.requestedAmount.amountMinor), String(item.items.length), item.reasonCode.replaceAll("_", " "), item.status], actions: item.status === "REQUESTED" ? [{ label: "Review", onPress: () => data.returnAction.mutate({ id: item.id, version: item.version, next: "REVIEWING", amount: item.requestedAmount.amountMinor }) }] : item.status === "REVIEWING" ? [{ label: "Approve", onPress: () => data.returnAction.mutate({ id: item.id, version: item.version, next: "APPROVED", amount: item.requestedAmount.amountMinor }) }, { danger: true, label: "Reject", onPress: () => data.returnAction.mutate({ id: item.id, version: item.version, next: "REJECTED", amount: item.requestedAmount.amountMinor }) }] : [] }));
+  if (kind === "payouts" || kind === "payout-requests") return (data.queues?.payouts ?? []).filter((item) => kind === "payouts" || item.status === "REQUESTED").map((item) => ({ id: item.id, primary: item.vendor.legalName, secondary: item.id, status: item.status, cells: [money(item.amount.amountMinor), date(item.requestedAt), item.bankAccount?.accountNumberMasked ?? "—", item.status], actions: item.status === "REQUESTED" ? [{ label: "Approve", onPress: () => data.payoutAction.mutate({ id: item.id, version: item.version, action: "APPROVE" }) }, { danger: true, label: "Reject", onPress: () => data.payoutAction.mutate({ id: item.id, version: item.version, action: "REJECT" }) }] : ["APPROVED", "PROCESSING"].includes(item.status) ? [{ label: "Mark paid", onPress: () => data.payoutCompletion.mutate(item.id) }] : [] }));
+  if (kind === "returns") return (data.queues?.returns ?? []).map((item) => ({ id: item.id, primary: `#${item.id.slice(0, 8)}`, secondary: item.orderId, status: item.status, cells: [money(item.requestedAmount.amountMinor), String(item.items.length), item.reasonCode.replaceAll("_", " "), item.status], actions: returnActions(item, data) }));
   return (data.platform?.audit ?? []).map((item) => ({ id: item.id, primary: item.action.replaceAll("_", " "), secondary: item.id, status: item.actorType, cells: [item.resourceType, item.actorType, date(item.createdAt), item.resourceId, item.actorType], actions: [] }));
+}
+
+function returnActions(item: NonNullable<Data["queues"]>["returns"][number], data: Data): RowAction[] {
+  const move = (label: string, next: AdminReturnStatus, danger = false): RowAction => ({ danger, label, onPress: () => data.returnAction.mutate({ id: item.id, version: item.version, next, amount: item.requestedAmount.amountMinor }) });
+  if (item.status === "REQUESTED") return [move("Review", "REVIEWING")];
+  if (item.status === "REVIEWING") return [move("Approve", "APPROVED"), move("Reject", "REJECTED", true)];
+  if (item.status === "APPROVED") return [move("Schedule pickup", "PICKUP_SCHEDULED")];
+  if (item.status === "PICKUP_SCHEDULED") return [move("Mark received", "RECEIVED")];
+  if (item.status === "RECEIVED") return [move("Inspect", "INSPECTED")];
+  if (item.status === "INSPECTED") return [move("Start refund", "REFUND_PENDING"), move("Close", "CLOSED", true)];
+  if (item.status === "REFUND_PENDING") return [{ label: "Complete refund", onPress: () => data.refundCompletion.mutate(item.id) }];
+  if (["REFUNDED", "REJECTED"].includes(item.status)) return [move("Close", "CLOSED")];
+  return [];
 }
 
 function Summary({ icon, label, value }: { icon: string; label: string; value: number }) { return <View style={styles.summary}><View style={styles.summaryIcon}><Ionicons color={colors.primary} name={icon as never} size={21} /></View><View><Text style={styles.summaryValue}>{value.toLocaleString("en-BD")}</Text><Text style={styles.summaryLabel}>{label}</Text></View></View>; }

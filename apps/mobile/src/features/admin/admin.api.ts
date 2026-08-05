@@ -2,11 +2,11 @@ import { adminAnalyticsSchema, adminPlatformSchema, adminWorkspaceSchema, vendor
 import type { User } from "firebase/auth";
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
 export type AdminCommerceDto = {
-  orders: Array<{ id: string; orderNumber: string; customer: string; status: string; totalMinor: string; currency: string; itemCount: number; vendorCount: number; paymentMethod: string | null; paymentStatus: string | null; createdAt: string }>;
+  orders: Array<{ id: string; orderNumber: string; customer: string; status: string; totalMinor: string; currency: string; itemCount: number; vendorCount: number; vendorOrders: Array<{ id: string; vendorId: string; vendor: string; shop: string; status: string; version: number }>; paymentMethod: string | null; paymentStatus: string | null; createdAt: string }>;
   inventory: Array<{ id: string; version: number; sku: string; variant: string; product: string; vendor: string; shop: string; onHand: number; reserved: number; available: number; reorderLevel: number; updatedAt: string }>;
   coupons: Array<{ id: string; code: string; discountType: string; value: number; minimumSpendMinor: string; usageLimit: number | null; redemptions: number; startsAt: string; endsAt: string; active: boolean; version: number }>;
   campaigns: Array<{ id: string; name: string; slug: string; status: string; startsAt: string; endsAt: string; productCount: number; eventCount: number; version: number }>;
-  chats: Array<{ id: string; vendor: string; subject: string; status: string; participants: number; messageCount: number; lastMessage: string | null; updatedAt: string }>;
+  chats: Array<{ id: string; vendorId: string | null; vendor: string; subject: string; status: string; participants: number; messageCount: number; lastMessage: string | null; updatedAt: string }>;
   codCollections: Array<{ id: string; orderNumber: string; expectedMinor: string; collectedMinor: string; currency: string; collectorRef: string | null; collectedAt: string }>;
   codReconciliations: Array<{ id: string; periodStart: string; periodEnd: string; expectedMinor: string; receivedMinor: string; currency: string; status: string; itemCount: number; createdAt: string }>;
   vendorActivity: Array<{ id: string; vendor: string; status: string; products: number; orders: number; chats: number; payoutRequests: number; gmvMinor: string; commissionMinor: string; updatedAt: string }>;
@@ -17,6 +17,9 @@ async function commerceRequest(user: User, path = "", init?: RequestInit) { cons
 export async function getAdminCommerce(user: User) { return commerceRequest(user, "/commerce"); }
 export async function updateAdminInventory(user: User, id: string, input: { expectedVersion: number; onHand: number; reorderLevel: number }) { return commerceRequest(user, `/inventory/${id}`, { method: "PATCH", body: JSON.stringify(input) }); }
 export async function toggleAdminCoupon(user: User, id: string, active: boolean) { return commerceRequest(user, `/coupons/${id}`, { method: "PATCH", body: JSON.stringify({ active }) }); }
+export async function createAdminCoupon(user: User, input: { code: string; discountType: "PERCENT" | "FIXED"; value: number; minimumSpendMinor: string; usageLimit: number | null; startsAt: string; endsAt: string }) { return commerceRequest(user, "/coupons", { method: "POST", body: JSON.stringify(input) }); }
+export async function createAdminCampaign(user: User, input: { name: string; slug: string; startsAt: string; endsAt: string }) { return commerceRequest(user, "/campaigns", { method: "POST", body: JSON.stringify(input) }); }
+export async function toggleAdminCampaign(user: User, id: string, active: boolean) { return commerceRequest(user, `/campaigns/${id}`, { method: "PATCH", body: JSON.stringify({ active }) }); }
 export async function sendAdminChatMessage(user: User, id: string, body: string) { return commerceRequest(user, `/chats/${id}/messages`, { method: "POST", body: JSON.stringify({ body }) }); }
 export async function updateAdminUser(user: User, id: string, input: AdminUserStatusInput) { return request(user, `/api/v2/admin/workspace/users/${id}/status`, { method: "PATCH", body: JSON.stringify(input) }); }
 export async function updateAdminUserRoles(user: User, id: string, input: AdminUserRolesInput) { return request(user, `/api/v2/admin/workspace/users/${id}/roles`, { method: "PUT", body: JSON.stringify(input) }); }
@@ -27,6 +30,7 @@ async function platformRequest(user: User, path: string, init?: RequestInit) { c
 export async function getAdminPlatform(user: User) { return platformRequest(user, "/api/v2/admin/workspace/platform"); }
 export async function reviewPaymentVerification(user: User, id: string, input: PaymentVerificationReview) { return platformRequest(user, `/api/v2/admin/workspace/payment-verifications/${id}`, { method: "PATCH", body: JSON.stringify(input) }); }
 export async function createAdminCategory(user: User, input: AdminCategoryInput) { return platformRequest(user, "/api/v2/admin/workspace/categories", { method: "POST", body: JSON.stringify(input) }); }
+export async function updateAdminCategory(user: User, id: string, input: { status?: "active" | "inactive"; displayOrder?: number }) { return platformRequest(user, `/api/v2/admin/workspace/categories/${id}`, { method: "PATCH", body: JSON.stringify(input) }); }
 export async function replaceAdminCategoryAttributes(user: User, id: string, input: AdminCategoryAttributesInput) { return platformRequest(user, `/api/v2/admin/workspace/categories/${id}/attributes`, { method: "PUT", body: JSON.stringify(input) }); }
 export async function toggleAdminResource(user: User, type: "banners" | "vouchers" | "flash-sales", id: string, active: boolean) { return platformRequest(user, `/api/v2/admin/workspace/${type}/${id}`, { method: "PATCH", body: JSON.stringify({ active }) }); }
 export async function createAdminBanner(user: User, input: AdminBannerInput) { return platformRequest(user, "/api/v2/admin/workspace/banners", { method: "POST", body: JSON.stringify(input) }); }
