@@ -14,6 +14,7 @@ import { ProductCard } from "./components/ProductCard";
 import { PromoTiles } from "./components/PromoTiles";
 import { ShopRail } from "./components/ShopRail";
 import { StoreHeader } from "./components/StoreHeader";
+import { StoreFooter } from "./components/StoreFooter";
 import { getCategories, getProducts, getShops } from "../catalog/catalog.api";
 import { getCategoryVisual } from "../catalog/category-visuals";
 import { toHomeProduct } from "../catalog/catalog.view-model";
@@ -91,7 +92,7 @@ export function CustomerHomeScreen() {
 
             <DeliveryAvailability />
             <NewsletterSignup />
-            <View style={styles.footer}><Text style={styles.footerBrand}>Amiyo-Go</Text><Text style={styles.footerText}>Your trusted marketplace for everyday shopping.</Text><Text style={styles.copyright}>© 2026 Amiyo-Go. Made for Bangladesh.</Text></View>
+            <StoreFooter />
           </View>
         </ScrollView>
         {!desktop ? <BottomNav /> : null}
@@ -132,9 +133,5 @@ const styles = StyleSheet.create({
   benefitIcon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.pill, height: 44, justifyContent: "center", width: 44 },
   benefitTitle: { color: colors.text, fontSize: 12, fontWeight: "900" },
   benefitText: { color: colors.muted, fontSize: 10, marginTop: 2 },
-  footer: { alignItems: "center", paddingBottom: 28, paddingTop: 18 },
-  footerBrand: { color: colors.primary, fontSize: 22, fontWeight: "900" },
-  footerText: { color: colors.muted, fontSize: 11, marginTop: 5, textAlign: "center" },
-  copyright: { color: "#94a3b8", fontSize: 9, marginTop: 12 },
   empty: { color: colors.muted, padding: spacing.lg, textAlign: "center" }, retry: { alignItems: "center", gap: spacing.sm }, retryText: { color: colors.primary, fontWeight: "900" }
 });

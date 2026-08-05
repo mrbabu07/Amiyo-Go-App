@@ -1,0 +1,15 @@
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { colors, radius, spacing } from "../../ui/tokens";
+import { StoreFooter } from "../home/components/StoreFooter";
+import { StoreHeader } from "../home/components/StoreHeader";
+import type { InformationSection } from "./information.data";
+
+export function InformationScreen({ description, eyebrow, sections, title, updatedAt }: { description: string; eyebrow: string; sections: InformationSection[]; title: string; updatedAt?: string }) {
+  const router = useRouter();
+  const { width } = useWindowDimensions();
+  return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.page}><StoreHeader desktop={width >= 900} viewportWidth={width} /><View style={styles.content}><Text style={styles.eyebrow}>{eyebrow}</Text><Text accessibilityRole="header" style={styles.title}>{title}</Text><Text style={styles.description}>{description}</Text>{updatedAt ? <Text style={styles.updated}>Last updated: {updatedAt}</Text> : null}<View style={styles.sections}>{sections.map((section) => <View key={section.title} style={styles.card}><Text style={styles.sectionTitle}>{section.title}</Text>{section.body.map((paragraph) => <View key={paragraph} style={styles.bulletRow}><Ionicons color={colors.primary} name="checkmark-circle" size={18} /><Text style={styles.body}>{paragraph}</Text></View>)}</View>)}</View><View style={styles.help}><Ionicons color={colors.accent} name="help-circle-outline" size={30} /><View style={styles.helpCopy}><Text style={styles.helpTitle}>Need clarification?</Text><Text onPress={() => router.push("/contact")} style={styles.helpLink}>Contact Amiyo-Go support →</Text></View></View><StoreFooter /></View></ScrollView></SafeAreaView>;
+}
+
+const styles = StyleSheet.create({ safe: { backgroundColor: colors.background, flex: 1 }, page: { minHeight: "100%" }, content: { alignSelf: "center", maxWidth: 920, padding: spacing.lg, width: "100%" }, eyebrow: { color: colors.primary, fontSize: 11, fontWeight: "900", letterSpacing: 1.2 }, title: { color: colors.text, fontSize: 34, fontWeight: "900", marginTop: spacing.sm }, description: { color: colors.muted, fontSize: 16, lineHeight: 25, marginTop: spacing.md, maxWidth: 720 }, updated: { color: colors.muted, fontSize: 12, marginTop: spacing.sm }, sections: { gap: spacing.md, marginTop: spacing.xl }, card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl, borderWidth: 1, gap: spacing.md, padding: spacing.lg }, sectionTitle: { color: colors.text, fontSize: 21, fontWeight: "900" }, bulletRow: { alignItems: "flex-start", flexDirection: "row", gap: spacing.sm }, body: { color: colors.muted, flex: 1, lineHeight: 22 }, help: { alignItems: "center", backgroundColor: colors.accentSoft, borderRadius: radius.xl, flexDirection: "row", gap: spacing.md, marginTop: spacing.lg, padding: spacing.lg }, helpCopy: { flex: 1 }, helpTitle: { color: colors.text, fontWeight: "900" }, helpLink: { color: colors.primary, fontWeight: "900", marginTop: 4 } });
