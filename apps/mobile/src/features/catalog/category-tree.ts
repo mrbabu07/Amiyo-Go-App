@@ -11,3 +11,14 @@ export function buildCategoryTree(categories: CategoryDto[]) {
 }
 
 export function flattenCategoryTree(nodes: CategoryNode[]): CategoryNode[] { return nodes.flatMap((node) => [node, ...flattenCategoryTree(node.children)]); }
+
+export function filterCategoryTree(nodes: CategoryNode[], query: string): CategoryNode[] {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return nodes;
+  return nodes.flatMap((node) => {
+    const matches = `${node.name} ${node.slug} ${node.description || ""}`.toLowerCase().includes(normalizedQuery);
+    const children = filterCategoryTree(node.children, normalizedQuery);
+    if (matches) return [node];
+    return children.length ? [{ ...node, children }] : [];
+  });
+}
