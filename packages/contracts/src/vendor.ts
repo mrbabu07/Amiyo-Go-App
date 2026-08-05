@@ -40,6 +40,24 @@ export const vendorWorkspaceSchema = z.object({
   bankAccounts: z.array(vendorBankAccountSchema)
 });
 
+export const vendorRegistrationSchema = z.object({
+  legalName: z.string().trim().min(3).max(180),
+  displayName: z.string().trim().min(3).max(160),
+  phone: z.string().trim().min(8).max(20),
+  description: z.string().trim().max(3000).nullable().optional(),
+  address: z.object({
+    line1: z.string().trim().min(3).max(240),
+    division: z.string().trim().min(2).max(80),
+    district: z.string().trim().min(2).max(80),
+    upazila: z.string().trim().min(2).max(80),
+    unionName: z.string().trim().max(80).nullable().optional()
+  }),
+  categoryIds: z.array(uuidSchema).min(1).max(12).refine((values) => new Set(values).size === values.length, "Category IDs must be unique"),
+  acceptedTerms: z.literal(true),
+  termsVersion: z.string().trim().regex(/^\d{4}\.\d{2}$/),
+  privacyVersion: z.string().trim().regex(/^\d{4}\.\d{2}$/)
+});
+
 export const updateVendorShopSchema = z.object({
   version: versionSchema,
   name: z.string().trim().min(3).max(160).optional(),
@@ -69,3 +87,4 @@ export type SaveVendorBankAccount = z.infer<typeof saveVendorBankAccountSchema>;
 export type UpdateVendorStaff = z.infer<typeof updateVendorStaffSchema>;
 export type CreateVendorVoucher = z.infer<typeof createVendorVoucherSchema>;
 export type CreateVendorCategoryRequest = z.infer<typeof createVendorCategoryRequestSchema>;
+export type VendorRegistration = z.infer<typeof vendorRegistrationSchema>;

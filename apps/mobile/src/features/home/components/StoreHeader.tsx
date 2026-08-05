@@ -4,12 +4,14 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { colors, radius, spacing } from "../../../ui/tokens";
+import { useAuthStore } from "../../auth/auth.store";
 import { BrandLogo } from "./BrandLogo";
 import { firebaseAuth } from "../../auth/firebase";
 import { getCart } from "../../commerce/commerce.api";
 
 export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; viewportWidth: number }) {
   const router = useRouter();
+  const hasVendorWorkspace = useAuthStore((state) => Boolean(state.session?.vendorMemberships.length));
   const user = firebaseAuth?.currentUser ?? null;
   const cart = useQuery({ queryKey: ["cart"], queryFn: () => getCart(user!), enabled: Boolean(user) });
   const [query, setQuery] = useState("");
@@ -28,7 +30,7 @@ export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; view
         <View style={styles.actions}><Pressable accessibilityLabel="My account" onPress={() => router.push("/account")} style={styles.iconButton}><Ionicons color={colors.text} name="person-outline" size={22} /></Pressable><Pressable accessibilityLabel="Notifications" onPress={() => router.push("/notifications")} style={styles.iconButton}><Ionicons color={colors.text} name="notifications-outline" size={22} /></Pressable><Pressable accessibilityLabel={`Shopping cart with ${cart.data?.itemCount ?? 0} items`} onPress={() => router.push("/cart")} style={styles.iconButton}><Ionicons color={colors.text} name="cart-outline" size={23} /><View style={styles.cartBadge}><Text style={styles.cartBadgeText}>{Math.min(cart.data?.itemCount ?? 0, 99)}</Text></View></Pressable></View>
       </View>
       <View style={[styles.searchBar, { width: Math.min(innerWidth, desktop ? 760 : innerWidth) }]}><Ionicons color={colors.muted} name="search-outline" size={20} /><TextInput accessibilityLabel="Search products" onChangeText={setQuery} onSubmitEditing={search} placeholder="Search products, brands and shops" placeholderTextColor="#94a3b8" returnKeyType="search" style={styles.searchInput} value={query} /><Pressable onPress={search} style={styles.searchButton}><Text style={styles.searchButtonText}>Search</Text></Pressable></View>
-      {desktop ? <View style={[styles.desktopNav, { width: innerWidth }]}>{[{ label: "Home", href: "/" }, { label: "Products", href: "/search" }, { label: "Shops", href: "/shops" }, { label: "Categories", href: "/categories" }, { label: "Compare", href: "/compare" }].map((item, index) => <Pressable key={item.label} onPress={() => router.push(item.href as never)}><Text style={[styles.navText, index === 0 && styles.activeNav]}>{item.label}</Text></Pressable>)}<Pressable onPress={() => router.push("/vendor/dashboard")} style={styles.sellerButton}><Text style={styles.sellerLink}>Become a seller</Text><Ionicons color={colors.accent} name="arrow-forward" size={14} /></Pressable></View> : null}
+      {desktop ? <View style={[styles.desktopNav, { width: innerWidth }]}>{[{ label: "Home", href: "/" }, { label: "Products", href: "/search" }, { label: "Shops", href: "/shops" }, { label: "Categories", href: "/categories" }, { label: "Compare", href: "/compare" }].map((item, index) => <Pressable key={item.label} onPress={() => router.push(item.href as never)}><Text style={[styles.navText, index === 0 && styles.activeNav]}>{item.label}</Text></Pressable>)}<Pressable onPress={() => router.push(hasVendorWorkspace ? "/vendor/dashboard" : "/vendor/register")} style={styles.sellerButton}><Text style={styles.sellerLink}>{hasVendorWorkspace ? "Seller center" : "Become a seller"}</Text><Ionicons color={colors.accent} name="arrow-forward" size={14} /></Pressable></View> : null}
     </View>
   );
 }

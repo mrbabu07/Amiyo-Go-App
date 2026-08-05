@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
-import { createVendorCategoryRequestSchema, createVendorVoucherSchema, saveVendorBankAccountSchema, submitVendorKycSchema, updateVendorShopSchema, updateVendorStaffSchema } from "@amiyo/contracts";
+import { createVendorCategoryRequestSchema, createVendorVoucherSchema, saveVendorBankAccountSchema, submitVendorKycSchema, updateVendorShopSchema, updateVendorStaffSchema, vendorRegistrationSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "../identity/identity.middleware.js";
@@ -12,6 +12,7 @@ const idSchema = z.object({ id: z.string().uuid() });
 export function createVendorRouter() {
   const router = Router(); const service = new VendorService(prisma); const authenticate = createAuthenticationMiddleware(new FirebaseTokenVerifier(), new IdentityService(prisma));
   const writeLimit = rateLimit({ windowMs: 60_000, limit: 15, standardHeaders: "draft-7", legacyHeaders: false, message: { title: "Too many vendor requests", status: 429, code: "VENDOR_RATE_LIMITED" } });
+  router.post("/api/v2/vendor/registrations", authenticate, writeLimit, async (req, res, next) => { try { res.status(201).json(await service.register(requireSession(req), vendorRegistrationSchema.parse(req.body), req.header("x-correlation-id"))); } catch (error) { next(error); } });
   router.use("/api/v2/vendor/workspace", authenticate);
   router.get("/api/v2/vendor/workspace", async (req, res, next) => { try { res.json(await service.getWorkspace(requireSession(req))); } catch (error) { next(error); } });
   router.patch("/api/v2/vendor/workspace/shops/:id", writeLimit, async (req, res, next) => { try { res.json(await service.updateShop(requireSession(req), idSchema.parse(req.params).id, updateVendorShopSchema.parse(req.body))); } catch (error) { next(error); } });

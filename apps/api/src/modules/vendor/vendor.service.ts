@@ -1,6 +1,6 @@
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { Prisma, type PrismaClient } from "@prisma/client";
-import type { CreateVendorCategoryRequest, CreateVendorVoucher, SaveVendorBankAccount, Session, SubmitVendorKyc, UpdateVendorShop, UpdateVendorStaff } from "@amiyo/contracts";
+import type { CreateVendorCategoryRequest, CreateVendorVoucher, SaveVendorBankAccount, Session, SubmitVendorKyc, UpdateVendorShop, UpdateVendorStaff, VendorRegistration } from "@amiyo/contracts";
 import { ApiProblem } from "../../middleware/api-problem.js";
 
 function vendorId(session: Session) {
@@ -14,6 +14,7 @@ function requirePermission(session: Session, permission: string) {
 }
 
 function json(value: unknown) { return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue; }
+function slug(value: string, userId: string) { const base = value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "shop"; return `${base.slice(0, 100)}-${userId.replaceAll("-", "")}`; }
 function mask(value: string) { return `${"•".repeat(Math.max(4, value.length - 4))}${value.slice(-4)}`; }
 function encrypt(value: string) {
   const encoded = process.env.VENDOR_DATA_ENCRYPTION_KEY;
@@ -38,6 +39,21 @@ const include = { shops: { orderBy: { createdAt: "asc" as const } }, kycSubmissi
 
 export class VendorService {
   constructor(private readonly client: PrismaClient) {}
+  async register(session: Session, input: VendorRegistration, correlationId?: string) {
+    if (session.status !== "ACTIVE") throw new ApiProblem(403, "ACCOUNT_NOT_ACTIVE", "An active customer account is required");
+    const existing = await this.client.vendorMember.findFirst({ where: { userId: session.principal.userId } });
+    if (existing) throw new ApiProblem(409, "VENDOR_MEMBERSHIP_EXISTS", "This account already belongs to a vendor workspace");
+    return this.client.$transaction(async (transaction) => {
+      const ownerRole = await transaction.role.findUnique({ where: { name: "VENDOR_OWNER" } });
+      if (!ownerRole) throw new ApiProblem(503, "VENDOR_ROLE_NOT_CONFIGURED", "The vendor owner role has not been seeded");
+      const categories = await transaction.category.findMany({ where: { id: { in: input.categoryIds } }, select: { id: true } });
+      if (categories.length !== input.categoryIds.length) throw new ApiProblem(400, "VENDOR_CATEGORY_INVALID", "One or more selected categories are unavailable");
+      const vendor = await transaction.vendor.create({ data: { legalName: input.legalName, displayName: input.displayName, status: "PENDING", members: { create: { userId: session.principal.userId, role: "VENDOR_OWNER" } }, wallet: { create: {} }, shops: { create: { name: input.displayName, slug: slug(input.displayName, session.principal.userId), status: "DRAFT", description: input.description ?? null, settings: json({ phone: input.phone, pickupAddress: input.address, acceptedTerms: true, termsVersion: input.termsVersion, privacyVersion: input.privacyVersion }) } }, categoryRequests: { create: input.categoryIds.map((categoryId) => ({ categoryId, reason: "Requested during seller registration", description: "Initial seller category selection" })) } }, include });
+      await transaction.userRole.upsert({ where: { userId_roleId: { userId: session.principal.userId, roleId: ownerRole.id } }, create: { userId: session.principal.userId, roleId: ownerRole.id }, update: {} });
+      await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "user", action: "vendor.registration.submitted", resourceType: "vendor", resourceId: vendor.id, ...(correlationId ? { correlationId } : {}), after: json({ shopName: input.displayName, categoryIds: input.categoryIds, termsVersion: input.termsVersion, privacyVersion: input.privacyVersion }) } });
+      return workspace(vendor);
+    });
+  }
   async getWorkspace(session: Session) { const id = vendorId(session); return workspace(await this.client.vendor.findUniqueOrThrow({ where: { id }, include })); }
   async updateShop(session: Session, shopId: string, input: UpdateVendorShop) {
     const id = vendorId(session); requirePermission(session, "vendor:manage");

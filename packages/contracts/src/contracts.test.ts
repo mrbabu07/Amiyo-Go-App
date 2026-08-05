@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { addCartItemSchema, addressInputSchema, catalogQuerySchema, checkoutInputSchema, createOpenApiDocument, createProductSchema, createReturnSchema, deviceInputSchema, minorUnitSchema, moneySchema, vendorOrderStatusSchema } from "./index.js";
+import { addCartItemSchema, addressInputSchema, catalogQuerySchema, checkoutInputSchema, createOpenApiDocument, createProductSchema, createReturnSchema, deviceInputSchema, minorUnitSchema, moneySchema, vendorOrderStatusSchema, vendorRegistrationSchema } from "./index.js";
 
 test("money contracts preserve bigint-safe minor units", () => {
   assert.deepEqual(moneySchema.parse({ amountMinor: "249000", currency: "bdt" }), { amountMinor: "249000", currency: "BDT" });
@@ -38,9 +38,18 @@ test("OpenAPI document exposes typed v2 resources", () => {
   assert.ok(document.paths?.["/api/v2/vendor/products/import"]);
   assert.ok(document.paths?.["/api/v2/vendor/products/export.csv"]);
   assert.ok(document.paths?.["/api/v2/vendor/workspace/category-requests"]);
+  assert.ok(document.paths?.["/api/v2/vendor/registrations"]);
   assert.ok(document.paths?.["/api/v2/admin/workspace/category-requests/{id}"]);
   assert.ok(document.paths?.["/api/v2/vendor/orders/{id}/documents"]);
   assert.ok(document.paths?.["/api/v2/media/uploads"]);
+});
+
+test("vendor registration requires consent and unique categories", () => {
+  const categoryId = crypto.randomUUID();
+  const base = { legalName: "Example Commerce", displayName: "Example Shop", phone: "01700000000", address: { line1: "Road 1", division: "Dhaka", district: "Dhaka", upazila: "Savar" }, categoryIds: [categoryId], termsVersion: "2026.06", privacyVersion: "2026.06" };
+  assert.equal(vendorRegistrationSchema.safeParse({ ...base, acceptedTerms: true }).success, true);
+  assert.equal(vendorRegistrationSchema.safeParse({ ...base, acceptedTerms: false }).success, false);
+  assert.equal(vendorRegistrationSchema.safeParse({ ...base, acceptedTerms: true, categoryIds: [categoryId, categoryId] }).success, false);
 });
 
 test("return contracts reject duplicate items and invalid quantities", () => {
