@@ -10,8 +10,8 @@ test("admin dashboard mirrors the reference control-center hierarchy", async () 
   assert.match(screen, /hideHeading/);
   assert.match(screen, /Admin workspace/);
   assert.match(screen, /Analytics & Reports/);
-  assert.match(screen, /Marketplace/);
-  assert.match(screen, /Governance/);
+  assert.match(screen, /Catalog/);
+  assert.match(screen, /Customers/);
   assert.match(screen, /Search pages, orders, vendors/);
   assert.match(dashboard, /Amiyo-Go Control Center/);
   assert.match(dashboard, /MARKETPLACE OPERATIONS/);

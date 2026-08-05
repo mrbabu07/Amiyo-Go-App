@@ -8,7 +8,7 @@ import { colors, radius, spacing } from "./tokens";
 
 type ScreenProps = PropsWithChildren<{ eyebrow?: string; title: string; description?: string; hideHeading?: boolean }>;
 type WorkspaceLink = { label: string; href: string; icon: string };
-type AdminGroup = { label: string; links: WorkspaceLink[] };
+type AdminGroup = { label: string; icon: string; links: WorkspaceLink[] };
 
 const vendorLinks: WorkspaceLink[] = [
   { label: "Dashboard", href: "/vendor/dashboard", icon: "grid-outline" },
@@ -22,27 +22,51 @@ const vendorLinks: WorkspaceLink[] = [
 ];
 
 const adminGroups: AdminGroup[] = [
-  { label: "Overview", links: [
+  { label: "Overview", icon: "grid-outline", links: [
     { label: "Dashboard", href: "/admin/dashboard", icon: "grid-outline" },
     { label: "Operations", href: "/admin/operations", icon: "pulse-outline" },
     { label: "Analytics & Reports", href: "/admin/analytics", icon: "bar-chart-outline" },
+    { label: "Audit Logs", href: "/admin/audit", icon: "time-outline" },
     { label: "Platform Control", href: "/admin/platform", icon: "settings-outline" }
   ] },
-  { label: "Marketplace", links: [
-    { label: "Catalog", href: "/admin/catalog", icon: "cube-outline" },
-    { label: "Categories", href: "/admin/categories", icon: "file-tray-full-outline" },
-    { label: "Category Requests", href: "/admin/category-requests", icon: "git-pull-request-outline" },
-    { label: "Delivery Settings", href: "/admin/delivery-settings", icon: "car-outline" }
+  { label: "Vendors", icon: "storefront-outline", links: [
+    { label: "Vendor Requests", href: "/admin/vendor-requests", icon: "person-add-outline" },
+    { label: "KYC Review", href: "/admin/vendor-kyc", icon: "id-card-outline" },
+    { label: "All Vendors", href: "/admin/vendors", icon: "storefront-outline" }
   ] },
-  { label: "Growth", links: [
+  { label: "Catalog", icon: "cube-outline", links: [
+    { label: "Products", href: "/admin/products", icon: "cube-outline" },
+    { label: "Inventory", href: "/admin/inventory", icon: "layers-outline" },
+    { label: "Categories", href: "/admin/categories", icon: "file-tray-full-outline" },
+    { label: "Category Requests", href: "/admin/category-requests", icon: "git-pull-request-outline" }
+  ] },
+  { label: "Orders", icon: "bag-handle-outline", links: [
+    { label: "All Orders", href: "/admin/orders", icon: "bag-handle-outline" },
+    { label: "Returns", href: "/admin/returns", icon: "return-down-back-outline" },
+    { label: "Logistics", href: "/admin/logistics", icon: "car-outline" },
+    { label: "Delivery Settings", href: "/admin/delivery-settings", icon: "options-outline" },
+    { label: "Support Tickets", href: "/admin/support", icon: "headset-outline" }
+  ] },
+  { label: "Marketing", icon: "megaphone-outline", links: [
     { label: "Promotions", href: "/admin/promotions", icon: "megaphone-outline" },
     { label: "Banners", href: "/admin/banners", icon: "images-outline" },
+    { label: "Vouchers", href: "/admin/vouchers", icon: "ticket-outline" },
+    { label: "Flash Sales", href: "/admin/flash-sales", icon: "flash-outline" },
+    { label: "Offers", href: "/admin/offers", icon: "pricetags-outline" },
     { label: "Content", href: "/admin/content", icon: "newspaper-outline" },
     { label: "Newsletter", href: "/admin/newsletter", icon: "mail-outline" }
   ] },
-  { label: "Governance", links: [
-    { label: "Trust & Safety", href: "/admin/trust", icon: "shield-checkmark-outline" },
-    { label: "Support", href: "/admin/support", icon: "headset-outline" }
+  { label: "Finance", icon: "wallet-outline", links: [
+    { label: "Vendor Payouts", href: "/admin/payouts", icon: "wallet-outline" },
+    { label: "Payment Verification", href: "/admin/payment-verifications", icon: "card-outline" }
+  ] },
+  { label: "Customers", icon: "people-outline", links: [
+    { label: "Customers", href: "/admin/customers", icon: "people-outline" },
+    { label: "Trust & Safety", href: "/admin/trust-safety", icon: "shield-checkmark-outline" },
+    { label: "User Roles", href: "/admin/users", icon: "key-outline" },
+    { label: "Insights", href: "/admin/insights", icon: "analytics-outline" },
+    { label: "Reviews", href: "/admin/reviews", icon: "star-outline" },
+    { label: "Q&A", href: "/admin/qa", icon: "help-circle-outline" }
   ] }
 ];
 
@@ -60,6 +84,7 @@ export function Screen(props: ScreenProps) {
 function AdminScreen({ children, description, desktop, eyebrow, hideHeading = false, pathname, title }: ScreenProps & { desktop: boolean; pathname: string }) {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ Overview: true });
   const sidebarWidth = collapsed ? 82 : 276;
   const open = (href: string) => router.push(href as never);
 
@@ -84,7 +109,14 @@ function AdminScreen({ children, description, desktop, eyebrow, hideHeading = fa
       {desktop ? <View style={[styles.adminSidebar, { width: sidebarWidth }]}>
         <View style={[styles.workspacePanel, collapsed && styles.workspacePanelCollapsed]}><View style={styles.workspacePulse} />{!collapsed ? <View><Text style={styles.workspacePanelTitle}>Admin workspace</Text><Text style={styles.workspacePanelCopy}>Super admin access</Text></View> : null}</View>
         <ScrollView contentContainerStyle={styles.adminSidebarScroll} showsVerticalScrollIndicator={false}>
-          {adminGroups.map((group) => <View key={group.label} style={styles.adminGroup}>{!collapsed ? <Text style={styles.adminGroupLabel}>{group.label}</Text> : null}{group.links.map((link) => <AdminNavLink key={link.href} link={link} pathname={pathname} collapsed={collapsed} onOpen={open} />)}</View>)}
+          {adminGroups.map((group) => {
+            const groupActive = group.links.some((link) => pathname === link.href || pathname.startsWith(`${link.href}/`));
+            const expanded = groupActive || (expandedGroups[group.label] ?? false);
+            return <View key={group.label} style={styles.adminGroup}>
+              {!collapsed ? <Pressable onPress={() => setExpandedGroups((current) => ({ ...current, [group.label]: !expanded }))} style={[styles.adminGroupButton, groupActive && styles.adminGroupButtonActive]}><Ionicons color={groupActive ? "#ffffff" : "#cbd5e1"} name={group.icon as never} size={19} /><Text style={[styles.adminGroupButtonText, groupActive && styles.adminNavLabelActive]}>{group.label}</Text><Ionicons color="#94a3b8" name={expanded ? "chevron-up" : "chevron-down"} size={15} /></Pressable> : null}
+              {collapsed || expanded ? <View style={!collapsed && styles.adminGroupChildren}>{group.links.map((link) => <AdminNavLink key={link.href} link={link} pathname={pathname} collapsed={collapsed} onOpen={open} />)}</View> : null}
+            </View>;
+          })}
         </ScrollView>
         <Pressable onPress={() => open("/")} style={[styles.storefrontLink, collapsed && styles.navCollapsed]}><Ionicons color="#cbd5e1" name="home-outline" size={19} />{!collapsed ? <Text style={styles.storefrontText}>View storefront</Text> : null}</Pressable>
       </View> : null}
@@ -127,7 +159,7 @@ const styles = StyleSheet.create({
   safe: { backgroundColor: colors.background, flex: 1 }, page: { minHeight: "100%", paddingBottom: spacing.xl },
   workspaceChrome: { backgroundColor: colors.surface, borderBottomColor: colors.border, borderBottomWidth: 1 }, workspaceTop: { alignItems: "center", alignSelf: "center", flexDirection: "row", justifyContent: "space-between", minHeight: 68 }, workspaceBrand: { alignItems: "center", flexDirection: "row", gap: 10 }, workspaceMark: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, height: 38, justifyContent: "center", width: 38 }, adminMark: { backgroundColor: colors.navy }, workspaceMarkText: { color: colors.surface, fontSize: 15, fontWeight: "900" }, workspaceName: { color: colors.text, fontSize: 15, fontWeight: "900" }, workspaceLabel: { color: colors.muted, fontSize: 9, fontWeight: "800", letterSpacing: .7, marginTop: 1 }, workspaceActions: { alignItems: "center", flexDirection: "row", gap: spacing.sm }, iconButton: { alignItems: "center", backgroundColor: "#f8fafc", borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, height: 38, justifyContent: "center", position: "relative", width: 38 }, workspaceNav: { alignSelf: "center", gap: 5, paddingBottom: 9 }, navItem: { alignItems: "center", borderRadius: radius.md, flexDirection: "row", gap: 6, minHeight: 38, paddingHorizontal: 12 }, navItemActive: { backgroundColor: colors.primarySoft }, navLabel: { color: colors.muted, fontSize: 12, fontWeight: "800" }, navLabelActive: { color: colors.primary, fontWeight: "900" },
   adminTopbar: { alignItems: "center", backgroundColor: colors.surface, borderBottomColor: "#e2e8f0", borderBottomWidth: 1, flexDirection: "row", gap: spacing.md, height: 66, justifyContent: "space-between", paddingHorizontal: spacing.md, zIndex: 2 }, adminTopLeft: { alignItems: "center", flexDirection: "row", gap: 10 }, topIcon: { alignItems: "center", borderRadius: radius.md, height: 38, justifyContent: "center", width: 38 }, adminSearch: { alignItems: "center", backgroundColor: "#f8fafc", borderColor: "#e2e8f0", borderRadius: radius.md, borderWidth: 1, flex: 1, flexDirection: "row", gap: 8, maxWidth: 520, paddingHorizontal: 12 }, adminSearchInput: { color: colors.text, flex: 1, fontSize: 13, height: 40, outlineStyle: "none" } as never, notificationDot: { backgroundColor: colors.danger, borderColor: colors.surface, borderRadius: 6, borderWidth: 2, height: 8, position: "absolute", right: 7, top: 6, width: 8 }, adminAccount: { alignItems: "center", borderLeftColor: "#e2e8f0", borderLeftWidth: 1, flexDirection: "row", gap: 9, marginLeft: 2, paddingLeft: 12 }, avatar: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.md, height: 36, justifyContent: "center", width: 36 }, avatarText: { color: colors.primary, fontSize: 14, fontWeight: "900" }, accountName: { color: colors.text, fontSize: 12, fontWeight: "900" }, accountRole: { color: colors.muted, fontSize: 10, marginTop: 1 },
-  adminBody: { flex: 1, flexDirection: "row" }, adminSidebar: { backgroundColor: colors.navy, borderRightColor: "#0f1224", borderRightWidth: 1 }, workspacePanel: { alignItems: "center", backgroundColor: "rgba(255,255,255,.08)", borderColor: "rgba(255,255,255,.1)", borderRadius: radius.md, borderWidth: 1, flexDirection: "row", gap: 9, margin: 12, padding: 11 }, workspacePanelCollapsed: { justifyContent: "center", paddingHorizontal: 4 }, workspacePulse: { backgroundColor: "#22c55e", borderRadius: 5, height: 9, width: 9 }, workspacePanelTitle: { color: colors.surface, fontSize: 12, fontWeight: "900" }, workspacePanelCopy: { color: "#94a3b8", fontSize: 10, marginTop: 2 }, adminSidebarScroll: { paddingBottom: 14, paddingHorizontal: 10 }, adminGroup: { gap: 3, marginBottom: 13 }, adminGroupLabel: { color: "#64748b", fontSize: 9, fontWeight: "900", letterSpacing: 1.2, paddingHorizontal: 11, paddingVertical: 6, textTransform: "uppercase" }, adminNavItem: { alignItems: "center", borderRadius: radius.md, flexDirection: "row", gap: 10, minHeight: 42, paddingHorizontal: 11 }, adminNavItemActive: { backgroundColor: colors.primary }, adminNavLabel: { color: "#cbd5e1", flex: 1, fontSize: 12, fontWeight: "700" }, adminNavLabelActive: { color: colors.surface, fontWeight: "900" }, activePip: { backgroundColor: colors.surface, borderRadius: 3, height: 5, width: 5 }, navCollapsed: { justifyContent: "center", paddingHorizontal: 0 }, storefrontLink: { alignItems: "center", borderTopColor: "rgba(255,255,255,.1)", borderTopWidth: 1, flexDirection: "row", gap: 10, minHeight: 54, paddingHorizontal: 21 }, storefrontText: { color: "#cbd5e1", fontSize: 12, fontWeight: "800" },
+  adminBody: { flex: 1, flexDirection: "row" }, adminSidebar: { backgroundColor: colors.navy, borderRightColor: "#0f1224", borderRightWidth: 1 }, workspacePanel: { alignItems: "center", backgroundColor: "rgba(255,255,255,.08)", borderColor: "rgba(255,255,255,.1)", borderRadius: radius.md, borderWidth: 1, flexDirection: "row", gap: 9, margin: 12, padding: 11 }, workspacePanelCollapsed: { justifyContent: "center", paddingHorizontal: 4 }, workspacePulse: { backgroundColor: "#22c55e", borderRadius: 5, height: 9, width: 9 }, workspacePanelTitle: { color: colors.surface, fontSize: 12, fontWeight: "900" }, workspacePanelCopy: { color: "#94a3b8", fontSize: 10, marginTop: 2 }, adminSidebarScroll: { paddingBottom: 14, paddingHorizontal: 10 }, adminGroup: { gap: 3, marginBottom: 5 }, adminGroupButton: { alignItems: "center", borderRadius: radius.md, flexDirection: "row", gap: 10, minHeight: 42, paddingHorizontal: 11 }, adminGroupButtonActive: { backgroundColor: "rgba(30,112,152,.35)" }, adminGroupButtonText: { color: "#cbd5e1", flex: 1, fontSize: 12, fontWeight: "900" }, adminGroupChildren: { borderLeftColor: "rgba(255,255,255,.12)", borderLeftWidth: 1, marginLeft: 19, paddingLeft: 7 }, adminNavItem: { alignItems: "center", borderRadius: radius.md, flexDirection: "row", gap: 10, minHeight: 39, paddingHorizontal: 11 }, adminNavItemActive: { backgroundColor: colors.primary }, adminNavLabel: { color: "#cbd5e1", flex: 1, fontSize: 11, fontWeight: "700" }, adminNavLabelActive: { color: colors.surface, fontWeight: "900" }, activePip: { backgroundColor: colors.surface, borderRadius: 3, height: 5, width: 5 }, navCollapsed: { justifyContent: "center", paddingHorizontal: 0 }, storefrontLink: { alignItems: "center", borderTopColor: "rgba(255,255,255,.1)", borderTopWidth: 1, flexDirection: "row", gap: 10, minHeight: 54, paddingHorizontal: 21 }, storefrontText: { color: "#cbd5e1", fontSize: 12, fontWeight: "800" },
   adminMobileNav: { backgroundColor: colors.navy, gap: 4, padding: 8 }, adminMain: { flex: 1 }, adminPage: { alignSelf: "center", maxWidth: 1440, paddingBottom: spacing.xl, paddingHorizontal: spacing.lg, width: "100%" }, adminBreadcrumb: { alignItems: "center", flexDirection: "row", gap: 4, minHeight: 42 }, breadcrumbMuted: { color: colors.muted, fontSize: 11, fontWeight: "700" }, breadcrumbCurrent: { color: colors.text, fontSize: 11, fontWeight: "900" },
   container: { alignSelf: "center", gap: spacing.lg, paddingHorizontal: spacing.md, paddingTop: spacing.lg }, heading: { backgroundColor: colors.navy, borderRadius: radius.xl, padding: spacing.xl }, workspaceHeading: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }, eyebrow: { color: "#fdba74", fontSize: 11, fontWeight: "900", letterSpacing: 1, textTransform: "uppercase" }, workspaceEyebrow: { color: colors.accent }, title: { color: colors.surface, fontSize: 32, fontWeight: "900", letterSpacing: -0.8, lineHeight: 38 }, workspaceTitle: { color: colors.text }, description: { color: "#cbd5e1", fontSize: 14, lineHeight: 21, marginTop: spacing.sm }, workspaceDescription: { color: colors.muted }, content: { gap: spacing.md }
 });
