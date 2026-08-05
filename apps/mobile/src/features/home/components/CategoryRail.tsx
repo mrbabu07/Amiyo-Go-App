@@ -10,8 +10,9 @@ export function CategoryRail({ data }: { data: HomeCategory[] }) {
     <ScrollView contentContainerStyle={styles.content} horizontal showsHorizontalScrollIndicator={false}>
       {data.map((category) => (
         <Pressable accessibilityRole="button" key={category.id} onPress={() => router.push(`/category/${category.id}` as never)} style={styles.item}>
-          <View style={[styles.icon, { backgroundColor: category.color }]}><Ionicons color={category.foreground} name={category.icon as never} size={27} /></View>
+          <View style={[styles.icon, { backgroundColor: category.color }]}><Ionicons color={category.foreground} name={category.icon as never} size={36} /></View>
           <Text numberOfLines={2} style={styles.label}>{category.name}</Text>
+          <Text style={styles.browse}>Browse items</Text>
         </Pressable>
       ))}
     </ScrollView>
@@ -20,7 +21,8 @@ export function CategoryRail({ data }: { data: HomeCategory[] }) {
 
 const styles = StyleSheet.create({
   content: { gap: 12, paddingBottom: 3 },
-  item: { alignItems: "center", width: 82 },
-  icon: { alignItems: "center", borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, height: 68, justifyContent: "center", width: 68 },
-  label: { color: colors.text, fontSize: 11, fontWeight: "700", lineHeight: 14, marginTop: 7, textAlign: "center" }
+  item: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, minHeight: 140, padding: 8, width: 112 },
+  icon: { alignItems: "center", borderRadius: radius.md, height: 78, justifyContent: "center", width: "100%" },
+  label: { color: colors.text, fontSize: 12, fontWeight: "900", lineHeight: 16, marginTop: 8, minHeight: 32 },
+  browse: { color: colors.muted, fontSize: 9, fontWeight: "700", marginTop: 2 }
 });
