@@ -37,6 +37,9 @@ test("local demo identities align Firebase users, database roles, and login shor
   assert.match(authSeed, /loopback Firebase Auth Emulator/);
   assert.match(authScreen, /Local demo accounts/);
   assert.match(authScreen, /EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL/);
+  assert.match(authScreen, /createSession/);
+  assert.match(authScreen, /\/admin\/dashboard/);
+  assert.match(authScreen, /\/vendor\/dashboard/);
   assert.match(setup, /apps\/api\/\.env/);
   assert.match(setup, /prisma:migrate:deploy/);
   assert.doesNotMatch(setup, /db push/);

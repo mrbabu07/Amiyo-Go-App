@@ -3,7 +3,15 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
+import { createSession } from "./auth.api";
 import { firebaseAuth, firebaseConfigured } from "./firebase";
+import { useAuthStore } from "./auth.store";
+
+function destination(roles: string[]) {
+  if (roles.includes("SUPER_ADMIN") || roles.some((role) => role.endsWith("_ADMIN"))) return "/admin/dashboard";
+  if (roles.some((role) => role.startsWith("VENDOR_"))) return "/vendor/dashboard";
+  return "/account";
+}
 
 export function AuthScreen() {
   const router = useRouter();
@@ -13,6 +21,7 @@ export function AuthScreen() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const setSession = useAuthStore((state) => state.setSession);
   const emulatorEnabled = Boolean(process.env.EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL);
   const demoPassword = "AmiyoDemo123!";
 
@@ -21,14 +30,16 @@ export function AuthScreen() {
     setBusy(true);
     setError(null);
     try {
+      const credential = mode === "register"
+        ? await createUserWithEmailAndPassword(firebaseAuth, email.trim(), password)
+        : await signInWithEmailAndPassword(firebaseAuth, email.trim(), password);
       if (mode === "register") {
-        const credential = await createUserWithEmailAndPassword(firebaseAuth, email.trim(), password);
         if (name.trim()) await updateProfile(credential.user, { displayName: name.trim() });
         await credential.user.getIdToken(true);
-      } else {
-        await signInWithEmailAndPassword(firebaseAuth, email.trim(), password);
       }
-      router.replace("/account");
+      const session = await createSession(credential.user);
+      setSession(session);
+      router.replace(destination(session.principal.roles) as never);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message.replace("Firebase: ", "") : "Authentication failed");
     } finally {

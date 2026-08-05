@@ -14,17 +14,19 @@ const processes = [
   },
   {
     name: "api",
-    args: ["--workspace", "@amiyo/api", "run", "dev"]
+    args: ["--workspace", "@amiyo/api", "run", "dev"],
+    env: { FIREBASE_AUTH_EMULATOR_HOST: process.env.FIREBASE_AUTH_EMULATOR_HOST || "127.0.0.1:9099" }
   },
   {
     name: "mobile",
-    args: ["--workspace", "@amiyo/mobile", "run", "start"]
+    args: ["--workspace", "@amiyo/mobile", "run", "start"],
+    env: { EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL: process.env.EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL || "http://127.0.0.1:9099" }
   }
 ];
 
-const children = processes.map(({ name, args }) => {
+const children = processes.map(({ name, args, env }) => {
   const child = spawn(process.execPath, [npmCli, ...args], {
-    env: process.env,
+    env: { ...process.env, ...env },
     shell: false,
     stdio: ["inherit", "pipe", "pipe"]
   });
