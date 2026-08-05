@@ -1817,6 +1817,7 @@ model NewsletterSubscriber {
   unsubscribedAt   DateTime? @map("unsubscribed_at") @db.Timestamptz(3)
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deliveries       NewsletterDelivery[]
 
   @@index([active, createdAt])
   @@map("newsletter_subscribers")
@@ -1836,9 +1837,32 @@ model NewsletterBroadcast {
   createdBy      String    @map("created_by") @db.Uuid
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deliveries    NewsletterDelivery[]
 
   @@index([status, scheduledAt, createdAt])
   @@map("newsletter_broadcasts")
+}
+
+model NewsletterDelivery {
+  id            String               @id @default(uuid()) @db.Uuid
+  broadcastId   String               @map("broadcast_id") @db.Uuid
+  subscriberId  String               @map("subscriber_id") @db.Uuid
+  email         String
+  status        String               @default("pending")
+  provider      String?
+  providerRef   String?              @map("provider_ref")
+  attempts      Int                  @default(0)
+  lastError     String?              @map("last_error")
+  attemptedAt   DateTime?            @map("attempted_at") @db.Timestamptz(3)
+  sentAt        DateTime?            @map("sent_at") @db.Timestamptz(3)
+  createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+  broadcast     NewsletterBroadcast  @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
+  subscriber    NewsletterSubscriber @relation(fields: [subscriberId], references: [id], onDelete: Restrict)
+
+  @@unique([broadcastId, subscriberId])
+  @@index([status, createdAt])
+  @@map("newsletter_deliveries")
 }
 
 model DeliverySetting {

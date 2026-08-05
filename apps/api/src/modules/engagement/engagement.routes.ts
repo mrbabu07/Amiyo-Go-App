@@ -19,6 +19,7 @@ export function createEngagementRouter() {
 
   router.get("/api/v2/growth/feed", async (_req, res, next) => { try { res.json(await service.growthFeed()); } catch (error) { next(error); } });
   router.post("/api/v2/newsletter/subscribe", writeLimit, async (req, res, next) => { try { res.status(201).json(await service.subscribeNewsletter(newsletterSubscribeInputSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.get("/api/v2/newsletter/unsubscribe/:token", async (req, res, next) => { try { res.json(await service.unsubscribeNewsletter(tokenSchema.parse(req.params).token)); } catch (error) { next(error); } });
   router.get("/api/v2/catalog/products/:productId/reviews", async (req, res, next) => { try { res.json(await service.productReviews(productSchema.parse(req.params).productId)); } catch (error) { next(error); } });
   router.get("/api/v2/catalog/products/:productId/questions", async (req, res, next) => { try { res.json(await service.questions(productSchema.parse(req.params).productId)); } catch (error) { next(error); } });
   router.get("/api/v2/wishlists/shared/:token", async (req, res, next) => { try { res.json(await service.sharedWishlist(tokenSchema.parse(req.params).token)); } catch (error) { next(error); } });
@@ -51,5 +52,6 @@ export function createEngagementRouter() {
   router.post("/api/v2/admin/promotions", writeLimit, async (req, res, next) => { try { res.status(201).json(await service.createPromotion(requireSession(req), createPromotionSchema.parse(req.body))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/newsletter", async (req, res, next) => { try { res.json(await service.newsletterWorkspace(requireSession(req))); } catch (error) { next(error); } });
   router.post("/api/v2/admin/newsletter/broadcasts", writeLimit, async (req, res, next) => { try { res.status(201).json(await service.createNewsletterBroadcast(requireSession(req), newsletterBroadcastInputSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.post("/api/v2/admin/newsletter/broadcasts/:id/send", writeLimit, async (req, res, next) => { try { res.json(await service.sendNewsletterBroadcast(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   return router;
 }

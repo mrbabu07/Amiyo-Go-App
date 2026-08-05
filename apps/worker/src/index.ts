@@ -12,6 +12,9 @@ import { createMediaProcessor } from "./media/media.processor.js";
 import { ExpoPushProvider } from "./notifications/expo-push.provider.js";
 import { createNotificationProcessor } from "./notifications/notification.processor.js";
 import { NotificationOutboxRelay } from "./outbox/notification-outbox.relay.js";
+import { ResendEmailProvider } from "./email/resend-email.provider.js";
+import { createNewsletterProcessor } from "./email/newsletter.processor.js";
+import { NewsletterOutboxRelay } from "./outbox/newsletter-outbox.relay.js";
 
 const env = parseWorkerEnv(process.env);
 const logger = createLogger("amiyo-worker", env.LOG_LEVEL);
@@ -23,24 +26,29 @@ const mediaQueueName = "media-processing";
 const mediaQueue = new Queue(mediaQueueName, { connection });
 const notificationQueueName = "notifications";
 const notificationQueue = new Queue(notificationQueueName, { connection });
+const newsletterQueueName = "email";
+const newsletterQueue = new Queue(newsletterQueueName, { connection });
 const queueEvents = new QueueEvents(queueName, { connection });
 const deliveryClient = new AmiyoDeliveryClient({ apiUrl: env.AMIYO_DELIVERY_API_URL || "", integrationToken: env.AMIYO_DELIVERY_INTEGRATION_TOKEN || "", signingSecret: env.AMIYO_DELIVERY_WEBHOOK_SECRET || env.AMIYO_DELIVERY_INTEGRATION_TOKEN || "", timeoutMs: env.AMIYO_DELIVERY_TIMEOUT_MS });
 const worker = new Worker(queueName, createDeliveryProcessor(prisma, deliveryClient), { connection, concurrency: env.WORKER_CONCURRENCY });
 const mediaWorker = new Worker(mediaQueueName, createMediaProcessor(prisma, new FirebaseWorkerMediaStorage()), { connection, concurrency: Math.max(1, Math.floor(env.WORKER_CONCURRENCY / 2)) });
 const notificationWorker = new Worker(notificationQueueName, createNotificationProcessor(prisma, new ExpoPushProvider()), { connection, concurrency: env.WORKER_CONCURRENCY });
+const newsletterWorker = new Worker(newsletterQueueName, createNewsletterProcessor(prisma, new ResendEmailProvider({ apiUrl: env.EMAIL_PROVIDER_API_URL || "https://api.resend.com/emails", token: env.EMAIL_PROVIDER_TOKEN, from: env.EMAIL_FROM }), env.API_PUBLIC_URL), { connection, concurrency: env.WORKER_CONCURRENCY });
 const relay = new DeliveryOutboxRelay(prisma, queue, (error) => logger.error({ error }, "Delivery outbox relay failed"));
 const mediaRelay = new MediaOutboxRelay(prisma, mediaQueue, (error) => logger.error({ error }, "Media outbox relay failed"));
 const notificationRelay = new NotificationOutboxRelay(prisma, notificationQueue, (error) => logger.error({ error }, "Notification outbox relay failed"));
+const newsletterRelay = new NewsletterOutboxRelay(prisma, newsletterQueue, (error) => logger.error({ error }, "Newsletter outbox relay failed"));
 
 queueEvents.on("failed", ({ jobId, failedReason }) => logger.error({ queueName, jobId, failedReason }, "Delivery job failed"));
 worker.on("completed", (job) => logger.info({ jobId: job.id }, "Delivery job completed"));
 relay.start();
 mediaRelay.start();
 notificationRelay.start();
+newsletterRelay.start();
 logger.info({ queueName, concurrency: env.WORKER_CONCURRENCY }, "Worker booted");
 
 async function shutdown() {
-  logger.info("Worker shutting down"); relay.stop(); mediaRelay.stop(); notificationRelay.stop(); await worker.close(); await mediaWorker.close(); await notificationWorker.close(); await queueEvents.close(); await queue.close(); await mediaQueue.close(); await notificationQueue.close(); await prisma.$disconnect(); await connection.quit();
+  logger.info("Worker shutting down"); relay.stop(); mediaRelay.stop(); notificationRelay.stop(); newsletterRelay.stop(); await worker.close(); await mediaWorker.close(); await notificationWorker.close(); await newsletterWorker.close(); await queueEvents.close(); await queue.close(); await mediaQueue.close(); await notificationQueue.close(); await newsletterQueue.close(); await prisma.$disconnect(); await connection.quit();
 }
 
 process.on("SIGTERM", () => void shutdown().then(() => process.exit(0)));

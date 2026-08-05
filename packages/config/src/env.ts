@@ -38,7 +38,11 @@ export const workerEnvSchema = apiEnvObject.extend({
   AMIYO_DELIVERY_API_URL: optionalUrlSchema,
   AMIYO_DELIVERY_INTEGRATION_TOKEN: optionalSecretSchema,
   AMIYO_DELIVERY_WEBHOOK_SECRET: optionalSecretSchema,
-  AMIYO_DELIVERY_TIMEOUT_MS: z.coerce.number().int().positive().default(12000)
+  AMIYO_DELIVERY_TIMEOUT_MS: z.coerce.number().int().positive().default(12000),
+  EMAIL_PROVIDER: z.enum(["resend"]).optional(),
+  EMAIL_PROVIDER_API_URL: optionalUrlSchema,
+  EMAIL_PROVIDER_TOKEN: optionalSecretSchema,
+  EMAIL_FROM: optionalStringSchema
 });
 
 export const mobilePublicEnvSchema = z.object({

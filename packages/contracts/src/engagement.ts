@@ -14,6 +14,7 @@ export const contentModerationInputSchema = z.object({ status: z.enum(["publishe
 
 export const notificationSchema = z.object({ id: uuidSchema, type: z.string(), title: z.string(), body: z.string(), href: z.string().nullable(), readAt: timestampSchema.nullable(), createdAt: timestampSchema });
 export const notificationDeliveryJobSchema = z.object({ notificationDeliveryId: uuidSchema });
+export const newsletterDeliveryJobSchema = z.object({ newsletterDeliveryId: uuidSchema });
 export const chatThreadInputSchema = z.object({ vendorId: uuidSchema, subject: z.string().trim().min(2).max(160) });
 export const chatMessageInputSchema = z.object({ body: z.string().trim().min(1).max(3000) });
 export const chatThreadSchema = z.object({ id: uuidSchema, vendorId: uuidSchema.nullable(), subject: z.string().nullable(), status: z.string(), updatedAt: timestampSchema, messages: z.array(z.object({ id: uuidSchema, senderId: uuidSchema, body: z.string(), createdAt: timestampSchema })) });
@@ -40,3 +41,4 @@ export type NewsletterSubscribeInput = z.infer<typeof newsletterSubscribeInputSc
 export type NewsletterBroadcastInput = z.infer<typeof newsletterBroadcastInputSchema>;
 export type GrowthFeedDto = z.infer<typeof growthFeedSchema>;
 export type NotificationDeliveryJob = z.infer<typeof notificationDeliveryJobSchema>;
+export type NewsletterDeliveryJob = z.infer<typeof newsletterDeliveryJobSchema>;

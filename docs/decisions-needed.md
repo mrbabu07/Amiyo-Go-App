@@ -32,6 +32,7 @@ These decisions block production implementation. Do not guess them in code.
 | Geography | TBD | Division/district/upazila/union and serviceability source. |
 | Notifications | PARTIAL | In-app and Expo Push are implemented through transactional outbox/BullMQ delivery. Approve any release-one SMS/email events, quiet hours, and opt-out policy. |
 | Push provider | Expo Push selected | Native token registration, durable retries, delivery status and revoked-device filtering are implemented. EAS/FCM/APNs project credentials remain operator configuration. |
+| Newsletter email | Resend selected | Drafts, schedules, recipient snapshots, unsubscribe links, durable retries, and delivery counters are implemented. `EMAIL_PROVIDER_TOKEN` and `EMAIL_FROM` remain operator configuration. |
 | Loyalty | TBD | Approve earning rates, tiers, expiry, redemption value, reversals, and fraud holds before points mutations are enabled. |
 | Promotion stacking | TBD | Approve coupon/voucher/promotion/flash-sale precedence and stacking before automatic checkout discounts are enabled. |
 | Data retention | TBD | Per table/file/log retention periods. |
