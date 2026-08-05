@@ -1,6 +1,9 @@
 import { PrismaClient, RoleName } from "@prisma/client";
+import { categoryTaxonomy } from "./category-taxonomy.js";
 
 const prisma = new PrismaClient();
+
+const taxonomyCategoryId = (index: number) => `00000000-0000-4000-9000-${String(index + 1).padStart(12, "0")}`;
 
 const permissionKeys = [
   "catalog:read", "cart:manage", "checkout:manage", "orders:read", "orders:manage", "returns:manage", "reviews:manage", "support:manage", "vendor:read", "vendor:manage", "products:manage", "inventory:manage", "finance:read", "finance:manage", "kyc:manage", "admin:read", "admin:manage", "audit:read", "settings:manage"
@@ -85,36 +88,34 @@ async function seedDemoCatalog() {
     create: { id: ids.shop, vendorId: ids.vendor, name: "Tech Gallery", slug: "tech-gallery", status: "ACTIVE", description: "Verified electronics and lifestyle shop." }
   });
 
-  await prisma.category.upsert({ where: { id: ids.categoryFashion }, update: {}, create: { id: ids.categoryFashion, name: "Fashion", slug: "fashion", displayOrder: 10 } });
-  await prisma.category.upsert({ where: { id: ids.categoryElectronics }, update: {}, create: { id: ids.categoryElectronics, name: "Electronics", slug: "electronics", displayOrder: 20 } });
-  const extraCategories = [
-    ["00000000-0000-4000-8000-000000000303", "Beauty", "beauty", 30],
-    ["00000000-0000-4000-8000-000000000304", "Home & Living", "home-living", 40],
-    ["00000000-0000-4000-8000-000000000305", "Grocery", "grocery", 50]
-  ] as const;
-  for (const [id, name, slug, displayOrder] of extraCategories) {
-    await prisma.category.upsert({ where: { id }, update: { name, slug, displayOrder }, create: { id, name, slug, displayOrder } });
+  const categoryIds = new Map<string, string>();
+  let taxonomyIndex = 0;
+  for (const [rootIndex, root] of categoryTaxonomy.entries()) {
+    const category = await prisma.category.upsert({
+      where: { slug: root.slug },
+      update: { parentId: null, name: root.name, description: `Shop ${root.name}`, status: "active", displayOrder: (rootIndex + 1) * 10 },
+      create: { id: taxonomyCategoryId(taxonomyIndex), name: root.name, slug: root.slug, description: `Shop ${root.name}`, displayOrder: (rootIndex + 1) * 10 }
+    });
+    taxonomyIndex += 1;
+    categoryIds.set(root.slug, category.id);
   }
-  const subCategories = [
-    ["00000000-0000-4000-8000-000000000321", ids.categoryFashion, "Men's Fashion", "mens-fashion", 10],
-    ["00000000-0000-4000-8000-000000000322", ids.categoryFashion, "Women's Fashion", "womens-fashion", 20],
-    ["00000000-0000-4000-8000-000000000323", ids.categoryFashion, "Shoes & Bags", "shoes-bags", 30],
-    ["00000000-0000-4000-8000-000000000324", ids.categoryElectronics, "Mobiles & Tablets", "mobiles-tablets", 10],
-    ["00000000-0000-4000-8000-000000000325", ids.categoryElectronics, "Computers & Accessories", "computers-accessories", 20],
-    ["00000000-0000-4000-8000-000000000326", ids.categoryElectronics, "TV & Home Appliances", "tv-home-appliances", 30],
-    ["00000000-0000-4000-8000-000000000327", extraCategories[0][0], "Skincare", "skincare", 10],
-    ["00000000-0000-4000-8000-000000000328", extraCategories[0][0], "Makeup", "makeup", 20],
-    ["00000000-0000-4000-8000-000000000329", extraCategories[0][0], "Fragrance", "fragrance", 30],
-    ["00000000-0000-4000-8000-000000000330", extraCategories[1][0], "Furniture", "furniture", 10],
-    ["00000000-0000-4000-8000-000000000331", extraCategories[1][0], "Kitchen & Dining", "kitchen-dining", 20],
-    ["00000000-0000-4000-8000-000000000332", extraCategories[1][0], "Home Decor", "home-decor", 30],
-    ["00000000-0000-4000-8000-000000000333", extraCategories[2][0], "Snacks", "snacks", 10],
-    ["00000000-0000-4000-8000-000000000334", extraCategories[2][0], "Beverages", "beverages", 20],
-    ["00000000-0000-4000-8000-000000000335", extraCategories[2][0], "Cooking Essentials", "cooking-essentials", 30]
-  ] as const;
-  for (const [id, parentId, name, slug, displayOrder] of subCategories) {
-    await prisma.category.upsert({ where: { id }, update: { parentId, name, slug, displayOrder }, create: { id, parentId, name, slug, displayOrder } });
+  for (const root of categoryTaxonomy) {
+    const parentId = categoryIds.get(root.slug)!;
+    for (const [childIndex, child] of root.children.entries()) {
+      const category = await prisma.category.upsert({
+        where: { slug: child.slug },
+        update: { parentId, name: child.name, description: `Browse ${child.name}`, status: "active", displayOrder: (childIndex + 1) * 10 },
+        create: { id: taxonomyCategoryId(taxonomyIndex), parentId, name: child.name, slug: child.slug, description: `Browse ${child.name}`, displayOrder: (childIndex + 1) * 10 }
+      });
+      taxonomyIndex += 1;
+      categoryIds.set(child.slug, category.id);
+    }
   }
+  const beautyId = categoryIds.get("beauty")!;
+  const foodCupboardId = categoryIds.get("food-cupboard")!;
+  await prisma.category.updateMany({ where: { slug: { in: ["skincare", "makeup", "fragrance"] } }, data: { parentId: beautyId, status: "active" } });
+  await prisma.category.updateMany({ where: { slug: { in: ["snacks", "cooking-essentials"] } }, data: { parentId: foodCupboardId, status: "active" } });
+  await prisma.category.updateMany({ where: { slug: { in: ["fashion", "home-living", "grocery", "shoes-bags", "mobiles-tablets", "computers-accessories", "kitchen-dining"] } }, data: { status: "inactive" } });
 
   await prisma.product.upsert({
     where: { id: ids.product },
@@ -123,7 +124,7 @@ async function seedDemoCatalog() {
       id: ids.product,
       vendorId: ids.vendor,
       shopId: ids.shop,
-      categoryId: ids.categoryElectronics,
+      categoryId: categoryIds.get("audio")!,
       name: "Premium Wireless Headphones",
       slug: "premium-wireless-headphones",
       description: "Comfortable wireless headphones with clear sound and long battery life.",
@@ -147,14 +148,14 @@ async function seedDemoCatalog() {
   await prisma.productMedia.updateMany({ where: { productId: ids.product }, data: { storageKey: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=900&h=900&fit=crop" } });
 
   const demoProducts = [
-    ["410", "510", "610", subCategories[3][0], "Active Smart Watch", "active-smart-watch", "AMIYO-WATCH-001", 189000n, "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=900&h=900&fit=crop"],
-    ["411", "511", "611", subCategories[2][0], "Everyday Comfort Sneakers", "everyday-comfort-sneakers", "AMIYO-SHOE-001", 159000n, "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=900&h=900&fit=crop"],
-    ["412", "512", "612", subCategories[2][0], "Water Resistant Travel Backpack", "travel-backpack", "AMIYO-BAG-001", 129000n, "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=900&h=900&fit=crop"],
-    ["413", "513", "613", subCategories[6][0], "Hydrating Daily Skincare Set", "hydrating-skincare-set", "AMIYO-SKIN-001", 99000n, "https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=900&h=900&fit=crop"],
-    ["414", "514", "614", subCategories[9][0], "Modern Lounge Chair", "modern-lounge-chair", "AMIYO-CHAIR-001", 649000n, "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=900&h=900&fit=crop"],
-    ["415", "515", "615", subCategories[8][0], "Signature Eau de Parfum", "signature-eau-de-parfum", "AMIYO-PERFUME-001", 229000n, "https://images.unsplash.com/photo-1541643600914-78b084683601?w=900&h=900&fit=crop"],
-    ["416", "516", "616", subCategories[11][0], "Indoor Plant with Ceramic Pot", "indoor-plant-ceramic-pot", "AMIYO-PLANT-001", 69000n, "https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=900&h=900&fit=crop"],
-    ["417", "517", "617", subCategories[13][0], "Premium Roasted Coffee Beans", "premium-roasted-coffee", "AMIYO-COFFEE-001", 78000n, "https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=900&h=900&fit=crop"]
+    ["410", "510", "610", categoryIds.get("mobile-gadgets")!, "Active Smart Watch", "active-smart-watch", "AMIYO-WATCH-001", 189000n, "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=900&h=900&fit=crop"],
+    ["411", "511", "611", categoryIds.get("mens-shoes")!, "Everyday Comfort Sneakers", "everyday-comfort-sneakers", "AMIYO-SHOE-001", 159000n, "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=900&h=900&fit=crop"],
+    ["412", "512", "612", categoryIds.get("travel-bags")!, "Water Resistant Travel Backpack", "travel-backpack", "AMIYO-BAG-001", 129000n, "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=900&h=900&fit=crop"],
+    ["413", "513", "613", beautyId, "Hydrating Daily Skincare Set", "hydrating-skincare-set", "AMIYO-SKIN-001", 99000n, "https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=900&h=900&fit=crop"],
+    ["414", "514", "614", categoryIds.get("furniture")!, "Modern Lounge Chair", "modern-lounge-chair", "AMIYO-CHAIR-001", 649000n, "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=900&h=900&fit=crop"],
+    ["415", "515", "615", beautyId, "Signature Eau de Parfum", "signature-eau-de-parfum", "AMIYO-PERFUME-001", 229000n, "https://images.unsplash.com/photo-1541643600914-78b084683601?w=900&h=900&fit=crop"],
+    ["416", "516", "616", categoryIds.get("home-decor")!, "Indoor Plant with Ceramic Pot", "indoor-plant-ceramic-pot", "AMIYO-PLANT-001", 69000n, "https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=900&h=900&fit=crop"],
+    ["417", "517", "617", categoryIds.get("beverages")!, "Premium Roasted Coffee Beans", "premium-roasted-coffee", "AMIYO-COFFEE-001", 78000n, "https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=900&h=900&fit=crop"]
   ] as const;
   for (const [productSuffix, variantSuffix, inventorySuffix, categoryId, name, slug, sku, priceMinor, image] of demoProducts) {
     const productId = `00000000-0000-4000-8000-000000000${productSuffix}`;
