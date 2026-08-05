@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
@@ -6,8 +7,10 @@ import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { createMyAddress, deleteMyAddress, getMyAddresses, updateMyAddress } from "../auth/auth.api";
 import { firebaseAuth } from "../auth/firebase";
+import { AccountState } from "./components/AccountState";
 
 export function AddressesScreen() {
+  const router = useRouter();
   const user = firebaseAuth?.currentUser ?? null;
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
@@ -17,6 +20,9 @@ export function AddressesScreen() {
   async function save() { if (!user) return; setBusy(true); setError(null); try { await createMyAddress(user, { ...form, isDefault: addresses.data?.length === 0 }); await queryClient.invalidateQueries({ queryKey: ["me", "addresses"] }); setForm({ label: "Home", recipientName: "", phone: "", line1: "", division: "Dhaka", district: "Dhaka" }); } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not save address"); } finally { setBusy(false); } }
   async function remove(id: string) { if (!user) return; await deleteMyAddress(user, id); await queryClient.invalidateQueries({ queryKey: ["me", "addresses"] }); }
   async function makeDefault(address: NonNullable<typeof addresses.data>[number]) { if (!user) return; await updateMyAddress(user, address.id, { label: address.label, recipientName: address.recipientName, phone: address.phone, line1: address.line1, line2: address.line2, division: address.division, district: address.district, upazila: address.upazila, unionName: address.unionName, postalCode: address.postalCode, latitude: address.latitude, longitude: address.longitude, isDefault: true }); await queryClient.invalidateQueries({ queryKey: ["me", "addresses"] }); }
+  if (!user) return <AccountState icon="location-outline" title="Your delivery addresses" copy="Sign in to manage saved delivery locations." action="Sign in" onPress={() => router.replace("/auth")} />;
+  if (addresses.isLoading) return <AccountState loading icon="location-outline" title="Loading addresses" copy="Fetching your saved delivery locations." />;
+  if (addresses.error) return <AccountState icon="alert-circle-outline" title="Could not load addresses" copy={addresses.error.message} action="Try again" onPress={() => addresses.refetch()} />;
   return <Screen eyebrow="DELIVERY" title="Saved addresses" description="Manage the locations used during checkout."><ModuleCard title="Add a new address"><Field label="Label" value={form.label} onChangeText={(label) => setForm({ ...form, label })} /><Field label="Recipient name" value={form.recipientName} onChangeText={(recipientName) => setForm({ ...form, recipientName })} /><Field label="Phone" value={form.phone} onChangeText={(phone) => setForm({ ...form, phone })} /><Field label="Street address" value={form.line1} onChangeText={(line1) => setForm({ ...form, line1 })} /><View style={styles.row}><View style={styles.flex}><Field label="Division" value={form.division} onChangeText={(division) => setForm({ ...form, division })} /></View><View style={styles.flex}><Field label="District" value={form.district} onChangeText={(district) => setForm({ ...form, district })} /></View></View>{error ? <Text style={styles.error}>{error}</Text> : null}<Pressable disabled={busy} onPress={save} style={styles.primary}>{busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>Save address</Text>}</Pressable></ModuleCard>{addresses.data?.map((address) => <ModuleCard key={address.id} title={address.label} meta={address.isDefault ? "Default delivery address" : undefined}><Text style={styles.name}>{address.recipientName} · {address.phone}</Text><Text style={styles.muted}>{address.line1}, {address.district}, {address.division}</Text><View style={styles.row}>{!address.isDefault ? <Pressable onPress={() => makeDefault(address)} style={styles.outline}><Text style={styles.outlineText}>Make default</Text></Pressable> : null}<Pressable onPress={() => remove(address.id)} style={styles.delete}><Text style={styles.deleteText}>Delete</Text></Pressable></View></ModuleCard>)}</Screen>;
 }
 function Field(props: React.ComponentProps<typeof TextInput> & { label: string }) { const { label, ...rest } = props; return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput placeholderTextColor={colors.muted} style={styles.input} {...rest} /></View>; }

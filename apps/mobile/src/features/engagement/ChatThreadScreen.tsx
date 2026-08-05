@@ -1,19 +1,36 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Ionicons } from "@expo/vector-icons";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, Text, TextInput } from "react-native";
-import { ModuleCard } from "../../ui/ModuleCard";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Screen } from "../../ui/Screen";
+import { colors, radius, spacing } from "../../ui/tokens";
 import { firebaseAuth } from "../auth/firebase";
+import { EngagementState } from "./components/EngagementState";
 import { getThreads, readThread, sendMessage } from "./engagement.api";
 
 export function ChatThreadScreen({ id }: { id: string }) {
+  const router = useRouter();
   const cache = useQueryClient();
-  const user = firebaseAuth?.currentUser;
+  const user = firebaseAuth?.currentUser ?? null;
   const [body, setBody] = useState("");
   const query = useQuery({ queryKey: ["chat-threads"], queryFn: () => getThreads(user!), enabled: Boolean(user), refetchInterval: 10_000 });
   const thread = query.data?.find((item) => item.id === id);
   const latestMessageId = thread?.messages.at(-1)?.id;
+  const send = useMutation({ mutationFn: () => sendMessage(user!, id, body.trim()), onSuccess: async () => { setBody(""); await cache.invalidateQueries({ queryKey: ["chat-threads"] }); } });
+
   useEffect(() => { if (!user || !thread?.unreadCount) return; void readThread(user, id).then(() => cache.invalidateQueries({ queryKey: ["chat-threads"] })); }, [cache, id, latestMessageId, thread?.unreadCount, user]);
-  async function send() { if (!user || !body.trim()) return; await sendMessage(user, id, body.trim()); setBody(""); await cache.invalidateQueries({ queryKey: ["chat-threads"] }); }
-  return <Screen title={thread?.subject || "Conversation"} description="Messages are visible only to thread participants.">{query.isLoading ? <ActivityIndicator /> : null}{thread?.messages.map((message) => <ModuleCard key={message.id} title="Message" meta={new Date(message.createdAt).toLocaleString()}><Text>{message.body}</Text></ModuleCard>)}<TextInput accessibilityLabel="Message" onChangeText={setBody} placeholder="Write a message" value={body} /><Pressable accessibilityRole="button" onPress={send}><Text>Send message →</Text></Pressable></Screen>;
+
+  if (!user) return <EngagementState eyebrow="PRIVATE CHAT" icon="lock-closed-outline" title="Sign in to continue" copy="This conversation is available only to its participants." action="Sign in" onPress={() => router.replace("/auth")} />;
+  if (query.isLoading) return <EngagementState loading eyebrow="PRIVATE CHAT" icon="chatbubble-outline" title="Loading conversation" copy="Fetching secure message history." />;
+  if (query.error || !thread) return <EngagementState eyebrow="PRIVATE CHAT" icon="alert-circle-outline" title="Conversation unavailable" copy={query.error instanceof Error ? query.error.message : "This conversation could not be found."} action="Back to inbox" onPress={() => router.replace("/messages")} />;
+
+  return <Screen eyebrow="PRIVATE CHAT" title={thread.subject || "Conversation"} description="Messages are visible only to thread participants.">
+    <View style={styles.header}><View style={styles.avatar}><Ionicons color={colors.primary} name="storefront-outline" size={24} /></View><View style={styles.flex}><Text accessibilityRole="header" style={styles.headerTitle}>{thread.subject || "Seller conversation"}</Text><View style={styles.statusRow}><View style={styles.dot} /><Text style={styles.status}>{thread.status.replaceAll("_", " ")}</Text></View></View><Pressable onPress={() => router.replace("/messages")} style={styles.back}><Ionicons color={colors.primary} name="arrow-back" size={17} /><Text style={styles.backText}>Inbox</Text></Pressable></View>
+    <View style={styles.messages}>{thread.messages.length ? thread.messages.map((message, index) => <View key={message.id} style={[styles.message, index % 2 === 1 && styles.messageAlt]}><View style={styles.messageTop}><Text style={styles.sender}>{index % 2 === 1 ? "You" : "Conversation"}</Text><Text style={styles.time}>{new Date(message.createdAt).toLocaleString("en-BD")}</Text></View><Text style={styles.messageBody}>{message.body}</Text></View>) : <View style={styles.empty}><Ionicons color={colors.primary} name="chatbubble-ellipses-outline" size={45} /><Text style={styles.emptyTitle}>Start the conversation</Text><Text style={styles.muted}>Send a message to the seller below.</Text></View>}</View>
+    <View style={styles.composer}><TextInput accessibilityLabel="Message" multiline onChangeText={setBody} placeholder="Write a message…" placeholderTextColor={colors.muted} style={styles.input} value={body} /><Pressable accessibilityLabel="Send message" accessibilityRole="button" disabled={send.isPending || !body.trim()} onPress={() => send.mutate()} style={[styles.send, (send.isPending || !body.trim()) && styles.sendDisabled]}>{send.isPending ? <ActivityIndicator color={colors.surface} /> : <Ionicons color={colors.surface} name="send" size={20} />}</Pressable></View>
+    {send.error ? <Text style={styles.error}>{send.error.message}</Text> : null}<View style={styles.secure}><Ionicons color={colors.success} name="shield-checkmark-outline" size={17} /><Text style={styles.secureText}>Protected marketplace conversation</Text></View>
+  </Screen>;
 }
+
+const styles = StyleSheet.create({ flex: { flex: 1 }, header: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: "row", gap: spacing.md, padding: spacing.md }, avatar: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.pill, height: 46, justifyContent: "center", width: 46 }, headerTitle: { color: colors.text, fontSize: 17, fontWeight: "900" }, statusRow: { alignItems: "center", flexDirection: "row", gap: 5, marginTop: 4 }, dot: { backgroundColor: colors.success, borderRadius: radius.pill, height: 7, width: 7 }, status: { color: colors.muted, fontSize: 10, fontWeight: "800", textTransform: "uppercase" }, back: { alignItems: "center", borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flexDirection: "row", gap: 5, paddingHorizontal: spacing.sm, paddingVertical: 9 }, backText: { color: colors.primary, fontWeight: "900" }, messages: { gap: spacing.sm }, message: { alignSelf: "flex-start", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderBottomLeftRadius: 4, borderWidth: 1, gap: spacing.sm, maxWidth: "86%", padding: spacing.md }, messageAlt: { alignSelf: "flex-end", backgroundColor: colors.primarySoft, borderBottomLeftRadius: radius.lg, borderBottomRightRadius: 4, borderColor: "#bae6fd" }, messageTop: { alignItems: "center", flexDirection: "row", gap: spacing.md, justifyContent: "space-between" }, sender: { color: colors.primary, fontSize: 11, fontWeight: "900" }, time: { color: colors.muted, fontSize: 9 }, messageBody: { color: colors.text, lineHeight: 21 }, composer: { alignItems: "flex-end", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: "row", gap: spacing.sm, padding: spacing.sm }, input: { color: colors.text, flex: 1, maxHeight: 130, minHeight: 46, padding: spacing.sm, textAlignVertical: "top" }, send: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, height: 46, justifyContent: "center", width: 46 }, sendDisabled: { opacity: 0.45 }, secure: { alignItems: "center", alignSelf: "center", flexDirection: "row", gap: 6 }, secureText: { color: colors.muted, fontSize: 11 }, error: { backgroundColor: "#fef2f2", borderRadius: radius.md, color: colors.danger, padding: spacing.md }, empty: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl, borderStyle: "dashed", borderWidth: 1, gap: spacing.sm, padding: 36 }, emptyTitle: { color: colors.text, fontSize: 19, fontWeight: "900" }, muted: { color: colors.muted } });
