@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { adminAnalyticsQuerySchema, adminCategoryAttributesInputSchema, adminCategoryInputSchema, adminCategoryRequestReviewSchema, adminKycReviewInputSchema, adminUserRolesInputSchema, adminUserStatusInputSchema, paymentVerificationReviewSchema, trustCaseActionInputSchema } from "./admin.js";
+import { adminAnalyticsQuerySchema, adminBannerInputSchema, adminCategoryAttributesInputSchema, adminCategoryInputSchema, adminCategoryRequestReviewSchema, adminKycReviewInputSchema, adminUserRolesInputSchema, adminUserStatusInputSchema, paymentVerificationReviewSchema, trustCaseActionInputSchema } from "./admin.js";
 
 test("admin user status mutations require an operational reason", () => {
   assert.equal(adminUserStatusInputSchema.parse({ status: "SUSPENDED", reason: "Fraud review" }).status, "SUSPENDED");
@@ -31,3 +31,4 @@ test("dynamic category attributes reject ambiguous configurations", () => {
 });
 test("admin analytics uses bounded reporting windows", () => { assert.equal(adminAnalyticsQuerySchema.parse({}).range, "30d"); assert.equal(adminAnalyticsQuerySchema.parse({ range: "90d" }).range, "90d"); assert.throws(() => adminAnalyticsQuerySchema.parse({ range: "all" })); });
 test("category request reviews use final bounded decisions", () => { assert.equal(adminCategoryRequestReviewSchema.safeParse({ status: "approved", reason: "Catalog verified" }).success, true); assert.equal(adminCategoryRequestReviewSchema.safeParse({ status: "pending", reason: "Wait" }).success, false); });
+test("banner schedules and destinations remain valid", () => { const valid = { title: "Eid offers", placement: "home_hero", storageKey: "https://example.com/banner.jpg", targetType: "route", targetValue: "/search", startsAt: "2026-08-05T00:00:00.000Z", endsAt: "2026-08-20T00:00:00.000Z" }; assert.equal(adminBannerInputSchema.safeParse(valid).success, true); assert.equal(adminBannerInputSchema.safeParse({ ...valid, endsAt: valid.startsAt }).success, false); assert.equal(adminBannerInputSchema.safeParse({ ...valid, targetValue: null }).success, false); });

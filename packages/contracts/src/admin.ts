@@ -19,6 +19,26 @@ export const adminCategoryAttributeSchema = z.object({ id: uuidSchema, key: z.st
 const adminCategoryAttributeInputSchema = z.object({ key: z.string().trim().min(1).max(80).regex(/^[a-z][a-z0-9_]*$/), label: z.string().trim().min(1).max(120), dataType: z.enum(["text", "number", "boolean", "select", "multiselect"]), required: z.boolean().default(false), filterable: z.boolean().default(false), displayOrder: z.number().int().nonnegative().default(0), options: z.array(z.string().trim().min(1).max(100)).max(100).default([]) }).superRefine((value, context) => { const normalized = value.options.map((option) => option.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")); if (normalized.some((option) => !option)) context.addIssue({ code: "custom", message: "Attribute options require a URL-safe value", path: ["options"] }); if (new Set(normalized).size !== normalized.length) context.addIssue({ code: "custom", message: "Attribute options must be unique", path: ["options"] }); if ((value.dataType === "select" || value.dataType === "multiselect") && value.options.length === 0) context.addIssue({ code: "custom", message: "Select attributes require options", path: ["options"] }); if (value.dataType !== "select" && value.dataType !== "multiselect" && value.options.length > 0) context.addIssue({ code: "custom", message: "Only select attributes may define options", path: ["options"] }); });
 export const adminCategoryAttributesInputSchema = z.object({ attributes: z.array(adminCategoryAttributeInputSchema).max(100) }).superRefine((value, context) => { const keys = value.attributes.map((attribute) => attribute.key.toLowerCase()); if (new Set(keys).size !== keys.length) context.addIssue({ code: "custom", message: "Attribute keys must be unique", path: ["attributes"] }); });
 export const adminToggleInputSchema = z.object({ active: z.boolean() });
+export const adminBannerPlacementSchema = z.enum(["home_hero", "home_secondary", "category_banner", "shop_directory", "checkout_trust"]);
+export const adminBannerInputSchema = z.object({
+  title: z.string().trim().min(2).max(160),
+  subtitle: z.string().trim().max(300).nullable().optional(),
+  placement: adminBannerPlacementSchema,
+  storageKey: z.string().trim().min(3).max(2000),
+  mobileStorageKey: z.string().trim().min(3).max(2000).nullable().optional(),
+  ctaLabel: z.string().trim().max(60).nullable().optional(),
+  badgeText: z.string().trim().max(60).nullable().optional(),
+  targetType: z.enum(["route", "url"]).nullable().optional(),
+  targetValue: z.string().trim().max(2000).nullable().optional(),
+  startsAt: timestampSchema,
+  endsAt: timestampSchema,
+  active: z.boolean().default(true),
+  displayOrder: z.number().int().nonnegative().default(0)
+}).superRefine((value, context) => {
+  if (new Date(value.startsAt) >= new Date(value.endsAt)) context.addIssue({ code: "custom", message: "startsAt must precede endsAt", path: ["endsAt"] });
+  if (value.targetType && !value.targetValue) context.addIssue({ code: "custom", message: "A target value is required", path: ["targetValue"] });
+});
+export const adminBannerSchema = z.object({ id: uuidSchema, title: z.string().nullable(), subtitle: z.string().nullable(), placement: adminBannerPlacementSchema, storageKey: z.string(), mobileStorageKey: z.string().nullable(), ctaLabel: z.string().nullable(), badgeText: z.string().nullable(), targetType: z.string().nullable(), targetValue: z.string().nullable(), startsAt: timestampSchema, endsAt: timestampSchema, active: z.boolean(), displayOrder: z.number().int().nonnegative(), imageUrl: z.string().url().nullable(), mobileImageUrl: z.string().url().nullable(), status: z.enum(["active", "scheduled", "inactive", "expired"]) });
 export const adminCategoryRequestReviewSchema = z.object({ status: z.enum(["approved", "rejected"]), reason: z.string().trim().min(3).max(500) });
 export const adminAnalyticsQuerySchema = z.object({ range: z.enum(["7d", "30d", "90d"]).default("30d") });
 const analyticsAmountSchema = z.object({ amountMinor: z.string().regex(/^\d+$/), currency: z.literal("BDT") });
@@ -33,7 +53,7 @@ export const adminAnalyticsSchema = z.object({
 export const adminPlatformSchema = z.object({
   paymentVerifications: z.array(paymentVerificationSchema),
   categories: z.array(z.object({ id: uuidSchema, name: z.string(), slug: z.string(), status: z.string(), displayOrder: z.number().int(), productCount: z.number().int().nonnegative(), attributes: z.array(adminCategoryAttributeSchema) })),
-  banners: z.array(z.object({ id: uuidSchema, title: z.string().nullable(), placement: z.string(), active: z.boolean(), startsAt: timestampSchema, endsAt: timestampSchema })),
+  banners: z.array(adminBannerSchema),
   vouchers: z.array(z.object({ id: uuidSchema, code: z.string(), ownerType: z.string(), active: z.boolean(), startsAt: timestampSchema, endsAt: timestampSchema })),
   flashSales: z.array(z.object({ id: uuidSchema, name: z.string(), status: z.string(), startsAt: timestampSchema, endsAt: timestampSchema, productCount: z.number().int().nonnegative() })),
   audit: z.array(z.object({ id: uuidSchema, actorType: z.string(), action: z.string(), resourceType: z.string(), resourceId: z.string(), createdAt: timestampSchema }))
@@ -50,3 +70,5 @@ export type AdminCategoryAttributesInput = z.infer<typeof adminCategoryAttribute
 export type AdminAnalyticsQuery = z.infer<typeof adminAnalyticsQuerySchema>;
 export type AdminCategoryRequestReview = z.infer<typeof adminCategoryRequestReviewSchema>;
 export type AdminAnalyticsDto = z.infer<typeof adminAnalyticsSchema>;
+export type AdminBannerInput = z.infer<typeof adminBannerInputSchema>;
+export type AdminBannerDto = z.infer<typeof adminBannerSchema>;

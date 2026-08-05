@@ -47,6 +47,7 @@ export function CustomerHomeScreen() {
   const liveCategories: HomeCategory[] = (categoryQuery.data || []).map((category, index) => { const visual = getCategoryVisual(category, index); return { id: category.slug, name: category.name, icon: visual.icon, color: visual.background, foreground: visual.foreground }; });
   const liveProducts = (productQuery.data?.data || []).map(toHomeProduct);
   const activeFlashSale = growthQuery.data?.flashSales[0];
+  const heroBanner = growthQuery.data?.banners.find((banner) => banner.placement === "home_hero");
   const flashPriceByProduct = new Map(activeFlashSale?.products.map((product) => [product.productId, Number(product.price.amountMinor) / 100]) || []);
   const flashProducts = liveProducts.filter((product) => flashPriceByProduct.has(product.id)).map((product) => ({ ...product, originalPrice: product.price, price: flashPriceByProduct.get(product.id) ?? product.price }));
 
@@ -56,7 +57,7 @@ export function CustomerHomeScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <StoreHeader desktop={desktop} viewportWidth={width} />
           <View style={[styles.content, { width: contentWidth }]}>
-            <View style={styles.heroShowcase}><View style={styles.heroMain}><HeroBanner desktop={desktop} /></View>{desktop ? <PromoTiles campaigns={growthQuery.data?.campaigns || []} couponCode={growthQuery.data?.coupons[0]?.code} /> : null}</View>
+            <View style={styles.heroShowcase}><View style={styles.heroMain}><HeroBanner banner={heroBanner} desktop={desktop} /></View>{desktop ? <PromoTiles campaigns={growthQuery.data?.campaigns || []} couponCode={growthQuery.data?.coupons[0]?.code} /> : null}</View>
             <View style={styles.section}><HomeSectionTitle eyebrow="EXPLORE DEPARTMENTS" href="/categories" title="Shop by category" />{categoryQuery.isLoading ? <ActivityIndicator color={colors.primary} /> : <CategoryRail data={liveCategories} />}{categoryQuery.error ? <RetryState label="Categories unavailable. Start the API and run npm run demo:setup." onRetry={() => categoryQuery.refetch()} /> : null}</View>
 
             {activeFlashSale ? <View style={[styles.flashSection, desktop && styles.desktopFlash]}>

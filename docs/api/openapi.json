@@ -9482,6 +9482,93 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "banners": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "placement": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "subtitle": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "imageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "mobileImageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "ctaLabel": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "badgeText": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetType": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetValue": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "placement",
+                          "title",
+                          "subtitle",
+                          "imageUrl",
+                          "mobileImageUrl",
+                          "ctaLabel",
+                          "badgeText",
+                          "targetType",
+                          "targetValue",
+                          "startsAt",
+                          "endsAt"
+                        ]
+                      }
+                    },
                     "coupons": {
                       "type": "array",
                       "items": {
@@ -9653,6 +9740,7 @@
                     }
                   },
                   "required": [
+                    "banners",
                     "coupons",
                     "campaigns",
                     "flashSales"
@@ -18557,11 +18645,54 @@
                               "null"
                             ]
                           },
+                          "subtitle": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
                           "placement": {
+                            "type": "string",
+                            "enum": [
+                              "home_hero",
+                              "home_secondary",
+                              "category_banner",
+                              "shop_directory",
+                              "checkout_trust"
+                            ]
+                          },
+                          "storageKey": {
                             "type": "string"
                           },
-                          "active": {
-                            "type": "boolean"
+                          "mobileStorageKey": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "ctaLabel": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "badgeText": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetType": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetValue": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "startsAt": {
                             "type": "string",
@@ -18570,15 +18701,56 @@
                           "endsAt": {
                             "type": "string",
                             "format": "date-time"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "displayOrder": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "imageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "mobileImageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "scheduled",
+                              "inactive",
+                              "expired"
+                            ]
                           }
                         },
                         "required": [
                           "id",
                           "title",
+                          "subtitle",
                           "placement",
-                          "active",
+                          "storageKey",
+                          "mobileStorageKey",
+                          "ctaLabel",
+                          "badgeText",
+                          "targetType",
+                          "targetValue",
                           "startsAt",
-                          "endsAt"
+                          "endsAt",
+                          "active",
+                          "displayOrder",
+                          "imageUrl",
+                          "mobileImageUrl",
+                          "status"
                         ]
                       }
                     },
@@ -19678,11 +19850,54 @@
                               "null"
                             ]
                           },
+                          "subtitle": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
                           "placement": {
+                            "type": "string",
+                            "enum": [
+                              "home_hero",
+                              "home_secondary",
+                              "category_banner",
+                              "shop_directory",
+                              "checkout_trust"
+                            ]
+                          },
+                          "storageKey": {
                             "type": "string"
                           },
-                          "active": {
-                            "type": "boolean"
+                          "mobileStorageKey": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "ctaLabel": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "badgeText": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetType": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetValue": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "startsAt": {
                             "type": "string",
@@ -19691,15 +19906,56 @@
                           "endsAt": {
                             "type": "string",
                             "format": "date-time"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "displayOrder": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "imageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "mobileImageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "scheduled",
+                              "inactive",
+                              "expired"
+                            ]
                           }
                         },
                         "required": [
                           "id",
                           "title",
+                          "subtitle",
                           "placement",
-                          "active",
+                          "storageKey",
+                          "mobileStorageKey",
+                          "ctaLabel",
+                          "badgeText",
+                          "targetType",
+                          "targetValue",
                           "startsAt",
-                          "endsAt"
+                          "endsAt",
+                          "active",
+                          "displayOrder",
+                          "imageUrl",
+                          "mobileImageUrl",
+                          "status"
                         ]
                       }
                     },
@@ -20117,11 +20373,54 @@
                               "null"
                             ]
                           },
+                          "subtitle": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
                           "placement": {
+                            "type": "string",
+                            "enum": [
+                              "home_hero",
+                              "home_secondary",
+                              "category_banner",
+                              "shop_directory",
+                              "checkout_trust"
+                            ]
+                          },
+                          "storageKey": {
                             "type": "string"
                           },
-                          "active": {
-                            "type": "boolean"
+                          "mobileStorageKey": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "ctaLabel": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "badgeText": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetType": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetValue": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "startsAt": {
                             "type": "string",
@@ -20130,15 +20429,56 @@
                           "endsAt": {
                             "type": "string",
                             "format": "date-time"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "displayOrder": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "imageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "mobileImageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "scheduled",
+                              "inactive",
+                              "expired"
+                            ]
                           }
                         },
                         "required": [
                           "id",
                           "title",
+                          "subtitle",
                           "placement",
-                          "active",
+                          "storageKey",
+                          "mobileStorageKey",
+                          "ctaLabel",
+                          "badgeText",
+                          "targetType",
+                          "targetValue",
                           "startsAt",
-                          "endsAt"
+                          "endsAt",
+                          "active",
+                          "displayOrder",
+                          "imageUrl",
+                          "mobileImageUrl",
+                          "status"
                         ]
                       }
                     },
@@ -20604,7 +20944,128 @@
                               "null"
                             ]
                           },
+                          "subtitle": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
                           "placement": {
+                            "type": "string",
+                            "enum": [
+                              "home_hero",
+                              "home_secondary",
+                              "category_banner",
+                              "shop_directory",
+                              "checkout_trust"
+                            ]
+                          },
+                          "storageKey": {
+                            "type": "string"
+                          },
+                          "mobileStorageKey": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "ctaLabel": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "badgeText": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetType": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetValue": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "displayOrder": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "imageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "mobileImageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "scheduled",
+                              "inactive",
+                              "expired"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "subtitle",
+                          "placement",
+                          "storageKey",
+                          "mobileStorageKey",
+                          "ctaLabel",
+                          "badgeText",
+                          "targetType",
+                          "targetValue",
+                          "startsAt",
+                          "endsAt",
+                          "active",
+                          "displayOrder",
+                          "imageUrl",
+                          "mobileImageUrl",
+                          "status"
+                        ]
+                      }
+                    },
+                    "vouchers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "ownerType": {
                             "type": "string"
                           },
                           "active": {
@@ -20621,11 +21082,563 @@
                         },
                         "required": [
                           "id",
-                          "title",
-                          "placement",
+                          "code",
+                          "ownerType",
                           "active",
                           "startsAt",
                           "endsAt"
+                        ]
+                      }
+                    },
+                    "flashSales": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "productCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "status",
+                          "startsAt",
+                          "endsAt",
+                          "productCount"
+                        ]
+                      }
+                    },
+                    "audit": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "actorType": {
+                            "type": "string"
+                          },
+                          "action": {
+                            "type": "string"
+                          },
+                          "resourceType": {
+                            "type": "string"
+                          },
+                          "resourceId": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "actorType",
+                          "action",
+                          "resourceType",
+                          "resourceId",
+                          "createdAt"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "paymentVerifications",
+                    "categories",
+                    "banners",
+                    "vouchers",
+                    "flashSales",
+                    "audit"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/workspace/banners": {
+      "post": {
+        "tags": [
+          "Admin Platform"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 160
+                  },
+                  "subtitle": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 300
+                  },
+                  "placement": {
+                    "type": "string",
+                    "enum": [
+                      "home_hero",
+                      "home_secondary",
+                      "category_banner",
+                      "shop_directory",
+                      "checkout_trust"
+                    ]
+                  },
+                  "storageKey": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 2000
+                  },
+                  "mobileStorageKey": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "minLength": 3,
+                    "maxLength": 2000
+                  },
+                  "ctaLabel": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 60
+                  },
+                  "badgeText": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 60
+                  },
+                  "targetType": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "enum": [
+                      "route",
+                      "url"
+                    ]
+                  },
+                  "targetValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 2000
+                  },
+                  "startsAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "endsAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "active": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "displayOrder": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 0
+                  }
+                },
+                "required": [
+                  "title",
+                  "placement",
+                  "storageKey",
+                  "startsAt",
+                  "endsAt"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Banner created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "paymentVerifications": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "paymentId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "orderId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "orderNumber": {
+                            "type": "string"
+                          },
+                          "provider": {
+                            "type": "string"
+                          },
+                          "amountMinor": {
+                            "type": "string"
+                          },
+                          "currency": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "transactionRef": {
+                            "type": "string"
+                          },
+                          "senderMasked": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "evidenceStorageKey": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "paymentId",
+                          "orderId",
+                          "orderNumber",
+                          "provider",
+                          "amountMinor",
+                          "currency",
+                          "status",
+                          "transactionRef",
+                          "senderMasked",
+                          "evidenceStorageKey",
+                          "createdAt"
+                        ]
+                      }
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "displayOrder": {
+                            "type": "integer"
+                          },
+                          "productCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "attributes": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "key": {
+                                  "type": "string"
+                                },
+                                "label": {
+                                  "type": "string"
+                                },
+                                "dataType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "text",
+                                    "number",
+                                    "boolean",
+                                    "select",
+                                    "multiselect"
+                                  ]
+                                },
+                                "required": {
+                                  "type": "boolean"
+                                },
+                                "filterable": {
+                                  "type": "boolean"
+                                },
+                                "displayOrder": {
+                                  "type": "integer"
+                                },
+                                "options": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                      },
+                                      "value": {
+                                        "type": "string"
+                                      },
+                                      "label": {
+                                        "type": "string"
+                                      },
+                                      "displayOrder": {
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "value",
+                                      "label",
+                                      "displayOrder"
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "key",
+                                "label",
+                                "dataType",
+                                "required",
+                                "filterable",
+                                "displayOrder",
+                                "options"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "slug",
+                          "status",
+                          "displayOrder",
+                          "productCount",
+                          "attributes"
+                        ]
+                      }
+                    },
+                    "banners": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "subtitle": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "placement": {
+                            "type": "string",
+                            "enum": [
+                              "home_hero",
+                              "home_secondary",
+                              "category_banner",
+                              "shop_directory",
+                              "checkout_trust"
+                            ]
+                          },
+                          "storageKey": {
+                            "type": "string"
+                          },
+                          "mobileStorageKey": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "ctaLabel": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "badgeText": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetType": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetValue": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "displayOrder": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "imageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "mobileImageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "scheduled",
+                              "inactive",
+                              "expired"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "subtitle",
+                          "placement",
+                          "storageKey",
+                          "mobileStorageKey",
+                          "ctaLabel",
+                          "badgeText",
+                          "targetType",
+                          "targetValue",
+                          "startsAt",
+                          "endsAt",
+                          "active",
+                          "displayOrder",
+                          "imageUrl",
+                          "mobileImageUrl",
+                          "status"
                         ]
                       }
                     },
@@ -20797,6 +21810,1101 @@
       }
     },
     "/api/v2/admin/workspace/banners/{id}": {
+      "put": {
+        "tags": [
+          "Admin Platform"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 160
+                  },
+                  "subtitle": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 300
+                  },
+                  "placement": {
+                    "type": "string",
+                    "enum": [
+                      "home_hero",
+                      "home_secondary",
+                      "category_banner",
+                      "shop_directory",
+                      "checkout_trust"
+                    ]
+                  },
+                  "storageKey": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 2000
+                  },
+                  "mobileStorageKey": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "minLength": 3,
+                    "maxLength": 2000
+                  },
+                  "ctaLabel": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 60
+                  },
+                  "badgeText": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 60
+                  },
+                  "targetType": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "enum": [
+                      "route",
+                      "url"
+                    ]
+                  },
+                  "targetValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 2000
+                  },
+                  "startsAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "endsAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "active": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "displayOrder": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 0
+                  }
+                },
+                "required": [
+                  "title",
+                  "placement",
+                  "storageKey",
+                  "startsAt",
+                  "endsAt"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Banner updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "paymentVerifications": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "paymentId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "orderId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "orderNumber": {
+                            "type": "string"
+                          },
+                          "provider": {
+                            "type": "string"
+                          },
+                          "amountMinor": {
+                            "type": "string"
+                          },
+                          "currency": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "transactionRef": {
+                            "type": "string"
+                          },
+                          "senderMasked": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "evidenceStorageKey": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "paymentId",
+                          "orderId",
+                          "orderNumber",
+                          "provider",
+                          "amountMinor",
+                          "currency",
+                          "status",
+                          "transactionRef",
+                          "senderMasked",
+                          "evidenceStorageKey",
+                          "createdAt"
+                        ]
+                      }
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "displayOrder": {
+                            "type": "integer"
+                          },
+                          "productCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "attributes": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "key": {
+                                  "type": "string"
+                                },
+                                "label": {
+                                  "type": "string"
+                                },
+                                "dataType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "text",
+                                    "number",
+                                    "boolean",
+                                    "select",
+                                    "multiselect"
+                                  ]
+                                },
+                                "required": {
+                                  "type": "boolean"
+                                },
+                                "filterable": {
+                                  "type": "boolean"
+                                },
+                                "displayOrder": {
+                                  "type": "integer"
+                                },
+                                "options": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                      },
+                                      "value": {
+                                        "type": "string"
+                                      },
+                                      "label": {
+                                        "type": "string"
+                                      },
+                                      "displayOrder": {
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "value",
+                                      "label",
+                                      "displayOrder"
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "key",
+                                "label",
+                                "dataType",
+                                "required",
+                                "filterable",
+                                "displayOrder",
+                                "options"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "slug",
+                          "status",
+                          "displayOrder",
+                          "productCount",
+                          "attributes"
+                        ]
+                      }
+                    },
+                    "banners": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "subtitle": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "placement": {
+                            "type": "string",
+                            "enum": [
+                              "home_hero",
+                              "home_secondary",
+                              "category_banner",
+                              "shop_directory",
+                              "checkout_trust"
+                            ]
+                          },
+                          "storageKey": {
+                            "type": "string"
+                          },
+                          "mobileStorageKey": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "ctaLabel": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "badgeText": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetType": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetValue": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "displayOrder": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "imageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "mobileImageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "scheduled",
+                              "inactive",
+                              "expired"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "subtitle",
+                          "placement",
+                          "storageKey",
+                          "mobileStorageKey",
+                          "ctaLabel",
+                          "badgeText",
+                          "targetType",
+                          "targetValue",
+                          "startsAt",
+                          "endsAt",
+                          "active",
+                          "displayOrder",
+                          "imageUrl",
+                          "mobileImageUrl",
+                          "status"
+                        ]
+                      }
+                    },
+                    "vouchers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "ownerType": {
+                            "type": "string"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "code",
+                          "ownerType",
+                          "active",
+                          "startsAt",
+                          "endsAt"
+                        ]
+                      }
+                    },
+                    "flashSales": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "productCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "status",
+                          "startsAt",
+                          "endsAt",
+                          "productCount"
+                        ]
+                      }
+                    },
+                    "audit": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "actorType": {
+                            "type": "string"
+                          },
+                          "action": {
+                            "type": "string"
+                          },
+                          "resourceType": {
+                            "type": "string"
+                          },
+                          "resourceId": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "actorType",
+                          "action",
+                          "resourceType",
+                          "resourceId",
+                          "createdAt"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "paymentVerifications",
+                    "categories",
+                    "banners",
+                    "vouchers",
+                    "flashSales",
+                    "audit"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin Platform"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Banner deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "paymentVerifications": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "paymentId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "orderId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "orderNumber": {
+                            "type": "string"
+                          },
+                          "provider": {
+                            "type": "string"
+                          },
+                          "amountMinor": {
+                            "type": "string"
+                          },
+                          "currency": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "transactionRef": {
+                            "type": "string"
+                          },
+                          "senderMasked": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "evidenceStorageKey": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "paymentId",
+                          "orderId",
+                          "orderNumber",
+                          "provider",
+                          "amountMinor",
+                          "currency",
+                          "status",
+                          "transactionRef",
+                          "senderMasked",
+                          "evidenceStorageKey",
+                          "createdAt"
+                        ]
+                      }
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "displayOrder": {
+                            "type": "integer"
+                          },
+                          "productCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "attributes": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "key": {
+                                  "type": "string"
+                                },
+                                "label": {
+                                  "type": "string"
+                                },
+                                "dataType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "text",
+                                    "number",
+                                    "boolean",
+                                    "select",
+                                    "multiselect"
+                                  ]
+                                },
+                                "required": {
+                                  "type": "boolean"
+                                },
+                                "filterable": {
+                                  "type": "boolean"
+                                },
+                                "displayOrder": {
+                                  "type": "integer"
+                                },
+                                "options": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                      },
+                                      "value": {
+                                        "type": "string"
+                                      },
+                                      "label": {
+                                        "type": "string"
+                                      },
+                                      "displayOrder": {
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "value",
+                                      "label",
+                                      "displayOrder"
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "key",
+                                "label",
+                                "dataType",
+                                "required",
+                                "filterable",
+                                "displayOrder",
+                                "options"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "slug",
+                          "status",
+                          "displayOrder",
+                          "productCount",
+                          "attributes"
+                        ]
+                      }
+                    },
+                    "banners": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "subtitle": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "placement": {
+                            "type": "string",
+                            "enum": [
+                              "home_hero",
+                              "home_secondary",
+                              "category_banner",
+                              "shop_directory",
+                              "checkout_trust"
+                            ]
+                          },
+                          "storageKey": {
+                            "type": "string"
+                          },
+                          "mobileStorageKey": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "ctaLabel": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "badgeText": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetType": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetValue": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "displayOrder": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "imageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "mobileImageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "scheduled",
+                              "inactive",
+                              "expired"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "subtitle",
+                          "placement",
+                          "storageKey",
+                          "mobileStorageKey",
+                          "ctaLabel",
+                          "badgeText",
+                          "targetType",
+                          "targetValue",
+                          "startsAt",
+                          "endsAt",
+                          "active",
+                          "displayOrder",
+                          "imageUrl",
+                          "mobileImageUrl",
+                          "status"
+                        ]
+                      }
+                    },
+                    "vouchers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "ownerType": {
+                            "type": "string"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "code",
+                          "ownerType",
+                          "active",
+                          "startsAt",
+                          "endsAt"
+                        ]
+                      }
+                    },
+                    "flashSales": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "productCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "status",
+                          "startsAt",
+                          "endsAt",
+                          "productCount"
+                        ]
+                      }
+                    },
+                    "audit": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "actorType": {
+                            "type": "string"
+                          },
+                          "action": {
+                            "type": "string"
+                          },
+                          "resourceType": {
+                            "type": "string"
+                          },
+                          "resourceId": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "actorType",
+                          "action",
+                          "resourceType",
+                          "resourceId",
+                          "createdAt"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "paymentVerifications",
+                    "categories",
+                    "banners",
+                    "vouchers",
+                    "flashSales",
+                    "audit"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
       "patch": {
         "tags": [
           "Admin Platform"
@@ -21036,11 +23144,54 @@
                               "null"
                             ]
                           },
+                          "subtitle": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
                           "placement": {
+                            "type": "string",
+                            "enum": [
+                              "home_hero",
+                              "home_secondary",
+                              "category_banner",
+                              "shop_directory",
+                              "checkout_trust"
+                            ]
+                          },
+                          "storageKey": {
                             "type": "string"
                           },
-                          "active": {
-                            "type": "boolean"
+                          "mobileStorageKey": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "ctaLabel": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "badgeText": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetType": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetValue": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "startsAt": {
                             "type": "string",
@@ -21049,15 +23200,56 @@
                           "endsAt": {
                             "type": "string",
                             "format": "date-time"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "displayOrder": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "imageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "mobileImageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "scheduled",
+                              "inactive",
+                              "expired"
+                            ]
                           }
                         },
                         "required": [
                           "id",
                           "title",
+                          "subtitle",
                           "placement",
-                          "active",
+                          "storageKey",
+                          "mobileStorageKey",
+                          "ctaLabel",
+                          "badgeText",
+                          "targetType",
+                          "targetValue",
                           "startsAt",
-                          "endsAt"
+                          "endsAt",
+                          "active",
+                          "displayOrder",
+                          "imageUrl",
+                          "mobileImageUrl",
+                          "status"
                         ]
                       }
                     },
@@ -21468,11 +23660,54 @@
                               "null"
                             ]
                           },
+                          "subtitle": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
                           "placement": {
+                            "type": "string",
+                            "enum": [
+                              "home_hero",
+                              "home_secondary",
+                              "category_banner",
+                              "shop_directory",
+                              "checkout_trust"
+                            ]
+                          },
+                          "storageKey": {
                             "type": "string"
                           },
-                          "active": {
-                            "type": "boolean"
+                          "mobileStorageKey": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "ctaLabel": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "badgeText": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetType": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetValue": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "startsAt": {
                             "type": "string",
@@ -21481,15 +23716,56 @@
                           "endsAt": {
                             "type": "string",
                             "format": "date-time"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "displayOrder": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "imageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "mobileImageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "scheduled",
+                              "inactive",
+                              "expired"
+                            ]
                           }
                         },
                         "required": [
                           "id",
                           "title",
+                          "subtitle",
                           "placement",
-                          "active",
+                          "storageKey",
+                          "mobileStorageKey",
+                          "ctaLabel",
+                          "badgeText",
+                          "targetType",
+                          "targetValue",
                           "startsAt",
-                          "endsAt"
+                          "endsAt",
+                          "active",
+                          "displayOrder",
+                          "imageUrl",
+                          "mobileImageUrl",
+                          "status"
                         ]
                       }
                     },
@@ -21900,11 +24176,54 @@
                               "null"
                             ]
                           },
+                          "subtitle": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
                           "placement": {
+                            "type": "string",
+                            "enum": [
+                              "home_hero",
+                              "home_secondary",
+                              "category_banner",
+                              "shop_directory",
+                              "checkout_trust"
+                            ]
+                          },
+                          "storageKey": {
                             "type": "string"
                           },
-                          "active": {
-                            "type": "boolean"
+                          "mobileStorageKey": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "ctaLabel": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "badgeText": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetType": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "targetValue": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "startsAt": {
                             "type": "string",
@@ -21913,15 +24232,56 @@
                           "endsAt": {
                             "type": "string",
                             "format": "date-time"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "displayOrder": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "imageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "mobileImageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "scheduled",
+                              "inactive",
+                              "expired"
+                            ]
                           }
                         },
                         "required": [
                           "id",
                           "title",
+                          "subtitle",
                           "placement",
-                          "active",
+                          "storageKey",
+                          "mobileStorageKey",
+                          "ctaLabel",
+                          "badgeText",
+                          "targetType",
+                          "targetValue",
                           "startsAt",
-                          "endsAt"
+                          "endsAt",
+                          "active",
+                          "displayOrder",
+                          "imageUrl",
+                          "mobileImageUrl",
+                          "status"
                         ]
                       }
                     },

@@ -1448,7 +1448,11 @@ model Banner {
   id           String   @id @default(uuid()) @db.Uuid
   placement    String
   title        String?
+  subtitle     String?
   storageKey   String   @map("storage_key")
+  mobileStorageKey String? @map("mobile_storage_key")
+  ctaLabel     String?  @map("cta_label")
+  badgeText    String?  @map("badge_text")
   targetType   String?  @map("target_type")
   targetValue  String?  @map("target_value")
   startsAt     DateTime @map("starts_at") @db.Timestamptz(3)
