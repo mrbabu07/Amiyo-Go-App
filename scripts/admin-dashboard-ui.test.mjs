@@ -8,9 +8,17 @@ test("admin dashboard mirrors the reference control-center hierarchy", async () 
   const screen = await readFile(new URL("../apps/mobile/src/ui/Screen.tsx", import.meta.url), "utf8");
   assert.match(route, /AdminDashboardScreen/);
   assert.match(screen, /hideHeading/);
+  assert.match(screen, /Admin workspace/);
+  assert.match(screen, /Analytics & Reports/);
+  assert.match(screen, /Marketplace/);
+  assert.match(screen, /Governance/);
+  assert.match(screen, /Search pages, orders, vendors/);
   assert.match(dashboard, /Amiyo-Go Control Center/);
   assert.match(dashboard, /MARKETPLACE OPERATIONS/);
   assert.match(dashboard, /What needs attention/);
+  assert.match(dashboard, /ADMIN CONTROL HUB/);
+  assert.match(dashboard, /Marketplace Snapshot/);
+  assert.match(dashboard, /Reports And Activity/);
   assert.match(dashboard, /Marketplace performance/);
   assert.match(dashboard, /Top vendors/);
   assert.match(dashboard, /Recent platform activity/);
