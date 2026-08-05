@@ -343,6 +343,18 @@ export class IdentityService {
     });
     return { ...row, requestedAt: row.requestedAt.toISOString(), executeAfter: row.executeAfter.toISOString(), completedAt: row.completedAt?.toISOString() ?? null };
   }
+
+  async cancelDeletion(userId: string, correlationId?: string) {
+    const row = await withSerializableTransaction(this.client, async (transaction) => {
+      const existing = await transaction.accountDeletionRequest.findFirst({ where: { userId, status: { in: ["requested", "scheduled"] } }, orderBy: { requestedAt: "desc" } });
+      if (!existing) throw new ApiProblem(404, "ACCOUNT_DELETION_REQUEST_NOT_FOUND", "No active account deletion request was found");
+      if (existing.executeAfter <= new Date()) throw new ApiProblem(409, "ACCOUNT_DELETION_RECOVERY_EXPIRED", "The account deletion recovery window has expired");
+      const cancelled = await transaction.accountDeletionRequest.update({ where: { id: existing.id }, data: { status: "cancelled" } });
+      await writeAudit(transaction, { actorUserId: userId, action: "identity.deletion.cancelled", resourceType: "user", resourceId: userId, ...(correlationId ? { correlationId } : {}), before: { status: existing.status, executeAfter: existing.executeAfter.toISOString() }, after: { status: cancelled.status } });
+      return cancelled;
+    });
+    return { ...row, requestedAt: row.requestedAt.toISOString(), executeAfter: row.executeAfter.toISOString(), completedAt: row.completedAt?.toISOString() ?? null };
+  }
   async exportAccount(userId: string) {
     const user = await this.client.user.findUnique({ where: { id: userId }, include: { profile: true, addresses: true, orders: { orderBy: { createdAt: "desc" }, take: 500 }, returnRequests: { orderBy: { createdAt: "desc" }, take: 500 }, reviews: { orderBy: { createdAt: "desc" }, take: 500 }, supportTickets: { include: { messages: true }, orderBy: { createdAt: "desc" }, take: 500 } } });
     if (!user) throw new ApiProblem(404, "USER_NOT_FOUND", "User not found");

@@ -124,6 +124,9 @@ export function createIdentityRouter(options?: { service?: IdentityService; veri
   router.post("/api/v2/me/deletion-request", async (req, res, next) => {
     try { const session = requireSession(req); res.status(201).json(await service.requestDeletion(session.principal.userId, accountDeletionInputSchema.parse(req.body), correlationId(req.headers))); } catch (error) { next(error); }
   });
+  router.delete("/api/v2/me/deletion-request", async (req, res, next) => {
+    try { const session = requireSession(req); res.json(await service.cancelDeletion(session.principal.userId, correlationId(req.headers))); } catch (error) { next(error); }
+  });
   router.get("/api/v2/me/export", async (req, res, next) => { try { res.json(await service.exportAccount(requireSession(req).principal.userId)); } catch (error) { next(error); } });
 
   return router;

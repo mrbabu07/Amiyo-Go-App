@@ -162,6 +162,7 @@ registry.registerPath({
 registry.registerPath({ method: "get", path: "/api/v2/me/deletion-request", tags: ["Identity"], security: firebaseSecurity, responses: { 200: { description: "Active account deletion request", content: { "application/json": { schema: accountDeletionSchema.nullable() } } }, ...errorResponses } });
 registry.registerPath({ method: "get", path: "/api/v2/me/export", tags: ["Identity"], security: firebaseSecurity, responses: { 200: { description: "Portable account data export", content: { "application/json": { schema: accountDataExport } } }, ...errorResponses } });
 registry.registerPath({ method: "post", path: "/api/v2/me/deletion-request", tags: ["Identity"], security: firebaseSecurity, request: { body: { content: { "application/json": { schema: accountDeletionInputSchema } } } }, responses: { 201: { description: "Account deletion scheduled", content: { "application/json": { schema: accountDeletionSchema } } }, ...errorResponses } });
+registry.registerPath({ method: "delete", path: "/api/v2/me/deletion-request", tags: ["Identity"], security: firebaseSecurity, responses: { 200: { description: "Account deletion request cancelled during recovery window", content: { "application/json": { schema: accountDeletionSchema } } }, ...errorResponses } });
 
 registry.registerPath({
   method: "post",
