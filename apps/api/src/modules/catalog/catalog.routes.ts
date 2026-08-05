@@ -9,6 +9,7 @@ import { CatalogService } from "./catalog.service.js";
 
 const identifierSchema = z.object({ id: z.string().trim().min(1).max(220) });
 const vendorScopeSchema = z.object({ vendorId: z.string().uuid().optional() });
+const adminProductStatusSchema = z.object({ status: z.enum(["APPROVED", "ARCHIVED"]), reason: z.string().trim().min(3).max(500) });
 
 function correlationId(headers: Record<string, unknown>) {
   const value = headers["x-correlation-id"];
@@ -81,6 +82,12 @@ export function createCatalogRouter() {
   });
   router.get("/api/v2/admin/catalog/products", async (req, res, next) => {
     try { res.json(await service.adminProducts(requireSession(req))); } catch (error) { next(error); }
+  });
+  router.patch("/api/v2/admin/catalog/products/:id", async (req, res, next) => {
+    try { res.json(await service.adminUpdateProduct(requireSession(req), identifierSchema.parse(req.params).id, updateProductSchema.parse(req.body), correlationId(req.headers))); } catch (error) { next(error); }
+  });
+  router.patch("/api/v2/admin/catalog/products/:id/status", async (req, res, next) => {
+    try { res.json(await service.setAdminProductStatus(requireSession(req), identifierSchema.parse(req.params).id, adminProductStatusSchema.parse(req.body), correlationId(req.headers))); } catch (error) { next(error); }
   });
 
   return router;

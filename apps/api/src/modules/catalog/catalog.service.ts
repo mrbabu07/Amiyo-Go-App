@@ -244,7 +244,32 @@ export class CatalogService {
 
   async adminProducts(session: Session) {
     requireAuthorization(session, "admin:read");
-    const rows = await this.client.product.findMany({ where: { status: "SUBMITTED" }, orderBy: { updatedAt: "asc" }, include: publicProductInclude, take: 100 });
+    const rows = await this.client.product.findMany({ orderBy: { updatedAt: "desc" }, include: publicProductInclude, take: 300 });
     return rows.map(productDetail);
+  }
+  async adminUpdateProduct(session: Session, productId: string, input: UpdateProductInput, correlationId?: string) {
+    requireAuthorization(session, "admin:manage");
+    const before = await this.client.product.findUnique({ where: { id: productId } });
+    if (!before) throw new ApiProblem(404, "PRODUCT_NOT_FOUND", "Product not found");
+    return withSerializableTransaction(this.client, async (transaction) => {
+      const data: Prisma.ProductUncheckedUpdateManyInput = { version: { increment: 1 } };
+      if (input.name !== undefined) data.name = input.name;
+      if (input.description !== undefined) data.description = input.description;
+      if (input.brand !== undefined) data.brand = input.brand;
+      if (input.categoryId !== undefined) data.categoryId = input.categoryId;
+      if (input.dynamicAttributes !== undefined) data.dynamicAttributes = input.dynamicAttributes === null ? Prisma.JsonNull : json(input.dynamicAttributes);
+      const result = await transaction.product.updateMany({ where: { id: productId, version: input.version }, data });
+      if (result.count !== 1) throw new ApiProblem(409, "VERSION_CONFLICT", "The product was changed by another request");
+      const after = await transaction.product.findUniqueOrThrow({ where: { id: productId }, include: publicProductInclude });
+      await audit(transaction, { actorUserId: session.principal.userId, action: "catalog.product.admin_updated", resourceId: productId, ...(correlationId ? { correlationId } : {}), before, after });
+      return productDetail(after);
+    });
+  }
+  async setAdminProductStatus(session: Session, productId: string, input: { status: "APPROVED" | "ARCHIVED"; reason: string }, correlationId?: string) {
+    requireAuthorization(session, "admin:manage"); const before = await this.client.product.findUnique({ where: { id: productId } }); if (!before) throw new ApiProblem(404, "PRODUCT_NOT_FOUND", "Product not found");
+    const after = await this.client.product.update({ where: { id: productId }, data: { status: input.status, publishedAt: input.status === "APPROVED" ? before.publishedAt ?? new Date() : null, version: { increment: 1 } } });
+    await this.client.productModerationEvent.create({ data: { productId, fromStatus: before.status, toStatus: input.status, actorUserId: session.principal.userId, reason: input.reason } });
+    await this.client.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "admin", action: `catalog.product.${input.status.toLowerCase()}`, resourceType: "product", resourceId: productId, ...(correlationId ? { correlationId } : {}), before: json({ status: before.status }), after: json(input) } });
+    return after;
   }
 }

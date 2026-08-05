@@ -1,2 +1,2 @@
-import { AdminCatalogScreen } from "../../../../src/features/admin/AdminCatalogScreen";
-export default function Route() { return <AdminCatalogScreen />; }
+import { AdminProductEditScreen } from "../../../../src/features/admin/AdminProductEditScreen";
+export default function Route() { return <AdminProductEditScreen />; }

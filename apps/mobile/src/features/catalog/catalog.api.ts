@@ -1,4 +1,4 @@
-import { bulkProductImportResultSchema, categorySchema, productDetailSchema, productListResponseSchema, shopDetailSchema, shopListResponseSchema, vendorInventorySchema, type BulkProductCsvInput, type CatalogQuery, type CreateProductInput, type InventoryAdjustmentInput, type ModerationInput } from "@amiyo/contracts";
+import { bulkProductImportResultSchema, categorySchema, productDetailSchema, productListResponseSchema, shopDetailSchema, shopListResponseSchema, vendorInventorySchema, type BulkProductCsvInput, type CatalogQuery, type CreateProductInput, type InventoryAdjustmentInput, type ModerationInput, type UpdateProductInput } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
@@ -55,4 +55,6 @@ export async function exportVendorProducts(user: User) { const token = await use
 export async function getVendorInventory(user: User) { return vendorInventorySchema.array().parse(await authenticatedRequest(user, "/api/v2/vendor/inventory")); }
 export async function adjustVendorInventory(user: User, variantId: string, input: InventoryAdjustmentInput) { return vendorInventorySchema.parse(await authenticatedRequest(user, `/api/v2/vendor/inventory/${variantId}`, { method: "PUT", body: JSON.stringify(input) })); }
 export async function getAdminProducts(user: User) { return productDetailSchema.array().parse(await authenticatedRequest(user, "/api/v2/admin/catalog/products")); }
+export async function updateAdminProduct(user: User, id: string, input: UpdateProductInput) { return productDetailSchema.parse(await authenticatedRequest(user, `/api/v2/admin/catalog/products/${id}`, { method: "PATCH", body: JSON.stringify(input) })); }
 export async function moderateAdminProduct(user: User, id: string, input: ModerationInput) { return await authenticatedRequest(user, `/api/v2/admin/catalog/products/${id}/moderate`, { method: "POST", body: JSON.stringify(input) }); }
+export async function setAdminProductStatus(user: User, id: string, status: "APPROVED" | "ARCHIVED") { return authenticatedRequest(user, `/api/v2/admin/catalog/products/${id}/status`, { method: "PATCH", body: JSON.stringify({ status, reason: status === "ARCHIVED" ? "Archived by catalog administrator" : "Restored by catalog administrator" }) }); }

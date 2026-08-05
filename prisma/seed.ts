@@ -88,6 +88,15 @@ async function seedDemoCatalog() {
     create: { id: ids.shop, vendorId: ids.vendor, name: "Tech Gallery", slug: "tech-gallery", status: "ACTIVE", description: "Verified electronics and lifestyle shop." }
   });
 
+  const fashionVendorId = "00000000-0000-4000-8000-000000000102";
+  const fashionShopId = "00000000-0000-4000-8000-000000000202";
+  const pendingVendorId = "00000000-0000-4000-8000-000000000103";
+  await prisma.vendor.upsert({ where: { id: fashionVendorId }, update: { status: "APPROVED" }, create: { id: fashionVendorId, legalName: "Dhaka Fashion House Ltd", displayName: "Dhaka Fashion House", status: "APPROVED", approvedAt: new Date(), wallet: { create: {} } } });
+  await prisma.vendorShop.upsert({ where: { id: fashionShopId }, update: { status: "ACTIVE" }, create: { id: fashionShopId, vendorId: fashionVendorId, name: "Dhaka Fashion House", slug: "dhaka-fashion-house", status: "ACTIVE", description: "Contemporary Bangladeshi fashion, shoes and accessories." } });
+  await prisma.vendor.upsert({ where: { id: pendingVendorId }, update: { status: "PENDING" }, create: { id: pendingVendorId, legalName: "Fresh Basket Bangladesh", displayName: "Fresh Basket BD", status: "PENDING", wallet: { create: {} } } });
+  const pendingKyc = await prisma.vendorKycSubmission.findFirst({ where: { vendorId: pendingVendorId, status: "SUBMITTED" } });
+  if (!pendingKyc) await prisma.vendorKycSubmission.create({ data: { vendorId: pendingVendorId, status: "SUBMITTED", submittedAt: new Date(), documents: { create: { documentType: "TRADE_LICENSE", storageKey: "seed/kyc/fresh-basket-trade-license.pdf", mimeType: "application/pdf", checksum: "seed-fresh-basket-trade-license" } } } });
+
   const categoryIds = new Map<string, string>();
   let taxonomyIndex = 0;
   for (const [rootIndex, root] of categoryTaxonomy.entries()) {
@@ -156,6 +165,21 @@ async function seedDemoCatalog() {
     ["415", "515", "615", beautyId, "Signature Eau de Parfum", "signature-eau-de-parfum", "AMIYO-PERFUME-001", 229000n, "https://images.unsplash.com/photo-1541643600914-78b084683601?w=900&h=900&fit=crop"],
     ["416", "516", "616", categoryIds.get("home-decor")!, "Indoor Plant with Ceramic Pot", "indoor-plant-ceramic-pot", "AMIYO-PLANT-001", 69000n, "https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=900&h=900&fit=crop"],
     ["417", "517", "617", categoryIds.get("beverages")!, "Premium Roasted Coffee Beans", "premium-roasted-coffee", "AMIYO-COFFEE-001", 78000n, "https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=900&h=900&fit=crop"]
+    , ["418", "518", "618", categoryIds.get("mobiles")!, "5G Android Smartphone", "5g-android-smartphone", "AMIYO-PHONE-001", 2899000n, "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=900&h=900&fit=crop"]
+    , ["419", "519", "619", categoryIds.get("computers")!, "Slim Business Laptop", "slim-business-laptop", "AMIYO-LAPTOP-001", 7299000n, "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=900&h=900&fit=crop"]
+    , ["420", "520", "620", categoryIds.get("cameras-gadgets")!, "Compact Mirrorless Camera", "compact-mirrorless-camera", "AMIYO-CAMERA-001", 5599000n, "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=900&h=900&fit=crop"]
+    , ["421", "521", "621", categoryIds.get("mens-clothing")!, "Premium Cotton Panjabi", "premium-cotton-panjabi", "AMIYO-PANJABI-001", 219000n, "https://images.unsplash.com/photo-1603252109303-2751441dd157?w=900&h=900&fit=crop"]
+    , ["422", "522", "622", categoryIds.get("womens-traditional-wear")!, "Handloom Jamdani Saree", "handloom-jamdani-saree", "AMIYO-SAREE-001", 489000n, "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=900&h=900&fit=crop"]
+    , ["423", "523", "623", categoryIds.get("womens-accessories")!, "Classic Leather Handbag", "classic-leather-handbag", "AMIYO-HANDBAG-001", 279000n, "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=900&h=900&fit=crop"]
+    , ["424", "524", "624", categoryIds.get("kitchen")!, "Nonstick Cookware Set", "nonstick-cookware-set", "AMIYO-COOK-001", 399000n, "https://images.unsplash.com/photo-1556911220-bff31c812dba?w=900&h=900&fit=crop"]
+    , ["425", "525", "625", categoryIds.get("fitness-equipment")!, "Adjustable Dumbbell Pair", "adjustable-dumbbell-pair", "AMIYO-FIT-001", 349000n, "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=900&h=900&fit=crop"]
+    , ["426", "526", "626", categoryIds.get("learning-toys")!, "Wooden Learning Blocks", "wooden-learning-blocks", "AMIYO-TOY-001", 89000n, "https://images.unsplash.com/photo-1598880940080-ff9a29891b85?w=900&h=900&fit=crop"]
+    , ["427", "527", "627", categoryIds.get("books")!, "Bangla Fiction Collection", "bangla-fiction-collection", "AMIYO-BOOK-001", 125000n, "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=900&h=900&fit=crop"]
+    , ["428", "528", "628", categoryIds.get("pet-food")!, "Premium Cat Food", "premium-cat-food", "AMIYO-PET-001", 95000n, "https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=900&h=900&fit=crop"]
+    , ["429", "529", "629", categoryIds.get("garden")!, "Home Gardening Tool Kit", "home-gardening-tool-kit", "AMIYO-GARDEN-001", 145000n, "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=900&h=900&fit=crop"]
+    , ["430", "530", "630", categoryIds.get("art-craft")!, "Artist Acrylic Paint Set", "artist-acrylic-paint-set", "AMIYO-ART-001", 119000n, "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=900&h=900&fit=crop"]
+    , ["431", "531", "631", categoryIds.get("fresh-fruits")!, "Seasonal Fresh Fruit Box", "seasonal-fresh-fruit-box", "AMIYO-FRUIT-001", 135000n, "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=900&h=900&fit=crop"]
+    , ["432", "532", "632", categoryIds.get("travel-accessories")!, "Travel Organizer Bundle", "travel-organizer-bundle", "AMIYO-TRAVEL-001", 99000n, "https://images.unsplash.com/photo-1527631746610-bca00a040d60?w=900&h=900&fit=crop"]
   ] as const;
   for (const [productSuffix, variantSuffix, inventorySuffix, categoryId, name, slug, sku, priceMinor, image] of demoProducts) {
     const productId = `00000000-0000-4000-8000-000000000${productSuffix}`;
@@ -168,6 +192,16 @@ async function seedDemoCatalog() {
         media: { create: { storageKey: image, mediaType: "image", mimeType: "image/jpeg", altText: name } }
       }
     });
+  }
+
+  const moderationProducts = [
+    { suffix: "433", variant: "533", inventory: "633", name: "Vendor Submitted Denim Jacket", slug: "vendor-submitted-denim-jacket", sku: "DHAKA-DENIM-001", status: "SUBMITTED" as const, categoryId: categoryIds.get("mens-clothing")!, priceMinor: 249000n, image: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=900&h=900&fit=crop" },
+    { suffix: "434", variant: "534", inventory: "634", name: "Draft Canvas Tote Bag", slug: "draft-canvas-tote-bag", sku: "DHAKA-TOTE-001", status: "DRAFT" as const, categoryId: categoryIds.get("womens-accessories")!, priceMinor: 79000n, image: "https://images.unsplash.com/photo-1594223274512-ad4803739b7c?w=900&h=900&fit=crop" },
+    { suffix: "435", variant: "535", inventory: "635", name: "Rejected Sample Sunglasses", slug: "rejected-sample-sunglasses", sku: "DHAKA-SUN-001", status: "REJECTED" as const, categoryId: categoryIds.get("eyewear-accessories")!, priceMinor: 119000n, image: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=900&h=900&fit=crop" }
+  ];
+  for (const item of moderationProducts) {
+    const productId = `00000000-0000-4000-8000-000000000${item.suffix}`;
+    await prisma.product.upsert({ where: { id: productId }, update: { status: item.status, name: item.name, categoryId: item.categoryId, publishedAt: null }, create: { id: productId, vendorId: fashionVendorId, shopId: fashionShopId, categoryId: item.categoryId, name: item.name, slug: item.slug, description: `${item.name} prepared for admin workflow testing.`, brand: "Dhaka Style", status: item.status, variants: { create: { id: `00000000-0000-4000-8000-000000000${item.variant}`, sku: item.sku, title: "Default", priceMinor: item.priceMinor, inventory: { create: { id: `00000000-0000-4000-8000-000000000${item.inventory}`, onHand: 25, reorderLevel: 5 } } } }, media: { create: { storageKey: item.image, mediaType: "image", mimeType: "image/jpeg", altText: item.name } } } });
   }
 }
 
