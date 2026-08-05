@@ -30,8 +30,8 @@ These decisions block production implementation. Do not guess them in code.
 | Commission precedence | TBD | Confirm vendor/category/global rule precedence, fixed-fee application unit, and refund reversal behavior before automatic vendor settlement. |
 | KYC | TBD | Required documents, expiry, rejection/resubmission workflow. |
 | Geography | TBD | Division/district/upazila/union and serviceability source. |
-| Notifications | TBD | Push, in-app, SMS, email event matrix. |
-| Push provider | TBD | Approve Expo Push/FCM/APNs routing, retries, quiet hours, and opt-out behavior. In-app delivery is enabled; push stays pending. |
+| Notifications | PARTIAL | In-app and Expo Push are implemented through transactional outbox/BullMQ delivery. Approve any release-one SMS/email events, quiet hours, and opt-out policy. |
+| Push provider | Expo Push selected | Native token registration, durable retries, delivery status and revoked-device filtering are implemented. EAS/FCM/APNs project credentials remain operator configuration. |
 | Loyalty | TBD | Approve earning rates, tiers, expiry, redemption value, reversals, and fraud holds before points mutations are enabled. |
 | Promotion stacking | TBD | Approve coupon/voucher/promotion/flash-sale precedence and stacking before automatic checkout discounts are enabled. |
 | Data retention | TBD | Per table/file/log retention periods. |
