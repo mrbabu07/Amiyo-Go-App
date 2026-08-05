@@ -6,7 +6,7 @@ import { StoreHeader } from "../features/home/components/StoreHeader";
 import { BottomNav } from "../features/home/components/BottomNav";
 import { colors, radius, spacing } from "./tokens";
 
-type ScreenProps = PropsWithChildren<{ eyebrow?: string; title: string; description?: string }>;
+type ScreenProps = PropsWithChildren<{ eyebrow?: string; title: string; description?: string; hideHeading?: boolean }>;
 type WorkspaceLink = { label: string; href: string; icon: string };
 
 const vendorLinks: WorkspaceLink[] = [
@@ -16,7 +16,7 @@ const adminLinks: WorkspaceLink[] = [
   { label: "Dashboard", href: "/admin/dashboard", icon: "grid-outline" }, { label: "Operations", href: "/admin/operations", icon: "pulse-outline" }, { label: "Analytics", href: "/admin/analytics", icon: "bar-chart-outline" }, { label: "Catalog", href: "/admin/catalog", icon: "cube-outline" }, { label: "Categories", href: "/admin/categories", icon: "file-tray-full-outline" }, { label: "Promotions", href: "/admin/promotions", icon: "megaphone-outline" }, { label: "Support", href: "/admin/support", icon: "headset-outline" }, { label: "Platform", href: "/admin/platform", icon: "settings-outline" }
 ];
 
-export function Screen({ eyebrow, title, description, children }: ScreenProps) {
+export function Screen({ eyebrow, title, description, hideHeading = false, children }: ScreenProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -46,11 +46,11 @@ export function Screen({ eyebrow, title, description, children }: ScreenProps) {
           </View>
         ) : null}
         <View style={[styles.container, { width: contentWidth }]}>
-          <View style={[styles.heading, workspace && styles.workspaceHeading]}>
+          {!hideHeading ? <View style={[styles.heading, workspace && styles.workspaceHeading]}>
             {eyebrow ? <Text style={[styles.eyebrow, workspace && styles.workspaceEyebrow]}>{eyebrow}</Text> : null}
             <Text accessibilityRole="header" style={[styles.title, workspace && styles.workspaceTitle]}>{title}</Text>
             {description ? <Text style={[styles.description, workspace && styles.workspaceDescription]}>{description}</Text> : null}
-          </View>
+          </View> : null}
           <View style={styles.content}>{children}</View>
         </View>
       </ScrollView>
