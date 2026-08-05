@@ -45,7 +45,7 @@ export function CustomerHomeScreen() {
   const productQuery = useQuery({ queryKey: ["catalog", "home-products"], queryFn: () => getProducts({ limit: 20 }) });
   const shopQuery = useQuery({ queryKey: ["catalog", "home-shops"], queryFn: getShops });
   const growthQuery = useQuery({ queryKey: ["growth", "feed"], queryFn: getGrowthFeed });
-  const liveCategories: HomeCategory[] = (categoryQuery.data || []).map((category, index) => { const visual = getCategoryVisual(category, index); return { id: category.slug, name: category.name, icon: visual.icon, color: visual.background, foreground: visual.foreground }; });
+  const liveCategories: HomeCategory[] = (categoryQuery.data || []).filter((category) => category.parentId === null).map((category, index) => { const visual = getCategoryVisual(category, index); return { id: category.slug, name: category.name, icon: visual.icon, color: visual.background, foreground: visual.foreground }; });
   const liveProducts = (productQuery.data?.data || []).map(toHomeProduct);
   const activeFlashSale = growthQuery.data?.flashSales[0];
   const heroBanner = growthQuery.data?.banners.find((banner) => banner.placement === "home_hero");

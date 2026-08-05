@@ -19780,6 +19780,13 @@
                             "type": "string",
                             "format": "uuid"
                           },
+                          "parentId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uuid"
+                          },
                           "name": {
                             "type": "string"
                           },
@@ -19873,6 +19880,7 @@
                         },
                         "required": [
                           "id",
+                          "parentId",
                           "name",
                           "slug",
                           "status",
@@ -20985,6 +20993,13 @@
                             "type": "string",
                             "format": "uuid"
                           },
+                          "parentId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uuid"
+                          },
                           "name": {
                             "type": "string"
                           },
@@ -21078,6 +21093,7 @@
                         },
                         "required": [
                           "id",
+                          "parentId",
                           "name",
                           "slug",
                           "status",
@@ -21394,6 +21410,13 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "parentId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid"
+                  },
                   "name": {
                     "type": "string",
                     "minLength": 2,
@@ -21508,6 +21531,13 @@
                             "type": "string",
                             "format": "uuid"
                           },
+                          "parentId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uuid"
+                          },
                           "name": {
                             "type": "string"
                           },
@@ -21601,6 +21631,7 @@
                         },
                         "required": [
                           "id",
+                          "parentId",
                           "name",
                           "slug",
                           "status",
@@ -22079,6 +22110,13 @@
                             "type": "string",
                             "format": "uuid"
                           },
+                          "parentId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uuid"
+                          },
                           "name": {
                             "type": "string"
                           },
@@ -22172,6 +22210,7 @@
                         },
                         "required": [
                           "id",
+                          "parentId",
                           "name",
                           "slug",
                           "status",
@@ -22668,6 +22707,13 @@
                             "type": "string",
                             "format": "uuid"
                           },
+                          "parentId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uuid"
+                          },
                           "name": {
                             "type": "string"
                           },
@@ -22761,6 +22807,7 @@
                         },
                         "required": [
                           "id",
+                          "parentId",
                           "name",
                           "slug",
                           "status",
@@ -23268,6 +23315,13 @@
                             "type": "string",
                             "format": "uuid"
                           },
+                          "parentId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uuid"
+                          },
                           "name": {
                             "type": "string"
                           },
@@ -23361,6 +23415,7 @@
                         },
                         "required": [
                           "id",
+                          "parentId",
                           "name",
                           "slug",
                           "status",
@@ -23765,6 +23820,13 @@
                             "type": "string",
                             "format": "uuid"
                           },
+                          "parentId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uuid"
+                          },
                           "name": {
                             "type": "string"
                           },
@@ -23858,6 +23920,7 @@
                         },
                         "required": [
                           "id",
+                          "parentId",
                           "name",
                           "slug",
                           "status",
@@ -24279,6 +24342,13 @@
                             "type": "string",
                             "format": "uuid"
                           },
+                          "parentId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uuid"
+                          },
                           "name": {
                             "type": "string"
                           },
@@ -24372,6 +24442,7 @@
                         },
                         "required": [
                           "id",
+                          "parentId",
                           "name",
                           "slug",
                           "status",
@@ -24795,6 +24866,13 @@
                             "type": "string",
                             "format": "uuid"
                           },
+                          "parentId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uuid"
+                          },
                           "name": {
                             "type": "string"
                           },
@@ -24888,6 +24966,7 @@
                         },
                         "required": [
                           "id",
+                          "parentId",
                           "name",
                           "slug",
                           "status",
@@ -25311,6 +25390,13 @@
                             "type": "string",
                             "format": "uuid"
                           },
+                          "parentId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uuid"
+                          },
                           "name": {
                             "type": "string"
                           },
@@ -25404,6 +25490,7 @@
                         },
                         "required": [
                           "id",
+                          "parentId",
                           "name",
                           "slug",
                           "status",

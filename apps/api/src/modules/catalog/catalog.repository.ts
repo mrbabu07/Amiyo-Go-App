@@ -18,12 +18,18 @@ export class CatalogRepository {
   }
 
   async listPublishedProducts(input: CatalogQuery) {
+    let categoryIds: string[] | undefined;
+    if (input.category) {
+      const categories = await this.client.category.findMany({ where: { status: "active" }, select: { id: true, parentId: true, slug: true } });
+      const selected = categories.find((category) => category.id === input.category || category.slug === input.category);
+      if (selected) { categoryIds = [selected.id]; for (let index = 0; index < categoryIds.length; index += 1) categoryIds.push(...categories.filter((category) => category.parentId === categoryIds![index] && !categoryIds!.includes(category.id)).map((category) => category.id)); } else categoryIds = [];
+    }
     const rows = await this.client.product.findMany({
       where: {
         status: "APPROVED",
         shop: { status: "ACTIVE", ...(input.shop ? { OR: [{ id: input.shop }, { slug: input.shop }] } : {}) },
         vendor: { status: "APPROVED" },
-        ...(input.category ? { category: { OR: [{ id: input.category }, { slug: input.category }] } } : {}),
+        ...(categoryIds ? { categoryId: { in: categoryIds } } : {}),
         ...(input.query ? { OR: [
           { name: { contains: input.query, mode: "insensitive" } },
           { brand: { contains: input.query, mode: "insensitive" } },
