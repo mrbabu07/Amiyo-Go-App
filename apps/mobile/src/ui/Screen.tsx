@@ -21,20 +21,21 @@ const vendorLinks: WorkspaceLink[] = [
   { label: "Settings", href: "/vendor/settings", icon: "settings-outline" }
 ];
 
+const adminPrimaryLinks: WorkspaceLink[] = [
+  { label: "Dashboard", href: "/admin", icon: "grid-outline" },
+  { label: "Operations", href: "/admin/operations", icon: "pulse-outline" },
+  { label: "University", href: "/admin/university", icon: "school-outline" },
+  { label: "Audit Logs", href: "/admin/audit", icon: "time-outline" },
+  { label: "Analytics & Reports", href: "/admin/analytics", icon: "bar-chart-outline" },
+  { label: "Platform Control", href: "/admin/platform", icon: "settings-outline" },
+  { label: "Settings", href: "/admin/settings", icon: "options-outline" },
+  { label: "Staff", href: "/admin/staff", icon: "people-circle-outline" }
+];
+
 const adminGroups: AdminGroup[] = [
-  { label: "Overview", icon: "grid-outline", links: [
-    { label: "Dashboard", href: "/admin/dashboard", icon: "grid-outline" },
-    { label: "Operations", href: "/admin/operations", icon: "pulse-outline" },
-    { label: "Analytics & Reports", href: "/admin/analytics", icon: "bar-chart-outline" },
-    { label: "University", href: "/admin/university", icon: "school-outline" },
-    { label: "Audit Logs", href: "/admin/audit", icon: "time-outline" },
-    { label: "Platform Control", href: "/admin/platform", icon: "settings-outline" },
-    { label: "Settings", href: "/admin/settings", icon: "options-outline" },
-    { label: "Staff", href: "/admin/staff", icon: "people-circle-outline" }
-  ] },
   { label: "Vendors", icon: "storefront-outline", links: [
     { label: "Vendor Requests", href: "/admin/vendor-requests", icon: "person-add-outline" },
-    { label: "KYC Review", href: "/admin/vendor-kyc", icon: "id-card-outline" },
+    { label: "KYC Review", href: "/admin/vendors/kyc", icon: "id-card-outline" },
     { label: "All Vendors", href: "/admin/vendors", icon: "storefront-outline" },
     { label: "Vendor Activity", href: "/admin/vendor-activity", icon: "pulse-outline" },
     { label: "Vendor Chats", href: "/admin/chats", icon: "chatbubbles-outline" }
@@ -68,19 +69,19 @@ const adminGroups: AdminGroup[] = [
   { label: "Finance", icon: "wallet-outline", links: [
     { label: "Vendor Payouts", href: "/admin/payouts", icon: "wallet-outline" },
     { label: "Payout Requests", href: "/admin/payout-requests", icon: "cash-outline" },
-    { label: "Payment Verification", href: "/admin/payment-verifications", icon: "card-outline" }
+    { label: "Payment Verification", href: "/admin/payment-verification", icon: "card-outline" }
   ] },
   { label: "Customers", icon: "people-outline", links: [
     { label: "Customers", href: "/admin/customers", icon: "people-outline" },
     { label: "Trust & Safety", href: "/admin/trust-safety", icon: "shield-checkmark-outline" },
     { label: "User Roles", href: "/admin/users", icon: "key-outline" },
     { label: "Insights", href: "/admin/insights", icon: "analytics-outline" },
-    { label: "Reviews", href: "/admin/reviews", icon: "star-outline" },
+    { label: "Reviews", href: "/admin/reviews/moderation", icon: "star-outline" },
     { label: "Q&A", href: "/admin/qa", icon: "help-circle-outline" }
   ] }
 ];
 
-const adminLinks = adminGroups.flatMap((group) => group.links);
+const adminLinks = [...adminPrimaryLinks, ...adminGroups.flatMap((group) => group.links)];
 
 export function Screen(props: ScreenProps) {
   const pathname = usePathname();
@@ -94,23 +95,25 @@ export function Screen(props: ScreenProps) {
 function AdminScreen({ children, description, desktop, eyebrow, hideHeading = false, pathname, title }: ScreenProps & { desktop: boolean; pathname: string }) {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ Overview: true });
-  const sidebarWidth = collapsed ? 82 : 276;
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const sidebarWidth = collapsed ? 80 : 288;
   const open = (href: string) => router.push(href as never);
 
   return <SafeAreaView style={styles.safe}>
     <View style={styles.adminTopbar}>
       <View style={styles.adminTopLeft}>
         {desktop ? <Pressable accessibilityLabel={collapsed ? "Expand admin sidebar" : "Collapse admin sidebar"} onPress={() => setCollapsed((value) => !value)} style={styles.topIcon}><Ionicons color={colors.text} name={collapsed ? "menu-outline" : "menu"} size={22} /></Pressable> : null}
-        <Pressable onPress={() => open("/admin/dashboard")} style={styles.workspaceBrand}>
+        <Pressable onPress={() => open("/admin")} style={styles.workspaceBrand}>
           <View style={[styles.workspaceMark, styles.adminMark]}><Text style={styles.workspaceMarkText}>AG</Text></View>
           <View><Text style={styles.workspaceName}>Amiyo-Go Admin</Text><Text style={styles.workspaceLabel}>CONTROL CENTER</Text></View>
         </Pressable>
       </View>
       {desktop ? <View style={styles.adminSearch}><Ionicons color={colors.muted} name="search-outline" size={18} /><TextInput accessibilityLabel="Search admin pages" placeholder="Search pages, orders, vendors..." placeholderTextColor="#94a3b8" style={styles.adminSearchInput} /></View> : null}
       <View style={styles.workspaceActions}>
+        {desktop ? <><Pressable accessibilityLabel="Orders" onPress={() => open("/admin/orders")} style={styles.iconButton}><Ionicons color={colors.text} name="clipboard-outline" size={19} /></Pressable><Pressable accessibilityLabel="Vendors" onPress={() => open("/admin/vendor-requests")} style={styles.iconButton}><Ionicons color={colors.text} name="storefront-outline" size={19} /></Pressable><Pressable accessibilityLabel="Payments" onPress={() => open("/admin/payment-verification")} style={styles.iconButton}><Ionicons color={colors.text} name="card-outline" size={19} /></Pressable></> : null}
         <Pressable accessibilityLabel="Open storefront" onPress={() => open("/")} style={styles.iconButton}><Ionicons color={colors.text} name="storefront-outline" size={19} /></Pressable>
         <Pressable accessibilityLabel="Notifications" onPress={() => open("/notifications")} style={styles.iconButton}><Ionicons color={colors.text} name="notifications-outline" size={19} /><View style={styles.notificationDot} /></Pressable>
+        <Pressable accessibilityLabel="Theme" style={styles.iconButton}><Ionicons color={colors.text} name="moon-outline" size={19} /></Pressable>
         <Pressable accessibilityLabel="Account" onPress={() => open("/account")} style={styles.adminAccount}><View style={styles.avatar}><Text style={styles.avatarText}>A</Text></View>{desktop ? <View><Text style={styles.accountName}>Administrator</Text><Text style={styles.accountRole}>Super admin</Text></View> : null}</Pressable>
       </View>
     </View>
@@ -119,30 +122,30 @@ function AdminScreen({ children, description, desktop, eyebrow, hideHeading = fa
       {desktop ? <View style={[styles.adminSidebar, { width: sidebarWidth }]}>
         <View style={[styles.workspacePanel, collapsed && styles.workspacePanelCollapsed]}><View style={styles.workspacePulse} />{!collapsed ? <View><Text style={styles.workspacePanelTitle}>Admin workspace</Text><Text style={styles.workspacePanelCopy}>Super admin access</Text></View> : null}</View>
         <ScrollView contentContainerStyle={styles.adminSidebarScroll} showsVerticalScrollIndicator={false}>
+          <View style={styles.adminPrimary}>{adminPrimaryLinks.map((link) => <AdminNavLink key={link.href} link={link} pathname={pathname} collapsed={collapsed} onOpen={open} />)}</View>
           {adminGroups.map((group) => {
             const groupActive = group.links.some((link) => pathname === link.href || pathname.startsWith(`${link.href}/`));
             const expanded = groupActive || (expandedGroups[group.label] ?? false);
             return <View key={group.label} style={styles.adminGroup}>
               {!collapsed ? <Pressable onPress={() => setExpandedGroups((current) => ({ ...current, [group.label]: !expanded }))} style={[styles.adminGroupButton, groupActive && styles.adminGroupButtonActive]}><Ionicons color={groupActive ? "#ffffff" : "#cbd5e1"} name={group.icon as never} size={19} /><Text style={[styles.adminGroupButtonText, groupActive && styles.adminNavLabelActive]}>{group.label}</Text><Ionicons color="#94a3b8" name={expanded ? "chevron-up" : "chevron-down"} size={15} /></Pressable> : null}
-              {collapsed || expanded ? <View style={!collapsed && styles.adminGroupChildren}>{group.links.map((link) => <AdminNavLink key={link.href} link={link} pathname={pathname} collapsed={collapsed} onOpen={open} />)}</View> : null}
+              {collapsed || expanded ? <View style={!collapsed && styles.adminGroupChildren}>{group.links.map((link) => <AdminNavLink key={link.href} link={link} pathname={pathname} collapsed={collapsed} nested onOpen={open} />)}</View> : null}
             </View>;
           })}
         </ScrollView>
         <Pressable onPress={() => open("/")} style={[styles.storefrontLink, collapsed && styles.navCollapsed]}><Ionicons color="#cbd5e1" name="home-outline" size={19} />{!collapsed ? <Text style={styles.storefrontText}>View storefront</Text> : null}</Pressable>
       </View> : null}
       <ScrollView contentContainerStyle={styles.adminPage} showsVerticalScrollIndicator={false} style={styles.adminMain}>
-        <View style={styles.adminBreadcrumb}><Text style={styles.breadcrumbMuted}>Admin</Text><Ionicons color="#94a3b8" name="chevron-forward" size={13} /><Text style={styles.breadcrumbCurrent}>{title}</Text></View>
-        {!hideHeading ? <Heading description={description} eyebrow={eyebrow} title={title} workspace /> : null}
+        {!hideHeading ? <AdminHeading description={description} eyebrow={eyebrow} onBack={() => router.push("/admin" as never)} title={title} /> : null}
         <View style={styles.content}>{children}</View>
       </ScrollView>
     </View>
   </SafeAreaView>;
 }
 
-function AdminNavLink({ collapsed, link, onOpen, pathname }: { collapsed: boolean; link: WorkspaceLink; onOpen: (href: string) => void; pathname: string }) {
+function AdminNavLink({ collapsed, link, nested = false, onOpen, pathname }: { collapsed: boolean; link: WorkspaceLink; nested?: boolean; onOpen: (href: string) => void; pathname: string }) {
   const activeHref = adminLinks.filter((candidate) => pathname === candidate.href || pathname.startsWith(`${candidate.href}/`)).sort((left, right) => right.href.length - left.href.length)[0]?.href;
   const active = activeHref === link.href;
-  return <Pressable accessibilityLabel={link.label} onPress={() => onOpen(link.href)} style={[styles.adminNavItem, active && styles.adminNavItemActive, collapsed && styles.navCollapsed]}><Ionicons color={active ? "#ffffff" : "#cbd5e1"} name={link.icon as never} size={19} />{!collapsed ? <Text style={[styles.adminNavLabel, active && styles.adminNavLabelActive]}>{link.label}</Text> : null}{active && !collapsed ? <View style={styles.activePip} /> : null}</Pressable>;
+  return <Pressable accessibilityLabel={link.label} onPress={() => onOpen(link.href)} style={[styles.adminNavItem, active && (nested ? styles.adminNestedActive : styles.adminNavItemActive), collapsed && styles.navCollapsed]}>{nested && !collapsed ? <View style={[styles.childDot, active && styles.childDotActive]} /> : <Ionicons color={active ? "#ffffff" : "#cbd5e1"} name={link.icon as never} size={19} />}{!collapsed ? <Text style={[styles.adminNavLabel, active && styles.adminNavLabelActive]}>{link.label}</Text> : null}</Pressable>;
 }
 
 function StandardScreen({ children, description, eyebrow, hideHeading = false, pathname, title, vendor, width }: ScreenProps & { pathname: string; vendor: boolean; width: number }) {
@@ -166,7 +169,13 @@ function Heading({ description, eyebrow, title, workspace }: { description?: str
   return <View style={[styles.heading, workspace && styles.workspaceHeading]}>{eyebrow ? <Text style={[styles.eyebrow, workspace && styles.workspaceEyebrow]}>{eyebrow}</Text> : null}<Text accessibilityRole="header" style={[styles.title, workspace && styles.workspaceTitle]}>{title}</Text>{description ? <Text style={[styles.description, workspace && styles.workspaceDescription]}>{description}</Text> : null}</View>;
 }
 
+function AdminHeading({ description, eyebrow, onBack, title }: { description?: string; eyebrow?: string; onBack(): void; title: string }) {
+  return <View style={styles.adminHeading}><Pressable accessibilityLabel="Back to dashboard" onPress={onBack} style={styles.adminBack}><Ionicons color={colors.primary} name="arrow-back" size={20} /></Pressable><View style={styles.adminHeadingCopy}><View style={styles.adminPill}><Text style={styles.adminPillText}>{eyebrow || "AMIYO-GO ADMIN"}</Text></View><Text accessibilityRole="header" style={styles.adminPageTitle}>{title}</Text>{description ? <Text style={styles.adminPageDescription}>{description}</Text> : null}</View></View>;
+}
+
 const styles = StyleSheet.create({
+  adminPrimary: { borderBottomColor: "rgba(255,255,255,.1)", borderBottomWidth: 1, gap: 3, marginBottom: 8, paddingBottom: 8 }, adminNestedActive: { backgroundColor: "rgba(255,255,255,.1)" }, childDot: { backgroundColor: "#64748b", borderRadius: radius.pill, height: 6, width: 6 }, childDotActive: { backgroundColor: "#38bdf8" },
+  adminHeading: { alignItems: "flex-start", borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: "row", gap: 12, marginBottom: spacing.sm, paddingBottom: spacing.lg, paddingTop: spacing.lg }, adminBack: { alignItems: "center", backgroundColor: colors.primarySoft, borderColor: "rgba(30,112,152,.2)", borderRadius: radius.md, borderWidth: 1, height: 40, justifyContent: "center", width: 40 }, adminHeadingCopy: { flex: 1 }, adminPill: { alignSelf: "flex-start", backgroundColor: "#f8fafc", borderColor: colors.border, borderRadius: radius.pill, borderWidth: 1, marginBottom: 5, paddingHorizontal: 9, paddingVertical: 4 }, adminPillText: { color: colors.text, fontSize: 9, fontWeight: "900", letterSpacing: .7, textTransform: "uppercase" }, adminPageTitle: { color: colors.text, fontSize: 24, fontWeight: "900", letterSpacing: -.4 }, adminPageDescription: { color: colors.muted, fontSize: 12, fontWeight: "600", lineHeight: 18, marginTop: 3 },
   safe: { backgroundColor: colors.background, flex: 1 }, page: { minHeight: "100%", paddingBottom: spacing.xl },
   workspaceChrome: { backgroundColor: colors.surface, borderBottomColor: colors.border, borderBottomWidth: 1 }, workspaceTop: { alignItems: "center", alignSelf: "center", flexDirection: "row", justifyContent: "space-between", minHeight: 68 }, workspaceBrand: { alignItems: "center", flexDirection: "row", gap: 10 }, workspaceMark: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, height: 38, justifyContent: "center", width: 38 }, adminMark: { backgroundColor: colors.navy }, workspaceMarkText: { color: colors.surface, fontSize: 15, fontWeight: "900" }, workspaceName: { color: colors.text, fontSize: 15, fontWeight: "900" }, workspaceLabel: { color: colors.muted, fontSize: 9, fontWeight: "800", letterSpacing: .7, marginTop: 1 }, workspaceActions: { alignItems: "center", flexDirection: "row", gap: spacing.sm }, iconButton: { alignItems: "center", backgroundColor: "#f8fafc", borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, height: 38, justifyContent: "center", position: "relative", width: 38 }, workspaceNav: { alignSelf: "center", gap: 5, paddingBottom: 9 }, navItem: { alignItems: "center", borderRadius: radius.md, flexDirection: "row", gap: 6, minHeight: 38, paddingHorizontal: 12 }, navItemActive: { backgroundColor: colors.primarySoft }, navLabel: { color: colors.muted, fontSize: 12, fontWeight: "800" }, navLabelActive: { color: colors.primary, fontWeight: "900" },
   adminTopbar: { alignItems: "center", backgroundColor: colors.surface, borderBottomColor: "#e2e8f0", borderBottomWidth: 1, flexDirection: "row", gap: spacing.md, height: 66, justifyContent: "space-between", paddingHorizontal: spacing.md, zIndex: 2 }, adminTopLeft: { alignItems: "center", flexDirection: "row", gap: 10 }, topIcon: { alignItems: "center", borderRadius: radius.md, height: 38, justifyContent: "center", width: 38 }, adminSearch: { alignItems: "center", backgroundColor: "#f8fafc", borderColor: "#e2e8f0", borderRadius: radius.md, borderWidth: 1, flex: 1, flexDirection: "row", gap: 8, maxWidth: 520, paddingHorizontal: 12 }, adminSearchInput: { color: colors.text, flex: 1, fontSize: 13, height: 40, outlineStyle: "none" } as never, notificationDot: { backgroundColor: colors.danger, borderColor: colors.surface, borderRadius: 6, borderWidth: 2, height: 8, position: "absolute", right: 7, top: 6, width: 8 }, adminAccount: { alignItems: "center", borderLeftColor: "#e2e8f0", borderLeftWidth: 1, flexDirection: "row", gap: 9, marginLeft: 2, paddingLeft: 12 }, avatar: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.md, height: 36, justifyContent: "center", width: 36 }, avatarText: { color: colors.primary, fontSize: 14, fontWeight: "900" }, accountName: { color: colors.text, fontSize: 12, fontWeight: "900" }, accountRole: { color: colors.muted, fontSize: 10, marginTop: 1 },

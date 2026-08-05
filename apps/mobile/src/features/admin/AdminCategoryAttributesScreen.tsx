@@ -9,11 +9,11 @@ import { getAdminPlatform, replaceAdminCategoryAttributes } from "./admin.api";
 
 const dataTypes = ["text", "number", "boolean", "select", "multiselect"] as const;
 
-export function AdminCategoryAttributesScreen() {
+export function AdminCategoryAttributesScreen({ initialCategoryId = "" }: { initialCategoryId?: string }) {
   const user = firebaseAuth?.currentUser ?? null;
   const queryClient = useQueryClient();
   const platform = useQuery({ queryKey: ["admin", "platform"], queryFn: () => getAdminPlatform(user!), enabled: Boolean(user) });
-  const [categoryId, setCategoryId] = useState("");
+  const [categoryId, setCategoryId] = useState(initialCategoryId);
   const [form, setForm] = useState({ label: "", key: "", dataType: "text" as typeof dataTypes[number], options: "" });
   const selected = useMemo(() => platform.data?.categories.find((category) => category.id === categoryId), [categoryId, platform.data]);
   const save = useMutation({

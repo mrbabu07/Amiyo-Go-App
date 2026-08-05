@@ -6,13 +6,13 @@ const routeNames = ["index", "vendors", "vendor-requests", "vendor-kyc", "vendor
 
 test("reference admin workspaces have mobile routes", async () => {
   await Promise.all(routeNames.map((name) => access(new URL(`../apps/mobile/app/admin/${name}.tsx`, import.meta.url))));
-  await Promise.all(["products/add", "vendors/kyc", "reviews/moderation"].map((name) => access(new URL(`../apps/mobile/app/admin/${name}.tsx`, import.meta.url))));
+  await Promise.all(["audit-logs", "products/add", "products/edit/[id]", "vendors/kyc", "chat/[vendorId]", "categories/manage", "categories/[categoryId]/attributes", "flash-sales/manage", "offers/add", "offers/edit/[id]", "reviews/moderation"].map((name) => access(new URL(`../apps/mobile/app/admin/${name}.tsx`, import.meta.url))));
 });
 
 test("admin shell exposes reference navigation groups", async () => {
   const source = await readFile(new URL("../apps/mobile/src/ui/Screen.tsx", import.meta.url), "utf8");
-  for (const label of ["Overview", "Vendors", "Catalog", "Orders", "Marketing", "Finance", "Customers"]) assert.match(source, new RegExp(`label: "${label}"`));
-  for (const path of ["/admin/vendor-requests", "/admin/vendor-kyc", "/admin/payment-verifications", "/admin/flash-sales", "/admin/trust-safety"]) assert.match(source, new RegExp(path));
+  for (const label of ["Dashboard", "Operations", "University", "Audit Logs", "Analytics & Reports", "Platform Control", "Settings", "Staff", "Vendors", "Catalog", "Orders", "Marketing", "Finance", "Customers"]) assert.match(source, new RegExp(`label: "${label}"`));
+  for (const path of ["/admin/vendor-requests", "/admin/vendors/kyc", "/admin/payment-verification", "/admin/flash-sales", "/admin/trust-safety"]) assert.match(source, new RegExp(path));
 });
 
 test("reference queue pages use live data and actions", async () => {
