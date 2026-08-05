@@ -4,6 +4,7 @@ test("customer cannot read admin trust queues", async () => { await assert.rejec
 test("admin cannot suspend their own account", async () => { await assert.rejects(() => new AdminService({} as PrismaClient).updateUser(admin, userId, { status: "SUSPENDED", reason: "Security review" }), /cannot change your own account status/); });
 test("admin cannot change their own platform roles", async () => { await assert.rejects(() => new AdminService({} as PrismaClient).updateUserRoles(admin, userId, { roles: [], reason: "Access review" }), /cannot change your own platform roles/); });
 test("customer cannot read marketplace analytics", async () => { await assert.rejects(() => new AdminService({} as PrismaClient).analytics(customer, { range: "30d" }), /admin:read access is required/); });
+test("customer cannot read admin commerce workspaces", async () => { await assert.rejects(() => new AdminService({} as PrismaClient).commerce(customer), /admin:read access is required/); });
 test("admin analytics derives bigint-safe metrics and customer segments", async () => {
   let userCountCall = 0;
   const client = {

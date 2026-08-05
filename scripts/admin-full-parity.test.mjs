@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 import test from "node:test";
 
-const routeNames = ["vendors", "vendor-requests", "vendor-kyc", "customers", "users", "payouts", "returns", "payment-verifications", "vouchers", "flash-sales", "audit", "products", "inventory", "orders", "logistics", "offers", "insights", "reviews", "qa", "trust-safety"];
+const routeNames = ["index", "vendors", "vendor-requests", "vendor-kyc", "vendor-activity", "chats", "customers", "users", "staff", "payouts", "payout-requests", "returns", "payment-verification", "payment-verifications", "vouchers", "coupons", "flash-sales", "audit", "products", "inventory", "orders", "logistics", "cod-delivery", "cod-reconciliation", "offers", "insights", "reviews", "qa", "trust-safety", "settings", "university"];
 
 test("reference admin workspaces have mobile routes", async () => {
   await Promise.all(routeNames.map((name) => access(new URL(`../apps/mobile/app/admin/${name}.tsx`, import.meta.url))));
+  await Promise.all(["products/add", "vendors/kyc", "reviews/moderation"].map((name) => access(new URL(`../apps/mobile/app/admin/${name}.tsx`, import.meta.url))));
 });
 
 test("admin shell exposes reference navigation groups", async () => {
@@ -19,4 +20,13 @@ test("reference queue pages use live data and actions", async () => {
   for (const api of ["getAdminWorkspace", "getAdminPlatform", "getAdminQueues", "reviewAdminPayout", "transitionAdminReturn", "reviewPaymentVerification"]) assert.match(source, new RegExp(api));
   assert.match(source, /Search .*\.\.\./);
   assert.match(source, /No matching records/);
+});
+
+test("commerce aliases are replaced with dedicated live workspaces", async () => {
+  const screen = await readFile(new URL("../apps/mobile/src/features/admin/AdminCommerceWorkspaceScreen.tsx", import.meta.url), "utf8");
+  const service = await readFile(new URL("../apps/api/src/modules/admin/admin.service.ts", import.meta.url), "utf8");
+  const routes = await readFile(new URL("../apps/api/src/modules/admin/admin.routes.ts", import.meta.url), "utf8");
+  for (const kind of ["orders", "inventory", "coupons", "offers", "chats", "cod-delivery", "cod-reconciliation", "vendor-activity"]) assert.match(screen, new RegExp(`"${kind}"`));
+  for (const model of ["order.findMany", "inventoryItem.findMany", "coupon.findMany", "campaign.findMany", "chatThread.findMany", "codCollection.findMany"]) assert.match(service, new RegExp(model.replace(".", "\\.")));
+  for (const endpoint of ["/commerce", "/inventory/:id", "/coupons/:id", "/chats/:id/messages"]) assert.match(routes, new RegExp(endpoint.replaceAll("/", "\\/")));
 });

@@ -1,2 +1,2 @@
 import { AdminCommerceWorkspaceScreen } from "../../src/features/admin/AdminCommerceWorkspaceScreen";
-export default function Route() { return <AdminCommerceWorkspaceScreen kind="offers" />; }
+export default function Route() { return <AdminCommerceWorkspaceScreen kind="coupons" />; }

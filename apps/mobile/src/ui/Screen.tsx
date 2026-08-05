@@ -26,22 +26,30 @@ const adminGroups: AdminGroup[] = [
     { label: "Dashboard", href: "/admin/dashboard", icon: "grid-outline" },
     { label: "Operations", href: "/admin/operations", icon: "pulse-outline" },
     { label: "Analytics & Reports", href: "/admin/analytics", icon: "bar-chart-outline" },
+    { label: "University", href: "/admin/university", icon: "school-outline" },
     { label: "Audit Logs", href: "/admin/audit", icon: "time-outline" },
-    { label: "Platform Control", href: "/admin/platform", icon: "settings-outline" }
+    { label: "Platform Control", href: "/admin/platform", icon: "settings-outline" },
+    { label: "Settings", href: "/admin/settings", icon: "options-outline" },
+    { label: "Staff", href: "/admin/staff", icon: "people-circle-outline" }
   ] },
   { label: "Vendors", icon: "storefront-outline", links: [
     { label: "Vendor Requests", href: "/admin/vendor-requests", icon: "person-add-outline" },
     { label: "KYC Review", href: "/admin/vendor-kyc", icon: "id-card-outline" },
-    { label: "All Vendors", href: "/admin/vendors", icon: "storefront-outline" }
+    { label: "All Vendors", href: "/admin/vendors", icon: "storefront-outline" },
+    { label: "Vendor Activity", href: "/admin/vendor-activity", icon: "pulse-outline" },
+    { label: "Vendor Chats", href: "/admin/chats", icon: "chatbubbles-outline" }
   ] },
   { label: "Catalog", icon: "cube-outline", links: [
     { label: "Products", href: "/admin/products", icon: "cube-outline" },
+    { label: "Add Product", href: "/admin/products/add", icon: "add-circle-outline" },
     { label: "Inventory", href: "/admin/inventory", icon: "layers-outline" },
     { label: "Categories", href: "/admin/categories", icon: "file-tray-full-outline" },
     { label: "Category Requests", href: "/admin/category-requests", icon: "git-pull-request-outline" }
   ] },
   { label: "Orders", icon: "bag-handle-outline", links: [
     { label: "All Orders", href: "/admin/orders", icon: "bag-handle-outline" },
+    { label: "COD Delivery", href: "/admin/cod-delivery", icon: "cash-outline" },
+    { label: "COD Reconciliation", href: "/admin/cod-reconciliation", icon: "calculator-outline" },
     { label: "Returns", href: "/admin/returns", icon: "return-down-back-outline" },
     { label: "Logistics", href: "/admin/logistics", icon: "car-outline" },
     { label: "Delivery Settings", href: "/admin/delivery-settings", icon: "options-outline" },
@@ -50,6 +58,7 @@ const adminGroups: AdminGroup[] = [
   { label: "Marketing", icon: "megaphone-outline", links: [
     { label: "Promotions", href: "/admin/promotions", icon: "megaphone-outline" },
     { label: "Banners", href: "/admin/banners", icon: "images-outline" },
+    { label: "Coupons", href: "/admin/coupons", icon: "cut-outline" },
     { label: "Vouchers", href: "/admin/vouchers", icon: "ticket-outline" },
     { label: "Flash Sales", href: "/admin/flash-sales", icon: "flash-outline" },
     { label: "Offers", href: "/admin/offers", icon: "pricetags-outline" },
@@ -58,6 +67,7 @@ const adminGroups: AdminGroup[] = [
   ] },
   { label: "Finance", icon: "wallet-outline", links: [
     { label: "Vendor Payouts", href: "/admin/payouts", icon: "wallet-outline" },
+    { label: "Payout Requests", href: "/admin/payout-requests", icon: "cash-outline" },
     { label: "Payment Verification", href: "/admin/payment-verifications", icon: "card-outline" }
   ] },
   { label: "Customers", icon: "people-outline", links: [
@@ -130,7 +140,8 @@ function AdminScreen({ children, description, desktop, eyebrow, hideHeading = fa
 }
 
 function AdminNavLink({ collapsed, link, onOpen, pathname }: { collapsed: boolean; link: WorkspaceLink; onOpen: (href: string) => void; pathname: string }) {
-  const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
+  const activeHref = adminLinks.filter((candidate) => pathname === candidate.href || pathname.startsWith(`${candidate.href}/`)).sort((left, right) => right.href.length - left.href.length)[0]?.href;
+  const active = activeHref === link.href;
   return <Pressable accessibilityLabel={link.label} onPress={() => onOpen(link.href)} style={[styles.adminNavItem, active && styles.adminNavItemActive, collapsed && styles.navCollapsed]}><Ionicons color={active ? "#ffffff" : "#cbd5e1"} name={link.icon as never} size={19} />{!collapsed ? <Text style={[styles.adminNavLabel, active && styles.adminNavLabelActive]}>{link.label}</Text> : null}{active && !collapsed ? <View style={styles.activePip} /> : null}</Pressable>;
 }
 

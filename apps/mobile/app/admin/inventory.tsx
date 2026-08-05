@@ -1,1 +1,2 @@
-export { AdminCatalogScreen as default } from "../../src/features/admin/AdminCatalogScreen";
+import { AdminCommerceWorkspaceScreen } from "../../src/features/admin/AdminCommerceWorkspaceScreen";
+export default function Route() { return <AdminCommerceWorkspaceScreen kind="inventory" />; }

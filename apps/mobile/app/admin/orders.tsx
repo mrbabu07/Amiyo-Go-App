@@ -1,1 +1,2 @@
-export { AdminOperationsScreen as default } from "../../src/features/operations/AdminOperationsScreen";
+import { AdminCommerceWorkspaceScreen } from "../../src/features/admin/AdminCommerceWorkspaceScreen";
+export default function Route() { return <AdminCommerceWorkspaceScreen kind="orders" />; }
