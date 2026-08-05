@@ -12086,6 +12086,17 @@
                         "type": "string",
                         "format": "date-time"
                       },
+                      "lastReadAt": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "date-time"
+                      },
+                      "unreadCount": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
                       "messages": {
                         "type": "array",
                         "items": {
@@ -12122,6 +12133,8 @@
                       "subject",
                       "status",
                       "updatedAt",
+                      "lastReadAt",
+                      "unreadCount",
                       "messages"
                     ]
                   }
@@ -12294,6 +12307,74 @@
         "responses": {
           "201": {
             "description": "Message created"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/chat/threads/{id}/read": {
+      "post": {
+        "tags": [
+          "Engagement & Growth"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Thread marked read"
           },
           "400": {
             "description": "Invalid request",

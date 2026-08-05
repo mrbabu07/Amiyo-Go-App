@@ -47,6 +47,7 @@ export function createEngagementRouter() {
   router.get("/api/v2/chat/threads", async (req, res, next) => { try { res.json(await service.threads(requireSession(req).principal.userId)); } catch (error) { next(error); } });
   router.post("/api/v2/chat/threads", writeLimit, async (req, res, next) => { try { res.status(201).json(await service.createThread(requireSession(req), chatThreadInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.post("/api/v2/chat/threads/:id/messages", chatLimit, async (req, res, next) => { try { res.status(201).json(await service.message(requireSession(req), idSchema.parse(req.params).id, chatMessageInputSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.post("/api/v2/chat/threads/:id/read", async (req, res, next) => { try { await service.readThread(requireSession(req).principal.userId, idSchema.parse(req.params).id); res.status(204).end(); } catch (error) { next(error); } });
   router.get("/api/v2/loyalty", async (req, res, next) => { try { res.json(await service.loyalty(requireSession(req).principal.userId)); } catch (error) { next(error); } });
   router.get("/api/v2/admin/promotions", async (req, res, next) => { try { res.json(await service.promotions(requireSession(req))); } catch (error) { next(error); } });
   router.post("/api/v2/admin/promotions", writeLimit, async (req, res, next) => { try { res.status(201).json(await service.createPromotion(requireSession(req), createPromotionSchema.parse(req.body))); } catch (error) { next(error); } });

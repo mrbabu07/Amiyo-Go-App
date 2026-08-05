@@ -17,7 +17,7 @@ export const notificationDeliveryJobSchema = z.object({ notificationDeliveryId: 
 export const newsletterDeliveryJobSchema = z.object({ newsletterDeliveryId: uuidSchema });
 export const chatThreadInputSchema = z.object({ vendorId: uuidSchema, subject: z.string().trim().min(2).max(160) });
 export const chatMessageInputSchema = z.object({ body: z.string().trim().min(1).max(3000) });
-export const chatThreadSchema = z.object({ id: uuidSchema, vendorId: uuidSchema.nullable(), subject: z.string().nullable(), status: z.string(), updatedAt: timestampSchema, messages: z.array(z.object({ id: uuidSchema, senderId: uuidSchema, body: z.string(), createdAt: timestampSchema })) });
+export const chatThreadSchema = z.object({ id: uuidSchema, vendorId: uuidSchema.nullable(), subject: z.string().nullable(), status: z.string(), updatedAt: timestampSchema, lastReadAt: timestampSchema.nullable(), unreadCount: z.number().int().nonnegative(), messages: z.array(z.object({ id: uuidSchema, senderId: uuidSchema, body: z.string(), createdAt: timestampSchema })) });
 
 export const promotionEffectSchema = z.discriminatedUnion("type", [z.object({ type: z.literal("FIXED"), amountMinor: z.string().regex(/^\d+$/) }), z.object({ type: z.literal("PERCENT"), rateBps: z.number().int().min(0).max(10_000), maxDiscountMinor: z.string().regex(/^\d+$/).nullable().optional() })]);
 export const promotionCandidateSchema = z.object({ id: uuidSchema, priority: z.number().int(), minimumSubtotalMinor: z.string().regex(/^\d+$/).default("0"), effect: promotionEffectSchema });
