@@ -5,6 +5,7 @@ import { colors, radius, spacing } from "../../ui/tokens";
 import type { HomeCategory, HomeProduct } from "./home.data";
 import { BottomNav } from "./components/BottomNav";
 import { CategoryRail } from "./components/CategoryRail";
+import { DeliveryAvailability } from "./components/DeliveryAvailability";
 import { FlashSaleCountdown } from "./components/FlashSaleCountdown";
 import { HeroBanner } from "./components/HeroBanner";
 import { HomeSectionTitle } from "./components/HomeSectionTitle";
@@ -87,6 +88,7 @@ export function CustomerHomeScreen() {
               ))}
             </View>
 
+            <DeliveryAvailability />
             <NewsletterSignup />
             <View style={styles.footer}><Text style={styles.footerBrand}>Amiyo-Go</Text><Text style={styles.footerText}>Your trusted marketplace for everyday shopping.</Text><Text style={styles.copyright}>© 2026 Amiyo-Go. Made for Bangladesh.</Text></View>
           </View>

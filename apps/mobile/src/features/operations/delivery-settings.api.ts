@@ -1,0 +1,7 @@
+import { deliverySettingsSchema, serviceabilitySchema, type DeliverySettingsInput, type ServiceabilityInput } from "@amiyo/contracts";
+import type { User } from "firebase/auth";
+const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
+export async function checkServiceability(input: ServiceabilityInput) { const response = await fetch(`${apiUrl}/api/v2/delivery/serviceability`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }); if (!response.ok) throw new Error("Could not check delivery availability"); return serviceabilitySchema.parse(await response.json()); }
+async function adminRequest(user: User, init?: RequestInit) { const token = await user.getIdToken(); const response = await fetch(`${apiUrl}/api/v2/admin/delivery-settings`, { ...init, headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }); if (!response.ok) { const problem = await response.json().catch(() => null) as { detail?: string } | null; throw new Error(problem?.detail || "Could not update delivery settings"); } return deliverySettingsSchema.parse(await response.json()); }
+export async function getAdminDeliverySettings(user: User) { return adminRequest(user); }
+export async function updateAdminDeliverySettings(user: User, input: DeliverySettingsInput) { return adminRequest(user, { method: "PUT", body: JSON.stringify(input) }); }

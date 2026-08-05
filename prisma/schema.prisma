@@ -1813,3 +1813,24 @@ model NewsletterBroadcast {
   @@index([status, scheduledAt, createdAt])
   @@map("newsletter_broadcasts")
 }
+
+model DeliverySetting {
+  key                        String   @id @default("default")
+  standardChargeMinor        BigInt   @default(10000) @map("standard_charge_minor")
+  freeDeliveryEnabled        Boolean  @default(true) @map("free_delivery_enabled")
+  freeDeliveryThresholdMinor BigInt   @default(1100000) @map("free_delivery_threshold_minor")
+  baseDivision               String   @default("Chattogram") @map("base_division")
+  baseDistrict               String   @default("Cox's Bazar") @map("base_district")
+  baseUpazila                String   @default("Teknaf") @map("base_upazila")
+  baseUnion                  String   @default("Hnila") @map("base_union")
+  sameUnionFeeMinor          BigInt   @default(6000) @map("same_union_fee_minor")
+  sameUpazilaFeeMinor        BigInt   @default(8000) @map("same_upazila_fee_minor")
+  sameDistrictFeeMinor       BigInt   @default(12000) @map("same_district_fee_minor")
+  outsideDistrictFeeMinor    BigInt   @default(15000) @map("outside_district_fee_minor")
+  estimatedMinDays           Int      @default(2) @map("estimated_min_days")
+  estimatedMaxDays           Int      @default(5) @map("estimated_max_days")
+  version                    Int      @default(1)
+  updatedAt                  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("delivery_settings")
+}

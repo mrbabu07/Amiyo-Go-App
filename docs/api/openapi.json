@@ -8569,6 +8569,780 @@
         }
       }
     },
+    "/api/v2/delivery/settings": {
+      "get": {
+        "tags": [
+          "Delivery"
+        ],
+        "responses": {
+          "200": {
+            "description": "Public marketplace delivery settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "enum": [
+                        "default"
+                      ]
+                    },
+                    "standardChargeMinor": {
+                      "type": "string",
+                      "pattern": "^\\d+$"
+                    },
+                    "freeDeliveryEnabled": {
+                      "type": "boolean"
+                    },
+                    "freeDeliveryThresholdMinor": {
+                      "type": "string",
+                      "pattern": "^\\d+$"
+                    },
+                    "baseLocation": {
+                      "type": "object",
+                      "properties": {
+                        "division": {
+                          "type": "string"
+                        },
+                        "district": {
+                          "type": "string"
+                        },
+                        "upazila": {
+                          "type": "string"
+                        },
+                        "union": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "division",
+                        "district",
+                        "upazila",
+                        "union"
+                      ]
+                    },
+                    "zoneFees": {
+                      "type": "object",
+                      "properties": {
+                        "sameUnionMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "sameUpazilaMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "sameDistrictMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "outsideDistrictMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        }
+                      },
+                      "required": [
+                        "sameUnionMinor",
+                        "sameUpazilaMinor",
+                        "sameDistrictMinor",
+                        "outsideDistrictMinor"
+                      ]
+                    },
+                    "estimatedDays": {
+                      "type": "object",
+                      "properties": {
+                        "min": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0
+                        },
+                        "max": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0
+                        }
+                      },
+                      "required": [
+                        "min",
+                        "max"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    }
+                  },
+                  "required": [
+                    "key",
+                    "standardChargeMinor",
+                    "freeDeliveryEnabled",
+                    "freeDeliveryThresholdMinor",
+                    "baseLocation",
+                    "zoneFees",
+                    "estimatedDays",
+                    "version"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/delivery/serviceability": {
+      "post": {
+        "tags": [
+          "Delivery"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "division": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "district": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "upazila": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "union": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "subtotalMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$",
+                    "default": "0"
+                  }
+                },
+                "required": [
+                  "division",
+                  "district",
+                  "upazila",
+                  "union"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Location delivery quote and estimate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "serviceable": {
+                      "type": "boolean"
+                    },
+                    "zone": {
+                      "type": "string",
+                      "enum": [
+                        "same_union",
+                        "same_upazila",
+                        "same_district",
+                        "outside_district"
+                      ]
+                    },
+                    "charge": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "freeDelivery": {
+                      "type": "boolean"
+                    },
+                    "amountNeededForFreeDelivery": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "estimatedDays": {
+                      "type": "object",
+                      "properties": {
+                        "min": {
+                          "type": "integer"
+                        },
+                        "max": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "min",
+                        "max"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "serviceable",
+                    "zone",
+                    "charge",
+                    "freeDelivery",
+                    "amountNeededForFreeDelivery",
+                    "estimatedDays"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/delivery-settings": {
+      "get": {
+        "tags": [
+          "Operations"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin delivery settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "enum": [
+                        "default"
+                      ]
+                    },
+                    "standardChargeMinor": {
+                      "type": "string",
+                      "pattern": "^\\d+$"
+                    },
+                    "freeDeliveryEnabled": {
+                      "type": "boolean"
+                    },
+                    "freeDeliveryThresholdMinor": {
+                      "type": "string",
+                      "pattern": "^\\d+$"
+                    },
+                    "baseLocation": {
+                      "type": "object",
+                      "properties": {
+                        "division": {
+                          "type": "string"
+                        },
+                        "district": {
+                          "type": "string"
+                        },
+                        "upazila": {
+                          "type": "string"
+                        },
+                        "union": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "division",
+                        "district",
+                        "upazila",
+                        "union"
+                      ]
+                    },
+                    "zoneFees": {
+                      "type": "object",
+                      "properties": {
+                        "sameUnionMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "sameUpazilaMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "sameDistrictMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "outsideDistrictMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        }
+                      },
+                      "required": [
+                        "sameUnionMinor",
+                        "sameUpazilaMinor",
+                        "sameDistrictMinor",
+                        "outsideDistrictMinor"
+                      ]
+                    },
+                    "estimatedDays": {
+                      "type": "object",
+                      "properties": {
+                        "min": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0
+                        },
+                        "max": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0
+                        }
+                      },
+                      "required": [
+                        "min",
+                        "max"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    }
+                  },
+                  "required": [
+                    "key",
+                    "standardChargeMinor",
+                    "freeDeliveryEnabled",
+                    "freeDeliveryThresholdMinor",
+                    "baseLocation",
+                    "zoneFees",
+                    "estimatedDays",
+                    "version"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Operations"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "standardChargeMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "freeDeliveryEnabled": {
+                    "type": "boolean"
+                  },
+                  "freeDeliveryThresholdMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "baseLocation": {
+                    "type": "object",
+                    "properties": {
+                      "division": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 100
+                      },
+                      "district": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 100
+                      },
+                      "upazila": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 100
+                      },
+                      "union": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 100
+                      }
+                    },
+                    "required": [
+                      "division",
+                      "district",
+                      "upazila",
+                      "union"
+                    ]
+                  },
+                  "zoneFees": {
+                    "type": "object",
+                    "properties": {
+                      "sameUnionMinor": {
+                        "type": "string",
+                        "pattern": "^\\d+$"
+                      },
+                      "sameUpazilaMinor": {
+                        "type": "string",
+                        "pattern": "^\\d+$"
+                      },
+                      "sameDistrictMinor": {
+                        "type": "string",
+                        "pattern": "^\\d+$"
+                      },
+                      "outsideDistrictMinor": {
+                        "type": "string",
+                        "pattern": "^\\d+$"
+                      }
+                    },
+                    "required": [
+                      "sameUnionMinor",
+                      "sameUpazilaMinor",
+                      "sameDistrictMinor",
+                      "outsideDistrictMinor"
+                    ]
+                  },
+                  "estimatedDays": {
+                    "type": "object",
+                    "properties": {
+                      "min": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 30
+                      },
+                      "max": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 60
+                      }
+                    },
+                    "required": [
+                      "min",
+                      "max"
+                    ]
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "standardChargeMinor",
+                  "freeDeliveryEnabled",
+                  "freeDeliveryThresholdMinor",
+                  "baseLocation",
+                  "zoneFees",
+                  "estimatedDays",
+                  "expectedVersion"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Delivery settings updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "enum": [
+                        "default"
+                      ]
+                    },
+                    "standardChargeMinor": {
+                      "type": "string",
+                      "pattern": "^\\d+$"
+                    },
+                    "freeDeliveryEnabled": {
+                      "type": "boolean"
+                    },
+                    "freeDeliveryThresholdMinor": {
+                      "type": "string",
+                      "pattern": "^\\d+$"
+                    },
+                    "baseLocation": {
+                      "type": "object",
+                      "properties": {
+                        "division": {
+                          "type": "string"
+                        },
+                        "district": {
+                          "type": "string"
+                        },
+                        "upazila": {
+                          "type": "string"
+                        },
+                        "union": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "division",
+                        "district",
+                        "upazila",
+                        "union"
+                      ]
+                    },
+                    "zoneFees": {
+                      "type": "object",
+                      "properties": {
+                        "sameUnionMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "sameUpazilaMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "sameDistrictMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "outsideDistrictMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        }
+                      },
+                      "required": [
+                        "sameUnionMinor",
+                        "sameUpazilaMinor",
+                        "sameDistrictMinor",
+                        "outsideDistrictMinor"
+                      ]
+                    },
+                    "estimatedDays": {
+                      "type": "object",
+                      "properties": {
+                        "min": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0
+                        },
+                        "max": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0
+                        }
+                      },
+                      "required": [
+                        "min",
+                        "max"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    }
+                  },
+                  "required": [
+                    "key",
+                    "standardChargeMinor",
+                    "freeDeliveryEnabled",
+                    "freeDeliveryThresholdMinor",
+                    "baseLocation",
+                    "zoneFees",
+                    "estimatedDays",
+                    "version"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/admin/delivery-queue/{id}/retry": {
       "post": {
         "tags": [

@@ -81,6 +81,12 @@ export const deliveryQueueItemSchema = z.object({
 
 export const deliveryRetryResultSchema = z.object({ id: uuidSchema, status: z.literal("PENDING"), queued: z.literal(true) });
 
+const deliveryMinorSchema = z.string().regex(/^\d+$/);
+export const deliverySettingsSchema = z.object({ key: z.literal("default"), standardChargeMinor: deliveryMinorSchema, freeDeliveryEnabled: z.boolean(), freeDeliveryThresholdMinor: deliveryMinorSchema, baseLocation: z.object({ division: z.string(), district: z.string(), upazila: z.string(), union: z.string() }), zoneFees: z.object({ sameUnionMinor: deliveryMinorSchema, sameUpazilaMinor: deliveryMinorSchema, sameDistrictMinor: deliveryMinorSchema, outsideDistrictMinor: deliveryMinorSchema }), estimatedDays: z.object({ min: z.number().int().positive(), max: z.number().int().positive() }), version: z.number().int().positive() });
+export const deliverySettingsInputSchema = z.object({ standardChargeMinor: deliveryMinorSchema, freeDeliveryEnabled: z.boolean(), freeDeliveryThresholdMinor: deliveryMinorSchema, baseLocation: z.object({ division: z.string().trim().min(2).max(100), district: z.string().trim().min(2).max(100), upazila: z.string().trim().min(2).max(100), union: z.string().trim().min(2).max(100) }), zoneFees: z.object({ sameUnionMinor: deliveryMinorSchema, sameUpazilaMinor: deliveryMinorSchema, sameDistrictMinor: deliveryMinorSchema, outsideDistrictMinor: deliveryMinorSchema }), estimatedDays: z.object({ min: z.number().int().min(1).max(30), max: z.number().int().min(1).max(60) }), expectedVersion: z.number().int().positive() }).refine((value) => value.estimatedDays.min <= value.estimatedDays.max, "Minimum delivery days cannot exceed maximum days");
+export const serviceabilityInputSchema = z.object({ division: z.string().trim().min(2).max(100), district: z.string().trim().min(2).max(100), upazila: z.string().trim().min(2).max(100), union: z.string().trim().min(2).max(100), subtotalMinor: deliveryMinorSchema.default("0") });
+export const serviceabilitySchema = z.object({ serviceable: z.boolean(), zone: z.enum(["same_union", "same_upazila", "same_district", "outside_district"]), charge: moneySchema, freeDelivery: z.boolean(), amountNeededForFreeDelivery: moneySchema, estimatedDays: z.object({ min: z.number().int(), max: z.number().int() }) });
+
 export const amiyoDeliveryCallbackSchema = z.object({
   eventId: z.string().trim().min(1).max(200),
   externalOrderId: z.string().trim().min(1).max(200),
@@ -101,4 +107,6 @@ export type DeliveryDispatchJob = z.infer<typeof deliveryDispatchJobSchema>;
 export type DeliveryRetryInput = z.infer<typeof deliveryRetryInputSchema>;
 export type DeliveryQueueItem = z.infer<typeof deliveryQueueItemSchema>;
 export type DeliveryRetryResult = z.infer<typeof deliveryRetryResultSchema>;
+export type DeliverySettingsInput = z.infer<typeof deliverySettingsInputSchema>;
+export type ServiceabilityInput = z.infer<typeof serviceabilityInputSchema>;
 export type AmiyoDeliveryCallback = z.infer<typeof amiyoDeliveryCallbackSchema>;

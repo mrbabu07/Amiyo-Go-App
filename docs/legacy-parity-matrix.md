@@ -36,5 +36,6 @@ This matrix tracks the rebuild against the read-only legacy `Client` and `Server
 | Platform operations | Implemented | Payment verification, category creation, dynamic category attributes, marketing visibility and full audit activity |
 | Analytics and insights | Implemented | Period GMV, order and customer metrics, daily trends, purchasing segments, top products, top vendors and downloadable/shareable CSV reports |
 | Newsletter communications | Implemented | Public subscription, reactivation, subscriber visibility and audited draft/scheduled broadcast management; external email delivery remains provider-gated |
+| Delivery configuration | Implemented | Audited delivery charges, free-delivery threshold, service-area hierarchy, zone pricing, customer availability checks and delivery estimates |
 
 The rebuild covers the primary purchase, after-sales and model-backed marketplace operations end to end. Remaining production gates require approved external providers, credentials, business-policy decisions, real-device evidence and store submission access.
