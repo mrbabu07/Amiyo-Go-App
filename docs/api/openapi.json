@@ -12219,7 +12219,23 @@
         },
         "responses": {
           "201": {
-            "description": "Secure vendor chat created"
+            "description": "Secure vendor chat created or reused",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ]
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid request",

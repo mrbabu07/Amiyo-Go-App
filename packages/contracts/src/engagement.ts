@@ -16,6 +16,7 @@ export const notificationSchema = z.object({ id: uuidSchema, type: z.string(), t
 export const notificationDeliveryJobSchema = z.object({ notificationDeliveryId: uuidSchema });
 export const newsletterDeliveryJobSchema = z.object({ newsletterDeliveryId: uuidSchema });
 export const chatThreadInputSchema = z.object({ vendorId: uuidSchema, subject: z.string().trim().min(2).max(160) });
+export const chatThreadCreatedSchema = z.object({ id: uuidSchema });
 export const chatMessageInputSchema = z.object({ body: z.string().trim().min(1).max(3000) });
 export const chatThreadSchema = z.object({ id: uuidSchema, vendorId: uuidSchema.nullable(), subject: z.string().nullable(), status: z.string(), updatedAt: timestampSchema, lastReadAt: timestampSchema.nullable(), unreadCount: z.number().int().nonnegative(), messages: z.array(z.object({ id: uuidSchema, senderId: uuidSchema, body: z.string(), createdAt: timestampSchema })) });
 

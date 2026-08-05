@@ -1,10 +1,26 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { PrismaClient } from "@prisma/client";
+import type { Session } from "@amiyo/contracts";
 import { EngagementService } from "./engagement.service.js";
 
 const userId = "11111111-1111-4111-8111-111111111111";
 const threadId = "22222222-2222-4222-8222-222222222222";
+const vendorId = "33333333-3333-4333-8333-333333333333";
+const customer = { principal: { userId, roles: ["CUSTOMER"], vendorIds: [] }, status: "ACTIVE", email: null, phone: null, profile: { firstName: null, lastName: null, displayName: "Customer", avatarStorageKey: null, locale: "en", currency: "BDT" }, permissions: [], vendorMemberships: [] } as Session;
+
+test("starting seller chat reuses the customer's open vendor thread", async () => {
+  let createCalls = 0;
+  const client = { chatThread: { findFirst: async () => ({ id: threadId }), create: async () => { createCalls += 1; return { id: "new-thread" }; } } } as unknown as PrismaClient;
+  const result = await new EngagementService(client).createThread(customer, { vendorId, subject: "Product question" });
+  assert.equal(result.id, threadId);
+  assert.equal(createCalls, 0);
+});
+
+test("seller chat requires an active seller participant", async () => {
+  const client = { chatThread: { findFirst: async () => null }, vendor: { findFirst: async () => ({ id: vendorId, members: [] }) } } as unknown as PrismaClient;
+  await assert.rejects(() => new EngagementService(client).createThread(customer, { vendorId, subject: "Product question" }), /not available for chat/);
+});
 
 test("chat thread read state remains participant scoped", async () => {
   let updatedUserId = "";
