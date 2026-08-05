@@ -1,4 +1,4 @@
-import { chatThreadCreatedSchema, chatThreadSchema, growthFeedSchema, newsletterWorkspaceSchema, notificationSchema, questionSchema, reviewSchema, wishlistSchema, type ContentModerationInput, type NewsletterBroadcastInput } from "@amiyo/contracts";
+import { chatThreadCreatedSchema, chatThreadSchema, growthFeedSchema, newsletterWorkspaceSchema, notificationSchema, questionSchema, reviewSchema, sharedWishlistSchema, wishlistSchema, type ContentModerationInput, type NewsletterBroadcastInput } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
@@ -7,6 +7,8 @@ export async function getWishlist(user: User) { return wishlistSchema.parse(awai
 export async function addWishlistItem(user: User, productId: string) { return wishlistSchema.parse(await request(user, "/api/v2/wishlist/items", { method: "POST", body: JSON.stringify({ productId }) })); }
 export async function removeWishlistItem(user: User, productId: string) { return wishlistSchema.parse(await request(user, `/api/v2/wishlist/items/${productId}`, { method: "DELETE" })); }
 export async function shareWishlist(user: User) { return wishlistSchema.parse(await request(user, "/api/v2/wishlist/share", { method: "POST" })); }
+export async function unshareWishlist(user: User) { return wishlistSchema.parse(await request(user, "/api/v2/wishlist/share", { method: "DELETE" })); }
+export async function getSharedWishlist(token: string) { const response = await fetch(`${apiUrl}/api/v2/wishlists/shared/${encodeURIComponent(token)}`); if (!response.ok) throw new Error("This wishlist link is invalid or expired"); return sharedWishlistSchema.parse(await response.json()); }
 export async function getNotifications(user: User) { return notificationSchema.array().parse(await request(user, "/api/v2/notifications")); }
 export async function getMyReviews(user: User) { return reviewSchema.array().parse(await request(user, "/api/v2/reviews")); }
 export async function readNotification(user: User, id: string) { return notificationSchema.array().parse(await request(user, `/api/v2/notifications/${id}/read`, { method: "POST" })); }

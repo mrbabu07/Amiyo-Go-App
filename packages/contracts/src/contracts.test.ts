@@ -31,6 +31,8 @@ test("OpenAPI document exposes typed v2 resources", () => {
   assert.ok(document.paths?.["/api/v2/admin/cod/reconciliations"]);
   assert.ok(document.paths?.["/api/v2/growth/feed"]);
   assert.ok(document.paths?.["/api/v2/wishlist"]);
+  assert.ok(document.paths?.["/api/v2/wishlist/share"]);
+  assert.ok(document.paths?.["/api/v2/wishlists/shared/{token}"]);
   assert.ok(document.paths?.["/api/v2/notifications"]);
   assert.ok(document.paths?.["/api/v2/chat/threads"]);
   assert.ok(document.paths?.["/api/v2/admin/workspace/categories/{id}/attributes"]);
