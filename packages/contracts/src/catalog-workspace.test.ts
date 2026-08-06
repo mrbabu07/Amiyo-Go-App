@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { replaceProductMediaSchema, replaceProductVariantsSchema } from "./catalog.js";
+import { archiveProductSchema, replaceProductMediaSchema, replaceProductVariantsSchema } from "./catalog.js";
 
 const productVersion = 1;
 const variantId = "11111111-1111-4111-8111-111111111111";
@@ -17,4 +17,9 @@ test("media replacement accepts existing or completed upload references only", (
   assert.equal(replaceProductMediaSchema.safeParse({ version: productVersion, items: [{ uploadId, altText: "Front view", displayOrder: 0 }] }).success, true);
   assert.equal(replaceProductMediaSchema.safeParse({ version: productVersion, items: [{ id: variantId, uploadId, displayOrder: 0 }] }).success, false);
   assert.equal(replaceProductMediaSchema.safeParse({ version: productVersion, items: [{ uploadId, displayOrder: 0 }, { uploadId, displayOrder: 1 }] }).success, false);
+});
+
+test("product archive requires optimistic version and durable reason", () => {
+  assert.equal(archiveProductSchema.safeParse({ version: 2, reason: "Seller discontinued this item" }).success, true);
+  assert.equal(archiveProductSchema.safeParse({ version: 0, reason: "No" }).success, false);
 });

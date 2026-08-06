@@ -148,6 +148,11 @@ export const replaceProductMediaSchema = z.object({
   if (new Set(references).size !== references.length) context.addIssue({ code: "custom", message: "Media references must be unique", path: ["items"] });
 });
 
+export const archiveProductSchema = z.object({
+  version: versionSchema,
+  reason: z.string().trim().min(3).max(240)
+});
+
 export const inventoryAdjustmentSchema = z.object({
   version: versionSchema,
   onHand: z.number().int().nonnegative(),
@@ -184,5 +189,6 @@ export type BulkProductCsvInput = z.infer<typeof bulkProductCsvInputSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
 export type ReplaceProductVariants = z.infer<typeof replaceProductVariantsSchema>;
 export type ReplaceProductMedia = z.infer<typeof replaceProductMediaSchema>;
+export type ArchiveProduct = z.infer<typeof archiveProductSchema>;
 export type InventoryAdjustmentInput = z.infer<typeof inventoryAdjustmentSchema>;
 export type ModerationInput = z.infer<typeof moderationInputSchema>;

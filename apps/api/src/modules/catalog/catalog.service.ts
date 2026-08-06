@@ -1,6 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { authorize, type Permission, type Role } from "@amiyo/domain";
-import type { BulkProductCsvInput, CatalogQuery, CreateProductInput, InventoryAdjustmentInput, ModerationInput, ReplaceProductMedia, ReplaceProductVariants, Session, UpdateProductInput } from "@amiyo/contracts";
+import type { ArchiveProduct, BulkProductCsvInput, CatalogQuery, CreateProductInput, InventoryAdjustmentInput, ModerationInput, ReplaceProductMedia, ReplaceProductVariants, Session, UpdateProductInput } from "@amiyo/contracts";
 import { withSerializableTransaction, type TransactionClient } from "../../infrastructure/database/transaction.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
 import { CatalogRepository, publicProductInclude, type PublicProduct } from "./catalog.repository.js";
@@ -259,6 +259,22 @@ export class CatalogService {
       }
       await audit(transaction, { actorUserId: session.principal.userId, action: "catalog.product_media.replaced", resourceId: productId, ...(correlationId ? { correlationId } : {}), before: { mediaIds: before.media.map((item) => item.id) }, after: { mediaCount: input.items.length } });
       return productDetail(await transaction.product.findUniqueOrThrow({ where: { id: productId }, include: publicProductInclude }));
+    });
+  }
+
+  async archiveProduct(session: Session, productId: string, input: ArchiveProduct, correlationId?: string) {
+    const before = await this.client.product.findUnique({ where: { id: productId } });
+    if (!before) throw new ApiProblem(404, "PRODUCT_NOT_FOUND", "Product not found");
+    requireAuthorization(session, "products:manage", before.vendorId);
+    if (before.status === "SUBMITTED") throw new ApiProblem(409, "PRODUCT_REVIEW_IN_PROGRESS", "A product under review cannot be archived");
+    if (before.status === "ARCHIVED") throw new ApiProblem(409, "PRODUCT_ALREADY_ARCHIVED", "Product is already archived");
+    return withSerializableTransaction(this.client, async (transaction) => {
+      const changed = await transaction.product.updateMany({ where: { id: productId, version: input.version }, data: { status: "ARCHIVED", publishedAt: null, version: { increment: 1 } } });
+      if (changed.count !== 1) throw new ApiProblem(409, "VERSION_CONFLICT", "The product was changed by another request");
+      await transaction.productVariant.updateMany({ where: { productId }, data: { active: false, version: { increment: 1 } } });
+      const after = await transaction.product.findUniqueOrThrow({ where: { id: productId }, include: publicProductInclude });
+      await audit(transaction, { actorUserId: session.principal.userId, action: "catalog.product.archived", resourceId: productId, ...(correlationId ? { correlationId } : {}), before: { status: before.status, version: before.version }, after: { status: after.status, version: after.version, reason: input.reason } });
+      return productDetail(after);
     });
   }
 
