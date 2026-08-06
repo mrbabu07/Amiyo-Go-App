@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { addCartItemSchema, checkoutInputSchema, updateCartItemSchema } from "@amiyo/contracts";
+import { addCartItemSchema, checkoutInputSchema, checkoutQuoteInputSchema, updateCartItemSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
 import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
@@ -21,7 +21,7 @@ export function createCommerceRouter() {
   router.post("/api/v2/cart/items", async (req, res, next) => { try { const input = addCartItemSchema.parse(req.body); res.status(201).json(await service.addItem(requireSession(req).principal.userId, input.variantId, input.quantity)); } catch (error) { next(error); } });
   router.put("/api/v2/cart/items/:id", async (req, res, next) => { try { res.json(await service.updateItem(requireSession(req).principal.userId, idSchema.parse(req.params).id, updateCartItemSchema.parse(req.body).quantity)); } catch (error) { next(error); } });
   router.delete("/api/v2/cart/items/:id", async (req, res, next) => { try { res.json(await service.removeItem(requireSession(req).principal.userId, idSchema.parse(req.params).id)); } catch (error) { next(error); } });
-  router.post("/api/v2/checkout/quote", async (req, res, next) => { try { res.json(await service.quote(requireSession(req).principal.userId)); } catch (error) { next(error); } });
+  router.post("/api/v2/checkout/quote", async (req, res, next) => { try { res.json(await service.quote(requireSession(req).principal.userId, checkoutQuoteInputSchema.parse(req.body ?? {}))); } catch (error) { next(error); } });
   router.post("/api/v2/checkout/orders", async (req, res, next) => { try { const key = req.header("idempotency-key"); if (!key || !z.string().uuid().safeParse(key).success) throw new ApiProblem(400, "IDEMPOTENCY_KEY_REQUIRED", "A UUID Idempotency-Key header is required"); res.status(201).json(await service.checkout(requireSession(req), checkoutInputSchema.parse(req.body), key)); } catch (error) { next(error); } });
   return router;
 }

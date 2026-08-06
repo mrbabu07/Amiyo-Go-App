@@ -32,8 +32,8 @@ export async function removeCartItem(user: User, itemId: string) {
   return cartSchema.parse(await authenticatedRequest(user, `/api/v2/cart/items/${itemId}`, { method: "DELETE" }));
 }
 
-export async function getCheckoutQuote(user: User) {
-  return checkoutQuoteSchema.parse(await authenticatedRequest(user, "/api/v2/checkout/quote", { method: "POST" }));
+export async function getCheckoutQuote(user: User, couponCode?: string | null) {
+  return checkoutQuoteSchema.parse(await authenticatedRequest(user, "/api/v2/checkout/quote", { method: "POST", body: JSON.stringify({ couponCode: couponCode || null }) }));
 }
 
 export async function placeOrder(user: User, input: CheckoutInput, idempotencyKey: string) {

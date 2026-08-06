@@ -222,6 +222,9 @@ async function seedDemoCatalog() {
   };
   await prisma.userProfile.update({ where: { userId: ids.customerUser }, data: { firstName: "Demo", lastName: "Customer", displayName: "Demo Customer", locale: "en", currency: "BDT", preferences: customerPreferences } });
   await prisma.address.upsert({ where: { id: ids.customerAddress }, update: { isDefault: true }, create: { id: ids.customerAddress, userId: ids.customerUser, label: "Home", recipientName: "Demo Customer", phone: "01700000000", line1: "House 12, Road 7", division: "Dhaka", district: "Dhaka", upazila: "Dhanmondi", postalCode: "1209", isDefault: true } });
+  const couponStartsAt = new Date(Date.now() - 86_400_000);
+  const couponEndsAt = new Date(Date.now() + 365 * 86_400_000);
+  await prisma.coupon.upsert({ where: { code: "SAVE10" }, update: { discountType: "PERCENT", value: 10, maxDiscountMinor: 100000n, minimumSpendMinor: 50000n, startsAt: couponStartsAt, endsAt: couponEndsAt, active: true }, create: { code: "SAVE10", discountType: "PERCENT", value: 10, maxDiscountMinor: 100000n, minimumSpendMinor: 50000n, usageLimit: 1000, perUserLimit: 5, startsAt: couponStartsAt, endsAt: couponEndsAt, active: true } });
   const orderPlacedAt = new Date(Date.now() - 3 * 86_400_000);
   await prisma.order.upsert({ where: { id: ids.customerOrder }, update: { status: "SHIPPED", userId: ids.customerUser }, create: { id: ids.customerOrder, orderNumber: "AG-DEMO-1001", userId: ids.customerUser, status: "SHIPPED", subtotalMinor: 249000n, deliveryMinor: 6000n, totalMinor: 255000n, placedAt: orderPlacedAt, createdAt: orderPlacedAt } });
   await prisma.orderAddress.upsert({ where: { orderId_type: { orderId: ids.customerOrder, type: "delivery" } }, update: {}, create: { orderId: ids.customerOrder, type: "delivery", recipientName: "Demo Customer", phone: "01700000000", line1: "House 12, Road 7", division: "Dhaka", district: "Dhaka", upazila: "Dhanmondi", postalCode: "1209" } });

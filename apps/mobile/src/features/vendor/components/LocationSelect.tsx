@@ -92,7 +92,7 @@ export function LocationSelect({ disabled, label, onChange, options, placeholder
 }
 
 const styles = StyleSheet.create({
-  field: { gap: 6 },
+  field: { flex: 1, gap: 6, minWidth: 220 },
   label: { color: colors.text, fontSize: 13, fontWeight: "700" },
   select: { alignItems: "center", backgroundColor: colors.surface, borderColor: "#d1d5db", borderRadius: radius.md, borderWidth: 1, flexDirection: "row", minHeight: 48, paddingHorizontal: 14 },
   disabled: { backgroundColor: "#f3f4f6", opacity: 0.65 },

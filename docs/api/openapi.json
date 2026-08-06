@@ -1320,6 +1320,33 @@
             "type": "integer",
             "exclusiveMinimum": 0
           },
+          "coupon": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "discountType": {
+                "type": "string",
+                "enum": [
+                  "PERCENT",
+                  "FIXED"
+                ]
+              },
+              "value": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              }
+            },
+            "required": [
+              "code",
+              "discountType",
+              "value"
+            ]
+          },
           "expiresAt": {
             "type": "string",
             "format": "date-time"
@@ -1333,6 +1360,7 @@
           "tax",
           "total",
           "vendorCount",
+          "coupon",
           "expiresAt"
         ]
       },
@@ -3630,6 +3658,8 @@
                 "line1",
                 "division",
                 "district",
+                "latitude",
+                "longitude",
                 "id",
                 "createdAt",
                 "updatedAt"
@@ -4080,6 +4110,8 @@
           "line1",
           "division",
           "district",
+          "latitude",
+          "longitude",
           "id",
           "createdAt",
           "updatedAt"
@@ -4463,6 +4495,25 @@
             "firebaseBearer": []
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "couponCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "minLength": 3,
+                    "maxLength": 40
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Short-lived authoritative checkout quote",
@@ -4556,6 +4607,14 @@
                       "NAGAD",
                       "SSLCOMMERZ"
                     ]
+                  },
+                  "couponCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "minLength": 3,
+                    "maxLength": 40
                   }
                 },
                 "required": [

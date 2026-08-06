@@ -86,6 +86,8 @@ export const addressInputSchema = z.object({
 
 export const addressSchema = addressInputSchema.extend({
   id: uuidSchema,
+  latitude: z.number().min(-90).max(90).nullable(),
+  longitude: z.number().min(-180).max(180).nullable(),
   createdAt: timestampSchema,
   updatedAt: timestampSchema
 });

@@ -1,7 +1,7 @@
 import { OpenAPIRegistry, OpenApiGeneratorV31, extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
 import { z } from "zod";
 import { archiveProductSchema, bulkProductCsvInputSchema, bulkProductImportResultSchema, catalogQuerySchema, categorySchema, createProductSchema, inventoryAdjustmentSchema, moderationInputSchema, productDetailSchema, productListResponseSchema, replaceProductMediaSchema, replaceProductVariantsSchema, shopDetailSchema, shopListResponseSchema, updateProductSchema, vendorInventorySchema } from "./catalog.js";
-import { addCartItemSchema, cartSchema, checkoutInputSchema, checkoutQuoteSchema, checkoutResultSchema, updateCartItemSchema } from "./commerce.js";
+import { addCartItemSchema, cartSchema, checkoutInputSchema, checkoutQuoteInputSchema, checkoutQuoteSchema, checkoutResultSchema, updateCartItemSchema } from "./commerce.js";
 import { customerOrderSummarySchema, deliveryQueueItemSchema, deliveryRetryInputSchema, deliveryRetryResultSchema, deliverySettingsInputSchema, deliverySettingsSchema, fulfillmentDocumentSchema, orderTrackingSchema, serviceabilityInputSchema, serviceabilitySchema, vendorOrderDetailSchema, vendorOrderTransitionSchema } from "./delivery.js";
 import { healthResponseSchema } from "./health.js";
 import { accountDashboardSchema, accountDataExportSchema, accountDeletionInputSchema, accountDeletionSchema, accountPreferencesSchema, addressInputSchema, addressSchema, deviceInputSchema, deviceSchema, sessionSchema, updateProfileSchema } from "./identity.js";
@@ -90,6 +90,7 @@ registry.registerPath({
   path: "/api/v2/checkout/quote",
   tags: ["Commerce"],
   security: firebaseSecurity,
+  request: { body: { content: { "application/json": { schema: checkoutQuoteInputSchema } } } },
   responses: { 200: { description: "Short-lived authoritative checkout quote", content: { "application/json": { schema: checkoutQuote } } }, ...errorResponses }
 });
 
