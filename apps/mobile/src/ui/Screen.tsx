@@ -4,6 +4,7 @@ import { useState, type PropsWithChildren } from "react";
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { BottomNav } from "../features/home/components/BottomNav";
 import { StoreHeader } from "../features/home/components/StoreHeader";
+import { useAuthStore } from "../features/auth/auth.store";
 import { colors, radius, spacing } from "./tokens";
 
 type ScreenProps = PropsWithChildren<{ eyebrow?: string; title: string; description?: string; hideHeading?: boolean }>;
@@ -93,6 +94,8 @@ const adminGroups: AdminGroup[] = [
 ];
 
 const adminLinks = [...adminPrimaryLinks, ...adminGroups.flatMap((group) => group.links)];
+const adminRolePriority = ["SUPER_ADMIN", "OPERATIONS_ADMIN", "FINANCE_ADMIN", "SUPPORT_AGENT"] as const;
+const roleLabel = (role: string) => role.toLocaleLowerCase().split("_").map((part) => part[0]?.toLocaleUpperCase() + part.slice(1)).join(" ");
 
 export function Screen(props: ScreenProps) {
   const pathname = usePathname();
@@ -105,6 +108,7 @@ export function Screen(props: ScreenProps) {
 
 function AdminScreen({ children, description, desktop, eyebrow, hideHeading = false, pathname, title }: ScreenProps & { desktop: boolean; pathname: string }) {
   const router = useRouter();
+  const session = useAuthStore((state) => state.session);
   const [collapsed, setCollapsed] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -114,6 +118,9 @@ function AdminScreen({ children, description, desktop, eyebrow, hideHeading = fa
   const normalizedSearch = searchQuery.trim().toLocaleLowerCase();
   const searchResults = normalizedSearch ? adminLinks.filter((link) => `${link.label} ${link.href.replaceAll("/", " ")}`.toLocaleLowerCase().includes(normalizedSearch)).slice(0, 8) : [];
   const submitSearch = () => { if (searchResults[0]) open(searchResults[0].href); };
+  const accountName = session?.profile.displayName || session?.email || "Admin account";
+  const accountInitials = accountName.split(/[\s@]+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toLocaleUpperCase()).join("") || "A";
+  const accountRole = adminRolePriority.find((role) => session?.principal.roles.includes(role)) ?? session?.principal.roles[0] ?? "ADMIN";
 
   return <SafeAreaView style={styles.safe}>
     <View style={styles.adminTopbar}>
@@ -130,7 +137,7 @@ function AdminScreen({ children, description, desktop, eyebrow, hideHeading = fa
         <Pressable accessibilityLabel="Open storefront" onPress={() => open("/")} style={styles.iconButton}><Ionicons color={colors.text} name="storefront-outline" size={19} /></Pressable>
         <Pressable accessibilityLabel="Notifications" onPress={() => open("/notifications")} style={styles.iconButton}><Ionicons color={colors.text} name="notifications-outline" size={19} /><View style={styles.notificationDot} /></Pressable>
         <Pressable accessibilityLabel="Theme" style={styles.iconButton}><Ionicons color={colors.text} name="moon-outline" size={19} /></Pressable>
-        <Pressable accessibilityLabel="Account" onPress={() => open("/account")} style={styles.adminAccount}><View style={styles.avatar}><Text style={styles.avatarText}>A</Text></View>{desktop ? <View><Text style={styles.accountName}>Administrator</Text><Text style={styles.accountRole}>Super admin</Text></View> : null}</Pressable>
+        <Pressable accessibilityLabel={`Account: ${accountName}, ${roleLabel(accountRole)}`} onPress={() => open("/account")} style={styles.adminAccount}><View style={styles.avatar}><Text style={styles.avatarText}>{accountInitials}</Text></View>{desktop ? <View><Text numberOfLines={1} style={styles.accountName}>{accountName}</Text><Text style={styles.accountRole}>{roleLabel(accountRole)}</Text></View> : null}</Pressable>
       </View>
     </View>
     {!desktop ? <ScrollView contentContainerStyle={styles.adminMobileNav} horizontal showsHorizontalScrollIndicator={false}>{adminLinks.map((link) => <AdminNavLink key={link.href} link={link} pathname={pathname} collapsed onOpen={open} />)}</ScrollView> : null}
