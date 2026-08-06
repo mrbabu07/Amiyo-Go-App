@@ -5,9 +5,9 @@ import test from "node:test";
 const routes = ["dashboard", "shop", "kyc", "staff", "returns", "marketing", "messages"];
 
 test("seller workspace exposes dedicated operational routes", async () => {
-  await Promise.all(routes.map((route) => access(new URL(`../apps/mobile/app/vendor/${route}.tsx`, import.meta.url))));
+  await Promise.all(routes.filter((route) => route !== "products").map((route) => access(new URL(`../apps/mobile/app/vendor/${route}.tsx`, import.meta.url))));
   await access(new URL("../apps/mobile/app/vendor/messages/[id].tsx", import.meta.url));
-  await Promise.all(["add", "[id]", "edit/[id]"].map((route) => access(new URL(`../apps/mobile/app/vendor/products/${route}.tsx`, import.meta.url))));
+  await Promise.all(["index", "add", "[id]", "edit/[id]"].map((route) => access(new URL(`../apps/mobile/app/vendor/products/${route}.tsx`, import.meta.url))));
 });
 
 test("seller product workspace supports create, edit, detail and moderation submission", async () => {
