@@ -1,5 +1,9 @@
+import { existsSync } from "node:fs";
+import { loadEnvFile } from "node:process";
 import { PrismaClient, RoleName } from "@prisma/client";
 import { categoryTaxonomy } from "./category-taxonomy.js";
+
+if (!process.env.DATABASE_URL && existsSync("apps/api/.env")) loadEnvFile("apps/api/.env");
 
 const prisma = new PrismaClient();
 
@@ -11,9 +15,9 @@ const permissionKeys = [
 
 const rolePermissions: Record<RoleName, string[]> = {
   CUSTOMER: ["catalog:read", "cart:manage", "checkout:manage", "orders:read", "returns:manage", "reviews:manage", "support:manage"],
-  VENDOR_OWNER: ["vendor:read", "vendor:manage", "products:manage", "inventory:manage", "orders:read", "orders:manage", "finance:read", "finance:manage", "kyc:manage", "support:manage"],
-  VENDOR_MANAGER: ["vendor:read", "vendor:manage", "products:manage", "inventory:manage", "orders:read", "orders:manage", "finance:read", "support:manage"],
-  VENDOR_STAFF: ["vendor:read", "orders:read", "orders:manage", "products:manage", "support:manage"],
+  VENDOR_OWNER: ["vendor:read", "vendor:manage", "products:manage", "inventory:manage", "orders:read", "orders:manage", "returns:manage", "finance:read", "finance:manage", "kyc:manage", "support:manage"],
+  VENDOR_MANAGER: ["vendor:read", "vendor:manage", "products:manage", "inventory:manage", "orders:read", "orders:manage", "returns:manage", "finance:read", "support:manage"],
+  VENDOR_STAFF: ["vendor:read", "orders:read", "orders:manage", "returns:manage", "products:manage", "support:manage"],
   SUPPORT_AGENT: ["orders:read", "support:manage", "admin:read"],
   FINANCE_ADMIN: ["orders:read", "finance:read", "finance:manage", "audit:read", "admin:read"],
   OPERATIONS_ADMIN: ["catalog:read", "products:manage", "inventory:manage", "orders:read", "orders:manage", "returns:manage", "admin:read", "admin:manage"],
@@ -235,6 +239,12 @@ async function seedDemoCatalog() {
 async function main() {
   await seedAccessControl();
   await seedDemoCatalog();
+  const [approvedProducts, categories, shops] = await Promise.all([
+    prisma.product.count({ where: { status: "APPROVED" } }),
+    prisma.category.count({ where: { status: "active" } }),
+    prisma.vendorShop.count({ where: { status: "ACTIVE" } })
+  ]);
+  console.log(`Catalog seed complete: ${approvedProducts} approved products, ${categories} active categories, ${shops} active shops.`);
 }
 
 main().finally(async () => prisma.$disconnect());
