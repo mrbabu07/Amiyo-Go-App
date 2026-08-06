@@ -15,8 +15,13 @@ const vendorLinks: WorkspaceLink[] = [
   { label: "Products", href: "/vendor/products", icon: "cube-outline" },
   { label: "Orders", href: "/vendor/orders", icon: "bag-handle-outline" },
   { label: "Inventory", href: "/vendor/inventory", icon: "layers-outline" },
+  { label: "Returns", href: "/vendor/returns", icon: "return-down-back-outline" },
   { label: "Finance", href: "/vendor/finance", icon: "wallet-outline" },
-  { label: "Marketing", href: "/vendor/engagement", icon: "megaphone-outline" },
+  { label: "Marketing", href: "/vendor/marketing", icon: "megaphone-outline" },
+  { label: "Messages", href: "/vendor/messages", icon: "chatbubbles-outline" },
+  { label: "Shop", href: "/vendor/shop", icon: "storefront-outline" },
+  { label: "KYC", href: "/vendor/kyc", icon: "id-card-outline" },
+  { label: "Staff", href: "/vendor/staff", icon: "people-outline" },
   { label: "Operations", href: "/vendor/operations", icon: "construct-outline" },
   { label: "Settings", href: "/vendor/settings", icon: "settings-outline" }
 ];
