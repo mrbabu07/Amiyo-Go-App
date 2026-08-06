@@ -1,4 +1,4 @@
-import { bulkProductImportResultSchema, categorySchema, productDetailSchema, productListResponseSchema, shopDetailSchema, shopListResponseSchema, vendorInventorySchema, type BulkProductCsvInput, type CatalogQuery, type CreateProductInput, type InventoryAdjustmentInput, type ModerationInput, type UpdateProductInput } from "@amiyo/contracts";
+import { bulkProductImportResultSchema, categorySchema, productDetailSchema, productListResponseSchema, shopDetailSchema, shopListResponseSchema, vendorInventorySchema, type BulkProductCsvInput, type CatalogQuery, type CreateProductInput, type InventoryAdjustmentInput, type ModerationInput, type ReplaceProductMedia, type ReplaceProductVariants, type UpdateProductInput } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
@@ -48,8 +48,10 @@ export async function getShops() {
 }
 
 export async function getVendorProducts(user: User) { return productDetailSchema.array().parse(await authenticatedRequest(user, "/api/v2/vendor/products")); }
-export async function createVendorProduct(user: User, input: CreateProductInput) { return await authenticatedRequest(user, "/api/v2/vendor/products", { method: "POST", body: JSON.stringify(input) }); }
-export async function updateVendorProduct(user: User, id: string, input: UpdateProductInput) { return await authenticatedRequest(user, `/api/v2/vendor/products/${id}`, { method: "PATCH", body: JSON.stringify(input) }); }
+export async function createVendorProduct(user: User, input: CreateProductInput) { return productDetailSchema.parse(await authenticatedRequest(user, "/api/v2/vendor/products", { method: "POST", body: JSON.stringify(input) })); }
+export async function updateVendorProduct(user: User, id: string, input: UpdateProductInput) { return productDetailSchema.parse(await authenticatedRequest(user, `/api/v2/vendor/products/${id}`, { method: "PATCH", body: JSON.stringify(input) })); }
+export async function replaceVendorProductVariants(user: User, id: string, input: ReplaceProductVariants) { return productDetailSchema.parse(await authenticatedRequest(user, `/api/v2/vendor/products/${id}/variants`, { method: "PUT", body: JSON.stringify(input) })); }
+export async function replaceVendorProductMedia(user: User, id: string, input: ReplaceProductMedia) { return productDetailSchema.parse(await authenticatedRequest(user, `/api/v2/vendor/products/${id}/media`, { method: "PUT", body: JSON.stringify(input) })); }
 export async function submitVendorProduct(user: User, id: string) { return await authenticatedRequest(user, `/api/v2/vendor/products/${id}/submit`, { method: "POST" }); }
 export async function importVendorProducts(user: User, input: BulkProductCsvInput) { return bulkProductImportResultSchema.parse(await authenticatedRequest(user, "/api/v2/vendor/products/import", { method: "POST", body: JSON.stringify(input) })); }
 export async function exportVendorProducts(user: User) { const token = await user.getIdToken(); const response = await fetch(`${apiUrl}/api/v2/vendor/products/export.csv`, { headers: { Authorization: `Bearer ${token}` } }); if (!response.ok) throw new Error(`Product export failed (${response.status})`); return response.text(); }

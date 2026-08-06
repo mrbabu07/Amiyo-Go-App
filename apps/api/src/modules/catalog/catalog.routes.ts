@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { bulkProductCsvInputSchema, catalogQuerySchema, createProductSchema, cursorPaginationQuerySchema, inventoryAdjustmentSchema, moderationInputSchema, updateProductSchema } from "@amiyo/contracts";
+import { bulkProductCsvInputSchema, catalogQuerySchema, createProductSchema, cursorPaginationQuerySchema, inventoryAdjustmentSchema, moderationInputSchema, replaceProductMediaSchema, replaceProductVariantsSchema, updateProductSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "../identity/identity.middleware.js";
@@ -67,6 +67,14 @@ export function createCatalogRouter() {
 
   router.patch("/api/v2/vendor/products/:id", async (req, res, next) => {
     try { res.json(await service.updateProduct(requireSession(req), identifierSchema.parse(req.params).id, updateProductSchema.parse(req.body), correlationId(req.headers))); } catch (error) { next(error); }
+  });
+
+  router.put("/api/v2/vendor/products/:id/variants", async (req, res, next) => {
+    try { res.json(await service.replaceVariants(requireSession(req), identifierSchema.parse(req.params).id, replaceProductVariantsSchema.parse(req.body), correlationId(req.headers))); } catch (error) { next(error); }
+  });
+
+  router.put("/api/v2/vendor/products/:id/media", async (req, res, next) => {
+    try { res.json(await service.replaceMedia(requireSession(req), identifierSchema.parse(req.params).id, replaceProductMediaSchema.parse(req.body), correlationId(req.headers))); } catch (error) { next(error); }
   });
 
   router.post("/api/v2/vendor/products/:id/submit", async (req, res, next) => {

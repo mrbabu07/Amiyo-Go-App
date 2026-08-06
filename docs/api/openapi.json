@@ -391,6 +391,16 @@
                 "mediaType": {
                   "type": "string"
                 },
+                "mimeType": {
+                  "type": "string"
+                },
+                "variantId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid"
+                },
                 "altText": {
                   "type": [
                     "string",
@@ -405,6 +415,8 @@
                 "id",
                 "url",
                 "mediaType",
+                "mimeType",
+                "variantId",
                 "altText",
                 "displayOrder"
               ]
@@ -3227,6 +3239,586 @@
           "supportTickets"
         ]
       },
+      "AccountDashboard": {
+        "type": "object",
+        "properties": {
+          "session": {
+            "type": "object",
+            "properties": {
+              "principal": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "roles": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "CUSTOMER",
+                        "VENDOR_OWNER",
+                        "VENDOR_MANAGER",
+                        "VENDOR_STAFF",
+                        "SUPPORT_AGENT",
+                        "FINANCE_ADMIN",
+                        "OPERATIONS_ADMIN",
+                        "SUPER_ADMIN"
+                      ]
+                    }
+                  },
+                  "vendorIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "default": []
+                  }
+                },
+                "required": [
+                  "userId",
+                  "roles"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "ACTIVE",
+                  "SUSPENDED",
+                  "DEACTIVATED",
+                  "ANONYMIZED"
+                ]
+              },
+              "email": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "email"
+              },
+              "phone": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "profile": {
+                "type": "object",
+                "properties": {
+                  "firstName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "lastName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "displayName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "avatarStorageKey": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "locale": {
+                    "type": "string"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3
+                  }
+                },
+                "required": [
+                  "firstName",
+                  "lastName",
+                  "displayName",
+                  "avatarStorageKey",
+                  "locale",
+                  "currency"
+                ]
+              },
+              "permissions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "vendorMemberships": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "vendorId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "CUSTOMER",
+                        "VENDOR_OWNER",
+                        "VENDOR_MANAGER",
+                        "VENDOR_STAFF",
+                        "SUPPORT_AGENT",
+                        "FINANCE_ADMIN",
+                        "OPERATIONS_ADMIN",
+                        "SUPER_ADMIN"
+                      ]
+                    },
+                    "permissions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "vendorId",
+                    "role",
+                    "permissions"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "principal",
+              "status",
+              "email",
+              "phone",
+              "profile",
+              "permissions",
+              "vendorMemberships"
+            ]
+          },
+          "preferences": {
+            "type": "object",
+            "properties": {
+              "notificationPreferences": {
+                "type": "object",
+                "properties": {
+                  "orderUpdates": {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "boolean"
+                      },
+                      "sms": {
+                        "type": "boolean"
+                      },
+                      "push": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "email",
+                      "sms",
+                      "push"
+                    ]
+                  },
+                  "promotions": {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "boolean"
+                      },
+                      "sms": {
+                        "type": "boolean"
+                      },
+                      "push": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "email",
+                      "sms",
+                      "push"
+                    ]
+                  },
+                  "priceDrops": {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "boolean"
+                      },
+                      "sms": {
+                        "type": "boolean"
+                      },
+                      "push": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "email",
+                      "sms",
+                      "push"
+                    ]
+                  },
+                  "vendorNews": {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "boolean"
+                      },
+                      "sms": {
+                        "type": "boolean"
+                      },
+                      "push": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "email",
+                      "sms",
+                      "push"
+                    ]
+                  }
+                },
+                "required": [
+                  "orderUpdates",
+                  "promotions",
+                  "priceDrops",
+                  "vendorNews"
+                ]
+              },
+              "privacy": {
+                "type": "object",
+                "properties": {
+                  "wishlistVisibility": {
+                    "type": "string",
+                    "enum": [
+                      "private",
+                      "followers",
+                      "public"
+                    ]
+                  },
+                  "reviewHistoryVisibility": {
+                    "type": "string",
+                    "enum": [
+                      "private",
+                      "followers",
+                      "public"
+                    ]
+                  },
+                  "personalization": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "wishlistVisibility",
+                  "reviewHistoryVisibility",
+                  "personalization"
+                ]
+              }
+            },
+            "required": [
+              "notificationPreferences",
+              "privacy"
+            ]
+          },
+          "addresses": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 40
+                },
+                "recipientName": {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 120
+                },
+                "phone": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 20
+                },
+                "line1": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 240
+                },
+                "line2": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 240
+                },
+                "division": {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 80
+                },
+                "district": {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 80
+                },
+                "upazila": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 80
+                },
+                "unionName": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 80
+                },
+                "postalCode": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 20
+                },
+                "latitude": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": -90,
+                  "maximum": 90
+                },
+                "longitude": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": -180,
+                  "maximum": 180
+                },
+                "isDefault": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "label",
+                "recipientName",
+                "phone",
+                "line1",
+                "division",
+                "district",
+                "id",
+                "createdAt",
+                "updatedAt"
+              ]
+            }
+          },
+          "stats": {
+            "type": "object",
+            "properties": {
+              "orders": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "activeOrders": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "returns": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "wishlistItems": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "unreadNotifications": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "activeDevices": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "orders",
+              "activeOrders",
+              "returns",
+              "wishlistItems",
+              "unreadNotifications",
+              "activeDevices"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastLoginAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "session",
+          "preferences",
+          "addresses",
+          "stats",
+          "createdAt",
+          "lastLoginAt"
+        ]
+      },
+      "AccountPreferences": {
+        "type": "object",
+        "properties": {
+          "notificationPreferences": {
+            "type": "object",
+            "properties": {
+              "orderUpdates": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "boolean"
+                  },
+                  "sms": {
+                    "type": "boolean"
+                  },
+                  "push": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "email",
+                  "sms",
+                  "push"
+                ]
+              },
+              "promotions": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "boolean"
+                  },
+                  "sms": {
+                    "type": "boolean"
+                  },
+                  "push": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "email",
+                  "sms",
+                  "push"
+                ]
+              },
+              "priceDrops": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "boolean"
+                  },
+                  "sms": {
+                    "type": "boolean"
+                  },
+                  "push": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "email",
+                  "sms",
+                  "push"
+                ]
+              },
+              "vendorNews": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "boolean"
+                  },
+                  "sms": {
+                    "type": "boolean"
+                  },
+                  "push": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "email",
+                  "sms",
+                  "push"
+                ]
+              }
+            },
+            "required": [
+              "orderUpdates",
+              "promotions",
+              "priceDrops",
+              "vendorNews"
+            ]
+          },
+          "privacy": {
+            "type": "object",
+            "properties": {
+              "wishlistVisibility": {
+                "type": "string",
+                "enum": [
+                  "private",
+                  "followers",
+                  "public"
+                ]
+              },
+              "reviewHistoryVisibility": {
+                "type": "string",
+                "enum": [
+                  "private",
+                  "followers",
+                  "public"
+                ]
+              },
+              "personalization": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "wishlistVisibility",
+              "reviewHistoryVisibility",
+              "personalization"
+            ]
+          }
+        },
+        "required": [
+          "notificationPreferences",
+          "privacy"
+        ]
+      },
       "IdentitySession": {
         "type": "object",
         "properties": {
@@ -4237,6 +4829,265 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/IdentitySession"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/me/dashboard": {
+      "get": {
+        "tags": [
+          "Identity"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer profile dashboard and live account activity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDashboard"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/me/preferences": {
+      "put": {
+        "tags": [
+          "Identity"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "notificationPreferences": {
+                    "type": "object",
+                    "properties": {
+                      "orderUpdates": {
+                        "type": "object",
+                        "properties": {
+                          "email": {
+                            "type": "boolean"
+                          },
+                          "sms": {
+                            "type": "boolean"
+                          },
+                          "push": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "email",
+                          "sms",
+                          "push"
+                        ]
+                      },
+                      "promotions": {
+                        "type": "object",
+                        "properties": {
+                          "email": {
+                            "type": "boolean"
+                          },
+                          "sms": {
+                            "type": "boolean"
+                          },
+                          "push": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "email",
+                          "sms",
+                          "push"
+                        ]
+                      },
+                      "priceDrops": {
+                        "type": "object",
+                        "properties": {
+                          "email": {
+                            "type": "boolean"
+                          },
+                          "sms": {
+                            "type": "boolean"
+                          },
+                          "push": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "email",
+                          "sms",
+                          "push"
+                        ]
+                      },
+                      "vendorNews": {
+                        "type": "object",
+                        "properties": {
+                          "email": {
+                            "type": "boolean"
+                          },
+                          "sms": {
+                            "type": "boolean"
+                          },
+                          "push": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "email",
+                          "sms",
+                          "push"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "orderUpdates",
+                      "promotions",
+                      "priceDrops",
+                      "vendorNews"
+                    ]
+                  },
+                  "privacy": {
+                    "type": "object",
+                    "properties": {
+                      "wishlistVisibility": {
+                        "type": "string",
+                        "enum": [
+                          "private",
+                          "followers",
+                          "public"
+                        ]
+                      },
+                      "reviewHistoryVisibility": {
+                        "type": "string",
+                        "enum": [
+                          "private",
+                          "followers",
+                          "public"
+                        ]
+                      },
+                      "personalization": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "wishlistVisibility",
+                      "reviewHistoryVisibility",
+                      "personalization"
+                    ]
+                  }
+                },
+                "required": [
+                  "notificationPreferences",
+                  "privacy"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated customer notification and privacy preferences",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountPreferences"
                 }
               }
             }
@@ -5817,6 +6668,295 @@
         "responses": {
           "200": {
             "description": "Draft product updated"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/vendor/products/{id}/variants": {
+      "put": {
+        "tags": [
+          "Vendor Catalog"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "variants": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "sku": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 80
+                        },
+                        "title": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 120
+                        },
+                        "attributes": {
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "additionalProperties": {}
+                        },
+                        "priceMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "compareAtMinor": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        },
+                        "onHand": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "default": 0
+                        },
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "active": {
+                          "type": "boolean",
+                          "default": true
+                        }
+                      },
+                      "required": [
+                        "sku",
+                        "title",
+                        "priceMinor"
+                      ]
+                    },
+                    "minItems": 1,
+                    "maxItems": 100
+                  }
+                },
+                "required": [
+                  "version",
+                  "variants"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Product variants and stock replaced",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/vendor/products/{id}/media": {
+      "put": {
+        "tags": [
+          "Vendor Catalog"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "uploadId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "variantId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "uuid"
+                        },
+                        "altText": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "maxLength": 180
+                        },
+                        "displayOrder": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 100
+                        }
+                      },
+                      "required": [
+                        "displayOrder"
+                      ]
+                    },
+                    "maxItems": 12
+                  }
+                },
+                "required": [
+                  "version",
+                  "items"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Product media gallery replaced",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid request",

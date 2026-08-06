@@ -1,6 +1,6 @@
 import { OpenAPIRegistry, OpenApiGeneratorV31, extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
 import { z } from "zod";
-import { bulkProductCsvInputSchema, bulkProductImportResultSchema, catalogQuerySchema, categorySchema, createProductSchema, inventoryAdjustmentSchema, moderationInputSchema, productDetailSchema, productListResponseSchema, shopDetailSchema, shopListResponseSchema, updateProductSchema, vendorInventorySchema } from "./catalog.js";
+import { bulkProductCsvInputSchema, bulkProductImportResultSchema, catalogQuerySchema, categorySchema, createProductSchema, inventoryAdjustmentSchema, moderationInputSchema, productDetailSchema, productListResponseSchema, replaceProductMediaSchema, replaceProductVariantsSchema, shopDetailSchema, shopListResponseSchema, updateProductSchema, vendorInventorySchema } from "./catalog.js";
 import { addCartItemSchema, cartSchema, checkoutInputSchema, checkoutQuoteSchema, checkoutResultSchema, updateCartItemSchema } from "./commerce.js";
 import { customerOrderSummarySchema, deliveryQueueItemSchema, deliveryRetryInputSchema, deliveryRetryResultSchema, deliverySettingsInputSchema, deliverySettingsSchema, fulfillmentDocumentSchema, orderTrackingSchema, serviceabilityInputSchema, serviceabilitySchema, vendorOrderDetailSchema, vendorOrderTransitionSchema } from "./delivery.js";
 import { healthResponseSchema } from "./health.js";
@@ -240,6 +240,24 @@ registry.registerPath({
   security: firebaseSecurity,
   request: { params: z.object({ id: z.string().uuid() }), body: { content: { "application/json": { schema: updateProductSchema } } } },
   responses: { 200: { description: "Draft product updated" }, ...errorResponses }
+});
+
+registry.registerPath({
+  method: "put",
+  path: "/api/v2/vendor/products/{id}/variants",
+  tags: ["Vendor Catalog"],
+  security: firebaseSecurity,
+  request: { params: z.object({ id: z.string().uuid() }), body: { content: { "application/json": { schema: replaceProductVariantsSchema } } } },
+  responses: { 200: { description: "Product variants and stock replaced", content: { "application/json": { schema: product } } }, ...errorResponses }
+});
+
+registry.registerPath({
+  method: "put",
+  path: "/api/v2/vendor/products/{id}/media",
+  tags: ["Vendor Catalog"],
+  security: firebaseSecurity,
+  request: { params: z.object({ id: z.string().uuid() }), body: { content: { "application/json": { schema: replaceProductMediaSchema } } } },
+  responses: { 200: { description: "Product media gallery replaced", content: { "application/json": { schema: product } } }, ...errorResponses }
 });
 
 registry.registerPath({

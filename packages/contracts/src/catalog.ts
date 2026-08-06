@@ -53,6 +53,8 @@ export const productDetailSchema = productSummarySchema.extend({
     id: uuidSchema,
     url: z.string().url(),
     mediaType: z.string(),
+    mimeType: z.string(),
+    variantId: uuidSchema.nullable(),
     altText: z.string().nullable(),
     displayOrder: z.number().int()
   }))
@@ -119,6 +121,33 @@ export const updateProductSchema = z.object({
   dynamicAttributes: z.record(z.unknown()).nullable().optional()
 }).refine((value) => Object.keys(value).length > 1, "At least one product field is required");
 
+export const replaceProductVariantsSchema = z.object({
+  version: versionSchema,
+  variants: z.array(productVariantInputSchema.extend({
+    id: uuidSchema.optional(),
+    active: z.boolean().default(true)
+  })).min(1).max(100)
+}).superRefine((value, context) => {
+  const ids = value.variants.flatMap((variant) => variant.id ? [variant.id] : []);
+  const skus = value.variants.map((variant) => variant.sku.toUpperCase());
+  if (new Set(ids).size !== ids.length) context.addIssue({ code: "custom", message: "Variant IDs must be unique", path: ["variants"] });
+  if (new Set(skus).size !== skus.length) context.addIssue({ code: "custom", message: "Variant SKUs must be unique", path: ["variants"] });
+});
+
+export const replaceProductMediaSchema = z.object({
+  version: versionSchema,
+  items: z.array(z.object({
+    id: uuidSchema.optional(),
+    uploadId: uuidSchema.optional(),
+    variantId: uuidSchema.nullable().optional(),
+    altText: z.string().trim().max(180).nullable().optional(),
+    displayOrder: z.number().int().min(0).max(100)
+  }).refine((item) => Boolean(item.id) !== Boolean(item.uploadId), "Provide either an existing media ID or a new upload ID")).max(12)
+}).superRefine((value, context) => {
+  const references = value.items.map((item) => item.id ?? item.uploadId!);
+  if (new Set(references).size !== references.length) context.addIssue({ code: "custom", message: "Media references must be unique", path: ["items"] });
+});
+
 export const inventoryAdjustmentSchema = z.object({
   version: versionSchema,
   onHand: z.number().int().nonnegative(),
@@ -153,5 +182,7 @@ export type ShopSummaryDto = z.infer<typeof shopSummarySchema>;
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type BulkProductCsvInput = z.infer<typeof bulkProductCsvInputSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
+export type ReplaceProductVariants = z.infer<typeof replaceProductVariantsSchema>;
+export type ReplaceProductMedia = z.infer<typeof replaceProductMediaSchema>;
 export type InventoryAdjustmentInput = z.infer<typeof inventoryAdjustmentSchema>;
 export type ModerationInput = z.infer<typeof moderationInputSchema>;

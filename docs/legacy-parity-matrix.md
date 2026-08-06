@@ -19,7 +19,7 @@ This matrix tracks the rebuild against the read-only legacy `Client` and `Server
 | Dashboard | Implemented | Live shop status, sales/order/stock metrics, recent orders and dedicated seller-tool navigation |
 | Orders | Implemented | Vendor order queue, detail, fulfillment transitions, printable packing slips and parcel labels |
 | Finance | Implemented | Balance, ledger and payout requests |
-| Catalog operations | Implemented | Searchable/filterable product workspace, dedicated Add/Edit/Detail flows, listing-quality checks, product submission, transactional CSV import/export, category-access requests and concurrency-safe inventory adjustment |
+| Catalog operations | Implemented | Searchable/filterable product workspace, dedicated Add/Edit/Detail flows, secure product media gallery, color/size variant matrix, per-variant pricing and stock, listing-quality checks, product submission, transactional CSV import/export, category-access requests and concurrency-safe inventory adjustment |
 | Vendor workspace | Implemented | Dedicated Shop, KYC, Staff and Messages screens plus encrypted masked payout account management |
 | Customer engagement | Implemented | Seller review visibility and product-question response workflow |
 | Vendor operations | Implemented | Derived sales reports plus dedicated Returns, Marketing, staff-permission and seller-voucher workspaces |

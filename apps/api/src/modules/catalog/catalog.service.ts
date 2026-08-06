@@ -1,6 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { authorize, type Permission, type Role } from "@amiyo/domain";
-import type { BulkProductCsvInput, CatalogQuery, CreateProductInput, InventoryAdjustmentInput, ModerationInput, Session, UpdateProductInput } from "@amiyo/contracts";
+import type { BulkProductCsvInput, CatalogQuery, CreateProductInput, InventoryAdjustmentInput, ModerationInput, ReplaceProductMedia, ReplaceProductVariants, Session, UpdateProductInput } from "@amiyo/contracts";
 import { withSerializableTransaction, type TransactionClient } from "../../infrastructure/database/transaction.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
 import { CatalogRepository, publicProductInclude, type PublicProduct } from "./catalog.repository.js";
@@ -53,7 +53,7 @@ function productDetail(product: PublicProduct) {
     })),
     media: product.media.flatMap((item) => {
       const url = mediaUrl(item.storageKey);
-      return url ? [{ id: item.id, url, mediaType: item.mediaType, altText: item.altText, displayOrder: item.displayOrder }] : [];
+      return url ? [{ id: item.id, url, mediaType: item.mediaType, mimeType: item.mimeType, variantId: item.variantId, altText: item.altText, displayOrder: item.displayOrder }] : [];
     })
   };
 }
@@ -151,7 +151,8 @@ export class CatalogService {
         })) }
       } });
       await audit(transaction, { actorUserId: session.principal.userId, action: "catalog.product.created", resourceId: product.id, ...(correlationId ? { correlationId } : {}), after: { status: product.status, version: product.version } });
-      return product;
+      const created = await transaction.product.findUniqueOrThrow({ where: { id: product.id }, include: publicProductInclude });
+      return productDetail(created);
     });
   }
 
@@ -195,6 +196,69 @@ export class CatalogService {
       const after = await transaction.product.findUniqueOrThrow({ where: { id: productId } });
       await audit(transaction, { actorUserId: session.principal.userId, action: "catalog.product.updated", resourceId: productId, ...(correlationId ? { correlationId } : {}), before, after });
       return after;
+    });
+  }
+
+  async replaceVariants(session: Session, productId: string, input: ReplaceProductVariants, correlationId?: string) {
+    const before = await this.client.product.findUnique({ where: { id: productId }, include: { variants: { include: { inventory: true } } } });
+    if (!before) throw new ApiProblem(404, "PRODUCT_NOT_FOUND", "Product not found");
+    requireAuthorization(session, "products:manage", before.vendorId);
+    if (!("DRAFT" === before.status || "REJECTED" === before.status)) throw new ApiProblem(409, "PRODUCT_NOT_EDITABLE", "Only draft or rejected products can be edited");
+    const existingIds = new Set(before.variants.map((variant) => variant.id));
+    const requestedIds = input.variants.flatMap((variant) => variant.id ? [variant.id] : []);
+    if (requestedIds.some((id) => !existingIds.has(id))) throw new ApiProblem(400, "VARIANT_NOT_OWNED", "A variant does not belong to this product");
+    const conflicting = await this.client.productVariant.findFirst({ where: { sku: { in: input.variants.map((variant) => variant.sku) }, id: { notIn: requestedIds.length ? requestedIds : ["00000000-0000-0000-0000-000000000000"] } }, select: { sku: true } });
+    if (conflicting) throw new ApiProblem(409, "PRODUCT_SKU_EXISTS", `SKU '${conflicting.sku}' already exists`);
+    return withSerializableTransaction(this.client, async (transaction) => {
+      const changed = await transaction.product.updateMany({ where: { id: productId, version: input.version }, data: { version: { increment: 1 } } });
+      if (changed.count !== 1) throw new ApiProblem(409, "VERSION_CONFLICT", "The product was changed by another request");
+      const retained = new Set(requestedIds);
+      await transaction.productVariant.updateMany({ where: { productId, id: { notIn: [...retained] } }, data: { active: false, version: { increment: 1 } } });
+      for (const variant of input.variants) {
+        if (variant.id) {
+          const prior = before.variants.find((item) => item.id === variant.id)!;
+          if ((prior.inventory?.reserved ?? 0) > variant.onHand) throw new ApiProblem(409, "STOCK_BELOW_RESERVED", `SKU '${variant.sku}' has reserved stock`);
+          await transaction.productVariant.update({ where: { id: variant.id }, data: { sku: variant.sku, title: variant.title, attributes: variant.attributes === undefined ? Prisma.JsonNull : json(variant.attributes), priceMinor: BigInt(variant.priceMinor), compareAtMinor: variant.compareAtMinor ? BigInt(variant.compareAtMinor) : null, currency: variant.currency, active: variant.active, version: { increment: 1 } } });
+          const inventory = prior.inventory;
+          if (inventory && inventory.onHand !== variant.onHand) {
+            await transaction.inventoryItem.update({ where: { id: inventory.id }, data: { onHand: variant.onHand, version: { increment: 1 } } });
+            await transaction.inventoryMovement.create({ data: { inventoryId: inventory.id, type: "ADJUSTMENT", quantity: variant.onHand - inventory.onHand, referenceType: "product_variant_edit", referenceId: productId, idempotencyKey: `variant-edit:${productId}:${input.version}:${variant.id}`, metadata: { reason: "Seller product variant update" } } });
+          }
+        } else {
+          await transaction.productVariant.create({ data: { productId, sku: variant.sku, title: variant.title, attributes: variant.attributes === undefined ? Prisma.JsonNull : json(variant.attributes), priceMinor: BigInt(variant.priceMinor), compareAtMinor: variant.compareAtMinor ? BigInt(variant.compareAtMinor) : null, currency: variant.currency, active: variant.active, inventory: { create: { onHand: variant.onHand } } } });
+        }
+      }
+      await audit(transaction, { actorUserId: session.principal.userId, action: "catalog.product_variants.replaced", resourceId: productId, ...(correlationId ? { correlationId } : {}), before: { variantIds: before.variants.map((item) => item.id) }, after: { variantCount: input.variants.length } });
+      return productDetail(await transaction.product.findUniqueOrThrow({ where: { id: productId }, include: publicProductInclude }));
+    });
+  }
+
+  async replaceMedia(session: Session, productId: string, input: ReplaceProductMedia, correlationId?: string) {
+    const before = await this.client.product.findUnique({ where: { id: productId }, include: { media: true, variants: true } });
+    if (!before) throw new ApiProblem(404, "PRODUCT_NOT_FOUND", "Product not found");
+    requireAuthorization(session, "products:manage", before.vendorId);
+    if (!("DRAFT" === before.status || "REJECTED" === before.status)) throw new ApiProblem(409, "PRODUCT_NOT_EDITABLE", "Only draft or rejected products can be edited");
+    const mediaIds = input.items.flatMap((item) => item.id ? [item.id] : []);
+    const uploadIds = input.items.flatMap((item) => item.uploadId ? [item.uploadId] : []);
+    if (mediaIds.some((id) => !before.media.some((item) => item.id === id))) throw new ApiProblem(400, "MEDIA_NOT_OWNED", "Existing media does not belong to this product");
+    const variantIds = new Set(before.variants.map((variant) => variant.id));
+    if (input.items.some((item) => item.variantId && !variantIds.has(item.variantId))) throw new ApiProblem(400, "VARIANT_NOT_OWNED", "Media variant does not belong to this product");
+    const uploads = uploadIds.length ? await this.client.mediaUpload.findMany({ where: { id: { in: uploadIds }, userId: session.principal.userId, purpose: "product", status: { in: ["uploaded", "processing", "ready"] } } }) : [];
+    if (uploads.length !== uploadIds.length) throw new ApiProblem(409, "MEDIA_UPLOAD_NOT_READY", "Complete every product image upload before saving");
+    const uploadById = new Map(uploads.map((upload) => [upload.id, upload]));
+    return withSerializableTransaction(this.client, async (transaction) => {
+      const changed = await transaction.product.updateMany({ where: { id: productId, version: input.version }, data: { version: { increment: 1 } } });
+      if (changed.count !== 1) throw new ApiProblem(409, "VERSION_CONFLICT", "The product was changed by another request");
+      await transaction.productMedia.deleteMany({ where: { productId, id: { notIn: mediaIds.length ? mediaIds : ["00000000-0000-0000-0000-000000000000"] } } });
+      for (const item of input.items) {
+        if (item.id) await transaction.productMedia.update({ where: { id: item.id }, data: { variantId: item.variantId ?? null, altText: item.altText ?? null, displayOrder: item.displayOrder } });
+        else {
+          const upload = uploadById.get(item.uploadId!)!;
+          await transaction.productMedia.create({ data: { productId, variantId: item.variantId ?? null, storageKey: upload.storageKey, mediaType: "image", mimeType: upload.mimeType, altText: item.altText ?? null, displayOrder: item.displayOrder } });
+        }
+      }
+      await audit(transaction, { actorUserId: session.principal.userId, action: "catalog.product_media.replaced", resourceId: productId, ...(correlationId ? { correlationId } : {}), before: { mediaIds: before.media.map((item) => item.id) }, after: { mediaCount: input.items.length } });
+      return productDetail(await transaction.product.findUniqueOrThrow({ where: { id: productId }, include: publicProductInclude }));
     });
   }
 
