@@ -49,6 +49,7 @@ export async function getShops() {
 
 export async function getVendorProducts(user: User) { return productDetailSchema.array().parse(await authenticatedRequest(user, "/api/v2/vendor/products")); }
 export async function createVendorProduct(user: User, input: CreateProductInput) { return await authenticatedRequest(user, "/api/v2/vendor/products", { method: "POST", body: JSON.stringify(input) }); }
+export async function updateVendorProduct(user: User, id: string, input: UpdateProductInput) { return await authenticatedRequest(user, `/api/v2/vendor/products/${id}`, { method: "PATCH", body: JSON.stringify(input) }); }
 export async function submitVendorProduct(user: User, id: string) { return await authenticatedRequest(user, `/api/v2/vendor/products/${id}/submit`, { method: "POST" }); }
 export async function importVendorProducts(user: User, input: BulkProductCsvInput) { return bulkProductImportResultSchema.parse(await authenticatedRequest(user, "/api/v2/vendor/products/import", { method: "POST", body: JSON.stringify(input) })); }
 export async function exportVendorProducts(user: User) { const token = await user.getIdToken(); const response = await fetch(`${apiUrl}/api/v2/vendor/products/export.csv`, { headers: { Authorization: `Bearer ${token}` } }); if (!response.ok) throw new Error(`Product export failed (${response.status})`); return response.text(); }

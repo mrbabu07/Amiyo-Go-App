@@ -7,6 +7,17 @@ const routes = ["dashboard", "shop", "kyc", "staff", "returns", "marketing", "me
 test("seller workspace exposes dedicated operational routes", async () => {
   await Promise.all(routes.map((route) => access(new URL(`../apps/mobile/app/vendor/${route}.tsx`, import.meta.url))));
   await access(new URL("../apps/mobile/app/vendor/messages/[id].tsx", import.meta.url));
+  await Promise.all(["add", "[id]", "edit/[id]"].map((route) => access(new URL(`../apps/mobile/app/vendor/products/${route}.tsx`, import.meta.url))));
+});
+
+test("seller product workspace supports create, edit, detail and moderation submission", async () => {
+  const sources = (await Promise.all([
+    readFile(new URL("../apps/mobile/src/features/vendor/VendorProductsScreen.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../apps/mobile/src/features/vendor/VendorProductFormScreen.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../apps/mobile/src/features/vendor/VendorProductDetailScreen.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../apps/mobile/src/features/catalog/catalog.api.ts", import.meta.url), "utf8")
+  ])).join("\n");
+  for (const capability of ["createVendorProduct", "updateVendorProduct", "submitVendorProduct", "ProductCategorySelect", "Search seller products"]) assert.match(sources, new RegExp(capability));
 });
 
 test("seller navigation links every dedicated workspace", async () => {
