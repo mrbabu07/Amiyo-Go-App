@@ -44,3 +44,12 @@ test("local demo identities align Firebase users, database roles, and login shor
   assert.match(setup, /prisma:migrate:deploy/);
   assert.doesNotMatch(setup, /db push/);
 });
+
+test("Google sign-in creates the same role-aware API session on web and native", async () => {
+  const authScreen = await readFile(new URL("../apps/mobile/src/features/auth/AuthScreen.tsx", import.meta.url), "utf8");
+  const nativeGoogle = await readFile(new URL("../apps/mobile/src/features/auth/GoogleNativeSignInButton.tsx", import.meta.url), "utf8");
+  const envExample = await readFile(new URL("../apps/mobile/.env.example", import.meta.url), "utf8");
+  for (const capability of ["GoogleAuthProvider", "signInWithPopup", "Continue with Google", "finishSignIn", "createSession"]) assert.match(authScreen, new RegExp(capability));
+  for (const capability of ["useIdTokenAuthRequest", "signInWithCredential", "id_token", "maybeCompleteAuthSession"]) assert.match(nativeGoogle, new RegExp(capability));
+  for (const name of ["EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID", "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID", "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID"]) assert.match(envExample, new RegExp(name));
+});

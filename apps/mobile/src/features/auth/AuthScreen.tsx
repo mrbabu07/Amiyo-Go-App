@@ -1,4 +1,4 @@
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, updateProfile, type User } from "firebase/auth";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
@@ -6,6 +6,7 @@ import { colors, radius, spacing } from "../../ui/tokens";
 import { createSession } from "./auth.api";
 import { firebaseAuth, firebaseConfigured } from "./firebase";
 import { useAuthStore } from "./auth.store";
+import { GoogleNativeSignInButton, nativeGoogleConfigured } from "./GoogleNativeSignInButton";
 
 function destination(roles: string[]) {
   if (roles.includes("SUPER_ADMIN") || roles.some((role) => role.endsWith("_ADMIN"))) return "/admin/dashboard";
@@ -25,6 +26,12 @@ export function AuthScreen() {
   const emulatorEnabled = Boolean(process.env.EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL);
   const demoPassword = "AmiyoDemo123!";
 
+  async function finishSignIn(user: User) {
+    const session = await createSession(user);
+    setSession(session);
+    router.replace(destination(session.principal.roles) as never);
+  }
+
   async function submit() {
     if (!firebaseAuth) return;
     setBusy(true);
@@ -37,11 +44,25 @@ export function AuthScreen() {
         if (name.trim()) await updateProfile(credential.user, { displayName: name.trim() });
         await credential.user.getIdToken(true);
       }
-      const session = await createSession(credential.user);
-      setSession(session);
-      router.replace(destination(session.principal.roles) as never);
+      await finishSignIn(credential.user);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message.replace("Firebase: ", "") : "Authentication failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function continueWithGoogle() {
+    if (!firebaseAuth || Platform.OS !== "web") return;
+    setBusy(true);
+    setError(null);
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      const credential = await signInWithPopup(firebaseAuth, provider);
+      await finishSignIn(credential.user);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message.replace("Firebase: ", "") : "Google authentication failed");
     } finally {
       setBusy(false);
     }
@@ -56,6 +77,8 @@ export function AuthScreen() {
           <Text style={styles.title}>{mode === "login" ? "Welcome back" : "Create your account"}</Text>
           <Text style={styles.subtitle}>Shop, track orders, and manage delivery addresses securely.</Text>
           {!firebaseConfigured ? <Text style={styles.configError}>Firebase is not configured. Add the EXPO_PUBLIC_FIREBASE_* values to apps/mobile/.env.</Text> : null}
+          {Platform.OS === "web" ? <><Pressable accessibilityLabel="Continue with Google" accessibilityRole="button" disabled={busy || !firebaseConfigured} onPress={continueWithGoogle} style={({ pressed }) => [styles.googleButton, (pressed || busy) && styles.pressed]}><View style={styles.googleMark}><Text style={styles.googleMarkText}>G</Text></View><Text style={styles.googleText}>Continue with Google</Text></Pressable><View style={styles.divider}><View style={styles.dividerLine} /><Text style={styles.dividerText}>OR CONTINUE WITH EMAIL</Text><View style={styles.dividerLine} /></View></> : null}
+          {Platform.OS !== "web" && nativeGoogleConfigured && !emulatorEnabled ? <><GoogleNativeSignInButton busy={busy} onError={(message) => { setBusy(false); setError(message); }} onStart={() => { setBusy(true); setError(null); }} onSuccess={async (user) => { try { await finishSignIn(user); } catch (caught) { setError(caught instanceof Error ? caught.message : "Could not create your Amiyo-Go session"); } finally { setBusy(false); } }} /><View style={styles.divider}><View style={styles.dividerLine} /><Text style={styles.dividerText}>OR CONTINUE WITH EMAIL</Text><View style={styles.dividerLine} /></View></> : null}
           {mode === "register" ? <Field label="Full name" value={name} onChangeText={setName} placeholder="Your name" /> : null}
           <Field autoCapitalize="none" keyboardType="email-address" label="Email" value={email} onChangeText={setEmail} placeholder="you@example.com" />
           <Field autoCapitalize="none" label="Password" value={password} onChangeText={setPassword} placeholder="Minimum 6 characters" secureTextEntry />
@@ -87,6 +110,13 @@ const styles = StyleSheet.create({
   title: { color: colors.text, fontSize: 28, fontWeight: "900", marginTop: spacing.lg },
   subtitle: { color: colors.muted, lineHeight: 21, marginBottom: spacing.lg, marginTop: spacing.sm },
   configError: { backgroundColor: "#fef2f2", borderRadius: radius.md, color: colors.danger, marginBottom: spacing.md, padding: spacing.md },
+  googleButton: { alignItems: "center", backgroundColor: "#fff", borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flexDirection: "row", justifyContent: "center", minHeight: 50, paddingHorizontal: spacing.md },
+  googleMark: { alignItems: "center", backgroundColor: "#fff", borderColor: "#e2e8f0", borderRadius: radius.pill, borderWidth: 1, height: 28, justifyContent: "center", marginRight: spacing.sm, width: 28 },
+  googleMarkText: { color: "#4285f4", fontSize: 16, fontWeight: "900" },
+  googleText: { color: colors.text, fontSize: 14, fontWeight: "900" },
+  divider: { alignItems: "center", flexDirection: "row", gap: spacing.sm, marginVertical: spacing.lg },
+  dividerLine: { backgroundColor: colors.border, flex: 1, height: 1 },
+  dividerText: { color: colors.muted, fontSize: 9, fontWeight: "900", letterSpacing: 0.5 },
   field: { gap: 6, marginBottom: spacing.md },
   label: { color: colors.text, fontSize: 12, fontWeight: "800" },
   input: { backgroundColor: "#f8fafc", borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, fontSize: 15, minHeight: 48, paddingHorizontal: 14 },

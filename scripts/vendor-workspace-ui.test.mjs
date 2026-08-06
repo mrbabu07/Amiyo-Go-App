@@ -55,3 +55,11 @@ test("seller parity includes dedicated feedback, reporting, payout and learning 
   const backend = await readFile(new URL("../apps/api/src/modules/engagement/engagement.service.ts", import.meta.url), "utf8");
   for (const guard of ["replyToReview", "REVIEW_NOT_FOUND", "engagement.review.replied"]) assert.match(backend, new RegExp(guard));
 });
+
+test("seller university mirrors the bilingual reference learning center", async () => {
+  const screen = await readFile(new URL("../apps/mobile/src/features/vendor/VendorUniversityScreen.tsx", import.meta.url), "utf8");
+  const data = await readFile(new URL("../apps/mobile/src/features/vendor/vendor-university.data.ts", import.meta.url), "utf8");
+  for (const capability of ["EN \\+ বাংলা", "Choose learning mode", "sellerUniversityQuickGuides", "modeTabs", "LessonCard"]) assert.match(screen, new RegExp(capability));
+  for (const moduleId of ["vendor-onboarding", "vendor-catalog", "vendor-fulfillment", "vendor-finance-marketing"]) assert.match(data, new RegExp(moduleId));
+  for (const route of ["/vendor/kyc", "/vendor/products/add", "/vendor/orders", "/vendor/finance", "/vendor/reviews", "/vendor/questions"]) assert.match(data, new RegExp(route));
+});
