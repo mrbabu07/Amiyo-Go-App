@@ -10,8 +10,8 @@ export async function withSerializableTransaction<Result>(
     try {
       return await client.$transaction(operation, {
         isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-        maxWait: 5_000,
-        timeout: 15_000
+        maxWait: 10_000,
+        timeout: 60_000
       });
     } catch (error) {
       if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2034" || attempt === 3) throw error;
