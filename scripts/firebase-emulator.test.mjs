@@ -53,3 +53,10 @@ test("Google sign-in creates the same role-aware API session on web and native",
   for (const capability of ["useIdTokenAuthRequest", "signInWithCredential", "id_token", "maybeCompleteAuthSession"]) assert.match(nativeGoogle, new RegExp(capability));
   for (const name of ["EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID", "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID", "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID"]) assert.match(envExample, new RegExp(name));
 });
+
+test("web startup does not register unsupported native push listeners", async () => {
+  const registration = await readFile(new URL("../apps/mobile/src/features/notifications/PushRegistration.tsx", import.meta.url), "utf8");
+  assert.match(registration, /Platform\.OS === "web" \|\| !firebaseAuth/);
+  assert.match(registration, /await import\("expo-notifications"\)/);
+  assert.doesNotMatch(registration, /import \* as Notifications from "expo-notifications"/);
+});

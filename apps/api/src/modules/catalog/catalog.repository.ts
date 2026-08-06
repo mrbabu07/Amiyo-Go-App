@@ -10,6 +10,9 @@ export const publicProductInclude = {
 
 export type PublicProduct = Prisma.ProductGetPayload<{ include: typeof publicProductInclude }>;
 
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const identifierWhere = (identifier: string) => uuidPattern.test(identifier) ? { OR: [{ id: identifier }, { slug: identifier }] } : { slug: identifier };
+
 export class CatalogRepository {
   constructor(private readonly client: PrismaClient) {}
 
@@ -27,7 +30,7 @@ export class CatalogRepository {
     const rows = await this.client.product.findMany({
       where: {
         status: "APPROVED",
-        shop: { status: "ACTIVE", ...(input.shop ? { OR: [{ id: input.shop }, { slug: input.shop }] } : {}) },
+        shop: { status: "ACTIVE", ...(input.shop ? identifierWhere(input.shop) : {}) },
         vendor: { status: "APPROVED" },
         ...(categoryIds ? { categoryId: { in: categoryIds } } : {}),
         ...(input.query ? { OR: [
@@ -48,7 +51,7 @@ export class CatalogRepository {
 
   getPublishedProduct(identifier: string) {
     return this.client.product.findFirst({
-      where: { OR: [{ id: identifier }, { slug: identifier }], status: "APPROVED", shop: { status: "ACTIVE" }, vendor: { status: "APPROVED" } },
+      where: { ...identifierWhere(identifier), status: "APPROVED", shop: { status: "ACTIVE" }, vendor: { status: "APPROVED" } },
       include: publicProductInclude
     });
   }
@@ -68,7 +71,7 @@ export class CatalogRepository {
 
   getShop(identifier: string) {
     return this.client.vendorShop.findFirst({
-      where: { OR: [{ id: identifier }, { slug: identifier }], status: "ACTIVE", vendor: { status: "APPROVED" } },
+      where: { ...identifierWhere(identifier), status: "ACTIVE", vendor: { status: "APPROVED" } },
       include: { _count: { select: { products: { where: { status: "APPROVED" } } } } }
     });
   }
