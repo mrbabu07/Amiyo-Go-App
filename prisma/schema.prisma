@@ -1510,6 +1510,8 @@ model Review {
   title       String?
   body        String?
   status      String        @default("published")
+  vendorReply String?       @map("vendor_reply")
+  vendorRepliedAt DateTime? @map("vendor_replied_at") @db.Timestamptz(3)
   createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
   version     Int           @default(1)

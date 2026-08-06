@@ -18,6 +18,8 @@ const vendorLinks: WorkspaceLink[] = [
   { label: "Returns", href: "/vendor/returns", icon: "return-down-back-outline" },
   { label: "Finance", href: "/vendor/finance", icon: "wallet-outline" },
   { label: "Marketing", href: "/vendor/marketing", icon: "megaphone-outline" },
+  { label: "Reviews", href: "/vendor/reviews", icon: "star-outline" },
+  { label: "Q&A", href: "/vendor/questions", icon: "help-circle-outline" },
   { label: "Messages", href: "/vendor/messages", icon: "chatbubbles-outline" },
   { label: "Support", href: "/vendor/support", icon: "headset-outline" },
   { label: "Shop", href: "/vendor/shop", icon: "storefront-outline" },
@@ -25,6 +27,8 @@ const vendorLinks: WorkspaceLink[] = [
   { label: "Staff", href: "/vendor/staff", icon: "people-outline" },
   { label: "Operations", href: "/vendor/operations", icon: "construct-outline" },
   { label: "Reports", href: "/vendor/reports", icon: "bar-chart-outline" },
+  { label: "Payout Setup", href: "/vendor/payout-settings", icon: "card-outline" },
+  { label: "University", href: "/vendor/university", icon: "school-outline" },
   { label: "Settings", href: "/vendor/settings", icon: "settings-outline" }
 ];
 

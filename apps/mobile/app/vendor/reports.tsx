@@ -1,2 +1,2 @@
-import { VendorOperationsScreen } from "../../src/features/vendor/VendorOperationsScreen";
-export default function VendorReportsRoute() { return <VendorOperationsScreen />; }
+import { VendorReportsScreen } from "../../src/features/vendor/VendorReportsScreen";
+export default function VendorReportsRoute() { return <VendorReportsScreen />; }

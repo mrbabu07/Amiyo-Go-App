@@ -7,7 +7,8 @@ export const wishlistItemInputSchema = z.object({ productId: uuidSchema });
 export const stockAlertInputSchema = z.object({ productId: uuidSchema, targetMinor: z.string().regex(/^\d+$/).nullable().optional() });
 
 export const reviewInputSchema = z.object({ orderItemId: uuidSchema, rating: z.number().int().min(1).max(5), title: z.string().trim().max(120).nullable().optional(), body: z.string().trim().min(3).max(2000).nullable().optional() });
-export const reviewSchema = z.object({ id: uuidSchema, productId: uuidSchema, productName: z.string().optional(), productSlug: z.string().optional(), rating: z.number().int().min(1).max(5), title: z.string().nullable(), body: z.string().nullable(), status: z.string().optional(), verifiedPurchase: z.boolean(), authorName: z.string(), createdAt: timestampSchema });
+export const reviewSchema = z.object({ id: uuidSchema, productId: uuidSchema, productName: z.string().optional(), productSlug: z.string().optional(), rating: z.number().int().min(1).max(5), title: z.string().nullable(), body: z.string().nullable(), status: z.string().optional(), verifiedPurchase: z.boolean(), authorName: z.string(), vendorReply: z.string().nullable().optional(), vendorRepliedAt: timestampSchema.nullable().optional(), createdAt: timestampSchema });
+export const vendorReviewReplyInputSchema = z.object({ body: z.string().trim().min(2).max(2000) });
 export const questionInputSchema = z.object({ body: z.string().trim().min(5).max(1000) });
 export const answerInputSchema = z.object({ body: z.string().trim().min(2).max(2000) });
 export const questionSchema = z.object({ id: uuidSchema, productId: uuidSchema, productName: z.string().optional(), body: z.string(), status: z.string(), authorName: z.string(), createdAt: timestampSchema, answers: z.array(z.object({ id: uuidSchema, body: z.string(), accepted: z.boolean(), authorName: z.string(), createdAt: timestampSchema })) });
@@ -34,6 +35,7 @@ export const newsletterBroadcastSchema = z.object({ id: uuidSchema, subject: z.s
 export const newsletterWorkspaceSchema = z.object({ activeSubscriberCount: z.number().int().nonnegative(), subscribers: z.array(newsletterSubscriberSchema), broadcasts: z.array(newsletterBroadcastSchema) });
 
 export type ReviewInput = z.infer<typeof reviewInputSchema>;
+export type VendorReviewReplyInput = z.infer<typeof vendorReviewReplyInputSchema>;
 export type QuestionInput = z.infer<typeof questionInputSchema>;
 export type AnswerInput = z.infer<typeof answerInputSchema>;
 export type ContentModerationInput = z.infer<typeof contentModerationInputSchema>;

@@ -8,6 +8,7 @@ const userId = "11111111-1111-4111-8111-111111111111";
 const threadId = "22222222-2222-4222-8222-222222222222";
 const vendorId = "33333333-3333-4333-8333-333333333333";
 const customer = { principal: { userId, roles: ["CUSTOMER"], vendorIds: [] }, status: "ACTIVE", email: null, phone: null, profile: { firstName: null, lastName: null, displayName: "Customer", avatarStorageKey: null, locale: "en", currency: "BDT" }, permissions: [], vendorMemberships: [] } as Session;
+const seller = { ...customer, principal: { userId, roles: ["VENDOR_OWNER"], vendorIds: [vendorId] }, permissions: ["vendor:read", "support:manage"] } as Session;
 
 test("starting seller chat reuses the customer's open vendor thread", async () => {
   let createCalls = 0;
@@ -48,4 +49,17 @@ test("wishlist sharing revocation remains scoped to the owner's list", async () 
   const result = await new EngagementService(client).unshareWishlist(userId);
   assert.equal(wishlistId, "44444444-4444-4444-8444-444444444444");
   assert.equal(result.shareUrl, null);
+});
+
+test("seller review replies are ownership scoped and audited", async () => {
+  let reply = ""; let audited = false;
+  const transaction = { review: { update: async ({ data }: { data: { vendorReply: string } }) => { reply = data.vendorReply; } }, auditLog: { create: async () => { audited = true; } } };
+  const client = { review: { findFirst: async () => ({ id: "55555555-5555-4555-8555-555555555555" }), findMany: async () => [] }, $transaction: async (operation: (value: typeof transaction) => Promise<unknown>) => operation(transaction) } as unknown as PrismaClient;
+  const result = await new EngagementService(client).replyToReview(seller, "55555555-5555-4555-8555-555555555555", { body: "Thank you for your feedback." });
+  assert.equal(reply, "Thank you for your feedback."); assert.equal(audited, true); assert.deepEqual(result, []);
+});
+
+test("seller cannot reply to another shop review", async () => {
+  const client = { review: { findFirst: async () => null } } as unknown as PrismaClient;
+  await assert.rejects(() => new EngagementService(client).replyToReview(seller, "55555555-5555-4555-8555-555555555555", { body: "Reply" }), /not found for this seller/);
 });

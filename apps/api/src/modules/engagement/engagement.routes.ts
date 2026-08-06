@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
-import { answerInputSchema, chatMessageInputSchema, chatThreadInputSchema, contentModerationInputSchema, createPromotionSchema, newsletterBroadcastInputSchema, newsletterSubscribeInputSchema, productReportInputSchema, questionInputSchema, reviewInputSchema, stockAlertInputSchema, wishlistItemInputSchema } from "@amiyo/contracts";
+import { answerInputSchema, chatMessageInputSchema, chatThreadInputSchema, contentModerationInputSchema, createPromotionSchema, newsletterBroadcastInputSchema, newsletterSubscribeInputSchema, productReportInputSchema, questionInputSchema, reviewInputSchema, stockAlertInputSchema, vendorReviewReplyInputSchema, wishlistItemInputSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "../identity/identity.middleware.js";
@@ -38,7 +38,8 @@ export function createEngagementRouter() {
   router.post("/api/v2/catalog/products/:productId/questions", authenticate, writeLimit, async (req, res, next) => { try { res.status(201).json(await service.createQuestion(requireSession(req), productSchema.parse(req.params).productId, questionInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.post("/api/v2/catalog/products/:productId/reports", authenticate, writeLimit, async (req, res, next) => { try { res.status(201).json(await service.reportProduct(requireSession(req), productSchema.parse(req.params).productId, productReportInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.post("/api/v2/questions/:id/answers", writeLimit, async (req, res, next) => { try { res.status(201).json(await service.answerQuestion(requireSession(req), idSchema.parse(req.params).id, answerInputSchema.parse(req.body))); } catch (error) { next(error); } });
-  router.get("/api/v2/vendor/engagement/reviews", async (req, res, next) => { try { res.json(await service.vendorReviews(requireSession(req))); } catch (error) { next(error); } });
+router.get("/api/v2/vendor/engagement/reviews", async (req, res, next) => { try { res.json(await service.vendorReviews(requireSession(req))); } catch (error) { next(error); } });
+router.put("/api/v2/vendor/engagement/reviews/:id/reply", writeLimit, async (req, res, next) => { try { res.json(await service.replyToReview(requireSession(req), idSchema.parse(req.params).id, vendorReviewReplyInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.get("/api/v2/vendor/engagement/questions", async (req, res, next) => { try { res.json(await service.vendorQuestions(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/content/reviews", async (req, res, next) => { try { res.json(await service.adminReviews(requireSession(req))); } catch (error) { next(error); } });
   router.patch("/api/v2/admin/content/reviews/:id", writeLimit, async (req, res, next) => { try { res.json(await service.moderateReview(requireSession(req), idSchema.parse(req.params).id, contentModerationInputSchema.parse(req.body))); } catch (error) { next(error); } });

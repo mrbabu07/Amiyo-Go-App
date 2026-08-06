@@ -25,3 +25,11 @@ test("vendor registration creates an owner workspace atomically", async () => {
   assert.equal(roleAssigned, true);
   assert.equal(vendorData?.displayName, input.displayName);
 });
+
+test("vendor report applies the selected period and derives fulfilment metrics", async () => {
+  const reportSession = { ...session, principal: { ...session.principal, vendorIds: ["33333333-3333-4333-8333-333333333333"] }, permissions: ["vendor:read"], vendorMemberships: [{ vendorId: "33333333-3333-4333-8333-333333333333", role: "VENDOR_OWNER", permissions: ["vendor:read"] }] } as Session;
+  let since: Date | undefined;
+  const client = { vendorOrder: { findMany: async ({ where }: { where: { createdAt: { gte: Date } } }) => { since = where.createdAt.gte; return [{ id: "44444444-4444-4444-8444-444444444444", status: "DELIVERED", totalMinor: 25000n, createdAt: new Date() }, { id: "55555555-5555-4555-8555-555555555555", status: "CANCELLED", totalMinor: 10000n, createdAt: new Date() }]; } }, product: { count: async () => 4 }, inventoryItem: { count: async () => 2 }, return: { count: async () => 1 } } as unknown as PrismaClient;
+  const report = await new VendorService(client).report(reportSession, 7);
+  assert.equal(report.periodDays, 7); assert.equal(report.averageOrderMinor, "25000"); assert.equal(report.fulfilmentRate, 50); assert.equal(report.cancelledCount, 1); assert.equal(report.returnCount, 1); assert.ok(since instanceof Date);
+});

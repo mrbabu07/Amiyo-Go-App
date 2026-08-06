@@ -12156,6 +12156,19 @@
                       "authorName": {
                         "type": "string"
                       },
+                      "vendorReply": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "vendorRepliedAt": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "date-time"
+                      },
                       "createdAt": {
                         "type": "string",
                         "format": "date-time"
@@ -12278,6 +12291,19 @@
                       },
                       "authorName": {
                         "type": "string"
+                      },
+                      "vendorReply": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "vendorRepliedAt": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "date-time"
                       },
                       "createdAt": {
                         "type": "string",
@@ -12436,6 +12462,19 @@
                     },
                     "authorName": {
                       "type": "string"
+                    },
+                    "vendorReply": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "vendorRepliedAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
                     },
                     "createdAt": {
                       "type": "string",
@@ -13064,6 +13103,185 @@
                       "authorName": {
                         "type": "string"
                       },
+                      "vendorReply": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "vendorRepliedAt": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "date-time"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "productId",
+                      "rating",
+                      "title",
+                      "body",
+                      "verifiedPurchase",
+                      "authorName",
+                      "createdAt"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/vendor/engagement/reviews/{id}/reply": {
+      "put": {
+        "tags": [
+          "Engagement & Growth"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "body": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "body"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Seller review reply saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "productId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "productName": {
+                        "type": "string"
+                      },
+                      "productSlug": {
+                        "type": "string"
+                      },
+                      "rating": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                      },
+                      "title": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "body": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "verifiedPurchase": {
+                        "type": "boolean"
+                      },
+                      "authorName": {
+                        "type": "string"
+                      },
+                      "vendorReply": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "vendorRepliedAt": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "date-time"
+                      },
                       "createdAt": {
                         "type": "string",
                         "format": "date-time"
@@ -13320,6 +13538,19 @@
                       },
                       "authorName": {
                         "type": "string"
+                      },
+                      "vendorReply": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "vendorRepliedAt": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "date-time"
                       },
                       "createdAt": {
                         "type": "string",
@@ -18084,6 +18315,10 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "periodDays": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
                     "orderCount": {
                       "type": "integer",
                       "minimum": 0
@@ -18092,8 +18327,23 @@
                       "type": "integer",
                       "minimum": 0
                     },
+                    "cancelledCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "returnCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
                     "grossSalesMinor": {
                       "type": "string"
+                    },
+                    "averageOrderMinor": {
+                      "type": "string"
+                    },
+                    "fulfilmentRate": {
+                      "type": "number",
+                      "minimum": 0
                     },
                     "productCount": {
                       "type": "integer",
@@ -18140,9 +18390,14 @@
                     }
                   },
                   "required": [
+                    "periodDays",
                     "orderCount",
                     "deliveredCount",
+                    "cancelledCount",
+                    "returnCount",
                     "grossSalesMinor",
+                    "averageOrderMinor",
+                    "fulfilmentRate",
                     "productCount",
                     "lowStockCount",
                     "statusCounts",

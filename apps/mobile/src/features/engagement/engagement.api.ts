@@ -32,6 +32,7 @@ export async function getNewsletterWorkspace(user: User) { return newsletterWork
 export async function createNewsletterBroadcast(user: User, input: NewsletterBroadcastInput) { return newsletterWorkspaceSchema.parse(await request(user, "/api/v2/admin/newsletter/broadcasts", { method: "POST", body: JSON.stringify(input) })); }
 export async function sendNewsletterBroadcast(user: User, id: string) { return newsletterWorkspaceSchema.parse(await request(user, `/api/v2/admin/newsletter/broadcasts/${id}/send`, { method: "POST" })); }
 export async function getVendorReviews(user: User) { return reviewSchema.array().parse(await request(user, "/api/v2/vendor/engagement/reviews")); }
+export async function replyToVendorReview(user: User, id: string, body: string) { return reviewSchema.array().parse(await request(user, `/api/v2/vendor/engagement/reviews/${id}/reply`, { method: "PUT", body: JSON.stringify({ body }) })); }
 export async function getVendorQuestions(user: User) { return questionSchema.array().parse(await request(user, "/api/v2/vendor/engagement/questions")); }
 export async function answerVendorQuestion(user: User, id: string, body: string) { return await request(user, `/api/v2/questions/${id}/answers`, { method: "POST", body: JSON.stringify({ body }) }); }
 export async function getAdminReviews(user: User) { return reviewSchema.array().parse(await request(user, "/api/v2/admin/content/reviews")); }

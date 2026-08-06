@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 import test from "node:test";
 
-const routes = ["dashboard", "shop", "kyc", "staff", "returns", "marketing", "messages"];
+const routes = ["dashboard", "shop", "kyc", "staff", "returns", "marketing", "messages", "reviews", "questions", "reports", "payout-settings", "university"];
 
 test("seller workspace exposes dedicated operational routes", async () => {
   await Promise.all(routes.filter((route) => route !== "products").map((route) => access(new URL(`../apps/mobile/app/vendor/${route}.tsx`, import.meta.url))));
@@ -41,4 +41,17 @@ test("seller workspace keeps core reference operations functional", async () => 
     "VendorMarketingScreen.tsx"
   ].map((file) => readFile(new URL(`../apps/mobile/src/features/vendor/${file}`, import.meta.url), "utf8")))).join("\n");
   for (const capability of ["updateVendorShop", "submitVendorKyc", "updateVendorStaff", "getVendorReturns", "createVendorVoucher"]) assert.match(sources, new RegExp(capability));
+});
+
+test("seller parity includes dedicated feedback, reporting, payout and learning flows", async () => {
+  const sources = (await Promise.all([
+    "VendorReviewsScreen.tsx",
+    "VendorQuestionsScreen.tsx",
+    "VendorReportsScreen.tsx",
+    "VendorPayoutSettingsScreen.tsx",
+    "VendorUniversityScreen.tsx"
+  ].map((file) => readFile(new URL(`../apps/mobile/src/features/vendor/${file}`, import.meta.url), "utf8")))).join("\n");
+  for (const capability of ["replyToVendorReview", "answerVendorQuestion", "getVendorReport", "saveVendorBankAccount", "Seller University"]) assert.match(sources, new RegExp(capability));
+  const backend = await readFile(new URL("../apps/api/src/modules/engagement/engagement.service.ts", import.meta.url), "utf8");
+  for (const guard of ["replyToReview", "REVIEW_NOT_FOUND", "engagement.review.replied"]) assert.match(backend, new RegExp(guard));
 });
