@@ -7,10 +7,10 @@ This matrix tracks the rebuild against the read-only legacy `Client` and `Server
 | Area | Status | Rebuild coverage |
 | --- | --- | --- |
 | Store discovery | Implemented | Home, categories, search, shops, campaigns, flash sales, interactive product gallery, variant-aware product detail, delivery quotes and buyer protection |
-| Commerce | Implemented | Inventory-bounded product quantity selection, cart, checkout, orders, invoices, tracking, cancellation, returns and refunds |
+| Commerce | Implemented | Inventory-bounded product quantity selection, cart, checkout, orders, invoices, tracking, cancellation, return detail tracking and refunds |
 | Account | Implemented | Firebase session, profile, full delivery-address management, portable data export, role-aware navigation and scheduled account deletion |
 | Engagement | Implemented | Wishlist sharing, product sharing and trust reports, alerts, loyalty, notifications, vendor messages, product Q&A and personal reviews |
-| Support | Implemented | Ticket creation, threaded customer replies and status tracking |
+| Support | Implemented | Ticket creation, dedicated conversation detail, threaded customer replies and status tracking |
 
 ## Vendor experience
 
@@ -22,7 +22,7 @@ This matrix tracks the rebuild against the read-only legacy `Client` and `Server
 | Catalog operations | Implemented | Searchable/filterable product workspace, dedicated Add/Edit/Detail flows, secure product media gallery, color/size variant matrix, per-variant pricing and stock, listing-quality checks, product submission, audited safe product removal, transactional CSV import/export, category-access requests and concurrency-safe inventory adjustment |
 | Vendor workspace | Implemented | Dedicated Shop, KYC, Staff and Messages screens plus encrypted masked payout account management |
 | Customer engagement | Implemented | Seller review visibility and product-question response workflow |
-| Vendor operations | Implemented | Derived sales reports plus dedicated Returns, Marketing, staff-permission and seller-voucher workspaces |
+| Vendor operations | Implemented | Dedicated seller support and reports entry points, derived sales reports, return detail tracking, marketing, staff-permission and seller-voucher workspaces |
 
 ## Admin experience
 

@@ -20,7 +20,7 @@ export function SupportScreen() {
   const [category, setCategory] = useState<(typeof categories)[number]>("ORDER");
   const [reply, setReply] = useState<Record<string, string>>({});
   const tickets = useQuery({ queryKey: ["support", "mine"], queryFn: () => user ? getMyTickets(user) : Promise.resolve([]), enabled: Boolean(user) });
-  const create = useMutation({ mutationFn: () => createTicket(user!, { subject, message, category, priority: "normal" }), onSuccess: async () => { setSubject(""); setMessage(""); await queryClient.invalidateQueries({ queryKey: ["support", "mine"] }); } });
+  const create = useMutation({ mutationFn: () => createTicket(user!, { subject, message, category, priority: "normal" }), onSuccess: async (ticket) => { setSubject(""); setMessage(""); await queryClient.invalidateQueries({ queryKey: ["support", "mine"] }); router.push(`/support/${ticket.id}` as never); } });
   const sendReply = useMutation({ mutationFn: ({ id, body }: { id: string; body: string }) => replyToTicket(user!, id, body), onSuccess: async (_data, variables) => { setReply((value) => ({ ...value, [variables.id]: "" })); await queryClient.invalidateQueries({ queryKey: ["support", "mine"] }); } });
 
   if (!user) return <Screen title="Customer support" description="Sign in to create and track support requests."><Pressable onPress={() => router.push("/auth")} style={styles.primary}><Text style={styles.primaryText}>Sign in</Text></Pressable></Screen>;
@@ -35,7 +35,7 @@ export function SupportScreen() {
     </ModuleCard>
     <Text style={styles.heading}>My tickets</Text>
     {tickets.isLoading ? <ActivityIndicator color={colors.primary} /> : null}
-    {tickets.data?.map((ticket) => <TicketCard key={ticket.id} ticket={ticket} reply={reply[ticket.id] ?? ""} setReply={(body) => setReply((value) => ({ ...value, [ticket.id]: body }))} send={() => sendReply.mutate({ id: ticket.id, body: reply[ticket.id] ?? "" })} busy={sendReply.isPending} />)}
+    {tickets.data?.map((ticket) => <View key={ticket.id}><TicketCard ticket={ticket} reply={reply[ticket.id] ?? ""} setReply={(body) => setReply((value) => ({ ...value, [ticket.id]: body }))} send={() => sendReply.mutate({ id: ticket.id, body: reply[ticket.id] ?? "" })} busy={sendReply.isPending} /><Pressable onPress={() => router.push(`/support/${ticket.id}` as never)} style={styles.primary}><Text style={styles.primaryText}>Open full conversation</Text></Pressable></View>)}
     {tickets.data?.length === 0 ? <ModuleCard title="No support tickets" meta="Your new requests and replies will appear here." /> : null}
   </Screen>;
 }
