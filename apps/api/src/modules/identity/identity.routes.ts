@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
-import { accountDeletionInputSchema, addressInputSchema, deviceInputSchema, updateProfileSchema } from "@amiyo/contracts";
+import { accountDeletionInputSchema, accountPreferencesSchema, addressInputSchema, deviceInputSchema, updateProfileSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { FirebaseTokenVerifier } from "./firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "./identity.middleware.js";
@@ -50,6 +50,14 @@ export function createIdentityRouter(options?: { service?: IdentityService; veri
     } catch (error) {
       next(error);
     }
+  });
+
+  router.get("/api/v2/me/dashboard", async (req, res, next) => {
+    try { res.json(await service.accountDashboard(requireSession(req).principal.userId)); } catch (error) { next(error); }
+  });
+
+  router.put("/api/v2/me/preferences", async (req, res, next) => {
+    try { const session = requireSession(req); res.json(await service.updatePreferences(session.principal.userId, accountPreferencesSchema.parse(req.body), correlationId(req.headers))); } catch (error) { next(error); }
   });
 
   router.get("/api/v2/me/addresses", async (req, res, next) => {

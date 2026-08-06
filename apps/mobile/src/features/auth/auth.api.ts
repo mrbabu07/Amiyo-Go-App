@@ -1,4 +1,4 @@
-import { accountDataExportSchema, accountDeletionSchema, addressSchema, deviceSchema, sessionSchema, type AccountDeletionInput, type AddressInput, type Session, type UpdateProfile } from "@amiyo/contracts";
+import { accountDashboardSchema, accountDataExportSchema, accountDeletionSchema, accountPreferencesSchema, addressSchema, deviceSchema, sessionSchema, type AccountDeletionInput, type AccountPreferences, type AddressInput, type Session, type UpdateProfile } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
@@ -27,6 +27,9 @@ export async function createSession(user: User) {
 export async function updateMyProfile(user: User, input: UpdateProfile) {
   return sessionSchema.parse(await authenticatedRequest<Session>(user, "/api/v2/me", { method: "PATCH", body: JSON.stringify(input) }));
 }
+
+export async function getAccountDashboard(user: User) { return accountDashboardSchema.parse(await authenticatedRequest<unknown>(user, "/api/v2/me/dashboard")); }
+export async function updateAccountPreferences(user: User, input: AccountPreferences) { return accountPreferencesSchema.parse(await authenticatedRequest<unknown>(user, "/api/v2/me/preferences", { method: "PUT", body: JSON.stringify(input) })); }
 
 export async function getMyAddresses(user: User) {
   return addressSchema.array().parse(await authenticatedRequest<unknown>(user, "/api/v2/me/addresses"));

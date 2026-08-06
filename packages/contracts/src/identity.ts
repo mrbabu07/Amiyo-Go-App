@@ -53,6 +53,21 @@ export const sessionSchema = z.object({
   vendorMemberships: z.array(vendorMembershipSchema)
 });
 
+const notificationChannelSchema = z.object({ email: z.boolean(), sms: z.boolean(), push: z.boolean() });
+export const accountPreferencesSchema = z.object({
+  notificationPreferences: z.object({
+    orderUpdates: notificationChannelSchema,
+    promotions: notificationChannelSchema,
+    priceDrops: notificationChannelSchema,
+    vendorNews: notificationChannelSchema
+  }),
+  privacy: z.object({
+    wishlistVisibility: z.enum(["private", "followers", "public"]),
+    reviewHistoryVisibility: z.enum(["private", "followers", "public"]),
+    personalization: z.boolean()
+  })
+});
+
 export const addressInputSchema = z.object({
   label: z.string().trim().min(1).max(40),
   recipientName: z.string().trim().min(2).max(120),
@@ -73,6 +88,15 @@ export const addressSchema = addressInputSchema.extend({
   id: uuidSchema,
   createdAt: timestampSchema,
   updatedAt: timestampSchema
+});
+
+export const accountDashboardSchema = z.object({
+  session: sessionSchema,
+  preferences: accountPreferencesSchema,
+  addresses: z.array(addressSchema),
+  stats: z.object({ orders: z.number().int().nonnegative(), activeOrders: z.number().int().nonnegative(), returns: z.number().int().nonnegative(), wishlistItems: z.number().int().nonnegative(), unreadNotifications: z.number().int().nonnegative(), activeDevices: z.number().int().nonnegative() }),
+  createdAt: timestampSchema,
+  lastLoginAt: timestampSchema.nullable()
 });
 
 export const deviceInputSchema = z.object({
@@ -103,6 +127,8 @@ export type Role = z.infer<typeof roleSchema>;
 export type Principal = z.infer<typeof principalSchema>;
 export type Session = z.infer<typeof sessionSchema>;
 export type UpdateProfile = z.infer<typeof updateProfileSchema>;
+export type AccountPreferences = z.infer<typeof accountPreferencesSchema>;
+export type AccountDashboard = z.infer<typeof accountDashboardSchema>;
 export type AddressInput = z.infer<typeof addressInputSchema>;
 export type Address = z.infer<typeof addressSchema>;
 export type DeviceInput = z.infer<typeof deviceInputSchema>;

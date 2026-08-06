@@ -1,5 +1,5 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
-import type { AccountDeletionInput, AddressInput, DeviceInput, Session, UpdateProfile } from "@amiyo/contracts";
+import type { AccountDeletionInput, AccountPreferences, AddressInput, DeviceInput, Session, UpdateProfile } from "@amiyo/contracts";
 import { ApiProblem } from "../../middleware/api-problem.js";
 import { withSerializableTransaction, type TransactionClient } from "../../infrastructure/database/transaction.js";
 import type { VerifiedIdentity } from "./identity.types.js";
@@ -78,6 +78,25 @@ function profileData(input: UpdateProfile) {
   if (input.locale !== undefined) data.locale = input.locale;
   if (input.currency !== undefined) data.currency = input.currency;
   return data;
+}
+
+const defaultPreferences: AccountPreferences = {
+  notificationPreferences: {
+    orderUpdates: { email: true, sms: false, push: true },
+    promotions: { email: false, sms: false, push: false },
+    priceDrops: { email: true, sms: false, push: true },
+    vendorNews: { email: false, sms: false, push: false }
+  },
+  privacy: { wishlistVisibility: "private", reviewHistoryVisibility: "public", personalization: true }
+};
+
+function accountPreferences(value: Prisma.JsonValue | null | undefined): AccountPreferences {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return defaultPreferences;
+  const source = value as Record<string, unknown>;
+  const notifications = source.notificationPreferences && typeof source.notificationPreferences === "object" && !Array.isArray(source.notificationPreferences) ? source.notificationPreferences as Record<string, unknown> : {};
+  const privacy = source.privacy && typeof source.privacy === "object" && !Array.isArray(source.privacy) ? source.privacy as Record<string, unknown> : {};
+  const channel = (key: string, fallback: AccountPreferences["notificationPreferences"]["orderUpdates"]) => ({ ...fallback, ...(notifications[key] && typeof notifications[key] === "object" && !Array.isArray(notifications[key]) ? notifications[key] as object : {}) });
+  return { notificationPreferences: { orderUpdates: channel("orderUpdates", defaultPreferences.notificationPreferences.orderUpdates), promotions: channel("promotions", defaultPreferences.notificationPreferences.promotions), priceDrops: channel("priceDrops", defaultPreferences.notificationPreferences.priceDrops), vendorNews: channel("vendorNews", defaultPreferences.notificationPreferences.vendorNews) }, privacy: { ...defaultPreferences.privacy, ...privacy } } as AccountPreferences;
 }
 
 function addressData(input: AddressInput) {
@@ -215,6 +234,30 @@ export class IdentityService {
       const user = await transaction.user.findUnique({ where: { id: userId }, include: sessionInclude });
       if (!user) throw new ApiProblem(404, "USER_NOT_FOUND", "User not found");
       return toSession(user);
+    });
+  }
+
+  async accountDashboard(userId: string) {
+    const [user, addresses, orders, activeOrders, returns, wishlistItems, unreadNotifications, activeDevices] = await Promise.all([
+      this.client.user.findUnique({ where: { id: userId }, include: sessionInclude }),
+      this.client.address.findMany({ where: { userId }, orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }] }),
+      this.client.order.count({ where: { userId } }),
+      this.client.order.count({ where: { userId, status: { in: ["PENDING_PAYMENT", "CONFIRMED", "PROCESSING", "READY_TO_SHIP", "SHIPPED"] } } }),
+      this.client.return.count({ where: { userId } }),
+      this.client.wishlistItem.count({ where: { wishlist: { userId } } }),
+      this.client.notification.count({ where: { userId, readAt: null } }),
+      this.client.device.count({ where: { userId, revokedAt: null } })
+    ]);
+    if (!user) throw new ApiProblem(404, "USER_NOT_FOUND", "User not found");
+    return { session: toSession(user), preferences: accountPreferences(user.profile?.preferences), addresses: addresses.map(serializeAddress), stats: { orders, activeOrders, returns, wishlistItems, unreadNotifications, activeDevices }, createdAt: user.createdAt.toISOString(), lastLoginAt: user.lastLoginAt?.toISOString() ?? null };
+  }
+
+  async updatePreferences(userId: string, input: AccountPreferences, correlationId?: string) {
+    return withSerializableTransaction(this.client, async (transaction) => {
+      const before = await transaction.userProfile.findUnique({ where: { userId } });
+      await transaction.userProfile.upsert({ where: { userId }, create: { userId, preferences: json(input) }, update: { preferences: json(input) } });
+      await writeAudit(transaction, { actorUserId: userId, action: "identity.preferences.updated", resourceType: "user_profile", resourceId: userId, ...(correlationId ? { correlationId } : {}), before: before?.preferences, after: input });
+      return input;
     });
   }
 

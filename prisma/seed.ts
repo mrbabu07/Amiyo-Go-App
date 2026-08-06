@@ -31,6 +31,11 @@ const ids = {
   product: "00000000-0000-4000-8000-000000000401",
   variant: "00000000-0000-4000-8000-000000000501",
   inventory: "00000000-0000-4000-8000-000000000601"
+  , customerAddress: "00000000-0000-4000-8000-000000000701"
+  , customerOrder: "00000000-0000-4000-8000-000000000801"
+  , customerVendorOrder: "00000000-0000-4000-8000-000000000901"
+  , customerOrderItem: "00000000-0000-4000-8000-000000001001"
+  , customerShipment: "00000000-0000-4000-8000-000000001101"
 };
 
 async function seedAccessControl() {
@@ -203,6 +208,28 @@ async function seedDemoCatalog() {
     const productId = `00000000-0000-4000-8000-000000000${item.suffix}`;
     await prisma.product.upsert({ where: { id: productId }, update: { status: item.status, name: item.name, categoryId: item.categoryId, publishedAt: null }, create: { id: productId, vendorId: fashionVendorId, shopId: fashionShopId, categoryId: item.categoryId, name: item.name, slug: item.slug, description: `${item.name} prepared for admin workflow testing.`, brand: "Dhaka Style", status: item.status, variants: { create: { id: `00000000-0000-4000-8000-000000000${item.variant}`, sku: item.sku, title: "Default", priceMinor: item.priceMinor, inventory: { create: { id: `00000000-0000-4000-8000-000000000${item.inventory}`, onHand: 25, reorderLevel: 5 } } } }, media: { create: { storageKey: item.image, mediaType: "image", mimeType: "image/jpeg", altText: item.name } } } });
   }
+
+  const customerPreferences = {
+    notificationPreferences: {
+      orderUpdates: { email: true, sms: true, push: true }, promotions: { email: true, sms: false, push: false },
+      priceDrops: { email: true, sms: false, push: true }, vendorNews: { email: false, sms: false, push: false }
+    },
+    privacy: { wishlistVisibility: "private", reviewHistoryVisibility: "public", personalization: true }
+  };
+  await prisma.userProfile.update({ where: { userId: ids.customerUser }, data: { firstName: "Demo", lastName: "Customer", displayName: "Demo Customer", locale: "en", currency: "BDT", preferences: customerPreferences } });
+  await prisma.address.upsert({ where: { id: ids.customerAddress }, update: { isDefault: true }, create: { id: ids.customerAddress, userId: ids.customerUser, label: "Home", recipientName: "Demo Customer", phone: "01700000000", line1: "House 12, Road 7", division: "Dhaka", district: "Dhaka", upazila: "Dhanmondi", postalCode: "1209", isDefault: true } });
+  const orderPlacedAt = new Date(Date.now() - 3 * 86_400_000);
+  await prisma.order.upsert({ where: { id: ids.customerOrder }, update: { status: "SHIPPED", userId: ids.customerUser }, create: { id: ids.customerOrder, orderNumber: "AG-DEMO-1001", userId: ids.customerUser, status: "SHIPPED", subtotalMinor: 249000n, deliveryMinor: 6000n, totalMinor: 255000n, placedAt: orderPlacedAt, createdAt: orderPlacedAt } });
+  await prisma.orderAddress.upsert({ where: { orderId_type: { orderId: ids.customerOrder, type: "delivery" } }, update: {}, create: { orderId: ids.customerOrder, type: "delivery", recipientName: "Demo Customer", phone: "01700000000", line1: "House 12, Road 7", division: "Dhaka", district: "Dhaka", upazila: "Dhanmondi", postalCode: "1209" } });
+  await prisma.vendorOrder.upsert({ where: { id: ids.customerVendorOrder }, update: { status: "IN_TRANSIT" }, create: { id: ids.customerVendorOrder, orderId: ids.customerOrder, vendorId: ids.vendor, shopId: ids.shop, status: "IN_TRANSIT", subtotalMinor: 249000n, deliveryMinor: 6000n, totalMinor: 255000n, commissionMinor: 24900n, createdAt: orderPlacedAt } });
+  await prisma.orderItem.upsert({ where: { id: ids.customerOrderItem }, update: {}, create: { id: ids.customerOrderItem, orderId: ids.customerOrder, vendorOrderId: ids.customerVendorOrder, productId: ids.product, variantId: ids.variant, productNameSnapshot: "Premium Wireless Headphones", skuSnapshot: "AMIYO-WH-001-BLK", attributesSnapshot: { color: "Black" }, quantity: 1, unitPriceMinor: 249000n, lineTotalMinor: 249000n } });
+  await prisma.shipment.upsert({ where: { vendorOrderId: ids.customerVendorOrder }, update: { status: "IN_TRANSIT", provider: "Amiyo Delivery", trackingNumber: "AGD-DEMO-1001" }, create: { id: ids.customerShipment, vendorOrderId: ids.customerVendorOrder, status: "IN_TRANSIT", provider: "Amiyo Delivery", trackingNumber: "AGD-DEMO-1001", shippedAt: new Date(orderPlacedAt.getTime() + 2 * 86_400_000) } });
+  const shipmentEvents = [
+    ["1201", "READY_TO_SHIP", "Seller prepared your package", "Dhaka warehouse", new Date(orderPlacedAt.getTime() + 1 * 86_400_000)],
+    ["1202", "PICKED_UP", "Courier picked up the package", "Tejgaon hub", new Date(orderPlacedAt.getTime() + 2 * 86_400_000)],
+    ["1203", "IN_TRANSIT", "Package is moving to your delivery area", "Dhanmondi delivery hub", new Date(orderPlacedAt.getTime() + 2.5 * 86_400_000)]
+  ] as const;
+  for (const [suffix, status, description, location, occurredAt] of shipmentEvents) await prisma.shipmentEvent.upsert({ where: { id: `00000000-0000-4000-8000-00000000${suffix}` }, update: { status, description, location, occurredAt }, create: { id: `00000000-0000-4000-8000-00000000${suffix}`, shipmentId: ids.customerShipment, status, description, location, occurredAt } });
 }
 
 async function main() {

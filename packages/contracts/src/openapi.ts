@@ -4,7 +4,7 @@ import { bulkProductCsvInputSchema, bulkProductImportResultSchema, catalogQueryS
 import { addCartItemSchema, cartSchema, checkoutInputSchema, checkoutQuoteSchema, checkoutResultSchema, updateCartItemSchema } from "./commerce.js";
 import { customerOrderSummarySchema, deliveryQueueItemSchema, deliveryRetryInputSchema, deliveryRetryResultSchema, deliverySettingsInputSchema, deliverySettingsSchema, fulfillmentDocumentSchema, orderTrackingSchema, serviceabilityInputSchema, serviceabilitySchema, vendorOrderDetailSchema, vendorOrderTransitionSchema } from "./delivery.js";
 import { healthResponseSchema } from "./health.js";
-import { accountDataExportSchema, accountDeletionInputSchema, accountDeletionSchema, addressInputSchema, addressSchema, deviceInputSchema, deviceSchema, sessionSchema, updateProfileSchema } from "./identity.js";
+import { accountDashboardSchema, accountDataExportSchema, accountDeletionInputSchema, accountDeletionSchema, accountPreferencesSchema, addressInputSchema, addressSchema, deviceInputSchema, deviceSchema, sessionSchema, updateProfileSchema } from "./identity.js";
 import { invoiceSchema, orderSchema } from "./orders.js";
 import { problemSchema } from "./problem.js";
 import { cancelOrderSchema, createReturnSchema, returnSchema, returnTransitionSchema } from "./returns.js";
@@ -35,6 +35,8 @@ const orderTracking = registry.register("OrderTracking", orderTrackingSchema);
 const order = registry.register("Order", orderSchema);
 const invoice = registry.register("Invoice", invoiceSchema);
 const accountDataExport = registry.register("AccountDataExport", accountDataExportSchema);
+const accountDashboard = registry.register("AccountDashboard", accountDashboardSchema);
+const accountPreferences = registry.register("AccountPreferences", accountPreferencesSchema);
 const session = registry.register("IdentitySession", sessionSchema);
 const address = registry.register("Address", addressSchema);
 const device = registry.register("Device", deviceSchema);
@@ -131,6 +133,9 @@ registry.registerPath({
   request: { body: { content: { "application/json": { schema: updateProfileSchema } } } },
   responses: { 200: { description: "Updated profile", content: { "application/json": { schema: session } } }, ...errorResponses }
 });
+
+registry.registerPath({ method: "get", path: "/api/v2/me/dashboard", tags: ["Identity"], security: firebaseSecurity, responses: { 200: { description: "Customer profile dashboard and live account activity", content: { "application/json": { schema: accountDashboard } } }, ...errorResponses } });
+registry.registerPath({ method: "put", path: "/api/v2/me/preferences", tags: ["Identity"], security: firebaseSecurity, request: { body: { content: { "application/json": { schema: accountPreferencesSchema } } } }, responses: { 200: { description: "Updated customer notification and privacy preferences", content: { "application/json": { schema: accountPreferences } } }, ...errorResponses } });
 
 registry.registerPath({ method: "post", path: "/api/v2/vendor/products/import", tags: ["Vendor Catalog"], security: firebaseSecurity, request: { body: { content: { "application/json": { schema: bulkProductCsvInputSchema } } } }, responses: { 201: { description: "Products imported atomically from CSV", content: { "application/json": { schema: bulkProductImportResultSchema } } }, ...errorResponses } });
 registry.registerPath({ method: "get", path: "/api/v2/vendor/products/export.csv", tags: ["Vendor Catalog"], security: firebaseSecurity, responses: { 200: { description: "Vendor catalog CSV export", content: { "text/csv": { schema: z.string() } } }, ...errorResponses } });

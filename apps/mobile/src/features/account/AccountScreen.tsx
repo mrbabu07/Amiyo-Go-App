@@ -1,122 +1,82 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Ionicons } from "@expo/vector-icons";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { AccountPreferences } from "@amiyo/contracts";
 import { signOut } from "firebase/auth";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { createMyAddress, getMyAddresses, updateMyProfile } from "../auth/auth.api";
+import { getAccountDashboard, updateAccountPreferences, updateMyProfile } from "../auth/auth.api";
 import { useAuthStore } from "../auth/auth.store";
 import { firebaseAuth } from "../auth/firebase";
+import { AccountState } from "./components/AccountState";
+
+const quickLinks = [
+  { label: "Orders", copy: "Track purchases", href: "/orders", icon: "cube-outline", tone: "#eff6ff", color: "#2563eb" },
+  { label: "Address book", copy: "Delivery points", href: "/addresses", icon: "location-outline", tone: "#ecfdf5", color: "#059669" },
+  { label: "Returns", copy: "Refund status", href: "/returns", icon: "return-down-back-outline", tone: "#fff7ed", color: "#ea580c" },
+  { label: "Wishlist", copy: "Saved products", href: "/wishlist", icon: "heart-outline", tone: "#fdf2f8", color: "#db2777" },
+  { label: "Coins", copy: "Balance & history", href: "/loyalty", icon: "wallet-outline", tone: "#f5f3ff", color: "#7c3aed" },
+  { label: "Notifications", copy: "Unread updates", href: "/notifications", icon: "notifications-outline", tone: "#ecfeff", color: "#0891b2" },
+  { label: "Product alerts", copy: "Price & stock", href: "/alerts", icon: "pricetag-outline", tone: "#fff1f2", color: "#e11d48" },
+  { label: "My reviews", copy: "Ratings & feedback", href: "/reviews", icon: "star-outline", tone: "#fffbeb", color: "#d97706" },
+  { label: "Support", copy: "Tickets & help", href: "/support", icon: "chatbubble-ellipses-outline", tone: "#f1f5f9", color: "#475569" }
+] as const;
+
+const notificationRows = [
+  ["orderUpdates", "Order updates"], ["promotions", "Promotions"], ["priceDrops", "Price drops"], ["vendorNews", "Vendor news"]
+] as const;
 
 export function AccountScreen() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const { error: sessionError, session, status, setSession } = useAuthStore();
-  const [displayName, setDisplayName] = useState("");
-  const [profileBusy, setProfileBusy] = useState(false);
-  const [addressOpen, setAddressOpen] = useState(false);
-  const [addressBusy, setAddressBusy] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [address, setAddress] = useState({ label: "Home", recipientName: "", phone: "", line1: "", division: "Dhaka", district: "Dhaka" });
+  const cache = useQueryClient();
   const user = firebaseAuth?.currentUser ?? null;
-  const addresses = useQuery({
-    queryKey: ["me", "addresses"],
-    queryFn: () => user ? getMyAddresses(user) : Promise.resolve([]),
-    enabled: Boolean(user && session)
-  });
+  const { session, setSession, status } = useAuthStore();
+  const dashboard = useQuery({ queryKey: ["me", "dashboard"], queryFn: () => getAccountDashboard(user!), enabled: Boolean(user && session) });
+  const [profile, setProfile] = useState({ firstName: "", lastName: "", displayName: "", locale: "en" as "en" | "bn", currency: "BDT" });
+  const [preferences, setPreferences] = useState<AccountPreferences | null>(null);
+  useEffect(() => { if (dashboard.data) { const value = dashboard.data.session.profile; setProfile({ firstName: value.firstName ?? "", lastName: value.lastName ?? "", displayName: value.displayName ?? "", locale: value.locale === "bn" ? "bn" : "en", currency: value.currency }); setPreferences(dashboard.data.preferences); } }, [dashboard.data]);
+  const saveProfile = useMutation({ mutationFn: () => updateMyProfile(user!, { firstName: profile.firstName.trim() || null, lastName: profile.lastName.trim() || null, displayName: profile.displayName.trim() || null, locale: profile.locale, currency: profile.currency }), onSuccess: async (next) => { setSession(next); await cache.invalidateQueries({ queryKey: ["me", "dashboard"] }); } });
+  const savePreferences = useMutation({ mutationFn: () => updateAccountPreferences(user!, preferences!), onSuccess: async () => cache.invalidateQueries({ queryKey: ["me", "dashboard"] }) });
 
-  useEffect(() => setDisplayName(session?.profile.displayName ?? ""), [session?.profile.displayName]);
+  if (status === "loading") return <AccountState loading icon="person-circle-outline" title="Loading your account" copy="Restoring your secure customer workspace." />;
+  if (!user || !session) return <AccountState icon="person-circle-outline" title="Your Amiyo-Go account" copy="Sign in to manage orders, addresses, tracking and preferences." action="Sign in or create account" onPress={() => router.replace("/auth")} />;
+  if (dashboard.isLoading) return <AccountState loading icon="person-circle-outline" title="Loading profile" copy="Preparing your orders and account activity." />;
+  if (!dashboard.data || !preferences) return <AccountState icon="alert-circle-outline" title="Could not load profile" copy={dashboard.error instanceof Error ? dashboard.error.message : "Please try again."} action="Try again" onPress={() => dashboard.refetch()} />;
 
-  if (status === "loading") return <Centered><ActivityIndicator color={colors.primary} size="large" /><Text style={styles.muted}>Restoring your session…</Text></Centered>;
-  if (!session || !user) {
-    return <Centered><Text style={styles.title}>Your Amiyo-Go account</Text><Text style={styles.muted}>{sessionError || "Sign in to manage orders, addresses, and account preferences."}</Text><PrimaryButton label="Sign in or create account" onPress={() => router.replace("/auth")} /><Pressable onPress={() => router.replace("/")}><Text style={styles.link}>Continue shopping</Text></Pressable></Centered>;
-  }
+  const data = dashboard.data;
+  const initials = (profile.displayName || session.email || "Customer").split(/\s|@/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
+  const updateChannel = (event: keyof AccountPreferences["notificationPreferences"], channel: "email" | "sms" | "push") => setPreferences((current) => current ? ({ ...current, notificationPreferences: { ...current.notificationPreferences, [event]: { ...current.notificationPreferences[event], [channel]: !current.notificationPreferences[event][channel] } } }) : current);
 
-  async function saveProfile() {
-    if (!user) return;
-    setProfileBusy(true);
-    setFormError(null);
-    try {
-      setSession(await updateMyProfile(user, { displayName: displayName.trim() || null }));
-    } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Could not update profile");
-    } finally {
-      setProfileBusy(false);
-    }
-  }
-
-  async function saveAddress() {
-    if (!user) return;
-    setAddressBusy(true);
-    setFormError(null);
-    try {
-      await createMyAddress(user, { ...address, isDefault: addresses.data?.length === 0 });
-      await queryClient.invalidateQueries({ queryKey: ["me", "addresses"] });
-      setAddressOpen(false);
-      setAddress({ label: "Home", recipientName: "", phone: "", line1: "", division: "Dhaka", district: "Dhaka" });
-    } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Could not add address");
-    } finally {
-      setAddressBusy(false);
-    }
-  }
-
-  return (
-    <ScrollView contentContainerStyle={styles.page}>
-      <View style={styles.header}><Pressable onPress={() => router.replace("/")}><Text style={styles.link}>‹ Back to shop</Text></Pressable><Pressable onPress={() => firebaseAuth && signOut(firebaseAuth)}><Text style={styles.logout}>Sign out</Text></Pressable></View>
-      <Pressable accessibilityRole="button" onPress={() => router.push("/returns")}><Text style={styles.link}>View returns and refund status →</Text></Pressable>
-      <Pressable accessibilityRole="button" onPress={() => router.push("/account-deletion")}><Text style={styles.logout}>Privacy and account deletion →</Text></Pressable>
-      <Pressable accessibilityRole="button" onPress={() => router.push("/account-data")}><Text style={styles.link}>Download my account data →</Text></Pressable>
-      <View style={styles.row}><Pressable accessibilityRole="button" onPress={() => router.push("/addresses")}><Text style={styles.link}>Addresses →</Text></Pressable><Pressable accessibilityRole="button" onPress={() => router.push("/reviews")}><Text style={styles.link}>My reviews →</Text></Pressable><Pressable accessibilityRole="button" onPress={() => router.push("/support")}><Text style={styles.link}>Support →</Text></Pressable><Pressable accessibilityRole="button" onPress={() => router.push("/wishlist")}><Text style={styles.link}>Wishlist →</Text></Pressable><Pressable accessibilityRole="button" onPress={() => router.push("/alerts")}><Text style={styles.link}>Alerts →</Text></Pressable><Pressable accessibilityRole="button" onPress={() => router.push("/loyalty")}><Text style={styles.link}>Loyalty →</Text></Pressable><Pressable accessibilityRole="button" onPress={() => router.push("/messages")}><Text style={styles.link}>Messages →</Text></Pressable></View>
-      <Pressable accessibilityRole="button" onPress={() => router.push("/devices")}><Text style={styles.link}>Manage connected devices →</Text></Pressable>
-      <Pressable accessibilityRole="button" onPress={() => router.push(session.vendorMemberships.length ? "/vendor/dashboard" : "/vendor/register")}><Text style={styles.link}>{session.vendorMemberships.length ? "Open seller center" : "Become an Amiyo-Go seller"} →</Text></Pressable>
-      <View style={styles.hero}><View style={styles.avatar}><Text style={styles.avatarText}>{(session.profile.displayName || session.email || "A").slice(0, 1).toUpperCase()}</Text></View><View style={styles.heroCopy}><Text style={styles.heroTitle}>{session.profile.displayName || "My account"}</Text><Text style={styles.heroMuted}>{session.email || session.phone}</Text><View style={styles.roles}>{session.principal.roles.map((role) => <Text key={role} style={styles.role}>{role.replaceAll("_", " ")}</Text>)}</View></View></View>
-      {formError ? <Text style={styles.error}>{formError}</Text> : null}
-      <View style={styles.columns}>
-        <Section title="Profile">
-          <Field label="Display name" onChangeText={setDisplayName} value={displayName} />
-          <Text style={styles.meta}>Language: {session.profile.locale.toUpperCase()} · Currency: {session.profile.currency}</Text>
-          <PrimaryButton busy={profileBusy} label="Save profile" onPress={saveProfile} />
-        </Section>
-        <Section action={<Pressable onPress={() => setAddressOpen(!addressOpen)}><Text style={styles.link}>{addressOpen ? "Cancel" : "+ Add address"}</Text></Pressable>} title="Delivery addresses">
-          {addressOpen ? <View style={styles.addressForm}>
-            <Field label="Label" onChangeText={(label) => setAddress({ ...address, label })} value={address.label} />
-            <Field label="Recipient name" onChangeText={(recipientName) => setAddress({ ...address, recipientName })} value={address.recipientName} />
-            <Field keyboardType="phone-pad" label="Phone" onChangeText={(phone) => setAddress({ ...address, phone })} value={address.phone} />
-            <Field label="Address line" onChangeText={(line1) => setAddress({ ...address, line1 })} value={address.line1} />
-            <View style={styles.row}><View style={styles.flex}><Field label="Division" onChangeText={(division) => setAddress({ ...address, division })} value={address.division} /></View><View style={styles.flex}><Field label="District" onChangeText={(district) => setAddress({ ...address, district })} value={address.district} /></View></View>
-            <PrimaryButton busy={addressBusy} label="Save address" onPress={saveAddress} />
-          </View> : null}
-          {addresses.isLoading ? <ActivityIndicator color={colors.primary} /> : null}
-          {addresses.error ? <Text style={styles.error}>Could not load addresses.</Text> : null}
-          {addresses.data?.length === 0 && !addressOpen ? <Text style={styles.muted}>No saved delivery addresses yet.</Text> : null}
-          {addresses.data?.map((item) => <View key={item.id} style={styles.address}><View style={styles.addressTitle}><Text style={styles.addressLabel}>{item.label}</Text>{item.isDefault ? <Text style={styles.defaultBadge}>DEFAULT</Text> : null}</View><Text style={styles.addressName}>{item.recipientName} · {item.phone}</Text><Text style={styles.muted}>{item.line1}, {item.district}, {item.division}</Text></View>)}
-        </Section>
-      </View>
-    </ScrollView>
-  );
+  return <Screen hideHeading title="My account">
+    <View style={styles.topActions}><Pressable onPress={() => router.replace("/")} style={styles.back}><Ionicons color={colors.text} name="arrow-back" size={17} /><Text style={styles.backText}>Back to home</Text></Pressable><Pressable onPress={() => firebaseAuth && signOut(firebaseAuth)} style={styles.signOut}><Ionicons color={colors.danger} name="log-out-outline" size={17} /><Text style={styles.signOutText}>Sign out</Text></Pressable></View>
+    <View style={styles.hero}><View style={styles.identity}><View style={styles.avatar}><Text style={styles.avatarText}>{initials}</Text></View><View style={styles.identityCopy}><View style={styles.nameRow}><Text style={styles.heroName}>{profile.displayName || "Customer"}</Text>{session.principal.roles.includes("SUPER_ADMIN") ? <Text style={styles.adminBadge}>ADMIN</Text> : null}</View><Text style={styles.heroCopy}>Account dashboard for profile, orders, addresses, notifications and support.</Text><View style={styles.badges}><Badge good={user.emailVerified} icon="mail-outline" label={`Email ${user.emailVerified ? "verified" : "unverified"}`} /><Badge good={Boolean(session.phone)} icon="call-outline" label={`Phone ${session.phone ? "connected" : "unverified"}`} /><Badge icon="shield-checkmark-outline" label={`${data.stats.activeDevices} active device${data.stats.activeDevices === 1 ? "" : "s"}`} /></View></View></View><View style={styles.metrics}><Metric label="Orders" value={data.stats.orders} /><Metric label="Active" value={data.stats.activeOrders} /><Metric label="Returns" value={data.stats.returns} /><Metric label="Wishlist" value={data.stats.wishlistItems} /></View></View>
+    <View style={styles.quickGrid}>{quickLinks.map((item) => <Pressable key={item.href} onPress={() => router.push(item.href as never)} style={styles.quickCard}><View style={[styles.quickIcon, { backgroundColor: item.tone }]}><Ionicons color={item.color} name={item.icon} size={23} /></View><View style={styles.quickCopy}><Text style={styles.quickTitle}>{item.label}</Text><Text style={styles.muted}>{item.copy}</Text></View><Ionicons color="#94a3b8" name="chevron-forward" size={17} /></Pressable>)}</View>
+    <View style={styles.columns}><Panel icon="person-outline" title="Personal information"><View style={styles.fieldRow}><Field label="First name" value={profile.firstName} onChangeText={(firstName) => setProfile({ ...profile, firstName })} /><Field label="Last name" value={profile.lastName} onChangeText={(lastName) => setProfile({ ...profile, lastName })} /></View><Field label="Display name" value={profile.displayName} onChangeText={(displayName) => setProfile({ ...profile, displayName })} /><View style={styles.fieldRow}><Choice label="Language" options={[{ label: "English", value: "en" }, { label: "বাংলা", value: "bn" }]} value={profile.locale} onChange={(locale) => setProfile({ ...profile, locale: locale as "en" | "bn" })} /><Choice label="Currency" options={[{ label: "BDT", value: "BDT" }]} value={profile.currency} onChange={(currency) => setProfile({ ...profile, currency })} /></View>{saveProfile.error ? <ErrorText error={saveProfile.error} /> : null}<PrimaryButton busy={saveProfile.isPending} label="Save profile" onPress={() => saveProfile.mutate()} /></Panel>
+      <Panel action={<Pressable onPress={() => router.push("/addresses")}><Text style={styles.link}>Manage all</Text></Pressable>} icon="location-outline" title="Saved addresses">{data.addresses.slice(0, 3).map((address) => <View key={address.id} style={styles.address}><View style={styles.addressTop}><Text style={styles.addressLabel}>{address.label}</Text>{address.isDefault ? <Text style={styles.defaultBadge}>DEFAULT</Text> : null}</View><Text style={styles.addressName}>{address.recipientName} · {address.phone}</Text><Text style={styles.muted}>{address.line1}, {address.district}, {address.division}</Text></View>)}{!data.addresses.length ? <View style={styles.empty}><Ionicons color="#94a3b8" name="location-outline" size={30} /><Text style={styles.muted}>No saved delivery address yet.</Text></View> : null}<Pressable onPress={() => router.push("/addresses")} style={styles.outline}><Text style={styles.outlineText}>+ Add delivery address</Text></Pressable></Panel></View>
+    <Panel icon="notifications-outline" title="Notification preferences"><View style={styles.preferenceHeader}><Text style={styles.preferenceLabel}>Notification type</Text><Text style={styles.channelLabel}>Email</Text><Text style={styles.channelLabel}>SMS</Text><Text style={styles.channelLabel}>Push</Text></View>{notificationRows.map(([key, label]) => <View key={key} style={styles.preferenceRow}><Text style={styles.preferenceLabel}>{label}</Text>{(["email", "sms", "push"] as const).map((channel) => <Toggle key={channel} checked={preferences.notificationPreferences[key][channel]} onPress={() => updateChannel(key, channel)} />)}</View>)}<View style={styles.privacy}><Text style={styles.sectionSubtitle}>Privacy & personalization</Text><ToggleRow label="Personalized product recommendations" checked={preferences.privacy.personalization} onPress={() => setPreferences({ ...preferences, privacy: { ...preferences.privacy, personalization: !preferences.privacy.personalization } })} /><Choice label="Wishlist visibility" options={[{ label: "Private", value: "private" }, { label: "Followers", value: "followers" }, { label: "Public", value: "public" }]} value={preferences.privacy.wishlistVisibility} onChange={(wishlistVisibility) => setPreferences({ ...preferences, privacy: { ...preferences.privacy, wishlistVisibility: wishlistVisibility as "private" | "followers" | "public" } })} /></View>{savePreferences.error ? <ErrorText error={savePreferences.error} /> : null}<PrimaryButton busy={savePreferences.isPending} label="Save preferences" onPress={() => savePreferences.mutate()} /></Panel>
+    <View style={styles.columns}><Panel icon="shield-checkmark-outline" title="Security & activity"><InfoRow label="Account status" value={session.status} /><InfoRow label="Member since" value={new Date(data.createdAt).toLocaleDateString("en-BD", { month: "short", year: "numeric" })} /><InfoRow label="Last sign in" value={data.lastLoginAt ? new Date(data.lastLoginAt).toLocaleString("en-BD") : "Not available"} /><Pressable onPress={() => router.push("/devices")} style={styles.outline}><Text style={styles.outlineText}>Manage connected devices</Text></Pressable></Panel><Panel icon="document-lock-outline" title="Your data"><Text style={styles.muted}>Download a copy of your profile, addresses, orders, returns, reviews and support history.</Text><Pressable onPress={() => router.push("/account-data")} style={styles.outline}><Text style={styles.outlineText}>Download account data</Text></Pressable><Pressable onPress={() => router.push("/account-deletion")} style={styles.dangerButton}><Text style={styles.dangerText}>Privacy & account deletion</Text></Pressable></Panel></View>
+    <View style={styles.seller}><View style={styles.sellerIcon}><Ionicons color={colors.accent} name="storefront-outline" size={26} /></View><View style={styles.sellerCopy}><Text style={styles.sellerTitle}>{session.vendorMemberships.length ? "Seller Center" : "Grow with Amiyo-Go"}</Text><Text style={styles.muted}>{session.vendorMemberships.length ? "Manage products, orders and seller operations." : "Open your shop and start selling across Bangladesh."}</Text></View><Pressable onPress={() => router.push(session.vendorMemberships.length ? "/vendor/dashboard" : "/vendor/register")} style={styles.sellerButton}><Text style={styles.sellerButtonText}>{session.vendorMemberships.length ? "Open seller center" : "Become a seller"}</Text></Pressable></View>
+  </Screen>;
 }
 
-function Centered({ children }: { children: React.ReactNode }) { return <View style={styles.centered}>{children}</View>; }
-function Section({ action, children, title }: { action?: React.ReactNode; children: React.ReactNode; title: string }) { return <View style={styles.section}><View style={styles.sectionHeader}><Text style={styles.sectionTitle}>{title}</Text>{action}</View>{children}</View>; }
-function Field(props: React.ComponentProps<typeof TextInput> & { label: string }) { const { label, ...inputProps } = props; return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput placeholderTextColor="#94a3b8" style={styles.input} {...inputProps} /></View>; }
-function PrimaryButton({ busy, label, onPress }: { busy?: boolean; label: string; onPress(): void }) { return <Pressable disabled={busy} onPress={onPress} style={({ pressed }) => [styles.primary, (pressed || busy) && styles.pressed]}>{busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>{label}</Text>}</Pressable>; }
+function Panel({ action, children, icon, title }: { action?: React.ReactNode; children: React.ReactNode; icon: React.ComponentProps<typeof Ionicons>["name"]; title: string }) { return <View style={styles.panel}><View style={styles.panelHeader}><View style={styles.panelHeading}><View style={styles.panelIcon}><Ionicons color={colors.text} name={icon} size={19} /></View><Text style={styles.panelTitle}>{title}</Text></View>{action}</View>{children}</View>; }
+function Field(props: React.ComponentProps<typeof TextInput> & { label: string }) { const { label, ...rest } = props; return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput {...rest} placeholderTextColor="#94a3b8" style={styles.input} /></View>; }
+function Choice({ label, onChange, options, value }: { label: string; value: string; options: Array<{ label: string; value: string }>; onChange(value: string): void }) { return <View style={styles.field}><Text style={styles.label}>{label}</Text><View style={styles.choices}>{options.map((option) => <Pressable key={option.value} onPress={() => onChange(option.value)} style={[styles.choice, value === option.value && styles.choiceActive]}><Text style={[styles.choiceText, value === option.value && styles.choiceTextActive]}>{option.label}</Text></Pressable>)}</View></View>; }
+function Badge({ good, icon, label }: { good?: boolean; icon: React.ComponentProps<typeof Ionicons>["name"]; label: string }) { return <View style={[styles.badge, good && styles.badgeGood]}><Ionicons color={good ? colors.success : colors.muted} name={icon} size={13} /><Text style={[styles.badgeText, good && styles.badgeTextGood]}>{label}</Text></View>; }
+function Metric({ label, value }: { label: string; value: number }) { return <View style={styles.metric}><Text style={styles.metricLabel}>{label}</Text><Text style={styles.metricValue}>{value}</Text></View>; }
+function Toggle({ checked, onPress }: { checked: boolean; onPress(): void }) { return <Pressable accessibilityRole="switch" accessibilityState={{ checked }} onPress={onPress} style={[styles.toggle, checked && styles.toggleOn]}><View style={[styles.toggleKnob, checked && styles.toggleKnobOn]} /></Pressable>; }
+function ToggleRow({ checked, label, onPress }: { checked: boolean; label: string; onPress(): void }) { return <View style={styles.toggleRow}><Text style={styles.preferenceLabel}>{label}</Text><Toggle checked={checked} onPress={onPress} /></View>; }
+function InfoRow({ label, value }: { label: string; value: string }) { return <View style={styles.infoRow}><Text style={styles.muted}>{label}</Text><Text style={styles.infoValue}>{value.replaceAll("_", " ")}</Text></View>; }
+function PrimaryButton({ busy, label, onPress }: { busy: boolean; label: string; onPress(): void }) { return <Pressable disabled={busy} onPress={onPress} style={[styles.primary, busy && styles.disabled]}>{busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>{label}</Text>}</Pressable>; }
+function ErrorText({ error }: { error: Error }) { return <Text style={styles.error}>{error.message}</Text>; }
 
 const styles = StyleSheet.create({
-  page: { alignSelf: "center", gap: spacing.lg, maxWidth: 1000, padding: spacing.lg, width: "100%" },
-  centered: { alignItems: "center", backgroundColor: colors.background, flex: 1, gap: spacing.lg, justifyContent: "center", padding: spacing.xl },
-  header: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
-  hero: { alignItems: "center", backgroundColor: colors.navy, borderRadius: radius.xl, flexDirection: "row", gap: spacing.md, padding: spacing.lg },
-  heroCopy: { flex: 1 }, avatar: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.pill, height: 58, justifyContent: "center", width: 58 }, avatarText: { color: "#fff", fontSize: 24, fontWeight: "900" },
-  title: { color: colors.text, fontSize: 26, fontWeight: "900", textAlign: "center" },
-  heroTitle: { color: "#fff", fontSize: 26, fontWeight: "900" }, heroMuted: { color: "#cbd5e1", marginTop: 3 },
-  muted: { color: colors.muted, lineHeight: 20, textAlign: "center" },
-  roles: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: spacing.sm }, role: { backgroundColor: "rgba(255,255,255,0.14)", borderRadius: radius.pill, color: "#fff", fontSize: 9, fontWeight: "900", paddingHorizontal: 9, paddingVertical: 5 },
-  columns: { flexDirection: "row", flexWrap: "wrap", gap: spacing.lg },
-  section: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flex: 1, gap: spacing.md, minWidth: 300, padding: spacing.lg },
-  sectionHeader: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" }, sectionTitle: { color: colors.text, fontSize: 19, fontWeight: "900" },
-  field: { gap: 6 }, label: { color: colors.text, fontSize: 12, fontWeight: "800" }, input: { backgroundColor: "#f8fafc", borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, minHeight: 46, paddingHorizontal: 13 },
-  primary: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, justifyContent: "center", minHeight: 46, paddingHorizontal: spacing.lg }, primaryText: { color: "#fff", fontWeight: "900" }, pressed: { opacity: 0.7 },
-  link: { color: colors.primary, fontWeight: "900" }, logout: { color: colors.danger, fontWeight: "900" }, error: { backgroundColor: "#fef2f2", borderRadius: radius.md, color: colors.danger, padding: spacing.md }, meta: { color: colors.muted, fontSize: 12 },
-  addressForm: { gap: spacing.md }, row: { flexDirection: "row", gap: spacing.sm }, flex: { flex: 1 }, address: { borderTopColor: colors.border, borderTopWidth: 1, gap: 4, paddingTop: spacing.md }, addressTitle: { alignItems: "center", flexDirection: "row", gap: spacing.sm }, addressLabel: { color: colors.text, fontWeight: "900" }, addressName: { color: colors.text, fontSize: 13 }, defaultBadge: { backgroundColor: colors.primarySoft, borderRadius: radius.pill, color: colors.primary, fontSize: 8, fontWeight: "900", paddingHorizontal: 7, paddingVertical: 3 }
+  topActions: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" }, back: { alignItems: "center", flexDirection: "row", gap: 6, paddingVertical: 8 }, backText: { color: colors.text, fontWeight: "800" }, signOut: { alignItems: "center", backgroundColor: "#fff", borderColor: "#fecaca", borderRadius: radius.md, borderWidth: 1, flexDirection: "row", gap: 6, paddingHorizontal: 12, paddingVertical: 9 }, signOutText: { color: colors.danger, fontWeight: "900" },
+  hero: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, gap: spacing.lg, padding: spacing.lg }, identity: { alignItems: "center", flexDirection: "row", gap: spacing.md }, avatar: { alignItems: "center", backgroundColor: "#f1f5f9", borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, height: 86, justifyContent: "center", width: 86 }, avatarText: { color: colors.muted, fontSize: 27, fontWeight: "900" }, identityCopy: { flex: 1 }, nameRow: { alignItems: "center", flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }, heroName: { color: colors.text, fontSize: 26, fontWeight: "900" }, adminBadge: { backgroundColor: colors.accentSoft, borderRadius: radius.pill, color: colors.accent, fontSize: 9, fontWeight: "900", paddingHorizontal: 9, paddingVertical: 5 }, heroCopy: { color: colors.muted, lineHeight: 20, marginTop: 3 }, badges: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: spacing.sm }, badge: { alignItems: "center", backgroundColor: "#f1f5f9", borderRadius: radius.pill, flexDirection: "row", gap: 4, paddingHorizontal: 9, paddingVertical: 6 }, badgeGood: { backgroundColor: "#ecfdf5" }, badgeText: { color: colors.muted, fontSize: 9, fontWeight: "800" }, badgeTextGood: { color: colors.success }, metrics: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }, metric: { backgroundColor: "#f8fafc", borderRadius: radius.md, flex: 1, minWidth: 120, padding: spacing.md }, metricLabel: { color: colors.muted, fontSize: 10, fontWeight: "700" }, metricValue: { color: colors.text, fontSize: 20, fontWeight: "900", marginTop: 3 },
+  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }, quickCard: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flex: 1, flexDirection: "row", gap: spacing.sm, minWidth: 250, padding: spacing.md }, quickIcon: { alignItems: "center", borderRadius: radius.md, height: 43, justifyContent: "center", width: 43 }, quickCopy: { flex: 1 }, quickTitle: { color: colors.text, fontSize: 13, fontWeight: "900" }, muted: { color: colors.muted, fontSize: 11, lineHeight: 18 }, columns: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md }, panel: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flex: 1, gap: spacing.md, minWidth: 310, padding: spacing.lg }, panelHeader: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" }, panelHeading: { alignItems: "center", flexDirection: "row", gap: spacing.sm }, panelIcon: { alignItems: "center", backgroundColor: "#f1f5f9", borderRadius: radius.md, height: 38, justifyContent: "center", width: 38 }, panelTitle: { color: colors.text, fontSize: 17, fontWeight: "900" }, sectionSubtitle: { color: colors.text, fontWeight: "900" }, fieldRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }, field: { flex: 1, gap: 6, minWidth: 170 }, label: { color: colors.muted, fontSize: 11, fontWeight: "800" }, input: { backgroundColor: "#f8fafc", borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, minHeight: 44, paddingHorizontal: 12 }, choices: { flexDirection: "row", gap: 6 }, choice: { borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 }, choiceActive: { backgroundColor: colors.primary, borderColor: colors.primary }, choiceText: { color: colors.muted, fontSize: 11, fontWeight: "800" }, choiceTextActive: { color: colors.surface }, primary: { alignItems: "center", alignSelf: "flex-start", backgroundColor: colors.primary, borderRadius: radius.md, minHeight: 43, justifyContent: "center", minWidth: 140, paddingHorizontal: spacing.lg }, primaryText: { color: colors.surface, fontWeight: "900" }, disabled: { opacity: .55 }, error: { backgroundColor: "#fef2f2", borderRadius: radius.md, color: colors.danger, padding: spacing.sm }, link: { color: colors.primary, fontSize: 11, fontWeight: "900" },
+  address: { borderTopColor: colors.border, borderTopWidth: 1, gap: 4, paddingTop: spacing.md }, addressTop: { alignItems: "center", flexDirection: "row", gap: 6 }, addressLabel: { color: colors.text, fontWeight: "900" }, addressName: { color: colors.text, fontSize: 12, fontWeight: "700" }, defaultBadge: { backgroundColor: "#ecfdf5", borderRadius: radius.pill, color: colors.success, fontSize: 8, fontWeight: "900", paddingHorizontal: 7, paddingVertical: 3 }, empty: { alignItems: "center", gap: 6, padding: spacing.lg }, outline: { alignItems: "center", borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, padding: 11 }, outlineText: { color: colors.primary, fontWeight: "900" },
+  preferenceHeader: { borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: "row", paddingBottom: spacing.sm }, preferenceRow: { alignItems: "center", borderBottomColor: "#eef2f7", borderBottomWidth: 1, flexDirection: "row", minHeight: 48 }, preferenceLabel: { color: colors.text, flex: 1, fontSize: 12, fontWeight: "800" }, channelLabel: { color: colors.muted, fontSize: 9, fontWeight: "900", textAlign: "center", width: 64 }, toggle: { backgroundColor: "#cbd5e1", borderRadius: radius.pill, height: 24, justifyContent: "center", marginHorizontal: 16, padding: 3, width: 36 }, toggleOn: { backgroundColor: colors.primary }, toggleKnob: { backgroundColor: colors.surface, borderRadius: radius.pill, height: 18, width: 18 }, toggleKnobOn: { alignSelf: "flex-end" }, privacy: { backgroundColor: "#f8fafc", borderRadius: radius.md, gap: spacing.md, padding: spacing.md }, toggleRow: { alignItems: "center", flexDirection: "row" }, infoRow: { alignItems: "center", borderBottomColor: "#eef2f7", borderBottomWidth: 1, flexDirection: "row", justifyContent: "space-between", paddingBottom: spacing.sm }, infoValue: { color: colors.text, fontSize: 11, fontWeight: "900", textTransform: "capitalize" }, dangerButton: { alignItems: "center", borderColor: "#fecaca", borderRadius: radius.md, borderWidth: 1, padding: 11 }, dangerText: { color: colors.danger, fontWeight: "900" },
+  seller: { alignItems: "center", backgroundColor: colors.accentSoft, borderColor: "#fed7aa", borderRadius: radius.lg, borderWidth: 1, flexDirection: "row", flexWrap: "wrap", gap: spacing.md, padding: spacing.lg }, sellerIcon: { alignItems: "center", backgroundColor: colors.surface, borderRadius: radius.md, height: 48, justifyContent: "center", width: 48 }, sellerCopy: { flex: 1, minWidth: 220 }, sellerTitle: { color: colors.text, fontSize: 16, fontWeight: "900" }, sellerButton: { backgroundColor: colors.accent, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 12 }, sellerButtonText: { color: colors.surface, fontWeight: "900" }
 });
