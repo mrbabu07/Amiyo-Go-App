@@ -40,7 +40,7 @@ export async function getProduct(identifier: string) {
 }
 
 export async function getShop(identifier: string) {
-  return shopDetailSchema.parse(await publicRequest(`/api/v2/shops/${encodeURIComponent(identifier)}`));
+  return shopDetailSchema.parse(await publicRequest(`/api/v2/shops/${encodeURIComponent(identifier)}?limit=50`));
 }
 
 export async function getShops() {
