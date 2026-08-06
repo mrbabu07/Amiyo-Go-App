@@ -20,6 +20,10 @@ test("admin dashboard mirrors the reference control-center hierarchy", async () 
   assert.match(screen, /session\?\.profile\.displayName/);
   assert.match(screen, /adminRolePriority/);
   assert.doesNotMatch(screen, />Administrator</);
+  assert.match(screen, /useAdminThemeStore/);
+  assert.match(screen, /toggleAdminTheme/);
+  assert.match(screen, /Use dark admin theme/);
+  assert.match(screen, /Use light admin theme/);
   assert.match(dashboard, /Amiyo-Go Control Center/);
   assert.match(dashboard, /MARKETPLACE OPERATIONS/);
   assert.match(dashboard, /What needs attention/);
