@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { addCartItemSchema, addressInputSchema, catalogQuerySchema, checkoutInputSchema, createOpenApiDocument, createProductSchema, createReturnSchema, deviceInputSchema, minorUnitSchema, moneySchema, vendorOrderStatusSchema, vendorRegistrationSchema } from "./index.js";
+import { addCartItemSchema, addressInputSchema, catalogQuerySchema, checkoutInputSchema, createOpenApiDocument, createProductSchema, createReturnSchema, deviceInputSchema, minorUnitSchema, moneySchema, productReportInputSchema, vendorOrderStatusSchema, vendorRegistrationSchema } from "./index.js";
 
 test("money contracts preserve bigint-safe minor units", () => {
   assert.deepEqual(moneySchema.parse({ amountMinor: "249000", currency: "bdt" }), { amountMinor: "249000", currency: "BDT" });
@@ -44,6 +44,12 @@ test("OpenAPI document exposes typed v2 resources", () => {
   assert.ok(document.paths?.["/api/v2/admin/workspace/category-requests/{id}"]);
   assert.ok(document.paths?.["/api/v2/vendor/orders/{id}/documents"]);
   assert.ok(document.paths?.["/api/v2/media/uploads"]);
+  assert.ok(document.paths?.["/api/v2/catalog/products/{productId}/reports"]);
+});
+
+test("product reports use bounded trust reasons and evidence", () => {
+  assert.equal(productReportInputSchema.safeParse({ reason: "counterfeit", details: "Logo and serial number appear fake" }).success, true);
+  assert.equal(productReportInputSchema.safeParse({ reason: "spam", details: "Invalid reason" }).success, false);
 });
 
 test("vendor registration requires consent and unique categories", () => {

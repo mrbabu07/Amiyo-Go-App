@@ -17,3 +17,8 @@ test("product quantity remains bounded by sellable inventory", async () => {
   assert.match(source, /quantity >= maximumQuantity/);
   assert.match(source, /disabled=!maximumQuantity|disabled=\{!maximumQuantity/);
 });
+
+test("customer product detail exposes delivery, protection, share and reporting", async () => {
+  const source = await readFile(sourceUrl, "utf8");
+  for (const capability of ["DeliveryAvailability", "BuyerProtection", "Share.share", "ReportPanel", "reportProduct", "You may also like", "ProductCard"]) assert.match(source, new RegExp(capability.replace(".", "\\.")));
+});

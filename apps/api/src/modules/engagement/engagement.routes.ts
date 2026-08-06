@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
-import { answerInputSchema, chatMessageInputSchema, chatThreadInputSchema, contentModerationInputSchema, createPromotionSchema, newsletterBroadcastInputSchema, newsletterSubscribeInputSchema, questionInputSchema, reviewInputSchema, stockAlertInputSchema, wishlistItemInputSchema } from "@amiyo/contracts";
+import { answerInputSchema, chatMessageInputSchema, chatThreadInputSchema, contentModerationInputSchema, createPromotionSchema, newsletterBroadcastInputSchema, newsletterSubscribeInputSchema, productReportInputSchema, questionInputSchema, reviewInputSchema, stockAlertInputSchema, wishlistItemInputSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "../identity/identity.middleware.js";
@@ -36,6 +36,7 @@ export function createEngagementRouter() {
   router.get("/api/v2/reviews", async (req, res, next) => { try { res.json(await service.myReviews(requireSession(req))); } catch (error) { next(error); } });
   router.post("/api/v2/reviews", writeLimit, async (req, res, next) => { try { res.status(201).json(await service.createReview(requireSession(req), reviewInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.post("/api/v2/catalog/products/:productId/questions", authenticate, writeLimit, async (req, res, next) => { try { res.status(201).json(await service.createQuestion(requireSession(req), productSchema.parse(req.params).productId, questionInputSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.post("/api/v2/catalog/products/:productId/reports", authenticate, writeLimit, async (req, res, next) => { try { res.status(201).json(await service.reportProduct(requireSession(req), productSchema.parse(req.params).productId, productReportInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.post("/api/v2/questions/:id/answers", writeLimit, async (req, res, next) => { try { res.status(201).json(await service.answerQuestion(requireSession(req), idSchema.parse(req.params).id, answerInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.get("/api/v2/vendor/engagement/reviews", async (req, res, next) => { try { res.json(await service.vendorReviews(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/vendor/engagement/questions", async (req, res, next) => { try { res.json(await service.vendorQuestions(requireSession(req))); } catch (error) { next(error); } });

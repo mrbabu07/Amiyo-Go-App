@@ -6,10 +6,10 @@ This matrix tracks the rebuild against the read-only legacy `Client` and `Server
 
 | Area | Status | Rebuild coverage |
 | --- | --- | --- |
-| Store discovery | Implemented | Home, categories, search, shops, campaigns, flash sales, interactive product gallery and variant-aware product detail |
+| Store discovery | Implemented | Home, categories, search, shops, campaigns, flash sales, interactive product gallery, variant-aware product detail, delivery quotes and buyer protection |
 | Commerce | Implemented | Inventory-bounded product quantity selection, cart, checkout, orders, invoices, tracking, cancellation, returns and refunds |
 | Account | Implemented | Firebase session, profile, full delivery-address management, portable data export, role-aware navigation and scheduled account deletion |
-| Engagement | Implemented | Wishlist sharing, alerts, loyalty, notifications, vendor messages, product Q&A and personal reviews |
+| Engagement | Implemented | Wishlist sharing, product sharing and trust reports, alerts, loyalty, notifications, vendor messages, product Q&A and personal reviews |
 | Support | Implemented | Ticket creation, threaded customer replies and status tracking |
 
 ## Vendor experience

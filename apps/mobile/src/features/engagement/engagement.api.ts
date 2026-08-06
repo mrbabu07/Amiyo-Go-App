@@ -1,4 +1,4 @@
-import { chatThreadCreatedSchema, chatThreadSchema, growthFeedSchema, newsletterWorkspaceSchema, notificationSchema, questionSchema, reviewSchema, sharedWishlistSchema, wishlistSchema, type ContentModerationInput, type NewsletterBroadcastInput } from "@amiyo/contracts";
+import { chatThreadCreatedSchema, chatThreadSchema, growthFeedSchema, newsletterWorkspaceSchema, notificationSchema, productReportResultSchema, questionSchema, reviewSchema, sharedWishlistSchema, wishlistSchema, type ContentModerationInput, type NewsletterBroadcastInput, type ProductReportInput } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
@@ -26,6 +26,7 @@ export async function getGrowthFeed() { const response = await fetch(`${apiUrl}/
 export async function getProductReviews(productId: string) { const response = await fetch(`${apiUrl}/api/v2/catalog/products/${productId}/reviews`); if (!response.ok) throw new Error("Could not load product reviews"); return reviewSchema.array().parse(await response.json()); }
 export async function getProductQuestions(productId: string) { const response = await fetch(`${apiUrl}/api/v2/catalog/products/${productId}/questions`); if (!response.ok) throw new Error("Could not load product questions"); return questionSchema.array().parse(await response.json()); }
 export async function createProductQuestion(user: User, productId: string, body: string) { return questionSchema.parse(await request(user, `/api/v2/catalog/products/${productId}/questions`, { method: "POST", body: JSON.stringify({ body }) })); }
+export async function reportProduct(user: User, productId: string, input: ProductReportInput) { return productReportResultSchema.parse(await request(user, `/api/v2/catalog/products/${productId}/reports`, { method: "POST", body: JSON.stringify(input) })); }
 export async function subscribeNewsletter(email: string) { const response = await fetch(`${apiUrl}/api/v2/newsletter/subscribe`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, source: "app" }) }); if (!response.ok) throw new Error("Please enter a valid email address"); return response.json() as Promise<{ id: string; email: string; active: boolean }>; }
 export async function getNewsletterWorkspace(user: User) { return newsletterWorkspaceSchema.parse(await request(user, "/api/v2/admin/newsletter")); }
 export async function createNewsletterBroadcast(user: User, input: NewsletterBroadcastInput) { return newsletterWorkspaceSchema.parse(await request(user, "/api/v2/admin/newsletter/broadcasts", { method: "POST", body: JSON.stringify(input) })); }

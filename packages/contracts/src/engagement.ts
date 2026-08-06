@@ -12,6 +12,8 @@ export const questionInputSchema = z.object({ body: z.string().trim().min(5).max
 export const answerInputSchema = z.object({ body: z.string().trim().min(2).max(2000) });
 export const questionSchema = z.object({ id: uuidSchema, productId: uuidSchema, productName: z.string().optional(), body: z.string(), status: z.string(), authorName: z.string(), createdAt: timestampSchema, answers: z.array(z.object({ id: uuidSchema, body: z.string(), accepted: z.boolean(), authorName: z.string(), createdAt: timestampSchema })) });
 export const contentModerationInputSchema = z.object({ status: z.enum(["published", "hidden"]), reason: z.string().trim().min(3).max(500) });
+export const productReportInputSchema = z.object({ reason: z.enum(["counterfeit", "wrong_item", "prohibited_content", "misleading_price", "unsafe_product", "other"]), details: z.string().trim().min(3).max(2000) });
+export const productReportResultSchema = z.object({ id: uuidSchema, status: z.string() });
 
 export const notificationSchema = z.object({ id: uuidSchema, type: z.string(), title: z.string(), body: z.string(), href: z.string().nullable(), readAt: timestampSchema.nullable(), createdAt: timestampSchema });
 export const notificationDeliveryJobSchema = z.object({ notificationDeliveryId: uuidSchema });
@@ -35,6 +37,7 @@ export type ReviewInput = z.infer<typeof reviewInputSchema>;
 export type QuestionInput = z.infer<typeof questionInputSchema>;
 export type AnswerInput = z.infer<typeof answerInputSchema>;
 export type ContentModerationInput = z.infer<typeof contentModerationInputSchema>;
+export type ProductReportInput = z.infer<typeof productReportInputSchema>;
 export type ChatThreadInput = z.infer<typeof chatThreadInputSchema>;
 export type ChatMessageInput = z.infer<typeof chatMessageInputSchema>;
 export type PromotionCandidate = z.infer<typeof promotionCandidateSchema>;

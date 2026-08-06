@@ -1,16 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query";
-import type { ProductDetailDto } from "@amiyo/contracts";
+import type { ProductDetailDto, ProductReportInput } from "@amiyo/contracts";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, SafeAreaView, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { firebaseAuth } from "../auth/firebase";
 import { addCartItem } from "../commerce/commerce.api";
-import { addWishlistItem, createProductQuestion, getAlerts, getProductQuestions, getProductReviews, getWishlist, removeAlert, removeWishlistItem, saveAlert } from "../engagement/engagement.api";
+import { addWishlistItem, createProductQuestion, getAlerts, getProductQuestions, getProductReviews, getWishlist, removeAlert, removeWishlistItem, reportProduct, saveAlert } from "../engagement/engagement.api";
+import { DeliveryAvailability } from "../home/components/DeliveryAvailability";
+import { ProductCard } from "../home/components/ProductCard";
 import { StoreHeader } from "../home/components/StoreHeader";
-import { getProduct } from "./catalog.api";
-import { fallbackProductImage } from "./catalog.view-model";
+import { getProduct, getProducts } from "./catalog.api";
+import { fallbackProductImage, toHomeProduct } from "./catalog.view-model";
 import { useComparisonStore } from "./comparison.store";
 
 const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
@@ -22,6 +24,7 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
   const desktop = width >= 900;
   const product = useQuery({ queryKey: ["catalog", "product", identifier], queryFn: () => getProduct(identifier) });
   const item = product.data;
+  const related = useQuery({ queryKey: ["catalog", "related", item?.categoryId], queryFn: () => getProducts({ category: item!.categoryId, limit: 8 }), enabled: Boolean(item?.categoryId) });
   const productId = item?.id;
   const user = firebaseAuth?.currentUser ?? null;
   const [selectedVariantId, setSelectedVariantId] = useState("");
@@ -30,6 +33,9 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
   const [cartBusy, setCartBusy] = useState(false);
   const [cartError, setCartError] = useState<string | null>(null);
   const [questionBody, setQuestionBody] = useState("");
+  const [showReport, setShowReport] = useState(false);
+  const [reportReason, setReportReason] = useState<ProductReportInput["reason"]>("wrong_item");
+  const [reportDetails, setReportDetails] = useState("");
   const selected = item?.variants.find((variant) => variant.id === selectedVariantId) ?? item?.variants[0];
   const selectedMedia = item?.media.find((media) => media.id === selectedMediaId) ?? item?.media.find((media) => media.variantId === selected?.id) ?? item?.media[0];
   const compared = useComparisonStore((state) => Boolean(productId && state.productIds.includes(productId)));
@@ -44,6 +50,7 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
   const alerted = Boolean(productId && alerts.data?.some((entry) => entry.productId === productId));
   const saveProduct = useMutation({ mutationFn: () => saved ? removeWishlistItem(user!, productId!) : addWishlistItem(user!, productId!), onSuccess: (data) => queryClient.setQueryData(["wishlist"], data) });
   const toggleAlert = useMutation({ mutationFn: () => alerted ? removeAlert(user!, productId!) : saveAlert(user!, productId!), onSuccess: (data) => queryClient.setQueryData(["alerts"], data) });
+  const report = useMutation({ mutationFn: () => reportProduct(user!, productId!, { reason: reportReason, details: reportDetails }), onSuccess: () => { setShowReport(false); setReportDetails(""); } });
 
   useEffect(() => {
     if (!item?.variants.length) return;
@@ -78,6 +85,7 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
   }
   function requireUser(action: () => void) { if (!user) router.push("/auth"); else action(); }
   function submitQuestion() { requireUser(() => ask.mutate()); }
+  function shareProduct() { if (!item) return; void Share.share({ title: item.name, message: `${item.name} · ${process.env.EXPO_PUBLIC_APP_URL || "http://localhost:8081"}/product/${item.slug}` }); }
 
   return <SafeAreaView style={styles.safe}><ScrollView><StoreHeader desktop={desktop} viewportWidth={width} /><View style={styles.page}>
     <View style={[styles.productLayout, desktop && styles.desktop]}>
@@ -94,12 +102,15 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
         <Text style={styles.optionLabel}>Choose a variant</Text>
         <View style={styles.variants}>{item.variants.map((variant) => { const active = variant.id === selected?.id; return <Pressable accessibilityRole="button" key={variant.id} onPress={() => setSelectedVariantId(variant.id)} style={[styles.variant, active && styles.variantActive, !variant.availableQuantity && styles.variantDisabled]}><Text style={[styles.variantTitle, active && styles.variantTitleActive]}>{variant.title}</Text><Text style={[styles.variantStock, active && styles.variantStockActive]}>{variant.availableQuantity ? `${variant.availableQuantity} in stock` : "Out of stock"}</Text></Pressable>; })}</View>
         <View style={styles.purchaseRow}><View><Text style={styles.optionLabel}>Quantity</Text><View style={styles.quantity}><Pressable accessibilityLabel="Decrease quantity" disabled={quantity <= 1} onPress={() => setQuantity((value) => Math.max(1, value - 1))} style={styles.quantityButton}><Ionicons color={colors.text} name="remove" size={18} /></Pressable><Text style={styles.quantityValue}>{quantity}</Text><Pressable accessibilityLabel="Increase quantity" disabled={quantity >= maximumQuantity} onPress={() => setQuantity((value) => Math.min(maximumQuantity, value + 1))} style={styles.quantityButton}><Ionicons color={colors.text} name="add" size={18} /></Pressable></View></View><View style={styles.selectedSummary}><Text style={styles.selectedLabel}>Selected</Text><Text style={styles.selectedValue}>{selected?.title ?? "No variant"} · {quantity} item{quantity === 1 ? "" : "s"}</Text></View></View>
-        <View style={styles.actionRow}><Action active={saved} icon={saved ? "heart" : "heart-outline"} label={saved ? "Saved" : "Wishlist"} onPress={() => requireUser(() => saveProduct.mutate())} /><Action active={alerted} icon={alerted ? "notifications" : "notifications-outline"} label={alerted ? "Alert active" : "Stock alert"} onPress={() => requireUser(() => toggleAlert.mutate())} /><Action active={compared} icon="git-compare-outline" label={compared ? `Compared (${comparisonCount})` : "Compare"} onPress={() => { if (!compared) addComparison(item.id); router.push("/compare"); }} /></View>
+        <View style={styles.actionRow}><Action active={saved} icon={saved ? "heart" : "heart-outline"} label={saved ? "Saved" : "Wishlist"} onPress={() => requireUser(() => saveProduct.mutate())} /><Action active={alerted} icon={alerted ? "notifications" : "notifications-outline"} label={alerted ? "Alert active" : "Stock alert"} onPress={() => requireUser(() => toggleAlert.mutate())} /><Action active={compared} icon="git-compare-outline" label={compared ? `Compared (${comparisonCount})` : "Compare"} onPress={() => { if (!compared) addComparison(item.id); router.push("/compare"); }} /><Action active={false} icon="share-social-outline" label="Share" onPress={shareProduct} /><Action active={showReport} icon="flag-outline" label="Report" onPress={() => requireUser(() => setShowReport(true))} /></View>
         {saveProduct.error || toggleAlert.error ? <Text style={styles.error}>{(saveProduct.error || toggleAlert.error)?.message}</Text> : null}{cartError ? <Text style={styles.error}>{cartError}</Text> : null}
         <Pressable disabled={!maximumQuantity || cartBusy} onPress={() => void addToCart()} style={[styles.cta, (!maximumQuantity || cartBusy) && styles.disabled]}>{cartBusy ? <ActivityIndicator color="#fff" /> : <><Ionicons color="#fff" name="cart-outline" size={20} /><Text style={styles.ctaText}>Add {quantity} to cart</Text></>}</Pressable>
       </View>
     </View>
+    {showReport ? <ReportPanel details={reportDetails} mutation={report} onCancel={() => setShowReport(false)} onDetails={setReportDetails} onReason={setReportReason} reason={reportReason} /> : report.isSuccess ? <Text style={styles.stock}>Report submitted for trust and safety review.</Text> : null}
+    <BuyerProtection subtotalMinor={selected ? String(Number(selected.price.amountMinor) * quantity) : "0"} />
     <View style={styles.engagementGrid}><ReviewsPanel query={reviews} /><QuestionsPanel ask={ask} body={questionBody} onBody={setQuestionBody} onSubmit={submitQuestion} query={questions} /></View>
+    <View><Text style={styles.sectionTitle}>You may also like</Text><View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.md }}>{related.data?.data.filter((productItem) => productItem.id !== item.id).slice(0, 4).map(toHomeProduct).map((productItem) => <View key={productItem.id} style={{ minWidth: 210, width: desktop ? "23%" : "47%" }}><ProductCard product={productItem} /></View>)}</View>{related.isLoading ? <ActivityIndicator color={colors.primary} /> : null}</View>
   </View></ScrollView></SafeAreaView>;
 }
 
@@ -109,6 +120,12 @@ function ProductGallery({ item, selectedMediaId, onSelect }: { item: ProductDeta
 }
 
 function Action({ active, icon, label, onPress }: { active: boolean; icon: React.ComponentProps<typeof Ionicons>["name"]; label: string; onPress(): void }) { return <Pressable onPress={onPress} style={[styles.secondary, active && styles.secondaryActive]}><Ionicons color={active ? "#fff" : colors.primary} name={icon} size={18} /><Text style={[styles.secondaryText, active && styles.secondaryTextActive]}>{label}</Text></Pressable>; }
+
+const reportReasons: Array<{ value: ProductReportInput["reason"]; label: string }> = [{ value: "counterfeit", label: "Counterfeit" }, { value: "wrong_item", label: "Misleading listing" }, { value: "prohibited_content", label: "Prohibited" }, { value: "misleading_price", label: "Misleading price" }, { value: "unsafe_product", label: "Unsafe" }, { value: "other", label: "Other" }];
+
+function ReportPanel({ details, mutation, onCancel, onDetails, onReason, reason }: { details: string; mutation: UseMutationResult<Awaited<ReturnType<typeof reportProduct>>, Error, void>; onCancel(): void; onDetails(value: string): void; onReason(value: ProductReportInput["reason"]): void; reason: ProductReportInput["reason"] }) { return <View style={styles.panel}><Text style={styles.sectionTitle}>Report this listing</Text><View style={styles.variants}>{reportReasons.map((item) => <Pressable key={item.value} onPress={() => onReason(item.value)} style={[styles.variant, reason === item.value && styles.variantActive]}><Text style={[styles.variantTitle, reason === item.value && styles.variantTitleActive]}>{item.label}</Text></Pressable>)}</View><TextInput multiline maxLength={2000} onChangeText={onDetails} placeholder="Tell us what looks wrong" placeholderTextColor={colors.muted} style={styles.questionInput} value={details} /><View style={styles.actionRow}><Action active={false} icon="close" label="Cancel" onPress={onCancel} /><Pressable disabled={mutation.isPending || details.trim().length < 3} onPress={() => mutation.mutate()} style={[styles.askButton, (mutation.isPending || details.trim().length < 3) && styles.disabled]}><Text style={styles.ctaText}>{mutation.isPending ? "Submitting…" : "Submit report"}</Text></Pressable></View>{mutation.error ? <Text style={styles.error}>{mutation.error.message}</Text> : null}</View>; }
+
+function BuyerProtection({ subtotalMinor }: { subtotalMinor: string }) { const protections = [{ icon: "return-down-back-outline" as const, title: "7-day returns", body: "Marketplace-backed return and refund support." }, { icon: "lock-closed-outline" as const, title: "Secure payment", body: "Payments are verified before seller settlement." }, { icon: "shield-checkmark-outline" as const, title: "Buyer protection", body: "Wrong, unsafe or misleading products can be reported." }]; return <><DeliveryAvailability subtotalMinor={subtotalMinor} /><View style={styles.engagementGrid}>{protections.map((item) => <View key={item.title} style={styles.panel}><Ionicons color={colors.primary} name={item.icon} size={25} /><Text style={styles.entryTitle}>{item.title}</Text><Text style={styles.entryBody}>{item.body}</Text></View>)}</View></>; }
 
 function ReviewsPanel({ query }: { query: UseQueryResult<Awaited<ReturnType<typeof getProductReviews>>, Error> }) { return <View style={styles.panel}><Text style={styles.sectionTitle}>Customer reviews</Text>{query.isLoading ? <ActivityIndicator color={colors.primary} /> : null}{query.data?.map((review) => <View key={review.id} style={styles.entry}><Text style={styles.stars}>{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</Text><Text style={styles.entryTitle}>{review.title || review.authorName}</Text><Text style={styles.entryBody}>{review.body || "No written review"}</Text><Text style={styles.meta}>{review.verifiedPurchase ? "Verified purchase · " : ""}{new Date(review.createdAt).toLocaleDateString()}</Text></View>)}{query.data?.length === 0 ? <Text style={styles.empty}>No reviews yet.</Text> : null}{query.error ? <Text style={styles.error}>{query.error.message}</Text> : null}</View>; }
 
