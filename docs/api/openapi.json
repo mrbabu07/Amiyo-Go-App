@@ -15291,6 +15291,38 @@
                             "body": {
                               "type": "string"
                             },
+                            "attachments": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "storageKey": {
+                                    "type": "string",
+                                    "minLength": 3,
+                                    "maxLength": 500
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 180
+                                  },
+                                  "mimeType": {
+                                    "type": "string",
+                                    "enum": [
+                                      "image/jpeg",
+                                      "image/png",
+                                      "image/webp",
+                                      "application/pdf"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "storageKey",
+                                  "name",
+                                  "mimeType"
+                                ]
+                              }
+                            },
                             "createdAt": {
                               "type": "string",
                               "format": "date-time"
@@ -15300,6 +15332,7 @@
                             "id",
                             "senderId",
                             "body",
+                            "attachments",
                             "createdAt"
                           ]
                         }
@@ -15417,6 +15450,40 @@
                     "type": "string",
                     "minLength": 5,
                     "maxLength": 3000
+                  },
+                  "attachments": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "storageKey": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 500
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 180
+                        },
+                        "mimeType": {
+                          "type": "string",
+                          "enum": [
+                            "image/jpeg",
+                            "image/png",
+                            "image/webp",
+                            "application/pdf"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "storageKey",
+                        "name",
+                        "mimeType"
+                      ]
+                    },
+                    "maxItems": 5,
+                    "default": []
                   }
                 },
                 "required": [
@@ -15514,6 +15581,38 @@
                           "body": {
                             "type": "string"
                           },
+                          "attachments": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "storageKey": {
+                                  "type": "string",
+                                  "minLength": 3,
+                                  "maxLength": 500
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 180
+                                },
+                                "mimeType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "image/jpeg",
+                                    "image/png",
+                                    "image/webp",
+                                    "application/pdf"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "storageKey",
+                                "name",
+                                "mimeType"
+                              ]
+                            }
+                          },
                           "createdAt": {
                             "type": "string",
                             "format": "date-time"
@@ -15523,6 +15622,7 @@
                           "id",
                           "senderId",
                           "body",
+                          "attachments",
                           "createdAt"
                         ]
                       }
@@ -15619,6 +15719,40 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 3000
+                  },
+                  "attachments": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "storageKey": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 500
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 180
+                        },
+                        "mimeType": {
+                          "type": "string",
+                          "enum": [
+                            "image/jpeg",
+                            "image/png",
+                            "image/webp",
+                            "application/pdf"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "storageKey",
+                        "name",
+                        "mimeType"
+                      ]
+                    },
+                    "maxItems": 5,
+                    "default": []
                   }
                 },
                 "required": [
@@ -15714,6 +15848,38 @@
                           "body": {
                             "type": "string"
                           },
+                          "attachments": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "storageKey": {
+                                  "type": "string",
+                                  "minLength": 3,
+                                  "maxLength": 500
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 180
+                                },
+                                "mimeType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "image/jpeg",
+                                    "image/png",
+                                    "image/webp",
+                                    "application/pdf"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "storageKey",
+                                "name",
+                                "mimeType"
+                              ]
+                            }
+                          },
                           "createdAt": {
                             "type": "string",
                             "format": "date-time"
@@ -15723,6 +15889,7 @@
                           "id",
                           "senderId",
                           "body",
+                          "attachments",
                           "createdAt"
                         ]
                       }
@@ -15886,6 +16053,38 @@
                             "body": {
                               "type": "string"
                             },
+                            "attachments": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "storageKey": {
+                                    "type": "string",
+                                    "minLength": 3,
+                                    "maxLength": 500
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 180
+                                  },
+                                  "mimeType": {
+                                    "type": "string",
+                                    "enum": [
+                                      "image/jpeg",
+                                      "image/png",
+                                      "image/webp",
+                                      "application/pdf"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "storageKey",
+                                  "name",
+                                  "mimeType"
+                                ]
+                              }
+                            },
                             "createdAt": {
                               "type": "string",
                               "format": "date-time"
@@ -15895,6 +16094,7 @@
                             "id",
                             "senderId",
                             "body",
+                            "attachments",
                             "createdAt"
                           ]
                         }
@@ -16096,6 +16296,38 @@
                           "body": {
                             "type": "string"
                           },
+                          "attachments": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "storageKey": {
+                                  "type": "string",
+                                  "minLength": 3,
+                                  "maxLength": 500
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 180
+                                },
+                                "mimeType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "image/jpeg",
+                                    "image/png",
+                                    "image/webp",
+                                    "application/pdf"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "storageKey",
+                                "name",
+                                "mimeType"
+                              ]
+                            }
+                          },
                           "createdAt": {
                             "type": "string",
                             "format": "date-time"
@@ -16105,6 +16337,7 @@
                           "id",
                           "senderId",
                           "body",
+                          "attachments",
                           "createdAt"
                         ]
                       }
@@ -17934,6 +18167,7 @@
                         "orders:manage",
                         "products:manage",
                         "inventory:manage",
+                        "returns:manage",
                         "finance:read",
                         "support:manage"
                       ]
@@ -18621,6 +18855,567 @@
                       "items"
                     ]
                   }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/vendor/returns/{id}/response": {
+      "post": {
+        "tags": [
+          "Vendor Workspace"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "APPROVE",
+                      "DISPUTE",
+                      "REJECT"
+                    ]
+                  },
+                  "reason": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "minLength": 3,
+                    "maxLength": 1000
+                  },
+                  "notes": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 1000
+                  },
+                  "evidenceStorageKeys": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 3,
+                      "maxLength": 500
+                    },
+                    "maxItems": 5,
+                    "default": []
+                  }
+                },
+                "required": [
+                  "expectedVersion",
+                  "action"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Seller return decision recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "orderId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "vendorOrderId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "REQUESTED",
+                        "REVIEWING",
+                        "APPROVED",
+                        "REJECTED",
+                        "PICKUP_SCHEDULED",
+                        "RECEIVED",
+                        "INSPECTED",
+                        "REFUND_PENDING",
+                        "REFUNDED",
+                        "CLOSED"
+                      ]
+                    },
+                    "reasonCode": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "reasonDetail": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "requestedAmount": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "approvedAmount": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "orderItemId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "quantity": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          },
+                          "requestedAmount": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "minLength": 3,
+                                "maxLength": 3,
+                                "default": "BDT"
+                              }
+                            },
+                            "required": [
+                              "amountMinor"
+                            ]
+                          },
+                          "inspection": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "additionalProperties": {}
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "orderItemId",
+                          "quantity",
+                          "requestedAmount",
+                          "inspection"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "orderId",
+                    "vendorOrderId",
+                    "status",
+                    "reasonCode",
+                    "reasonDetail",
+                    "requestedAmount",
+                    "approvedAmount",
+                    "version",
+                    "createdAt",
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/vendor/returns/{id}/receipt": {
+      "post": {
+        "tags": [
+          "Vendor Workspace"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "condition": {
+                    "type": "string",
+                    "enum": [
+                      "received",
+                      "damaged",
+                      "incomplete"
+                    ]
+                  },
+                  "receivedQuantity": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "notes": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "expectedVersion",
+                  "condition",
+                  "receivedQuantity"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Seller return receipt confirmed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "orderId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "vendorOrderId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "REQUESTED",
+                        "REVIEWING",
+                        "APPROVED",
+                        "REJECTED",
+                        "PICKUP_SCHEDULED",
+                        "RECEIVED",
+                        "INSPECTED",
+                        "REFUND_PENDING",
+                        "REFUNDED",
+                        "CLOSED"
+                      ]
+                    },
+                    "reasonCode": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "reasonDetail": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "requestedAmount": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "approvedAmount": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "orderItemId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "quantity": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          },
+                          "requestedAmount": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "minLength": 3,
+                                "maxLength": 3,
+                                "default": "BDT"
+                              }
+                            },
+                            "required": [
+                              "amountMinor"
+                            ]
+                          },
+                          "inspection": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "additionalProperties": {}
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "orderItemId",
+                          "quantity",
+                          "requestedAmount",
+                          "inspection"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "orderId",
+                    "vendorOrderId",
+                    "status",
+                    "reasonCode",
+                    "reasonDetail",
+                    "requestedAmount",
+                    "approvedAmount",
+                    "version",
+                    "createdAt",
+                    "items"
+                  ]
                 }
               }
             }
@@ -27495,7 +28290,8 @@
                       "review",
                       "kyc",
                       "payment_evidence",
-                      "return_evidence"
+                      "return_evidence",
+                      "support"
                     ]
                   },
                   "fileName": {

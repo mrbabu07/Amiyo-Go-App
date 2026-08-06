@@ -21,5 +21,10 @@ test("customer cannot read the staff support queue", async () => {
 
 test("customer cannot reply to another customer's ticket", async () => {
   const client = { supportTicket: { findUnique: async () => ({ id: ticketId, userId: "33333333-3333-4333-8333-333333333333" }) } } as unknown as PrismaClient;
-  await assert.rejects(() => new SupportService(client).addMessage(customer, ticketId, { body: "Any update?" }), /cannot access this support ticket/);
+  await assert.rejects(() => new SupportService(client).addMessage(customer, ticketId, { body: "Any update?", attachments: [] }), /cannot access this support ticket/);
+});
+
+test("support rejects attachments not owned by the sender", async () => {
+  const client = { mediaUpload: { findMany: async () => [] } } as unknown as PrismaClient;
+  await assert.rejects(() => new SupportService(client).create(customer, { subject: "Payment evidence", category: "PAYMENT", priority: "high", message: "Please review this receipt", attachments: [{ storageKey: "support/receipt.pdf", name: "receipt.pdf", mimeType: "application/pdf" }] }), /completed support upload owned by the sender/);
 });

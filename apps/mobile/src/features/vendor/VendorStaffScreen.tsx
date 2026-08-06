@@ -7,7 +7,7 @@ import { colors, radius, spacing } from "../../ui/tokens";
 import { firebaseAuth } from "../auth/firebase";
 import { getVendorStaff, updateVendorStaff } from "./vendor.api";
 
-const permissions = ["orders:read", "orders:manage", "products:manage", "inventory:manage", "finance:read", "support:manage"] as const;
+const permissions = ["orders:read", "orders:manage", "products:manage", "inventory:manage", "returns:manage", "finance:read", "support:manage"] as const;
 type Permission = typeof permissions[number];
 
 export function VendorStaffScreen() {

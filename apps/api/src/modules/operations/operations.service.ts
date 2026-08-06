@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { Prisma, type DeliverySetting, type PrismaClient, type ReturnStatus } from "@prisma/client";
-import type { CancelOrder, CodReconciliationInput, CompletePayout, CompleteRefund, CreatePayoutRequest, CreateReturn, DeliveryRetryInput, DeliverySettingsInput, ReturnTransition, ReviewPayout, ServiceabilityInput, Session } from "@amiyo/contracts";
+import type { CancelOrder, CodReconciliationInput, CompletePayout, CompleteRefund, CreatePayoutRequest, CreateReturn, DeliveryRetryInput, DeliverySettingsInput, ReturnTransition, ReviewPayout, SellerReturnReceipt, SellerReturnResponse, ServiceabilityInput, Session } from "@amiyo/contracts";
 import { assertAvailableBalance, assertRefundLimit, calculateLedgerBalance, canTransitionReturn } from "@amiyo/domain";
 import { withSerializableTransaction, type TransactionClient } from "../../infrastructure/database/transaction.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
@@ -95,6 +95,44 @@ export class OperationsService {
   async returns(session: Session, admin = false) {
     if (admin && elevated(session) && session.permissions.includes("finance:read")) requirePermission(session, "finance:read"); else requirePermission(session, "returns:manage");
     const rows = await this.client.return.findMany({ where: admin && elevated(session) ? {} : { userId: session.principal.userId }, include: { items: true }, orderBy: { createdAt: "desc" }, take: 100 }); return rows.map(returnDto);
+  }
+
+  async respondToVendorReturn(session: Session, id: string, input: SellerReturnResponse, key: string, correlationId?: string) {
+    requirePermission(session, "returns:manage"); const vendorId = session.principal.vendorIds[0]; if (!vendorId) throw new ApiProblem(403, "VENDOR_REQUIRED", "Vendor membership is required"); const scope = `vendor-return-response:${id}`;
+    return withSerializableTransaction(this.client, async (transaction) => {
+      const prior = await replay(transaction, scope, key, input); if (prior.response) return prior.response;
+      const current = await transaction.return.findUnique({ where: { id }, include: { items: true, vendorOrder: { select: { vendorId: true } } } });
+      if (!current || current.vendorOrder.vendorId !== vendorId) throw new ApiProblem(404, "RETURN_NOT_FOUND", "Return not found for this seller");
+      if (current.version !== input.expectedVersion) throw new ApiProblem(409, "RETURN_VERSION_CONFLICT", "Return changed; refresh and try again");
+      if (!["REQUESTED", "REVIEWING"].includes(current.status)) throw new ApiProblem(409, "VENDOR_RETURN_RESPONSE_CLOSED", "This return no longer accepts a seller response");
+      const evidenceKeys = [...new Set(input.evidenceStorageKeys)];
+      if (evidenceKeys.length) {
+        const evidence = await transaction.mediaUpload.findMany({ where: { userId: session.principal.userId, purpose: "return_evidence", storageKey: { in: evidenceKeys }, status: { in: ["uploaded", "processing", "ready"] } }, select: { storageKey: true } });
+        if (evidence.length !== evidenceKeys.length) throw new ApiProblem(400, "RETURN_EVIDENCE_INVALID", "Every evidence file must be a completed return upload owned by the seller");
+      }
+      const status: ReturnStatus = input.action === "APPROVE" ? "APPROVED" : input.action === "REJECT" ? "REJECTED" : "REVIEWING";
+      const metadata = json({ action: input.action, reason: input.reason ?? null, evidenceStorageKeys: evidenceKeys });
+      await transaction.return.update({ where: { id, version: input.expectedVersion }, data: { status, approvedMinor: input.action === "APPROVE" ? current.requestedMinor : current.approvedMinor, version: { increment: 1 }, events: { create: { fromStatus: current.status, toStatus: status, actorType: "vendor", actorId: session.principal.userId, note: input.notes ?? input.reason ?? null, metadata } } } });
+      await this.outbox.enqueue(transaction, { aggregateType: "return", aggregateId: id, eventType: `return.vendor_${input.action.toLowerCase()}`, idempotencyKey: `return-vendor-response:${id}:${input.expectedVersion + 1}`, payload: { vendorId, action: input.action } });
+      await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "return.vendor.responded", resourceType: "return", resourceId: id, ...(correlationId ? { correlationId } : {}), before: json({ status: current.status, version: current.version }), after: json({ status, version: current.version + 1, action: input.action, evidenceCount: input.evidenceStorageKeys.length }) } });
+      const loaded = await transaction.return.findUniqueOrThrow({ where: { id }, include: { items: true } }); const result = returnDto(loaded); await remember(transaction, scope, key, prior.hash, result); return result;
+    });
+  }
+
+  async confirmVendorReturnReceipt(session: Session, id: string, input: SellerReturnReceipt, key: string, correlationId?: string) {
+    requirePermission(session, "returns:manage"); const vendorId = session.principal.vendorIds[0]; if (!vendorId) throw new ApiProblem(403, "VENDOR_REQUIRED", "Vendor membership is required"); const scope = `vendor-return-receipt:${id}`;
+    return withSerializableTransaction(this.client, async (transaction) => {
+      const prior = await replay(transaction, scope, key, input); if (prior.response) return prior.response;
+      const current = await transaction.return.findUnique({ where: { id }, include: { items: true, vendorOrder: { select: { vendorId: true } } } });
+      if (!current || current.vendorOrder.vendorId !== vendorId) throw new ApiProblem(404, "RETURN_NOT_FOUND", "Return not found for this seller");
+      if (current.version !== input.expectedVersion) throw new ApiProblem(409, "RETURN_VERSION_CONFLICT", "Return changed; refresh and try again");
+      if (current.status !== "PICKUP_SCHEDULED") throw new ApiProblem(409, "RETURN_RECEIPT_NOT_ALLOWED", "Only a picked-up return can be marked received");
+      const expectedQuantity = current.items.reduce((sum, item) => sum + item.quantity, 0); if (input.receivedQuantity > expectedQuantity) throw new ApiProblem(400, "RETURN_RECEIPT_QUANTITY_INVALID", "Received quantity cannot exceed the return quantity");
+      await transaction.return.update({ where: { id, version: input.expectedVersion }, data: { status: "RECEIVED", version: { increment: 1 }, events: { create: { fromStatus: current.status, toStatus: "RECEIVED", actorType: "vendor", actorId: session.principal.userId, note: input.notes ?? null, metadata: json({ condition: input.condition, receivedQuantity: input.receivedQuantity, expectedQuantity }) } } } });
+      await this.outbox.enqueue(transaction, { aggregateType: "return", aggregateId: id, eventType: "return.received", idempotencyKey: `return-vendor-receipt:${id}:${input.expectedVersion + 1}`, payload: { vendorId, condition: input.condition } });
+      await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "return.vendor.receipt_confirmed", resourceType: "return", resourceId: id, ...(correlationId ? { correlationId } : {}), after: json({ condition: input.condition, receivedQuantity: input.receivedQuantity, version: current.version + 1 }) } });
+      const loaded = await transaction.return.findUniqueOrThrow({ where: { id }, include: { items: true } }); const result = returnDto(loaded); await remember(transaction, scope, key, prior.hash, result); return result;
+    });
   }
 
   async transitionReturn(session: Session, id: string, input: ReturnTransition, key: string, correlationId?: string) {

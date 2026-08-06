@@ -42,9 +42,26 @@ export const returnTransitionSchema = z.object({
   approvedAmountMinor: z.string().regex(/^\d+$/).optional()
 });
 
+export const sellerReturnResponseSchema = z.object({
+  expectedVersion: versionSchema,
+  action: z.enum(["APPROVE", "DISPUTE", "REJECT"]),
+  reason: z.string().trim().min(3).max(1000).nullable().optional(),
+  notes: z.string().trim().max(1000).nullable().optional(),
+  evidenceStorageKeys: z.array(z.string().trim().min(3).max(500)).max(5).default([])
+}).superRefine((value, context) => { if (["DISPUTE", "REJECT"].includes(value.action) && !value.reason) context.addIssue({ code: "custom", message: "A reason is required for disputes and rejections", path: ["reason"] }); });
+
+export const sellerReturnReceiptSchema = z.object({
+  expectedVersion: versionSchema,
+  condition: z.enum(["received", "damaged", "incomplete"]),
+  receivedQuantity: z.number().int().positive(),
+  notes: z.string().trim().max(1000).nullable().optional()
+});
+
 export const cancelOrderSchema = z.object({ reason: z.string().trim().min(3).max(500), expectedVersion: versionSchema });
 
 export type ReturnDto = z.infer<typeof returnSchema>;
 export type CreateReturn = z.infer<typeof createReturnSchema>;
 export type ReturnTransition = z.infer<typeof returnTransitionSchema>;
+export type SellerReturnResponse = z.infer<typeof sellerReturnResponseSchema>;
+export type SellerReturnReceipt = z.infer<typeof sellerReturnReceiptSchema>;
 export type CancelOrder = z.infer<typeof cancelOrderSchema>;

@@ -7,6 +7,7 @@ test("support ticket input normalizes text and defaults priority", () => {
   assert.equal(parsed.subject, "Delivery is late");
   assert.equal(parsed.message, "Please check my shipment");
   assert.equal(parsed.priority, "normal");
+  assert.deepEqual(parsed.attachments, []);
 });
 
 test("support status accepts only workflow states", () => {

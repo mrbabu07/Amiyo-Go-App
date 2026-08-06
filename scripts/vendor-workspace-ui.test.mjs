@@ -51,9 +51,18 @@ test("seller parity includes dedicated feedback, reporting, payout and learning 
     "VendorPayoutSettingsScreen.tsx",
     "VendorUniversityScreen.tsx"
   ].map((file) => readFile(new URL(`../apps/mobile/src/features/vendor/${file}`, import.meta.url), "utf8")))).join("\n");
-  for (const capability of ["replyToVendorReview", "answerVendorQuestion", "getVendorReport", "saveVendorBankAccount", "Seller University"]) assert.match(sources, new RegExp(capability));
+  for (const capability of ["replyToVendorReview", "answerVendorQuestion", "getVendorReport", "Download CSV", "saveVendorBankAccount", "Seller University"]) assert.match(sources, new RegExp(capability));
   const backend = await readFile(new URL("../apps/api/src/modules/engagement/engagement.service.ts", import.meta.url), "utf8");
   for (const guard of ["replyToReview", "REVIEW_NOT_FOUND", "engagement.review.replied"]) assert.match(backend, new RegExp(guard));
+});
+
+test("seller returns and support include decisions receipts and evidence", async () => {
+  const sources = (await Promise.all([
+    readFile(new URL("../apps/mobile/src/features/operations/ReturnDetailScreen.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../apps/mobile/src/features/support/SupportScreen.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../apps/mobile/src/features/support/SupportThreadScreen.tsx", import.meta.url), "utf8")
+  ])).join("\n");
+  for (const capability of ["respondToVendorReturn", "confirmVendorReturnReceipt", "Approve return", "Confirm returned item receipt", "pickAndUploadDocument", "attachments"]) assert.match(sources, new RegExp(capability));
 });
 
 test("seller university mirrors the bilingual reference learning center", async () => {

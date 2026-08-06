@@ -4,9 +4,9 @@ import type { MediaUploadInput, Session } from "@amiyo/contracts";
 import { ApiProblem } from "../../middleware/api-problem.js";
 import type { MediaStorageProvider } from "./firebase-storage.provider.js";
 
-const privatePurposes = new Set(["kyc", "payment_evidence", "return_evidence"]);
+const privatePurposes = new Set(["kyc", "payment_evidence", "return_evidence", "support"]);
 const extensionByMime: Record<MediaUploadInput["mimeType"], string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "application/pdf": "pdf" };
-function requirePurposeAccess(session: Session, purpose: MediaUploadInput["purpose"]) { const permission = purpose === "banner" ? "admin:manage" : ["product", "shop"].includes(purpose) ? "products:manage" : purpose === "kyc" ? "kyc:manage" : null; if (permission && !session.permissions.includes(permission)) throw new ApiProblem(403, "MEDIA_UPLOAD_FORBIDDEN", `${permission} access is required`); }
+function requirePurposeAccess(session: Session, purpose: MediaUploadInput["purpose"]) { const permission = purpose === "banner" ? "admin:manage" : ["product", "shop"].includes(purpose) ? "products:manage" : purpose === "kyc" ? "kyc:manage" : purpose === "support" ? "support:manage" : null; if (permission && !session.permissions.includes(permission)) throw new ApiProblem(403, "MEDIA_UPLOAD_FORBIDDEN", `${permission} access is required`); }
 function publicUrl(storageKey: string, visibility: string) { const base = process.env.OBJECT_STORAGE_PUBLIC_URL?.replace(/\/$/, ""); return visibility === "public" && base ? `${base}/${storageKey}` : null; }
 
 export class MediaService {
