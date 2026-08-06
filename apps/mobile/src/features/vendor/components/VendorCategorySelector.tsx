@@ -1,0 +1,65 @@
+import { Ionicons } from "@expo/vector-icons";
+import type { CategoryDto } from "@amiyo/contracts";
+import { useEffect, useMemo, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { colors, radius, spacing } from "../../../ui/tokens";
+
+type CategoryOption = CategoryDto & { depth: number; path: CategoryDto[] };
+
+export function VendorCategorySelector({ categories, onChange, selectedIds }: { categories: CategoryDto[]; selectedIds: string[]; onChange(ids: string[]): void }) {
+  const [activeRootId, setActiveRootId] = useState("");
+  const [search, setSearch] = useState("");
+  const [selectionError, setSelectionError] = useState("");
+  const options = useMemo(() => buildOptions(categories), [categories]);
+  const roots = useMemo(() => options.filter((item) => item.depth === 0).sort(sortCategories), [options]);
+  useEffect(() => { if (!activeRootId || !roots.some((item) => item.id === activeRootId)) setActiveRootId(roots[0]?.id ?? ""); }, [activeRootId, roots]);
+  const selected = useMemo(() => new Set(selectedIds), [selectedIds]);
+  const activeRoot = roots.find((item) => item.id === activeRootId);
+  const groupOptions = useMemo(() => options.filter((item) => item.depth > 0 && item.path[0]?.id === activeRootId).sort(sortCategories), [activeRootId, options]);
+  const visible = groupOptions.filter((item) => `${item.name} ${item.slug} ${item.path.map((part) => part.name).join(" ")}`.toLowerCase().includes(search.trim().toLowerCase()));
+  const selectedOptions = options.filter((item) => selected.has(item.id));
+
+  function toggle(category: CategoryOption) {
+    const descendants = options.filter((item) => item.id !== category.id && item.path.some((part) => part.id === category.id)).map((item) => item.id);
+    const ancestors = category.path.slice(0, -1).map((item) => item.id);
+    const next = selected.has(category.id) ? selectedIds.filter((id) => id !== category.id) : [...selectedIds.filter((id) => !descendants.includes(id) && !ancestors.includes(id)), category.id];
+    if (next.length > 12) { setSelectionError("You can select up to 12 category access points."); return; }
+    setSelectionError("");
+    onChange([...new Set(next)]);
+  }
+
+  const covered = (category: CategoryOption) => category.path.slice(0, -1).some((item) => selected.has(item.id));
+  return <View style={styles.container}>
+    <View style={styles.heading}><View style={styles.headingCopy}><View style={styles.titleIcon}><Ionicons color={colors.accent} name="pricetags-outline" size={21} /></View><View style={styles.titleCopy}><Text style={styles.title}>Select categories you will sell in *</Text><Text style={styles.muted}>Pick a main group for full access, or choose exact sections and subcategories.</Text></View></View><View style={styles.count}><Text style={styles.countText}>{selectedIds.length} selected</Text></View></View>
+    {!categories.length ? <View style={styles.warning}><Text style={styles.warningText}>Categories are loading or unavailable. Refresh and try again.</Text></View> : <View style={styles.workspace}>
+      <View style={styles.groups}><Text style={styles.eyebrow}>MAIN CATEGORY GROUPS</Text><ScrollView nestedScrollEnabled style={styles.groupScroll}>{roots.map((root) => { const active = root.id === activeRootId; const count = options.filter((item) => item.path[0]?.id === root.id && selected.has(item.id)).length; const optionCount = options.filter((item) => item.path[0]?.id === root.id).length - 1; return <Pressable key={root.id} onPress={() => { setActiveRootId(root.id); setSearch(""); }} style={[styles.group, active && styles.groupActive]}><View style={[styles.groupIcon, active && styles.groupIconActive]}><Ionicons color={active ? colors.accent : colors.primary} name={categoryIcon(root.slug)} size={20} /></View><View style={styles.groupCopy}><Text numberOfLines={1} style={styles.groupName}>{root.name}</Text><Text style={styles.meta}>{optionCount} options</Text></View>{count ? <Text style={styles.groupCount}>{count}</Text> : null}</Pressable>; })}</ScrollView></View>
+      <View style={styles.options}><View style={styles.optionsHeader}><View><Text style={styles.activeLabel}>ACTIVE GROUP</Text><Text style={styles.activeName}>{activeRoot?.name || "Select a group"}</Text></View><View style={styles.search}><Ionicons color={colors.muted} name="search-outline" size={17} /><TextInput value={search} onChangeText={setSearch} placeholder="Search inside this group" placeholderTextColor="#94a3b8" style={styles.searchInput} /></View></View>
+        {activeRoot ? <CategoryRow category={activeRoot} fullGroup onPress={() => toggle(activeRoot)} selected={selected.has(activeRoot.id)} /> : null}
+        <ScrollView contentContainerStyle={styles.optionList} nestedScrollEnabled style={styles.optionScroll}>{visible.length ? visible.map((category) => <CategoryRow category={category} covered={covered(category)} key={category.id} onPress={() => toggle(category)} selected={selected.has(category.id)} />) : <View style={styles.empty}><Text style={styles.muted}>No categories match your search in this group.</Text></View>}</ScrollView>
+      </View>
+    </View>}
+    {selectionError ? <Text style={styles.error}>{selectionError}</Text> : null}
+    {selectedOptions.length ? <View style={styles.selectedBox}><Text style={styles.selectedTitle}>Selected access</Text><View style={styles.selectedList}>{selectedOptions.map((category) => <Pressable key={category.id} onPress={() => toggle(category)} style={styles.selectedChip}><Text style={styles.selectedText}>{category.name}</Text><Ionicons color={colors.accent} name="close" size={14} /></Pressable>)}</View></View> : null}
+  </View>;
+}
+
+function CategoryRow({ category, covered, fullGroup, onPress, selected }: { category: CategoryOption; covered?: boolean; fullGroup?: boolean; onPress(): void; selected: boolean }) {
+  const active = selected || covered;
+  return <Pressable onPress={onPress} style={[styles.category, selected && styles.categorySelected, covered && styles.categoryCovered]}><View style={[styles.check, active && styles.checkActive]}>{active ? <Ionicons color="#fff" name="checkmark" size={13} /> : null}</View><View style={styles.categoryCopy}><View style={styles.categoryTitleRow}><Text style={styles.categoryName}>{fullGroup ? `Select full ${category.name} group` : category.name}</Text>{!fullGroup ? <Text style={styles.level}>{category.depth === 1 ? "SECTION" : "SUBCATEGORY"}</Text> : null}{covered ? <Text style={styles.covered}>COVERED BY GROUP</Text> : null}</View><Text style={styles.meta}>{fullGroup ? "List products under every section and subcategory in this group." : category.path.map((item) => item.name).join("  ›  ")}</Text></View><Text style={styles.commission}>Standard commission</Text></Pressable>;
+}
+
+function buildOptions(categories: CategoryDto[]): CategoryOption[] {
+  const byId = new Map(categories.map((item) => [item.id, item]));
+  return categories.map((category) => { const path: CategoryDto[] = [category]; const visited = new Set([category.id]); let parentId = category.parentId; while (parentId && !visited.has(parentId)) { const parent = byId.get(parentId); if (!parent) break; path.unshift(parent); visited.add(parent.id); parentId = parent.parentId; } return { ...category, depth: path.length - 1, path }; });
+}
+
+function sortCategories(left: CategoryOption, right: CategoryOption) { return left.displayOrder - right.displayOrder || left.name.localeCompare(right.name); }
+function categoryIcon(slug: string): React.ComponentProps<typeof Ionicons>["name"] { if (/elect|mobile|computer/.test(slug)) return "phone-portrait-outline"; if (/fashion|cloth|shoe/.test(slug)) return "shirt-outline"; if (/beauty|health/.test(slug)) return "sparkles-outline"; if (/home|furniture|kitchen/.test(slug)) return "home-outline"; if (/food|grocery/.test(slug)) return "basket-outline"; return "grid-outline"; }
+
+const styles = StyleSheet.create({
+  container: { gap: spacing.md }, heading: { alignItems: "flex-start", flexDirection: "row", flexWrap: "wrap", gap: spacing.md, justifyContent: "space-between" }, headingCopy: { alignItems: "flex-start", flexDirection: "row", flex: 1, gap: spacing.sm, minWidth: 260 }, titleIcon: { alignItems: "center", backgroundColor: colors.accentSoft, borderRadius: radius.md, height: 42, justifyContent: "center", width: 42 }, titleCopy: { flex: 1 }, title: { color: colors.text, fontSize: 17, fontWeight: "900" }, muted: { color: colors.muted, fontSize: 11, lineHeight: 18 }, count: { backgroundColor: "#f8fafc", borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 9 }, countText: { color: colors.text, fontSize: 11, fontWeight: "900" }, warning: { backgroundColor: "#fffbeb", borderColor: "#fde68a", borderRadius: radius.md, borderWidth: 1, padding: spacing.md }, warningText: { color: colors.warning, fontWeight: "800" },
+  workspace: { alignItems: "stretch", flexDirection: "row", flexWrap: "wrap", gap: spacing.md }, groups: { backgroundColor: "#f8fafc", borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, minWidth: 240, padding: spacing.sm, width: 270 }, eyebrow: { color: colors.muted, fontSize: 9, fontWeight: "900", letterSpacing: .7, padding: spacing.sm }, groupScroll: { maxHeight: 470 }, group: { alignItems: "center", borderColor: "transparent", borderRadius: radius.md, borderWidth: 1, flexDirection: "row", gap: spacing.sm, marginBottom: 5, padding: 10 }, groupActive: { backgroundColor: colors.surface, borderColor: "#fed7aa" }, groupIcon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.md, height: 38, justifyContent: "center", width: 38 }, groupIconActive: { backgroundColor: colors.accentSoft }, groupCopy: { flex: 1 }, groupName: { color: colors.text, fontSize: 11, fontWeight: "900" }, meta: { color: colors.muted, fontSize: 9, lineHeight: 15, marginTop: 2 }, groupCount: { backgroundColor: colors.accent, borderRadius: radius.pill, color: colors.surface, fontSize: 9, fontWeight: "900", overflow: "hidden", paddingHorizontal: 7, paddingVertical: 4 },
+  options: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flex: 1, minWidth: 310, overflow: "hidden" }, optionsHeader: { alignItems: "center", borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: "row", flexWrap: "wrap", gap: spacing.md, justifyContent: "space-between", padding: spacing.md }, activeLabel: { color: colors.accent, fontSize: 9, fontWeight: "900", letterSpacing: .7 }, activeName: { color: colors.text, fontSize: 19, fontWeight: "900", marginTop: 2 }, search: { alignItems: "center", borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flexDirection: "row", gap: 6, minWidth: 220, paddingHorizontal: 10 }, searchInput: { color: colors.text, flex: 1, height: 40, outlineStyle: "none" } as never, optionScroll: { maxHeight: 360 }, optionList: { gap: 7, padding: spacing.md },
+  category: { alignItems: "flex-start", borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flexDirection: "row", gap: spacing.sm, margin: spacing.md, marginBottom: 0, padding: 12 }, categorySelected: { backgroundColor: colors.accentSoft, borderColor: "#fdba74" }, categoryCovered: { backgroundColor: "#ecfdf5", borderColor: "#a7f3d0" }, check: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.pill, borderWidth: 1, height: 20, justifyContent: "center", width: 20 }, checkActive: { backgroundColor: colors.accent, borderColor: colors.accent }, categoryCopy: { flex: 1 }, categoryTitleRow: { alignItems: "center", flexDirection: "row", flexWrap: "wrap", gap: 5 }, categoryName: { color: colors.text, fontSize: 11, fontWeight: "900" }, level: { backgroundColor: "#f1f5f9", borderRadius: radius.pill, color: colors.muted, fontSize: 7, fontWeight: "900", paddingHorizontal: 6, paddingVertical: 3 }, covered: { backgroundColor: "#d1fae5", borderRadius: radius.pill, color: colors.success, fontSize: 7, fontWeight: "900", paddingHorizontal: 6, paddingVertical: 3 }, commission: { backgroundColor: "#f8fafc", borderRadius: radius.pill, color: colors.muted, fontSize: 8, fontWeight: "800", paddingHorizontal: 7, paddingVertical: 5 }, empty: { alignItems: "center", borderColor: colors.border, borderRadius: radius.md, borderStyle: "dashed", borderWidth: 1, margin: spacing.md, padding: spacing.lg }, error: { color: colors.danger, fontWeight: "800" },
+  selectedBox: { backgroundColor: "#f8fafc", borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, gap: spacing.sm, padding: spacing.md }, selectedTitle: { color: colors.text, fontSize: 11, fontWeight: "900" }, selectedList: { flexDirection: "row", flexWrap: "wrap", gap: 6 }, selectedChip: { alignItems: "center", backgroundColor: colors.surface, borderColor: "#fdba74", borderRadius: radius.pill, borderWidth: 1, flexDirection: "row", gap: 5, paddingHorizontal: 10, paddingVertical: 7 }, selectedText: { color: colors.text, fontSize: 9, fontWeight: "900" }
+});
