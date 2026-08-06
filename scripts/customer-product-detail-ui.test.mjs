@@ -20,5 +20,10 @@ test("product quantity remains bounded by sellable inventory", async () => {
 
 test("customer product detail exposes delivery, protection, share and reporting", async () => {
   const source = await readFile(sourceUrl, "utf8");
-  for (const capability of ["DeliveryAvailability", "BuyerProtection", "Share.share", "ReportPanel", "reportProduct", "You may also like", "ProductCard"]) assert.match(source, new RegExp(capability.replace(".", "\\.")));
+  for (const capability of ["DeliveryAvailability", "BuyerProtection", "Share.share", "ReportPanel", "reportProduct", "Similar Products", "ProductCard"]) assert.match(source, new RegExp(capability.replace(".", "\\.")));
+});
+
+test("customer product detail mirrors the reference purchase hierarchy", async () => {
+  const source = await readFile(sourceUrl, "utf8");
+  for (const capability of ["breadcrumbBar", "CURRENT PRICE", "Marketplace protected", "Buy Now", "Add to Cart", "SellerInfoStrip", "Visit Store", "Description", "Specifications", "mobilePurchase", "Similar Products"]) assert.match(source, new RegExp(capability));
 });
