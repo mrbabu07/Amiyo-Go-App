@@ -12,7 +12,10 @@ test("admin dashboard mirrors the reference control-center hierarchy", async () 
   assert.match(screen, /Analytics & Reports/);
   assert.match(screen, /Catalog/);
   assert.match(screen, /Customers/);
-  assert.match(screen, /Search pages, orders, vendors/);
+  assert.match(screen, /Search admin pages/);
+  assert.match(screen, /searchResults/);
+  assert.match(screen, /onSubmitEditing={submitSearch}/);
+  assert.match(screen, /No admin page matches/);
   assert.match(dashboard, /Amiyo-Go Control Center/);
   assert.match(dashboard, /MARKETPLACE OPERATIONS/);
   assert.match(dashboard, /What needs attention/);
