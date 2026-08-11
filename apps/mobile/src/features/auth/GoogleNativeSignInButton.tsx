@@ -24,7 +24,7 @@ export function GoogleNativeSignInButton({ busy, onError, onStart, onSuccess }: 
     if (!response || handledResponse.current === response || response.type === "dismiss" || response.type === "cancel") return;
     handledResponse.current = response;
     if (response.type !== "success" || !response.params.id_token || !firebaseAuth) {
-      onError(response.type === "error" ? response.error?.message || "Google authentication failed" : "Google did not return an identity token");
+      onError(response.type === "error" ? response.error?.description || response.errorCode || "Google authentication failed" : "Google did not return an identity token");
       return;
     }
     void signInWithCredential(firebaseAuth, GoogleAuthProvider.credential(response.params.id_token)).then((credential) => onSuccess(credential.user)).catch((error: unknown) => onError(error instanceof Error ? error.message.replace("Firebase: ", "") : "Google authentication failed"));

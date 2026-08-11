@@ -23,7 +23,7 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
   const { width } = useWindowDimensions();
   const desktop = width >= 900;
   const product = useQuery({ queryKey: ["catalog", "product", identifier], queryFn: () => getProduct(identifier) });
-  const item = product.data;
+  const item = product.data!;
   const related = useQuery({ queryKey: ["catalog", "related", item?.categoryId], queryFn: () => getProducts({ category: item!.categoryId, limit: 8 }), enabled: Boolean(item?.categoryId) });
   const productId = item?.id;
   const user = firebaseAuth?.currentUser ?? null;

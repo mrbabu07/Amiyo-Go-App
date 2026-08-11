@@ -1,8 +1,7 @@
-import type { CheckoutResult, PaymentMethod } from "@amiyo/contracts";
+import type { PaymentMethod } from "@amiyo/contracts";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Crypto from "expo-crypto";
-import * as Linking from "expo-linking";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
@@ -31,7 +30,6 @@ export function CheckoutScreen() {
   const [couponCode, setCouponCode] = useState<string | null>(params.couponCode?.toUpperCase() || null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<CheckoutResult | null>(null);
   const addresses = useQuery({ queryKey: ["me", "addresses"], queryFn: () => getMyAddresses(user!), enabled: Boolean(user) });
   const quote = useQuery({ queryKey: ["checkout", "quote", couponCode], queryFn: () => getCheckoutQuote(user!, couponCode), enabled: Boolean(user) });
 
@@ -40,7 +38,12 @@ export function CheckoutScreen() {
   async function submit() {
     if (!user || !addressId) return;
     setBusy(true); setError(null);
-    try { const order = await placeOrder(user, { addressId, paymentMethod, couponCode }, Crypto.randomUUID()); setResult(order); queryClient.removeQueries({ queryKey: ["cart"] }); queryClient.removeQueries({ queryKey: ["checkout"] }); }
+    try {
+      const result = await placeOrder(user, { addressId, paymentMethod, couponCode }, Crypto.randomUUID());
+      queryClient.removeQueries({ queryKey: ["cart"] });
+      queryClient.removeQueries({ queryKey: ["checkout"] });
+      router.replace({ pathname: "/order-confirmation", params: { orderId: result.order.id, orderNumber: result.order.orderNumber, totalMinor: result.order.total.amountMinor, payment: result.payment.status, invoice: result.invoiceNumber, actionUrl: result.actionUrl || "", instructions: result.instructions || "" } });
+    }
     catch (caught) { setError(caught instanceof Error ? caught.message : "Checkout could not be completed"); }
     finally { setBusy(false); }
   }
@@ -49,8 +52,6 @@ export function CheckoutScreen() {
   if (addresses.isLoading || quote.isLoading) return <Centered loading title="Preparing checkout" copy="Confirming inventory and current prices." />;
   const loadError = addresses.error || quote.error;
   if (loadError || !quote.data) return <Centered title="Checkout unavailable" copy={loadError instanceof Error ? loadError.message : "Please return to your cart."} action="Back to cart" onPress={() => router.replace("/cart")} />;
-  if (result) return <Screen eyebrow="ORDER CONFIRMED" title="Order placed" description={`Order ${result.order.orderNumber} is ${result.order.status.toLowerCase().replaceAll("_", " ")}.`}><View style={styles.successPanel}><View style={styles.successIcon}><Ionicons name="checkmark" size={36} color={colors.surface} /></View><View style={styles.receipt}><Row label="Total" value={money(result.order.total.amountMinor)} /><Row label="Payment" value={result.payment.status.replaceAll("_", " ")} /><Row label="Invoice" value={result.invoiceNumber} /></View>{result.instructions ? <Text style={styles.notice}>{result.instructions}</Text> : null}{result.actionUrl ? <Pressable onPress={() => Linking.openURL(result.actionUrl!)} style={styles.primary}><Ionicons name="card-outline" size={19} color={colors.surface} /><Text style={styles.primaryText}>Complete payment</Text></Pressable> : null}<Pressable onPress={() => router.replace("/")}><Text style={styles.link}>Continue shopping</Text></Pressable></View></Screen>;
-
   return <Screen eyebrow="SECURE CHECKOUT" title="Delivery and payment" description="Confirm your delivery address and preferred payment method.">
     {error ? <Text style={styles.error}>{error}</Text> : null}
     <View style={styles.steps}><Step complete icon="cart-outline" label="Cart" /><View style={styles.stepLineActive} /><Step active icon="location-outline" label="Delivery" /><View style={styles.stepLine} /><Step icon="card-outline" label="Payment" /></View>

@@ -26,3 +26,11 @@ test("shop slug lookup never reaches the UUID column", async () => {
   assert.equal(where?.slug, "tech-gallery");
   assert.equal(where?.OR, undefined);
 });
+
+test("UUID shop lookup accepts the legacy vendor identifier", async () => {
+  let where: Record<string, unknown> | undefined;
+  const identifier = "00000000-0000-4000-8000-000000000201";
+  const client = { vendorShop: { findFirst: async (input: { where: Record<string, unknown> }) => { where = input.where; return null; } } } as unknown as PrismaClient;
+  await new CatalogRepository(client).getShop(identifier);
+  assert.deepEqual(where?.OR, [{ id: identifier }, { vendorId: identifier }]);
+});

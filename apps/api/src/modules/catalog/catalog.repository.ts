@@ -12,6 +12,7 @@ export type PublicProduct = Prisma.ProductGetPayload<{ include: typeof publicPro
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const identifierWhere = (identifier: string) => uuidPattern.test(identifier) ? { OR: [{ id: identifier }, { slug: identifier }] } : { slug: identifier };
+const shopIdentifierWhere = (identifier: string) => uuidPattern.test(identifier) ? { OR: [{ id: identifier }, { vendorId: identifier }] } : { slug: identifier };
 
 export class CatalogRepository {
   constructor(private readonly client: PrismaClient) {}
@@ -71,7 +72,7 @@ export class CatalogRepository {
 
   getShop(identifier: string) {
     return this.client.vendorShop.findFirst({
-      where: { ...identifierWhere(identifier), status: "ACTIVE", vendor: { status: "APPROVED" } },
+      where: { ...shopIdentifierWhere(identifier), status: "ACTIVE", vendor: { status: "APPROVED" } },
       include: { _count: { select: { products: { where: { status: "APPROVED" } } } } }
     });
   }
