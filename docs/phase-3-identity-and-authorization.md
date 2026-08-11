@@ -8,13 +8,13 @@
 - Immutable audit records for user creation and profile, address, and device mutations.
 - RFC 7807 validation, authentication, account-status, conflict, and rate-limit responses.
 - Strict local CORS allowlisting and an authentication-specific request limit.
-- Expo email/password registration and login, Firebase session restoration, native persistence, SecureStore session metadata, logout cleanup, profile editing, and delivery-address management.
+- Expo email/password registration and login, secure anonymous guest checkout, Firebase session restoration, native persistence, SecureStore session metadata, logout cleanup, profile editing, and delivery-address management.
 - Shared Zod contracts and OpenAPI 3.1 definitions for identity resources.
 - Role, account status, ownership, vendor membership, and staff-permission matrix tests.
 
 ## Firebase Setup
 
-Create `apps/mobile/.env` from `apps/mobile/.env.example` and register the Expo web, Android, and iOS applications in the same non-production Firebase project. Enable Email/Password authentication. Add `localhost` to authorized domains for web development.
+Create `apps/mobile/.env` from `apps/mobile/.env.example` and register the Expo web, Android, and iOS applications in the same non-production Firebase project. Enable Email/Password, Google, and Anonymous authentication. Add `localhost` to authorized domains for web development.
 
 Create `apps/api/.env` from `apps/api/.env.example`. Set `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, and `FIREBASE_PRIVATE_KEY` from a non-production service account. Keep the private key quoted with escaped newlines. Application Default Credentials can be used instead of the email/private-key pair in managed environments.
 

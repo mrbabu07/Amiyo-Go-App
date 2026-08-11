@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, Platform, Pressable, SafeAreaView, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { firebaseAuth } from "../auth/firebase";
+import { ensureGuestUser } from "../auth/guest-auth";
 import { addCartItem } from "../commerce/commerce.api";
 import { addWishlistItem, createProductQuestion, getAlerts, getProductQuestions, getProductReviews, getWishlist, removeAlert, removeWishlistItem, reportProduct, saveAlert } from "../engagement/engagement.api";
 import { DeliveryAvailability } from "../home/components/DeliveryAvailability";
@@ -81,11 +82,10 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
 
   async function addToCart(destination: "/cart" | "/checkout" = "/cart") {
     if (!selected) return;
-    const currentUser = firebaseAuth?.currentUser;
-    if (!currentUser) return router.push("/auth");
     setCartBusy(true);
     setCartError(null);
     try {
+      const currentUser = firebaseAuth?.currentUser || await ensureGuestUser();
       const cart = await addCartItem(currentUser, selected.id, quantity);
       queryClient.setQueryData(["cart"], cart);
       router.push(destination);
