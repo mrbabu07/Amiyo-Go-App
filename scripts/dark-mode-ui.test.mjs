@@ -21,6 +21,9 @@ test("dark mode is global, adaptive, and persisted", async () => {
   assert.match(provider, /root\.style\.setProperty/);
   assert.match(tokens, /DynamicColorIOS/);
   assert.match(tokens, /PlatformColor/);
+  assert.match(tokens, /Platform\.OS === "web"/);
+  assert.match(tokens, /Platform\.OS === "android".*PlatformColor/);
+  assert.doesNotMatch(tokens, /background:\s*PlatformColor/);
   assert.match(tokens, /--amiyo-/);
   assert.match(toggle, /accessibilityLabel/);
   assert.match(toggle, /mode === "system"/);
