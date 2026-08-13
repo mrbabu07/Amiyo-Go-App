@@ -1,6 +1,7 @@
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import type { CreateVendorCategoryRequest, CreateVendorVoucher, SaveVendorBankAccount, Session, SubmitVendorKyc, UpdateVendorShop, UpdateVendorStaff, VendorRegistration } from "@amiyo/contracts";
+import { withSerializableTransaction } from "../../infrastructure/database/transaction.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
 
 function vendorId(session: Session) {
@@ -43,7 +44,7 @@ export class VendorService {
     if (session.status !== "ACTIVE") throw new ApiProblem(403, "ACCOUNT_NOT_ACTIVE", "An active customer account is required");
     const existing = await this.client.vendorMember.findFirst({ where: { userId: session.principal.userId } });
     if (existing) throw new ApiProblem(409, "VENDOR_MEMBERSHIP_EXISTS", "This account already belongs to a vendor workspace");
-    return this.client.$transaction(async (transaction) => {
+    return withSerializableTransaction(this.client, async (transaction) => {
       const ownerRole = await transaction.role.findUnique({ where: { name: "VENDOR_OWNER" } });
       if (!ownerRole) throw new ApiProblem(503, "VENDOR_ROLE_NOT_CONFIGURED", "The vendor owner role has not been seeded");
       const categories = await transaction.category.findMany({ where: { id: { in: input.categoryIds } }, select: { id: true } });
