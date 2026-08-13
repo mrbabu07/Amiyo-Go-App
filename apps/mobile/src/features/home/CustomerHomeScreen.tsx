@@ -39,8 +39,8 @@ const benefits = [
 export function CustomerHomeScreen() {
   const { width } = useWindowDimensions();
   const desktop = width >= 900;
-  const columns = width >= 1180 ? 5 : width >= 820 ? 4 : 2;
-  const contentWidth = Math.min(width - spacing.xl, 1208);
+  const columns = width >= 1180 ? 5 : width >= 820 ? 4 : width < 360 ? 1 : 2;
+  const contentWidth = Math.min(width, 1208);
   const categoryQuery = useQuery({ queryKey: ["catalog", "category-navigation"], queryFn: getCategoryNavigation, staleTime: 5 * 60_000 });
   const productQuery = useQuery({ queryKey: ["catalog", "home-products"], queryFn: () => getProducts({ limit: 20 }) });
   const shopQuery = useQuery({ queryKey: ["catalog", "home-shops"], queryFn: getShops });
@@ -109,12 +109,12 @@ const styles = StyleSheet.create({
   safe: { backgroundColor: colors.surface, flex: 1 },
   screen: { flex: 1 },
   scrollContent: { backgroundColor: colors.background, paddingBottom: 4 },
-  content: { alignSelf: "center", gap: 18, paddingVertical: spacing.md },
+  content: { alignSelf: "center", gap: 18, paddingHorizontal: spacing.sm, paddingVertical: spacing.md },
   section: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, padding: spacing.md },
   heroShowcase: { flexDirection: "row", gap: spacing.md }, heroMain: { flex: 1 },
   flashSection: { backgroundColor: colors.navy, borderRadius: radius.lg, overflow: "hidden", padding: spacing.md },
   desktopFlash: { padding: spacing.lg },
-  flashHeading: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginBottom: spacing.md },
+  flashHeading: { alignItems: "center", flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, justifyContent: "space-between", marginBottom: spacing.md },
   flashEyebrowRow: { alignItems: "center", flexDirection: "row", gap: 5 },
   flashEyebrow: { color: colors.accent, fontSize: 10, fontWeight: "900", letterSpacing: 0.8 },
   flashTitle: { color: colors.surface, fontSize: 22, fontWeight: "900", marginTop: 2 },

@@ -19,7 +19,7 @@ export function ProductListScreen({ category, query, title }: { category?: strin
   const router = useRouter();
   const { width } = useWindowDimensions();
   const desktop = width >= 900;
-  const gridColumns = width >= 1180 ? 5 : width >= 820 ? 4 : 2;
+  const gridColumns = width >= 1180 ? 5 : width >= 820 ? 4 : width < 360 ? 1 : 2;
   const [sort, setSort] = useState<SortMode>("newest");
   const [view, setView] = useState<"grid" | "list">("grid");
   const result = useQuery({ queryKey: ["catalog", "products", category, query], queryFn: () => query ? searchProducts(query) : getProducts({ category, limit: 30 }) });

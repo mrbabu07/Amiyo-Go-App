@@ -27,7 +27,7 @@ export function ShopScreen({ identifier }: { identifier: string }) {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const desktop = width >= 900;
-  const columns = width >= 1180 ? 4 : width >= 760 ? 3 : 2;
+  const columns = width >= 1180 ? 4 : width >= 760 ? 3 : width < 360 ? 1 : 2;
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sort, setSort] = useState<ShopSortMode>("newest");
   const [showMobileFilters, setShowMobileFilters] = useState(false);

@@ -23,7 +23,8 @@ export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; view
   const [query, setQuery] = useState("");
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [activeCategoryId, setActiveCategoryId] = useState("");
-  const innerWidth = Math.min(viewportWidth - spacing.xl, 1280);
+  const compact = viewportWidth < 430;
+  const innerWidth = Math.min(viewportWidth, 1280);
   const activeCategory = categoryTree.find((category) => category.id === activeCategoryId) || categoryTree[0];
 
   useEffect(() => {
@@ -47,16 +48,16 @@ export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; view
   return (
     <View style={[styles.shell, categoriesOpen && styles.openShell]}>
       <View style={[styles.topRow, { width: innerWidth }, desktop && styles.desktopTopRow]}>
-        <Pressable onPress={() => router.replace("/")}><BrandLogo /></Pressable>
+        <Pressable onPress={() => router.replace("/")}><BrandLogo compact={compact} /></Pressable>
         {desktop ? <SearchBox onVoiceResult={voiceSearch} query={query} onChange={setQuery} onSearch={search} /> : null}
         <View style={styles.actions}>
-          <ThemeToggle />
-          <Pressable accessibilityLabel="My account" onPress={() => router.push("/account")} style={styles.iconButton}><Ionicons color={colors.text} name="person-outline" size={22} /></Pressable>
+          <ThemeToggle compact={!desktop} />
+          {desktop ? <Pressable accessibilityLabel="My account" onPress={() => router.push("/account")} style={styles.iconButton}><Ionicons color={colors.text} name="person-outline" size={22} /></Pressable> : null}
           <Pressable accessibilityLabel="Notifications" onPress={() => router.push("/notifications")} style={styles.iconButton}><Ionicons color={colors.text} name="notifications-outline" size={22} /></Pressable>
           <Pressable accessibilityLabel={`Shopping cart with ${cart.data?.itemCount ?? 0} items`} onPress={() => router.push("/cart")} style={styles.iconButton}><Ionicons color={colors.text} name="cart-outline" size={23} /><View style={styles.cartBadge}><Text style={styles.cartBadgeText}>{Math.min(cart.data?.itemCount ?? 0, 99)}</Text></View></Pressable>
         </View>
       </View>
-      {!desktop ? <View style={[styles.mobileSearch, { width: innerWidth }]}><SearchBox onVoiceResult={voiceSearch} query={query} onChange={setQuery} onSearch={search} /></View> : null}
+      {!desktop ? <View style={[styles.mobileSearch, { width: innerWidth }]}><SearchBox compact={compact} onVoiceResult={voiceSearch} query={query} onChange={setQuery} onSearch={search} /></View> : null}
 
       {desktop ? <View style={styles.navBorder}><View style={[styles.desktopNav, { width: innerWidth }]}>
         <Pressable accessibilityRole="button" onPress={() => setCategoriesOpen((open) => !open)} style={[styles.categoryButton, categoriesOpen && styles.activeCategoryButton]}><Ionicons color={categoriesOpen ? colors.surface : colors.primary} name="menu-outline" size={18} /><Text style={[styles.categoryButtonText, categoriesOpen && styles.activeCategoryButtonText]}>Shop by Category</Text><Ionicons color={categoriesOpen ? colors.surface : colors.primary} name={categoriesOpen ? "chevron-up" : "chevron-down"} size={14} /></Pressable>
@@ -75,14 +76,14 @@ export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; view
   );
 }
 
-function SearchBox({ query, onChange, onSearch, onVoiceResult }: { query: string; onChange(value: string): void; onSearch(): void; onVoiceResult(value: string): void }) {
-  return <View style={styles.searchBar}><Ionicons color={colors.muted} name="search-outline" size={20} /><TextInput accessibilityLabel="Search products" onChangeText={onChange} onSubmitEditing={onSearch} placeholder="Search products, brands and shops" placeholderTextColor="#94a3b8" returnKeyType="search" style={styles.searchInput} value={query} /><VoiceSearchButton onResult={onVoiceResult} /><Pressable onPress={onSearch} style={styles.searchButton}><Text style={styles.searchButtonText}>Search</Text></Pressable></View>;
+function SearchBox({ compact = false, query, onChange, onSearch, onVoiceResult }: { compact?: boolean; query: string; onChange(value: string): void; onSearch(): void; onVoiceResult(value: string): void }) {
+  return <View style={styles.searchBar}><Ionicons color={colors.muted} name="search-outline" size={20} /><TextInput accessibilityLabel="Search products" onChangeText={onChange} onSubmitEditing={onSearch} placeholder={compact ? "Search products" : "Search products, brands and shops"} placeholderTextColor="#94a3b8" returnKeyType="search" style={styles.searchInput} value={query} /><VoiceSearchButton onResult={onVoiceResult} /><Pressable accessibilityLabel="Search" onPress={onSearch} style={[styles.searchButton, compact && styles.compactSearchButton]}>{compact ? <Ionicons color={colors.surface} name="arrow-forward" size={18} /> : <Text style={styles.searchButtonText}>Search</Text>}</Pressable></View>;
 }
 
 const menuShadow = Platform.select({ web: { boxShadow: "0 18px 48px rgba(15,23,42,0.18)" }, default: { elevation: 12, shadowColor: "#0f172a", shadowOffset: { width: 0, height: 18 }, shadowOpacity: 0.18, shadowRadius: 24 } });
 const styles = StyleSheet.create({
-  shell: { backgroundColor: colors.surface, zIndex: 20 }, openShell: { zIndex: 50 }, topRow: { alignItems: "center", alignSelf: "center", flexDirection: "row", justifyContent: "space-between", maxWidth: 1280, minHeight: 64 }, desktopTopRow: { gap: spacing.xl, minHeight: 72 },
-  searchBar: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.primary, borderRadius: radius.md, borderWidth: 1.5, flex: 1, flexDirection: "row", maxWidth: 680, overflow: "hidden", paddingLeft: 14 }, mobileSearch: { alignSelf: "center", marginBottom: 10, maxWidth: 1280 }, searchInput: { color: colors.text, flex: 1, fontSize: 14, height: 44, minWidth: 0, outlineStyle: "none" } as never, searchButton: { alignItems: "center", alignSelf: "stretch", backgroundColor: colors.primary, justifyContent: "center", paddingHorizontal: 22 }, searchButtonText: { color: colors.surface, fontSize: 13, fontWeight: "900" },
+  shell: { backgroundColor: colors.surface, zIndex: 20 }, openShell: { zIndex: 50 }, topRow: { alignItems: "center", alignSelf: "center", flexDirection: "row", justifyContent: "space-between", maxWidth: 1280, minHeight: 64, paddingHorizontal: spacing.sm }, desktopTopRow: { gap: spacing.xl, minHeight: 72 },
+  searchBar: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.primary, borderRadius: radius.md, borderWidth: 1.5, flex: 1, flexDirection: "row", maxWidth: 680, overflow: "hidden", paddingLeft: 14 }, mobileSearch: { alignSelf: "center", marginBottom: 10, maxWidth: 1280, paddingHorizontal: spacing.sm }, searchInput: { color: colors.text, flex: 1, fontSize: 14, height: 44, minWidth: 0, outlineStyle: "none" } as never, searchButton: { alignItems: "center", alignSelf: "stretch", backgroundColor: colors.primary, justifyContent: "center", paddingHorizontal: 22 }, compactSearchButton: { paddingHorizontal: 14 }, searchButtonText: { color: colors.surface, fontSize: 13, fontWeight: "900" },
   actions: { flexDirection: "row", gap: 6 }, iconButton: { alignItems: "center", backgroundColor: colors.background, borderColor: colors.border, borderRadius: radius.pill, borderWidth: 1, height: 40, justifyContent: "center", position: "relative", width: 40 }, cartBadge: { alignItems: "center", backgroundColor: colors.accent, borderRadius: radius.pill, height: 17, justifyContent: "center", position: "absolute", right: -2, top: -2, width: 17 }, cartBadgeText: { color: colors.surface, fontSize: 9, fontWeight: "900" },
   navBorder: { borderBottomColor: colors.border, borderBottomWidth: 1, borderTopColor: colors.border, borderTopWidth: 1 }, desktopNav: { alignItems: "center", alignSelf: "center", flexDirection: "row", gap: 26, minHeight: 48, maxWidth: 1280 }, categoryButton: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flexDirection: "row", gap: 7, height: 36, paddingHorizontal: 12 }, activeCategoryButton: { backgroundColor: colors.primary, borderColor: colors.primary }, categoryButtonText: { color: colors.primary, fontSize: 13, fontWeight: "900" }, activeCategoryButtonText: { color: colors.surface }, navText: { color: colors.muted, fontSize: 13, fontWeight: "800" }, activeNav: { color: colors.primary }, sellerButton: { alignItems: "center", flexDirection: "row", gap: 5, marginLeft: "auto" }, sellerLink: { color: colors.accent, fontSize: 13, fontWeight: "900" },
   categoryMenu: { alignSelf: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: "row", height: 500, overflow: "hidden", position: "absolute", top: 126, zIndex: 100, ...menuShadow }, menuSidebar: { backgroundColor: colors.background, borderRightColor: colors.border, borderRightWidth: 1, paddingVertical: 12, width: 270 }, rootScroll: { flex: 1 }, allCategories: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginBottom: 5, marginHorizontal: 12, paddingHorizontal: 12, paddingVertical: 10 }, allCategoriesText: { color: colors.primary, fontSize: 13, fontWeight: "900" }, rootButton: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", minHeight: 43, paddingHorizontal: 20 }, activeRootButton: { backgroundColor: colors.surface }, rootButtonText: { color: colors.text, flex: 1, fontSize: 13, fontWeight: "700" }, activeRootButtonText: { color: colors.primary, fontWeight: "900" },
