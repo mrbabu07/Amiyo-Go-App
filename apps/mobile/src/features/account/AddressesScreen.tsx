@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import type { Address, AddressInput } from "@amiyo/contracts";
+import { addressInputSchema, type Address, type AddressInput } from "@amiyo/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
@@ -38,14 +38,15 @@ export function AddressesScreen() {
   const upazilaOptions = useMemo(() => upazilas.filter((item) => item.parentId === form.districtId), [form.districtId]);
   const unionOptions = useMemo(() => unions.filter((item) => item.parentId === form.upazilaId), [form.upazilaId]);
   const cardWidth = width >= 1100 ? "33.333%" : width >= 720 ? "50%" : "100%";
-  const valid = form.recipientName.trim().length >= 2 && form.phone.trim().length >= 8 && form.line1.trim().length >= 3 && Boolean(form.divisionId && form.districtId);
+  const addressValidation = addressInputSchema.safeParse(payload());
+  const valid = addressValidation.success && Boolean(form.divisionId && form.districtId);
 
   function close() { setOpen(false); setEditingId(null); setForm(emptyForm); setError(null); }
   function add() { setEditingId(null); setForm({ ...emptyForm, isDefault: !addresses.data?.length }); setOpen(true); }
   function edit(address: Address) { setEditingId(address.id); setForm({ label: address.label, recipientName: address.recipientName, phone: address.phone, line1: address.line1, line2: address.line2 || "", ...locationIds(address), postalCode: address.postalCode || "", latitude: address.latitude === null ? "" : String(address.latitude), longitude: address.longitude === null ? "" : String(address.longitude), isDefault: address.isDefault }); setOpen(true); }
   function payload(): AddressInput { const latitude = form.latitude.trim() ? Number(form.latitude) : null; const longitude = form.longitude.trim() ? Number(form.longitude) : null; return { label: form.label.trim(), recipientName: form.recipientName.trim(), phone: form.phone.trim(), line1: form.line1.trim(), line2: form.line2.trim() || null, division: locationName(divisions, form.divisionId), district: locationName(districts, form.districtId), upazila: locationName(upazilas, form.upazilaId) || null, unionName: locationName(unions, form.unionId) || null, postalCode: form.postalCode.trim() || null, latitude: Number.isFinite(latitude) ? latitude : null, longitude: Number.isFinite(longitude) ? longitude : null, isDefault: form.isDefault }; }
   async function refresh() { await queryClient.invalidateQueries({ queryKey: ["me", "addresses"] }); await queryClient.invalidateQueries({ queryKey: ["me", "dashboard"] }); }
-  async function save() { if (!user || !valid) return; setBusy(true); setError(null); try { if (editingId) await updateMyAddress(user, editingId, payload()); else await createMyAddress(user, payload()); await refresh(); close(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not save address"); } finally { setBusy(false); } }
+  async function save() { if (!user) return; if (!addressValidation.success) { setError(addressValidation.error.issues[0]?.message || "Please check the address fields"); return; } setBusy(true); setError(null); try { if (editingId) await updateMyAddress(user, editingId, addressValidation.data); else await createMyAddress(user, addressValidation.data); await refresh(); close(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not save address"); } finally { setBusy(false); } }
   async function makeDefault(address: Address) { if (!user) return; await updateMyAddress(user, address.id, { ...address, isDefault: true }); await refresh(); }
   function remove(address: Address) { Alert.alert("Delete address?", "Are you sure you want to delete this address?", [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => void (async () => { if (!user) return; await deleteMyAddress(user, address.id); await refresh(); })() }]); }
 

@@ -14,8 +14,8 @@ async function authenticatedRequest<T>(user: User, path: string, init?: RequestI
     }
   });
   if (!response.ok) {
-    const problem = await response.json().catch(() => null) as { title?: string } | null;
-    throw new Error(problem?.title || `Request failed (${response.status})`);
+    const problem = await response.json().catch(() => null) as { detail?: string; title?: string } | null;
+    throw new Error(problem?.detail || problem?.title || `Request failed (${response.status})`);
   }
   return response.status === 204 ? undefined as T : response.json() as Promise<T>;
 }
