@@ -15,7 +15,7 @@ import { PromoTiles } from "./components/PromoTiles";
 import { ShopRail } from "./components/ShopRail";
 import { StoreHeader } from "./components/StoreHeader";
 import { StoreFooter } from "./components/StoreFooter";
-import { getCategories, getProducts, getShops } from "../catalog/catalog.api";
+import { getCategoryNavigation, getProducts, getShops } from "../catalog/catalog.api";
 import { getCategoryVisual } from "../catalog/category-visuals";
 import { toHomeProduct } from "../catalog/catalog.view-model";
 import { getGrowthFeed } from "../engagement/engagement.api";
@@ -41,7 +41,7 @@ export function CustomerHomeScreen() {
   const desktop = width >= 900;
   const columns = width >= 1180 ? 5 : width >= 820 ? 4 : 2;
   const contentWidth = Math.min(width - spacing.xl, 1208);
-  const categoryQuery = useQuery({ queryKey: ["catalog", "categories"], queryFn: getCategories });
+  const categoryQuery = useQuery({ queryKey: ["catalog", "category-navigation"], queryFn: getCategoryNavigation, staleTime: 5 * 60_000 });
   const productQuery = useQuery({ queryKey: ["catalog", "home-products"], queryFn: () => getProducts({ limit: 20 }) });
   const shopQuery = useQuery({ queryKey: ["catalog", "home-shops"], queryFn: getShops });
   const growthQuery = useQuery({ queryKey: ["growth", "feed"], queryFn: getGrowthFeed });

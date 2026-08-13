@@ -8,7 +8,15 @@ export const publicProductInclude = {
   _count: { select: { reviews: true } }
 } satisfies Prisma.ProductInclude;
 
+export const publicProductSummaryInclude = {
+  shop: true,
+  media: { orderBy: { displayOrder: "asc" as const }, take: 1 },
+  variants: { where: { active: true }, orderBy: { priceMinor: "asc" as const }, take: 1, include: { inventory: true } },
+  _count: { select: { reviews: true } }
+} satisfies Prisma.ProductInclude;
+
 export type PublicProduct = Prisma.ProductGetPayload<{ include: typeof publicProductInclude }>;
+export type PublicProductSummary = Prisma.ProductGetPayload<{ include: typeof publicProductSummaryInclude }>;
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const identifierWhere = (identifier: string) => uuidPattern.test(identifier) ? { OR: [{ id: identifier }, { slug: identifier }] } : { slug: identifier };
@@ -19,6 +27,10 @@ export class CatalogRepository {
 
   listCategories() {
     return this.client.category.findMany({ where: { status: "active" }, include: { attributes: { include: { options: { orderBy: { displayOrder: "asc" } } }, orderBy: { displayOrder: "asc" } } }, orderBy: [{ displayOrder: "asc" }, { name: "asc" }] });
+  }
+
+  listCategoryNavigation() {
+    return this.client.category.findMany({ where: { status: "active" }, select: { id: true, parentId: true, name: true, slug: true, description: true, displayOrder: true, version: true }, orderBy: [{ displayOrder: "asc" }, { name: "asc" }] });
   }
 
   async listPublishedProducts(input: CatalogQuery) {
@@ -43,7 +55,7 @@ export class CatalogRepository {
       orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
       ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
       take: input.limit + 1,
-      include: publicProductInclude
+      include: publicProductSummaryInclude
     });
     const hasNextPage = rows.length > input.limit;
     const data = hasNextPage ? rows.slice(0, input.limit) : rows;

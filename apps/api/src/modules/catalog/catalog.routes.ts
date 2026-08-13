@@ -22,11 +22,15 @@ export function createCatalogRouter() {
   const authenticate = createAuthenticationMiddleware(new FirebaseTokenVerifier(), new IdentityService(prisma));
 
   router.get("/api/v2/catalog/categories", async (_req, res, next) => {
-    try { res.json(await service.categories()); } catch (error) { next(error); }
+    try { res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300").json(await service.categories()); } catch (error) { next(error); }
+  });
+
+  router.get("/api/v2/catalog/categories/navigation", async (_req, res, next) => {
+    try { res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300").json(await service.categoryNavigation()); } catch (error) { next(error); }
   });
 
   router.get("/api/v2/catalog/products", async (req, res, next) => {
-    try { res.json(await service.products(catalogQuerySchema.parse(req.query))); } catch (error) { next(error); }
+    try { res.set("Cache-Control", "public, max-age=15, stale-while-revalidate=30").json(await service.products(catalogQuerySchema.parse(req.query))); } catch (error) { next(error); }
   });
 
   router.get("/api/v2/catalog/search", async (req, res, next) => {
@@ -40,7 +44,7 @@ export function createCatalogRouter() {
   router.get("/api/v2/shops", async (req, res, next) => {
     try {
       const query = cursorPaginationQuerySchema.parse(req.query);
-      res.json(await service.shops(query.cursor, query.limit));
+      res.set("Cache-Control", "public, max-age=30, stale-while-revalidate=60").json(await service.shops(query.cursor, query.limit));
     } catch (error) { next(error); }
   });
 

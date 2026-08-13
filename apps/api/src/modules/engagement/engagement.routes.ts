@@ -17,7 +17,7 @@ export function createEngagementRouter() {
   const writeLimit = rateLimit({ windowMs: 60_000, limit: 20, standardHeaders: "draft-7", legacyHeaders: false, message: { type: "https://amiyo.app/problems/rate-limit", title: "Too many requests", status: 429, code: "ENGAGEMENT_RATE_LIMITED" } });
   const chatLimit = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: "draft-7", legacyHeaders: false, message: { type: "https://amiyo.app/problems/rate-limit", title: "Too many messages", status: 429, code: "CHAT_RATE_LIMITED" } });
 
-  router.get("/api/v2/growth/feed", async (_req, res, next) => { try { res.json(await service.growthFeed()); } catch (error) { next(error); } });
+  router.get("/api/v2/growth/feed", async (_req, res, next) => { try { res.set("Cache-Control", "public, max-age=15, stale-while-revalidate=30").json(await service.growthFeed()); } catch (error) { next(error); } });
   router.post("/api/v2/newsletter/subscribe", writeLimit, async (req, res, next) => { try { res.status(201).json(await service.subscribeNewsletter(newsletterSubscribeInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.get("/api/v2/newsletter/unsubscribe/:token", async (req, res, next) => { try { res.json(await service.unsubscribeNewsletter(tokenSchema.parse(req.params).token)); } catch (error) { next(error); } });
   router.get("/api/v2/catalog/products/:productId/reviews", async (req, res, next) => { try { res.json(await service.productReviews(productSchema.parse(req.params).productId)); } catch (error) { next(error); } });

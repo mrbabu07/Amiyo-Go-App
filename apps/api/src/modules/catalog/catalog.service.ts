@@ -2,9 +2,12 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 import { authorize, type Permission, type Role } from "@amiyo/domain";
 import type { ArchiveProduct, BulkProductCsvInput, CatalogQuery, CreateProductInput, InventoryAdjustmentInput, ModerationInput, ReplaceProductMedia, ReplaceProductVariants, Session, UpdateProductInput } from "@amiyo/contracts";
 import { withSerializableTransaction, type TransactionClient } from "../../infrastructure/database/transaction.js";
+import { TtlCache } from "../../infrastructure/cache/ttl-cache.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
-import { CatalogRepository, publicProductInclude, type PublicProduct } from "./catalog.repository.js";
+import { CatalogRepository, publicProductInclude, type PublicProduct, type PublicProductSummary } from "./catalog.repository.js";
 import { parseProductCsv, serializeProductCsv } from "./product-csv.js";
+
+const catalogPublicCache = new TtlCache();
 
 function mediaUrl(storageKey: string | null) {
   if (!storageKey) return null;
@@ -13,7 +16,7 @@ function mediaUrl(storageKey: string | null) {
   return base ? `${base}/${storageKey.replace(/^\//, "")}` : null;
 }
 
-function productSummary(product: PublicProduct) {
+function productSummary(product: PublicProduct | PublicProductSummary) {
   const variant = product.variants[0];
   return {
     id: product.id,
@@ -120,16 +123,28 @@ async function audit(transaction: TransactionClient, input: { actorUserId: strin
 
 export class CatalogService {
   private readonly repository: CatalogRepository;
+  private readonly publicCache = catalogPublicCache;
   constructor(private readonly client: PrismaClient) { this.repository = new CatalogRepository(client); }
 
   async categories() {
-    const rows = await this.repository.listCategories();
-    return rows.map((row) => ({ id: row.id, parentId: row.parentId, name: row.name, slug: row.slug, description: row.description, displayOrder: row.displayOrder, version: row.version, attributes: row.attributes.map((attribute) => ({ id: attribute.id, key: attribute.key, label: attribute.label, dataType: attribute.dataType, required: attribute.required, filterable: attribute.filterable, displayOrder: attribute.displayOrder, options: attribute.options.map((option) => ({ id: option.id, value: option.value, label: option.label, displayOrder: option.displayOrder })) })) }));
+    return this.publicCache.getOrCreate("categories:full", 5 * 60_000, async () => {
+      const rows = await this.repository.listCategories();
+      return rows.map((row) => ({ id: row.id, parentId: row.parentId, name: row.name, slug: row.slug, description: row.description, displayOrder: row.displayOrder, version: row.version, attributes: row.attributes.map((attribute) => ({ id: attribute.id, key: attribute.key, label: attribute.label, dataType: attribute.dataType, required: attribute.required, filterable: attribute.filterable, displayOrder: attribute.displayOrder, options: attribute.options.map((option) => ({ id: option.id, value: option.value, label: option.label, displayOrder: option.displayOrder })) })) }));
+    }, 30 * 60_000);
+  }
+
+  async categoryNavigation() {
+    return this.publicCache.getOrCreate("categories:navigation", 5 * 60_000, async () => {
+      const rows = await this.repository.listCategoryNavigation();
+      return rows.map((row) => ({ ...row, attributes: [] }));
+    }, 30 * 60_000);
   }
 
   async products(input: CatalogQuery) {
-    const result = await this.repository.listPublishedProducts(input);
-    return { data: result.data.map(productSummary), pageInfo: result.pageInfo };
+    return this.publicCache.getOrCreate(`products:${JSON.stringify(input)}`, 30_000, async () => {
+      const result = await this.repository.listPublishedProducts(input);
+      return { data: result.data.map(productSummary), pageInfo: result.pageInfo };
+    }, 5 * 60_000);
   }
 
   async product(identifier: string) {
@@ -139,8 +154,16 @@ export class CatalogService {
   }
 
   async shops(cursor: string | undefined, limit: number) {
-    const result = await this.repository.listShops(cursor, limit);
-    return { data: result.data.map((shop) => ({ id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), productCount: shop._count.products, version: shop.version })), pageInfo: result.pageInfo };
+    return this.publicCache.getOrCreate(`shops:${cursor ?? "first"}:${limit}`, 60_000, async () => {
+      const result = await this.repository.listShops(cursor, limit);
+      return { data: result.data.map((shop) => ({ id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), productCount: shop._count.products, version: shop.version })), pageInfo: result.pageInfo };
+    }, 5 * 60_000);
+  }
+
+  async warmPublicCatalog() {
+    await this.categoryNavigation();
+    await this.products({ limit: 20, sort: "newest" });
+    await this.shops(undefined, 30);
   }
 
   async shop(identifier: string, query: CatalogQuery) {

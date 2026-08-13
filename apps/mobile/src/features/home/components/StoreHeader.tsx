@@ -6,7 +6,7 @@ import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, Vi
 import { colors, radius, spacing } from "../../../ui/tokens";
 import { useAuthStore } from "../../auth/auth.store";
 import { firebaseAuth } from "../../auth/firebase";
-import { getCategories } from "../../catalog/catalog.api";
+import { getCategoryNavigation } from "../../catalog/catalog.api";
 import { buildCategoryTree } from "../../catalog/category-tree";
 import { getCart } from "../../commerce/commerce.api";
 import { BrandLogo } from "./BrandLogo";
@@ -18,7 +18,7 @@ export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; view
   const hasVendorWorkspace = useAuthStore((state) => Boolean(state.session?.vendorMemberships.length));
   const user = firebaseAuth?.currentUser ?? null;
   const cart = useQuery({ queryKey: ["cart"], queryFn: () => getCart(user!), enabled: Boolean(user) });
-  const categories = useQuery({ queryKey: ["catalog", "categories"], queryFn: getCategories, enabled: desktop });
+  const categories = useQuery({ queryKey: ["catalog", "category-navigation"], queryFn: getCategoryNavigation, enabled: desktop, staleTime: 5 * 60_000 });
   const categoryTree = useMemo(() => buildCategoryTree(categories.data || []), [categories.data]);
   const [query, setQuery] = useState("");
   const [categoriesOpen, setCategoriesOpen] = useState(false);

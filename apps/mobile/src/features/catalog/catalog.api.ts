@@ -27,6 +27,10 @@ export async function getCategories() {
   return categorySchema.array().parse(await publicRequest("/api/v2/catalog/categories"));
 }
 
+export async function getCategoryNavigation() {
+  return categorySchema.array().parse(await publicRequest("/api/v2/catalog/categories/navigation"));
+}
+
 export async function getProducts(input: Partial<CatalogQuery> = {}) {
   return productListResponseSchema.parse(await publicRequest(`/api/v2/catalog/products${queryString(input)}`));
 }
