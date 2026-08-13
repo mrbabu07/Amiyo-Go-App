@@ -4,6 +4,17 @@ import { paginatedResponseSchema } from "./pagination.js";
 
 export const productStatusSchema = z.enum(["DRAFT", "SUBMITTED", "APPROVED", "REJECTED", "ARCHIVED"]);
 
+export const categoryAttributeSchema = z.object({
+  id: uuidSchema,
+  key: z.string(),
+  label: z.string(),
+  dataType: z.enum(["text", "number", "boolean", "select", "multiselect"]),
+  required: z.boolean(),
+  filterable: z.boolean(),
+  displayOrder: z.number().int(),
+  options: z.array(z.object({ id: uuidSchema, value: z.string(), label: z.string(), displayOrder: z.number().int() }))
+});
+
 export const categorySchema = z.object({
   id: uuidSchema,
   parentId: uuidSchema.nullable(),
@@ -11,7 +22,8 @@ export const categorySchema = z.object({
   slug: z.string().min(1),
   description: z.string().nullable(),
   displayOrder: z.number().int(),
-  version: versionSchema
+  version: versionSchema,
+  attributes: z.array(categoryAttributeSchema).default([])
 });
 
 export const productVariantSchema = z.object({

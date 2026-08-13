@@ -9,6 +9,26 @@ const prisma = new PrismaClient();
 
 const taxonomyCategoryId = (index: number) => `00000000-0000-4000-9000-${String(index + 1).padStart(12, "0")}`;
 
+type SeedCategoryAttribute = { key: string; label: string; dataType: "text" | "number" | "boolean" | "select" | "multiselect"; required?: boolean; filterable?: boolean; options?: string[] };
+const commonProductAttributes: SeedCategoryAttribute[] = [
+  { key: "condition", label: "Condition", dataType: "select", required: true, filterable: true, options: ["New", "Like New", "Used"] },
+  { key: "country_of_origin", label: "Country of origin", dataType: "text", filterable: true }
+];
+function categoryAttributes(rootSlug: string, categorySlug: string): SeedCategoryAttribute[] {
+  const searchable = `${rootSlug} ${categorySlug}`;
+  const fields: SeedCategoryAttribute[] = [...commonProductAttributes];
+  if (/fashion|cloth|shoe|jewelry|watch|luggage/.test(searchable)) fields.push({ key: "material", label: "Material", dataType: "text", required: true, filterable: true }, { key: "style", label: "Style", dataType: "select", filterable: true, options: ["Casual", "Formal", "Traditional", "Sports", "Everyday"] });
+  if (/shoe|footwear/.test(searchable)) fields.push({ key: "size_system", label: "Size system", dataType: "select", required: true, options: ["EU", "UK", "US", "BD"] });
+  if (/electronic|mobile|gadget|computer|audio|camera|appliance/.test(searchable)) fields.push({ key: "model", label: "Model", dataType: "text", required: true, filterable: true }, { key: "warranty_months", label: "Warranty (months)", dataType: "number", filterable: true }, { key: "connectivity", label: "Connectivity", dataType: "multiselect", filterable: true, options: ["Wi-Fi", "Bluetooth", "USB", "4G", "5G"] });
+  if (/phone|tablet|computer|gadget/.test(searchable)) fields.push({ key: "storage_capacity", label: "Storage capacity", dataType: "select", filterable: true, options: ["32 GB", "64 GB", "128 GB", "256 GB", "512 GB", "1 TB"] });
+  if (/food|grocery|fresh|fish|seafood|vegetable|restaurant|pharmacy/.test(searchable)) fields.push({ key: "net_weight", label: "Net weight / quantity", dataType: "text", required: true, filterable: true }, { key: "expiry_information", label: "Expiry information", dataType: "text" }, { key: "organic", label: "Organic", dataType: "boolean", filterable: true });
+  if (/beauty|health|pharmacy|grooming/.test(searchable)) fields.push({ key: "form", label: "Product form", dataType: "select", filterable: true, options: ["Liquid", "Cream", "Gel", "Powder", "Tablet", "Other"] }, { key: "suitable_for", label: "Suitable for", dataType: "multiselect", filterable: true, options: ["Men", "Women", "Kids", "All"] });
+  if (/home|furniture|kitchen|decor|hardware|garden/.test(searchable)) fields.push({ key: "material", label: "Material", dataType: "text", filterable: true }, { key: "dimensions", label: "Dimensions", dataType: "text" }, { key: "assembly_required", label: "Assembly required", dataType: "boolean" });
+  if (/baby|kids|toy/.test(searchable)) fields.push({ key: "age_range", label: "Age range", dataType: "select", required: true, filterable: true, options: ["0-6 months", "6-12 months", "1-3 years", "3-5 years", "5-8 years", "8+ years"] });
+  const unique = new Map(fields.map((field) => [field.key, field]));
+  return [...unique.values()];
+}
+
 const permissionKeys = [
   "catalog:read", "cart:manage", "checkout:manage", "orders:read", "orders:manage", "returns:manage", "reviews:manage", "support:manage", "vendor:read", "vendor:manage", "products:manage", "inventory:manage", "finance:read", "finance:manage", "kyc:manage", "admin:read", "admin:manage", "audit:read", "settings:manage"
 ];
@@ -127,6 +147,16 @@ async function seedDemoCatalog() {
       });
       taxonomyIndex += 1;
       categoryIds.set(child.slug, category.id);
+    }
+  }
+  for (const root of categoryTaxonomy) {
+    for (const slug of [root.slug, ...root.children.map((child) => child.slug)]) {
+      const categoryId = categoryIds.get(slug)!;
+      if (await prisma.categoryAttribute.count({ where: { categoryId } })) continue;
+      const definitions = categoryAttributes(root.slug, slug);
+      for (const [displayOrder, attribute] of definitions.entries()) {
+        await prisma.categoryAttribute.create({ data: { categoryId, key: attribute.key, label: attribute.label, dataType: attribute.dataType, required: attribute.required ?? false, filterable: attribute.filterable ?? false, displayOrder, options: { create: (attribute.options ?? []).map((label, optionOrder) => ({ label, value: label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""), displayOrder: optionOrder })) } } });
+      }
     }
   }
   const beautyId = categoryIds.get("beauty")!;

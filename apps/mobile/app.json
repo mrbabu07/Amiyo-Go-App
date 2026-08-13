@@ -28,6 +28,13 @@
         }
       ],
       "expo-document-picker",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow Amiyo-Go to use the microphone for voice product search.",
+          "speechRecognitionPermission": "Allow Amiyo-Go to recognize speech for voice product search."
+        }
+      ],
       "expo-notifications",
       "@sentry/react-native",
       "expo-web-browser"

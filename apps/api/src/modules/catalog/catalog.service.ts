@@ -81,6 +81,30 @@ function json(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
+async function validateCategoryAttributes(client: PrismaClient, categoryId: string, values: Record<string, unknown> | null | undefined) {
+  const categories = await client.category.findMany({ where: { status: "active" }, select: { id: true, parentId: true, attributes: { include: { options: true } } } });
+  const byId = new Map(categories.map((category) => [category.id, category]));
+  const selected = byId.get(categoryId);
+  if (!selected) throw new ApiProblem(400, "CATEGORY_NOT_FOUND", "Select an active product category");
+  const path: typeof categories = [];
+  const visited = new Set<string>();
+  let current: typeof selected | undefined = selected;
+  while (current && !visited.has(current.id)) { path.unshift(current); visited.add(current.id); current = current.parentId ? byId.get(current.parentId) : undefined; }
+  const definitions = new Map(path.flatMap((category) => category.attributes).map((attribute) => [attribute.key, attribute]));
+  const attributes = values ?? {};
+  for (const definition of definitions.values()) {
+    const value = attributes[definition.key];
+    const present = value === true || typeof value === "number" || (typeof value === "string" && value.trim().length > 0) || (Array.isArray(value) && value.length > 0);
+    if (definition.required && !present) throw new ApiProblem(400, "CATEGORY_ATTRIBUTE_REQUIRED", `${definition.label} is required`);
+    if (!present) continue;
+    if (definition.dataType === "number" && !Number.isFinite(Number(value))) throw new ApiProblem(400, "CATEGORY_ATTRIBUTE_INVALID", `${definition.label} must be a number`);
+    if (definition.dataType === "boolean" && typeof value !== "boolean") throw new ApiProblem(400, "CATEGORY_ATTRIBUTE_INVALID", `${definition.label} must be yes or no`);
+    const allowed = new Set(definition.options.map((option) => option.value));
+    if (definition.dataType === "select" && (typeof value !== "string" || !allowed.has(value))) throw new ApiProblem(400, "CATEGORY_ATTRIBUTE_INVALID", `Select a valid ${definition.label}`);
+    if (definition.dataType === "multiselect" && (!Array.isArray(value) || value.some((item) => typeof item !== "string" || !allowed.has(item)))) throw new ApiProblem(400, "CATEGORY_ATTRIBUTE_INVALID", `Select valid ${definition.label} options`);
+  }
+}
+
 async function audit(transaction: TransactionClient, input: { actorUserId: string; action: string; resourceId: string; correlationId?: string; before?: unknown; after?: unknown }) {
   await transaction.auditLog.create({ data: {
     actorUserId: input.actorUserId,
@@ -100,7 +124,7 @@ export class CatalogService {
 
   async categories() {
     const rows = await this.repository.listCategories();
-    return rows.map((row) => ({ id: row.id, parentId: row.parentId, name: row.name, slug: row.slug, description: row.description, displayOrder: row.displayOrder, version: row.version }));
+    return rows.map((row) => ({ id: row.id, parentId: row.parentId, name: row.name, slug: row.slug, description: row.description, displayOrder: row.displayOrder, version: row.version, attributes: row.attributes.map((attribute) => ({ id: attribute.id, key: attribute.key, label: attribute.label, dataType: attribute.dataType, required: attribute.required, filterable: attribute.filterable, displayOrder: attribute.displayOrder, options: attribute.options.map((option) => ({ id: option.id, value: option.value, label: option.label, displayOrder: option.displayOrder })) })) }));
   }
 
   async products(input: CatalogQuery) {
@@ -130,6 +154,7 @@ export class CatalogService {
     const shop = await this.client.vendorShop.findUnique({ where: { id: input.shopId } });
     if (!shop) throw new ApiProblem(404, "SHOP_NOT_FOUND", "Shop not found");
     requireAuthorization(session, "products:manage", shop.vendorId);
+    await validateCategoryAttributes(this.client, input.categoryId, input.dynamicAttributes);
     return withSerializableTransaction(this.client, async (transaction) => {
       const product = await transaction.product.create({ data: {
         vendorId: shop.vendorId,
@@ -184,6 +209,7 @@ export class CatalogService {
     if (!before) throw new ApiProblem(404, "PRODUCT_NOT_FOUND", "Product not found");
     requireAuthorization(session, "products:manage", before.vendorId);
     if (!(["DRAFT", "REJECTED"] as const).includes(before.status as "DRAFT" | "REJECTED")) throw new ApiProblem(409, "PRODUCT_NOT_EDITABLE", "Only draft or rejected products can be edited");
+    if (input.categoryId !== undefined || input.dynamicAttributes !== undefined) await validateCategoryAttributes(this.client, input.categoryId ?? before.categoryId, input.dynamicAttributes === undefined ? before.dynamicAttributes as Record<string, unknown> | null : input.dynamicAttributes);
     return withSerializableTransaction(this.client, async (transaction) => {
       const data: Prisma.ProductUncheckedUpdateManyInput = { version: { increment: 1 } };
       if (input.name !== undefined) data.name = input.name;

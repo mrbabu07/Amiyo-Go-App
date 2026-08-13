@@ -18,7 +18,7 @@ export class CatalogRepository {
   constructor(private readonly client: PrismaClient) {}
 
   listCategories() {
-    return this.client.category.findMany({ where: { status: "active" }, orderBy: [{ displayOrder: "asc" }, { name: "asc" }] });
+    return this.client.category.findMany({ where: { status: "active" }, include: { attributes: { include: { options: { orderBy: { displayOrder: "asc" } } }, orderBy: { displayOrder: "asc" } } }, orderBy: [{ displayOrder: "asc" }, { name: "asc" }] });
   }
 
   async listPublishedProducts(input: CatalogQuery) {

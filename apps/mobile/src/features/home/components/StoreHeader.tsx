@@ -10,6 +10,7 @@ import { getCategories } from "../../catalog/catalog.api";
 import { buildCategoryTree } from "../../catalog/category-tree";
 import { getCart } from "../../commerce/commerce.api";
 import { BrandLogo } from "./BrandLogo";
+import { VoiceSearchButton } from "./VoiceSearchButton";
 
 export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; viewportWidth: number }) {
   const router = useRouter();
@@ -37,19 +38,23 @@ export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; view
     if (term) navigate(`/search?q=${encodeURIComponent(term)}`);
     else Alert.alert("What are you looking for?", "Enter a product, brand, or shop name.");
   };
+  const voiceSearch = (term: string) => {
+    setQuery(term);
+    navigate(`/search?q=${encodeURIComponent(term)}`);
+  };
 
   return (
     <View style={[styles.shell, categoriesOpen && styles.openShell]}>
       <View style={[styles.topRow, { width: innerWidth }, desktop && styles.desktopTopRow]}>
         <Pressable onPress={() => router.replace("/")}><BrandLogo /></Pressable>
-        {desktop ? <SearchBox query={query} onChange={setQuery} onSearch={search} /> : null}
+        {desktop ? <SearchBox onVoiceResult={voiceSearch} query={query} onChange={setQuery} onSearch={search} /> : null}
         <View style={styles.actions}>
           <Pressable accessibilityLabel="My account" onPress={() => router.push("/account")} style={styles.iconButton}><Ionicons color={colors.text} name="person-outline" size={22} /></Pressable>
           <Pressable accessibilityLabel="Notifications" onPress={() => router.push("/notifications")} style={styles.iconButton}><Ionicons color={colors.text} name="notifications-outline" size={22} /></Pressable>
           <Pressable accessibilityLabel={`Shopping cart with ${cart.data?.itemCount ?? 0} items`} onPress={() => router.push("/cart")} style={styles.iconButton}><Ionicons color={colors.text} name="cart-outline" size={23} /><View style={styles.cartBadge}><Text style={styles.cartBadgeText}>{Math.min(cart.data?.itemCount ?? 0, 99)}</Text></View></Pressable>
         </View>
       </View>
-      {!desktop ? <View style={[styles.mobileSearch, { width: innerWidth }]}><SearchBox query={query} onChange={setQuery} onSearch={search} /></View> : null}
+      {!desktop ? <View style={[styles.mobileSearch, { width: innerWidth }]}><SearchBox onVoiceResult={voiceSearch} query={query} onChange={setQuery} onSearch={search} /></View> : null}
 
       {desktop ? <View style={styles.navBorder}><View style={[styles.desktopNav, { width: innerWidth }]}>
         <Pressable accessibilityRole="button" onPress={() => setCategoriesOpen((open) => !open)} style={[styles.categoryButton, categoriesOpen && styles.activeCategoryButton]}><Ionicons color={categoriesOpen ? colors.surface : colors.primary} name="menu-outline" size={18} /><Text style={[styles.categoryButtonText, categoriesOpen && styles.activeCategoryButtonText]}>Shop by Category</Text><Ionicons color={categoriesOpen ? colors.surface : colors.primary} name={categoriesOpen ? "chevron-up" : "chevron-down"} size={14} /></Pressable>
@@ -68,8 +73,8 @@ export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; view
   );
 }
 
-function SearchBox({ query, onChange, onSearch }: { query: string; onChange(value: string): void; onSearch(): void }) {
-  return <View style={styles.searchBar}><Ionicons color={colors.muted} name="search-outline" size={20} /><TextInput accessibilityLabel="Search products" onChangeText={onChange} onSubmitEditing={onSearch} placeholder="Search products, brands and shops" placeholderTextColor="#94a3b8" returnKeyType="search" style={styles.searchInput} value={query} /><Pressable onPress={onSearch} style={styles.searchButton}><Text style={styles.searchButtonText}>Search</Text></Pressable></View>;
+function SearchBox({ query, onChange, onSearch, onVoiceResult }: { query: string; onChange(value: string): void; onSearch(): void; onVoiceResult(value: string): void }) {
+  return <View style={styles.searchBar}><Ionicons color={colors.muted} name="search-outline" size={20} /><TextInput accessibilityLabel="Search products" onChangeText={onChange} onSubmitEditing={onSearch} placeholder="Search products, brands and shops" placeholderTextColor="#94a3b8" returnKeyType="search" style={styles.searchInput} value={query} /><VoiceSearchButton onResult={onVoiceResult} /><Pressable onPress={onSearch} style={styles.searchButton}><Text style={styles.searchButtonText}>Search</Text></Pressable></View>;
 }
 
 const menuShadow = Platform.select({ web: { boxShadow: "0 18px 48px rgba(15,23,42,0.18)" }, default: { elevation: 12, shadowColor: "#0f172a", shadowOffset: { width: 0, height: 18 }, shadowOpacity: 0.18, shadowRadius: 24 } });

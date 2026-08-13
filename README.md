@@ -43,4 +43,6 @@ The complete maintainer and operations handover index is available at `docs/hand
 
 The web app runs at `http://localhost:8081` after `npm run dev`. Use `npm run dev:mobile -- --web` when only the Expo web client is needed.
 
+Marketplace search includes microphone voice input on supported browsers and native builds. Because speech recognition uses a native Expo module, test it with an Expo development/production build rather than Expo Go; unsupported environments fall back safely to typed search.
+
 Never commit real secrets. Rotate any database URL that has been pasted into chat.
