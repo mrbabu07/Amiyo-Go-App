@@ -8,7 +8,9 @@ export function ThemeProvider({ children }: PropsWithChildren) {
   const system = useColorScheme();
   const resolved = mode === "system" ? system || "light" : mode;
   useEffect(() => {
-    Appearance.setColorScheme(mode === "system" ? "unspecified" : mode);
+    if (Platform.OS !== "web" && typeof Appearance.setColorScheme === "function") {
+      Appearance.setColorScheme(mode === "system" ? "unspecified" : mode);
+    }
     if (Platform.OS !== "web" || typeof document === "undefined") return;
     const root = document.documentElement;
     const palette = resolved === "dark" ? darkPalette : lightPalette;
