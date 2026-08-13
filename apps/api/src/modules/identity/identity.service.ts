@@ -11,6 +11,7 @@ const sessionInclude = {
 } satisfies Prisma.UserInclude;
 
 type SessionUser = Prisma.UserGetPayload<{ include: typeof sessionInclude }>;
+const loginActivityWriteIntervalMs = 5 * 60_000;
 
 function normalized(value: string | undefined) {
   return value?.trim().toLowerCase() || null;
@@ -168,12 +169,14 @@ export class IdentityService {
   constructor(private readonly client: PrismaClient) {}
 
   async synchronizeSession(identity: VerifiedIdentity, correlationId?: string): Promise<Session> {
-    return withSerializableTransaction(this.client, async (transaction) => {
-      let user = await transaction.user.findUnique({ where: { providerSubject: identity.subject }, include: sessionInclude });
-      if (!user) {
+    const existing = await this.client.user.findUnique({ where: { providerSubject: identity.subject }, include: sessionInclude });
+    if (existing) return toSession(await this.refreshSessionUser(existing, identity));
+
+    try {
+      const user = await withSerializableTransaction(this.client, async (transaction) => {
         const customerRole = await transaction.role.findUnique({ where: { name: "CUSTOMER" } });
         if (!customerRole) throw new ApiProblem(503, "IDENTITY_NOT_CONFIGURED", "The customer role has not been seeded");
-        user = await transaction.user.create({
+        const created = await transaction.user.create({
           data: {
             providerSubject: identity.subject,
             normalizedEmail: normalized(identity.email),
@@ -185,25 +188,37 @@ export class IdentityService {
           include: sessionInclude
         });
         await writeAudit(transaction, {
-          actorUserId: user.id,
+          actorUserId: created.id,
           action: "identity.user.created",
           resourceType: "user",
-          resourceId: user.id,
+          resourceId: created.id,
           ...(correlationId ? { correlationId } : {}),
           after: { provider: "firebase", roles: ["CUSTOMER"] }
         });
-      } else {
-        user = await transaction.user.update({
-          where: { id: user.id },
-          data: {
-            lastLoginAt: new Date(),
-            ...(!user.normalizedEmail && identity.email ? { normalizedEmail: normalized(identity.email) } : {}),
-            ...(!user.normalizedPhone && identity.phone ? { normalizedPhone: normalized(identity.phone) } : {})
-          },
-          include: sessionInclude
-        });
-      }
+        return created;
+      });
       return toSession(user);
+    } catch (error) {
+      if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") throw error;
+      const winner = await this.client.user.findUnique({ where: { providerSubject: identity.subject }, include: sessionInclude });
+      if (!winner) throw error;
+      return toSession(await this.refreshSessionUser(winner, identity));
+    }
+  }
+
+  private async refreshSessionUser(user: SessionUser, identity: VerifiedIdentity) {
+    const loginWriteDue = !user.lastLoginAt || Date.now() - user.lastLoginAt.getTime() >= loginActivityWriteIntervalMs;
+    const email = !user.normalizedEmail && identity.email ? normalized(identity.email) : undefined;
+    const phone = !user.normalizedPhone && identity.phone ? normalized(identity.phone) : undefined;
+    if (!loginWriteDue && email === undefined && phone === undefined) return user;
+    return this.client.user.update({
+      where: { id: user.id },
+      data: {
+        ...(loginWriteDue ? { lastLoginAt: new Date() } : {}),
+        ...(email === undefined ? {} : { normalizedEmail: email }),
+        ...(phone === undefined ? {} : { normalizedPhone: phone })
+      },
+      include: sessionInclude
     });
   }
 
