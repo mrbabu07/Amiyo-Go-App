@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 import { loadEnvFile } from "node:process";
 import { PrismaClient, RoleName } from "@prisma/client";
 import { categoryTaxonomy } from "./category-taxonomy.js";
@@ -149,16 +150,22 @@ async function seedDemoCatalog() {
       categoryIds.set(child.slug, category.id);
     }
   }
+  const existingAttributeCategories = new Set((await prisma.categoryAttribute.findMany({ distinct: ["categoryId"], select: { categoryId: true } })).map((item) => item.categoryId));
+  const attributeRows: Array<{ id: string; categoryId: string; key: string; label: string; dataType: string; required: boolean; filterable: boolean; displayOrder: number }> = [];
+  const optionRows: Array<{ attributeId: string; value: string; label: string; displayOrder: number }> = [];
   for (const root of categoryTaxonomy) {
     for (const slug of [root.slug, ...root.children.map((child) => child.slug)]) {
       const categoryId = categoryIds.get(slug)!;
-      if (await prisma.categoryAttribute.count({ where: { categoryId } })) continue;
+      if (existingAttributeCategories.has(categoryId)) continue;
       const definitions = categoryAttributes(root.slug, slug);
       for (const [displayOrder, attribute] of definitions.entries()) {
-        await prisma.categoryAttribute.create({ data: { categoryId, key: attribute.key, label: attribute.label, dataType: attribute.dataType, required: attribute.required ?? false, filterable: attribute.filterable ?? false, displayOrder, options: { create: (attribute.options ?? []).map((label, optionOrder) => ({ label, value: label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""), displayOrder: optionOrder })) } } });
+        const id = randomUUID();
+        attributeRows.push({ id, categoryId, key: attribute.key, label: attribute.label, dataType: attribute.dataType, required: attribute.required ?? false, filterable: attribute.filterable ?? false, displayOrder });
+        optionRows.push(...(attribute.options ?? []).map((label, displayOrder) => ({ attributeId: id, label, value: label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""), displayOrder })));
       }
     }
   }
+  if (attributeRows.length) await prisma.$transaction([prisma.categoryAttribute.createMany({ data: attributeRows, skipDuplicates: true }), prisma.categoryAttributeOption.createMany({ data: optionRows, skipDuplicates: true })]);
   const beautyId = categoryIds.get("beauty")!;
   const foodCupboardId = categoryIds.get("food-cupboard")!;
   await prisma.category.updateMany({ where: { slug: { in: ["skincare", "makeup", "fragrance"] } }, data: { parentId: beautyId, status: "active" } });
