@@ -3,6 +3,7 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 import type { CheckoutInput, CheckoutQuoteInput, CheckoutResult, Session } from "@amiyo/contracts";
 import { withSerializableTransaction } from "../../infrastructure/database/transaction.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
+import { CommissionService } from "../finance/commission.service.js";
 import { OutboxRepository } from "../outbox/outbox.repository.js";
 
 const cartInclude = { items: { orderBy: { createdAt: "asc" as const }, include: { product: { include: { shop: true } }, variant: { include: { inventory: true, media: { orderBy: { displayOrder: "asc" as const }, take: 1 } } } } } } satisfies Prisma.CartInclude;
@@ -49,7 +50,8 @@ function orderDto(order: LoadedOrder) {
 
 export class CommerceService {
   private readonly outbox = new OutboxRepository();
-  constructor(private readonly client: PrismaClient) {}
+  private readonly commissions: CommissionService;
+  constructor(private readonly client: PrismaClient) { this.commissions = new CommissionService(client); }
 
   private async activeCart(userId: string) {
     const existing = await this.client.cart.findFirst({ where: { userId, status: "ACTIVE" }, include: cartInclude });
@@ -100,7 +102,17 @@ export class CommerceService {
       const subtotal = cart.items.reduce((sum, item) => sum + item.variant.priceMinor * BigInt(item.quantity), 0n); if (input.couponCode) await transaction.$queryRaw`SELECT id FROM coupons WHERE code = ${input.couponCode} FOR UPDATE`; const applied = await couponDiscount(transaction, userId, input.couponCode, subtotal); const discount = applied?.discount ?? 0n; const deliveryFee = BigInt(process.env.CHECKOUT_DELIVERY_FEE_MINOR || "6000"); const delivery = deliveryFee * BigInt(groups.size); const total = subtotal - discount + delivery; const confirmed = input.paymentMethod === "COD";
       const order = await transaction.order.create({ data: { orderNumber: `AGO-${Date.now()}-${randomUUID().slice(0, 8).toUpperCase()}`, userId, status: confirmed ? "CONFIRMED" : "PENDING_PAYMENT", subtotalMinor: subtotal, discountMinor: discount, deliveryMinor: delivery, totalMinor: total, placedAt: new Date(), addresses: { create: { type: "delivery", recipientName: address.recipientName, phone: address.phone, line1: address.line1, line2: address.line2, division: address.division, district: address.district, upazila: address.upazila, unionName: address.unionName, postalCode: address.postalCode } } } });
       const groupEntries = [...groups.entries()]; const vendorSubtotals = groupEntries.map(([, items]) => items.reduce((sum, item) => sum + item.variant.priceMinor * BigInt(item.quantity), 0n)); const vendorDiscounts = allocateDiscount(vendorSubtotals, discount);
-      for (const [groupIndex, [vendorId, items]] of groupEntries.entries()) { const vendorSubtotal = vendorSubtotals[groupIndex]!; const vendorDiscount = vendorDiscounts[groupIndex]!; const vendorOrder = await transaction.vendorOrder.create({ data: { orderId: order.id, vendorId, shopId: items[0]!.product.shopId, subtotalMinor: vendorSubtotal, discountMinor: vendorDiscount, deliveryMinor: deliveryFee, totalMinor: vendorSubtotal - vendorDiscount + deliveryFee } }); for (const item of items) { await transaction.orderItem.create({ data: { orderId: order.id, vendorOrderId: vendorOrder.id, productId: item.productId, variantId: item.variantId, productNameSnapshot: item.product.name, skuSnapshot: item.variant.sku, attributesSnapshot: item.variant.attributes ?? Prisma.JsonNull, quantity: item.quantity, unitPriceMinor: item.variant.priceMinor, lineTotalMinor: item.variant.priceMinor * BigInt(item.quantity), currency: item.variant.currency } }); await transaction.inventoryItem.update({ where: { id: item.variant.inventory!.id }, data: { reserved: { increment: item.quantity }, version: { increment: 1 } } }); await transaction.inventoryReservation.create({ data: { variantId: item.variantId, orderId: order.id, quantity: item.quantity, expiresAt: new Date(Date.now() + 30 * 60_000) } }); } }
+      for (const [groupIndex, [vendorId, items]] of groupEntries.entries()) {
+        const vendorSubtotal = vendorSubtotals[groupIndex]!;
+        const vendorDiscount = vendorDiscounts[groupIndex]!;
+        const commissionMinor = await this.commissions.calculateForVendorOrder(transaction, order.id, vendorId, items.map((item) => ({ productId: item.productId, categoryId: item.product.categoryId, quantity: item.quantity, unitPriceMinor: item.variant.priceMinor })));
+        const vendorOrder = await transaction.vendorOrder.create({ data: { orderId: order.id, vendorId, shopId: items[0]!.product.shopId, subtotalMinor: vendorSubtotal, discountMinor: vendorDiscount, deliveryMinor: deliveryFee, totalMinor: vendorSubtotal - vendorDiscount + deliveryFee, commissionMinor } });
+        for (const item of items) {
+          await transaction.orderItem.create({ data: { orderId: order.id, vendorOrderId: vendorOrder.id, productId: item.productId, variantId: item.variantId, productNameSnapshot: item.product.name, skuSnapshot: item.variant.sku, attributesSnapshot: item.variant.attributes ?? Prisma.JsonNull, quantity: item.quantity, unitPriceMinor: item.variant.priceMinor, lineTotalMinor: item.variant.priceMinor * BigInt(item.quantity), currency: item.variant.currency } });
+          await transaction.inventoryItem.update({ where: { id: item.variant.inventory!.id }, data: { reserved: { increment: item.quantity }, version: { increment: 1 } } });
+          await transaction.inventoryReservation.create({ data: { variantId: item.variantId, orderId: order.id, quantity: item.quantity, expiresAt: new Date(Date.now() + 30 * 60_000) } });
+        }
+      }
       if (applied) await transaction.couponRedemption.create({ data: { couponId: applied.coupon.id, userId, orderId: order.id, amountMinor: discount } });
       const provider = input.paymentMethod === "COD" ? "cod" : input.paymentMethod.toLowerCase(); const payment = await transaction.payment.create({ data: { orderId: order.id, provider, method: input.paymentMethod, status: confirmed ? "AUTHORIZED" : "REQUIRES_ACTION", amountMinor: total, attempts: { create: { attemptNumber: 1, status: confirmed ? "authorized" : "requires_action", requestSnapshot: { method: input.paymentMethod } } } } });
       const invoice = await transaction.invoice.create({ data: { orderId: order.id, number: `INV-${order.orderNumber}` } }); await transaction.cart.update({ where: { id: cart.id }, data: { status: "CONVERTED" } }); await transaction.orderStatusEvent.create({ data: { orderId: order.id, toStatus: order.status, actorType: "customer", actorId: userId } }); await this.outbox.enqueue(transaction, { aggregateType: "order", aggregateId: order.id, eventType: "order.placed", idempotencyKey: `order-placed:${order.id}`, payload: { orderId: order.id, paymentMethod: input.paymentMethod } });

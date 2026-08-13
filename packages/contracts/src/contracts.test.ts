@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { addCartItemSchema, addressInputSchema, catalogQuerySchema, checkoutInputSchema, createOpenApiDocument, createProductSchema, createReturnSchema, deviceInputSchema, minorUnitSchema, moneySchema, productReportInputSchema, vendorOrderStatusSchema, vendorRegistrationSchema } from "./index.js";
+import { addCartItemSchema, addressInputSchema, catalogQuerySchema, checkoutInputSchema, commissionRuleInputSchema, createOpenApiDocument, createProductSchema, createReturnSchema, deviceInputSchema, minorUnitSchema, moneySchema, productReportInputSchema, vendorOrderStatusSchema, vendorRegistrationSchema } from "./index.js";
 
 test("money contracts preserve bigint-safe minor units", () => {
   assert.deepEqual(moneySchema.parse({ amountMinor: "249000", currency: "bdt" }), { amountMinor: "249000", currency: "BDT" });
@@ -75,6 +75,13 @@ test("commerce contracts enforce quantities and supported payments", () => {
 test("identity mutation contracts reject incomplete data", () => {
   assert.equal(addressInputSchema.safeParse({ label: "Home" }).success, false);
   assert.equal(deviceInputSchema.safeParse({ installationId: "install-123", platform: "web", pushToken: "token-value" }).success, false);
+});
+
+test("commission rules require bounded non-zero fees and valid dates", () => {
+  const base = { vendorId: null, categoryId: null, rateBps: 750, fixedMinor: "0", currency: "BDT", effectiveFrom: new Date().toISOString(), effectiveTo: null };
+  assert.equal(commissionRuleInputSchema.safeParse(base).success, true);
+  assert.equal(commissionRuleInputSchema.safeParse({ ...base, rateBps: 0 }).success, false);
+  assert.equal(commissionRuleInputSchema.safeParse({ ...base, rateBps: 5001 }).success, false);
 });
 
 test("catalog contracts enforce bounded pagination and integer money", () => {

@@ -81,6 +81,7 @@ const adminGroups: AdminGroup[] = [
     { label: "Newsletter", href: "/admin/newsletter", icon: "mail-outline" }
   ] },
   { label: "Finance", icon: "wallet-outline", links: [
+    { label: "Commission Rules", href: "/admin/commissions", icon: "calculator-outline" },
     { label: "Vendor Payouts", href: "/admin/payouts", icon: "wallet-outline" },
     { label: "Payout Requests", href: "/admin/payout-requests", icon: "cash-outline" },
     { label: "Payment Verification", href: "/admin/payment-verification", icon: "card-outline" }

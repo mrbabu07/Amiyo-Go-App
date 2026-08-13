@@ -16,7 +16,7 @@ These decisions block production implementation. Do not guess them in code.
 | Product approval | TBD | Draft/submitted/approved/rejected transitions and owner actions. |
 | Inventory policy | TBD | Reservation duration, overselling, backorder rules. |
 | Order split | Proposed | One parent order and one vendor order per vendor. Needs approval. |
-| Commission | TBD | Percentage/fixed rules, effective dates, product/category/vendor overrides. |
+| Commission | IMPLEMENTED | Global, category, vendor, and vendor-category percentage/fixed rules with effective dates and checkout snapshots. |
 | Payments | PARTIAL | COD and validated SSLCommerz hosted sandbox checkout are implemented. Approve live credentials and final bKash, Nagad, card, and manual-proof scope. |
 | Refunds | TBD | Full/partial, gateway/manual, role approvals, ledger timing. |
 | Cancellation | TBD | Allowed states and actor-specific reason list. |
@@ -27,7 +27,7 @@ These decisions block production implementation. Do not guess them in code.
 | Rider contact exposure | TBD | Confirm whether customer tracking may display rider name and masked phone. |
 | Vendor payout | TBD | Schedule, minimum balance, hold/dispute rules. |
 | COD split collection | TBD | Confirm whether one parent payment is collected once or each vendor shipment records a separate COD collection. Automatic delivery settlement remains disabled until approved. |
-| Commission precedence | TBD | Confirm vendor/category/global rule precedence, fixed-fee application unit, and refund reversal behavior before automatic vendor settlement. |
+| Commission precedence | PARTIAL | Checkout uses vendor-category, vendor, category, then global precedence; fixed fees apply once per matched vendor order. Refund reversal remains a settlement decision. |
 | KYC | TBD | Required documents, expiry, rejection/resubmission workflow. |
 | Geography | TBD | Division/district/upazila/union and serviceability source. |
 | Notifications | PARTIAL | In-app and Expo Push are implemented through transactional outbox/BullMQ delivery. Approve any release-one SMS/email events, quiet hours, and opt-out policy. |

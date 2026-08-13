@@ -1,4 +1,4 @@
-import { adminAnalyticsQuerySchema, adminBannerInputSchema, adminCategoryAttributesInputSchema, adminCategoryInputSchema, adminCategoryRequestReviewSchema, adminKycReviewInputSchema, adminToggleInputSchema, adminUserRolesInputSchema, adminUserStatusInputSchema, adminVendorStatusInputSchema, paymentVerificationReviewSchema, trustCaseActionInputSchema } from "@amiyo/contracts";
+import { adminAnalyticsQuerySchema, adminBannerInputSchema, adminCategoryAttributesInputSchema, adminCategoryInputSchema, adminCategoryRequestReviewSchema, adminKycReviewInputSchema, adminToggleInputSchema, adminUserRolesInputSchema, adminUserStatusInputSchema, adminVendorStatusInputSchema, commissionRuleInputSchema, endCommissionRuleSchema, paymentVerificationReviewSchema, trustCaseActionInputSchema, updateCommissionRuleSchema } from "@amiyo/contracts";
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
@@ -6,6 +6,7 @@ import { prisma } from "../../infrastructure/database/prisma.js";
 import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "../identity/identity.middleware.js";
 import { IdentityService } from "../identity/identity.service.js";
+import { CommissionService } from "../finance/commission.service.js";
 import { AdminService } from "./admin.service.js";
 
 const idSchema = z.object({ id: z.string().uuid() });
@@ -18,11 +19,16 @@ const categoryControlSchema = z.object({ status: z.enum(["active", "inactive"]).
 export function createAdminRouter() {
   const router = Router();
   const service = new AdminService(prisma);
+  const commissions = new CommissionService(prisma);
   const authenticate = createAuthenticationMiddleware(new FirebaseTokenVerifier(), new IdentityService(prisma));
   const writes = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: "draft-7", legacyHeaders: false, message: { title: "Too many admin requests", status: 429, code: "ADMIN_RATE_LIMITED" } });
   router.use("/api/v2/admin/workspace", authenticate);
   router.get("/api/v2/admin/workspace", async (req, res, next) => { try { res.json(await service.workspace(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/commerce", async (req, res, next) => { try { res.json(await service.commerce(requireSession(req))); } catch (error) { next(error); } });
+  router.get("/api/v2/admin/workspace/commission-rules", async (req, res, next) => { try { res.json(await commissions.list(requireSession(req))); } catch (error) { next(error); } });
+  router.post("/api/v2/admin/workspace/commission-rules", writes, async (req, res, next) => { try { res.status(201).json(await commissions.create(requireSession(req), commissionRuleInputSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.put("/api/v2/admin/workspace/commission-rules/:id", writes, async (req, res, next) => { try { res.json(await commissions.update(requireSession(req), idSchema.parse(req.params).id, updateCommissionRuleSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.delete("/api/v2/admin/workspace/commission-rules/:id", writes, async (req, res, next) => { try { res.json(await commissions.end(requireSession(req), idSchema.parse(req.params).id, endCommissionRuleSchema.parse(req.body).expectedVersion)); } catch (error) { next(error); } });
   router.patch("/api/v2/admin/workspace/inventory/:id", writes, async (req, res, next) => { try { res.json(await service.updateInventory(requireSession(req), idSchema.parse(req.params).id, inventoryInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.patch("/api/v2/admin/workspace/coupons/:id", writes, async (req, res, next) => { try { res.json(await service.toggleCoupon(requireSession(req), idSchema.parse(req.params).id, adminToggleInputSchema.parse(req.body).active)); } catch (error) { next(error); } });
   router.post("/api/v2/admin/workspace/coupons", writes, async (req, res, next) => { try { res.status(201).json(await service.createCoupon(requireSession(req), couponInputSchema.parse(req.body))); } catch (error) { next(error); } });

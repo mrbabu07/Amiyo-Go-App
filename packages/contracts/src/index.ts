@@ -17,3 +17,4 @@ export * from "./support.js";
 export * from "./vendor.js";
 export * from "./admin.js";
 export * from "./media.js";
+export * from "./commission.js";
