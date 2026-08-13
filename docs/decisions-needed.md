@@ -17,7 +17,7 @@ These decisions block production implementation. Do not guess them in code.
 | Inventory policy | TBD | Reservation duration, overselling, backorder rules. |
 | Order split | Proposed | One parent order and one vendor order per vendor. Needs approval. |
 | Commission | TBD | Percentage/fixed rules, effective dates, product/category/vendor overrides. |
-| Payments | TBD | COD, bKash, Nagad, SSLCommerz, cards, manual proof scope. |
+| Payments | PARTIAL | COD and validated SSLCommerz hosted sandbox checkout are implemented. Approve live credentials and final bKash, Nagad, card, and manual-proof scope. |
 | Refunds | TBD | Full/partial, gateway/manual, role approvals, ledger timing. |
 | Cancellation | TBD | Allowed states and actor-specific reason list. |
 | Returns | TBD | Window, eligibility, evidence, pickup, refund order. |

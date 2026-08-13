@@ -10,6 +10,7 @@ const apiEnvObject = z.object({
   NODE_ENV: nodeEnvSchema,
   PORT: z.coerce.number().int().positive().default(4000),
   API_PUBLIC_URL: z.string().url(),
+  APP_PUBLIC_URL: optionalUrlSchema,
   DATABASE_URL: z.string().url(),
   DIRECT_URL: optionalUrlSchema,
   REDIS_URL: z.string().url(),
@@ -20,6 +21,9 @@ const apiEnvObject = z.object({
   FIREBASE_USE_APPLICATION_DEFAULT: z.enum(["true", "false"]).default("false"),
   FIREBASE_AUTH_EMULATOR_HOST: optionalStringSchema,
   OBJECT_STORAGE_PUBLIC_URL: optionalUrlSchema,
+  SSLCOMMERZ_STORE_ID: optionalStringSchema,
+  SSLCOMMERZ_STORE_PASSWORD: optionalSecretSchema,
+  SSLCOMMERZ_SANDBOX: z.enum(["true", "false"]).default("true"),
   LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "fatal"]).default("info")
 });
 
@@ -29,6 +33,8 @@ function validateFirebaseAdmin(env: z.infer<typeof apiEnvObject>, context: z.Ref
   if (env.NODE_ENV === "production" && env.FIREBASE_AUTH_EMULATOR_HOST) context.addIssue({ code: z.ZodIssueCode.custom, path: ["FIREBASE_AUTH_EMULATOR_HOST"], message: "Firebase Auth emulator is forbidden in production" });
   if (["staging", "production"].includes(env.NODE_ENV) && !serviceAccountComplete && !applicationDefaultComplete) context.addIssue({ code: z.ZodIssueCode.custom, path: ["FIREBASE_PROJECT_ID"], message: "Firebase Admin credentials or application-default mode are required" });
   if (["staging", "production"].includes(env.NODE_ENV) && !env.FIREBASE_STORAGE_BUCKET) context.addIssue({ code: z.ZodIssueCode.custom, path: ["FIREBASE_STORAGE_BUCKET"], message: "Firebase Storage bucket is required" });
+  if (Boolean(env.SSLCOMMERZ_STORE_ID) !== Boolean(env.SSLCOMMERZ_STORE_PASSWORD)) context.addIssue({ code: z.ZodIssueCode.custom, path: ["SSLCOMMERZ_STORE_ID"], message: "SSLCommerz store ID and password must be configured together" });
+  if (env.NODE_ENV === "production" && env.SSLCOMMERZ_STORE_ID && env.SSLCOMMERZ_SANDBOX === "true") context.addIssue({ code: z.ZodIssueCode.custom, path: ["SSLCOMMERZ_SANDBOX"], message: "SSLCommerz sandbox mode is forbidden in production" });
 }
 
 export const apiEnvSchema = apiEnvObject.superRefine(validateFirebaseAdmin);

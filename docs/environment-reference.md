@@ -8,6 +8,7 @@ Real values belong in local ignored files or encrypted environment managers. `EX
 |---|---|---|
 | `NODE_ENV` | Runtime mode | `staging` or `production` outside local development |
 | `API_PUBLIC_URL` | Canonical HTTPS API origin | Required |
+| `APP_PUBLIC_URL` | Customer app origin used after hosted payment redirects | Required for online payments |
 | `DATABASE_URL` | Pooled PostgreSQL runtime connection | Required; secret |
 | `DIRECT_URL` | Direct PostgreSQL migration connection | CI migration only; secret |
 | `REDIS_URL` | TLS Redis connection | Required for worker; secret |
@@ -28,6 +29,9 @@ Real values belong in local ignored files or encrypted environment managers. `EX
 | `FIREBASE_USE_APPLICATION_DEFAULT` | Select workload identity/ADC instead of key material | Explicit `true` only on configured hosts |
 | `FIREBASE_AUTH_EMULATOR_HOST` | Local Auth emulator endpoint | Development/test only; forbidden in production |
 | `PAYMENT_WEBHOOK_SECRET` | HMAC webhook verification | Required for online payments; secret |
+| `SSLCOMMERZ_STORE_ID` | SSLCommerz merchant store ID | Secret deployment setting |
+| `SSLCOMMERZ_STORE_PASSWORD` | SSLCommerz merchant store password | Secret deployment setting |
+| `SSLCOMMERZ_SANDBOX` | Select sandbox or live SSLCommerz endpoints | `true` outside production; `false` in production |
 | `AMIYO_DELIVERY_CALLBACK_API_SECRET` | Delivery callback API-key verification | Required; secret |
 | `AMIYO_DELIVERY_CALLBACK_SECRET` | Delivery callback HMAC verification | Required; secret |
 | `AMIYO_DELIVERY_CALLBACK_TOLERANCE_SECONDS` | Replay time window | Default `300` |
