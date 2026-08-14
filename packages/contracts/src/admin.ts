@@ -47,6 +47,14 @@ export const adminOrderDetailSchema = z.object({
     items: z.array(z.object({ id: uuidSchema, productName: z.string(), sku: z.string(), quantity: z.number().int().positive(), unitPrice: adminOrderMoneySchema, lineTotal: adminOrderMoneySchema }))
   }))
 });
+export const adminOrderSlaSchema = z.object({
+  summary: z.object({ total: z.number().int().nonnegative(), processing: z.number().int().nonnegative(), delivery: z.number().int().nonnegative() }),
+  breaches: z.array(z.object({ orderId: uuidSchema, orderNumber: z.string(), breachType: z.enum(["processing", "delivery"]), breachHours: z.number().int().nonnegative(), deadline: timestampSchema, status: z.string(), vendorNames: z.array(z.string()), customerName: z.string(), total: adminOrderMoneySchema, createdAt: timestampSchema }))
+});
+export const adminOrderFraudSchema = z.object({
+  summary: z.object({ totalFlagged: z.number().int().nonnegative(), bySignal: z.record(z.number().int().nonnegative()) }),
+  orders: z.array(z.object({ orderId: uuidSchema, orderNumber: z.string(), createdAt: timestampSchema, status: z.string(), vendorNames: z.array(z.string()), customerName: z.string(), customerPhone: z.string(), deliveryZone: z.string(), paymentMethod: z.string().nullable(), total: adminOrderMoneySchema, signals: z.array(z.object({ type: z.enum(["multiple_cod_same_address", "abnormal_order_size", "velocity_check", "payment_risk_hold"]), severity: z.enum(["high", "medium"]), label: z.string() })).min(1) }))
+});
 export const paymentVerificationSchema = z.object({ id: uuidSchema, paymentId: uuidSchema, orderId: uuidSchema, orderNumber: z.string(), provider: z.string(), amountMinor: z.string(), currency: z.string(), status: z.string(), transactionRef: z.string(), senderMasked: z.string().nullable(), evidenceStorageKey: z.string().nullable(), createdAt: timestampSchema });
 export const paymentVerificationReviewSchema = z.object({ status: z.enum(["approved", "rejected"]), reason: z.string().trim().min(3).max(500) });
 export const adminCategoryInputSchema = z.object({ parentId: uuidSchema.nullable().optional(), name: z.string().trim().min(2).max(120), slug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), description: z.string().trim().max(1000).nullable().optional(), displayOrder: z.number().int().default(0) });
@@ -140,6 +148,8 @@ export type AdminAnalyticsDto = z.infer<typeof adminAnalyticsSchema>;
 export type AdminBannerInput = z.infer<typeof adminBannerInputSchema>;
 export type AdminBannerDto = z.infer<typeof adminBannerSchema>;
 export type AdminOrderDetail = z.infer<typeof adminOrderDetailSchema>;
+export type AdminOrderSlaDto = z.infer<typeof adminOrderSlaSchema>;
+export type AdminOrderFraudDto = z.infer<typeof adminOrderFraudSchema>;
 export type AdminVoucherInput = z.infer<typeof adminVoucherInputSchema>;
 export type AdminFlashSaleInput = z.infer<typeof adminFlashSaleInputSchema>;
 export type AdminMarketingDto = z.infer<typeof adminMarketingSchema>;

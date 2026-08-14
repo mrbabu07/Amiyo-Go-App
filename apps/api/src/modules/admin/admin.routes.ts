@@ -44,6 +44,8 @@ export function createAdminRouter() {
   router.get("/api/v2/admin/workspace/settings", async (req, res, next) => { try { res.json(await service.settings(requireSession(req))); } catch (error) { next(error); } });
   router.put("/api/v2/admin/workspace/settings", writes, async (req, res, next) => { try { res.json(await service.updateSettings(requireSession(req), platformSettingsInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/commerce", async (req, res, next) => { try { res.json(await service.commerce(requireSession(req))); } catch (error) { next(error); } });
+  router.get("/api/v2/admin/workspace/orders-analysis/sla-breaches", async (req, res, next) => { try { res.json(await service.orderSlaBreaches(requireSession(req))); } catch (error) { next(error); } });
+  router.get("/api/v2/admin/workspace/orders-analysis/fraud-queue", async (req, res, next) => { try { res.json(await service.orderFraudQueue(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/inventory", async (req, res, next) => { try { res.json(await service.inventory(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/coupons", async (req, res, next) => { try { res.json(await service.coupons(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/campaigns", async (req, res, next) => { try { res.json(await service.campaigns(requireSession(req))); } catch (error) { next(error); } });

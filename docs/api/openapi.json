@@ -32735,6 +32735,371 @@
         }
       }
     },
+    "/api/v2/admin/workspace/orders-analysis/sla-breaches": {
+      "get": {
+        "tags": [
+          "Admin Orders"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Processing and delivery SLA breach monitor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "processing": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "delivery": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "processing",
+                        "delivery"
+                      ]
+                    },
+                    "breaches": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "orderId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "orderNumber": {
+                            "type": "string"
+                          },
+                          "breachType": {
+                            "type": "string",
+                            "enum": [
+                              "processing",
+                              "delivery"
+                            ]
+                          },
+                          "breachHours": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "deadline": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "vendorNames": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "customerName": {
+                            "type": "string"
+                          },
+                          "total": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "minLength": 3,
+                                "maxLength": 3
+                              }
+                            },
+                            "required": [
+                              "amountMinor",
+                              "currency"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "orderId",
+                          "orderNumber",
+                          "breachType",
+                          "breachHours",
+                          "deadline",
+                          "status",
+                          "vendorNames",
+                          "customerName",
+                          "total",
+                          "createdAt"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "summary",
+                    "breaches"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/workspace/orders-analysis/fraud-queue": {
+      "get": {
+        "tags": [
+          "Admin Orders"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Explainable order fraud signal queue",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "totalFlagged": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "bySignal": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        }
+                      },
+                      "required": [
+                        "totalFlagged",
+                        "bySignal"
+                      ]
+                    },
+                    "orders": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "orderId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "orderNumber": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "vendorNames": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "customerName": {
+                            "type": "string"
+                          },
+                          "customerPhone": {
+                            "type": "string"
+                          },
+                          "deliveryZone": {
+                            "type": "string"
+                          },
+                          "paymentMethod": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "total": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "minLength": 3,
+                                "maxLength": 3
+                              }
+                            },
+                            "required": [
+                              "amountMinor",
+                              "currency"
+                            ]
+                          },
+                          "signals": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "multiple_cod_same_address",
+                                    "abnormal_order_size",
+                                    "velocity_check",
+                                    "payment_risk_hold"
+                                  ]
+                                },
+                                "severity": {
+                                  "type": "string",
+                                  "enum": [
+                                    "high",
+                                    "medium"
+                                  ]
+                                },
+                                "label": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "severity",
+                                "label"
+                              ]
+                            },
+                            "minItems": 1
+                          }
+                        },
+                        "required": [
+                          "orderId",
+                          "orderNumber",
+                          "createdAt",
+                          "status",
+                          "vendorNames",
+                          "customerName",
+                          "customerPhone",
+                          "deliveryZone",
+                          "paymentMethod",
+                          "total",
+                          "signals"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "summary",
+                    "orders"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/admin/workspace/orders/{id}/status-override": {
       "post": {
         "tags": [
