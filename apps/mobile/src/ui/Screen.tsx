@@ -2,7 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { signOut } from "@firebase/auth";
 import { usePathname, useRouter } from "expo-router";
 import { useState, type Dispatch, type PropsWithChildren, type SetStateAction } from "react";
-import { Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, useColorScheme, useWindowDimensions, View } from "react-native";
+import { Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useColorScheme, useWindowDimensions, View } from "react-native";
+import { AdminGlobalSearch } from "../features/admin/AdminGlobalSearch";
 import { BottomNav } from "../features/home/components/BottomNav";
 import { StoreHeader } from "../features/home/components/StoreHeader";
 import { useAuthStore } from "../features/auth/auth.store";
@@ -126,13 +127,8 @@ function AdminScreen({ children, description, desktop, eyebrow, hideHeading = fa
   const [collapsed, setCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchFocused, setSearchFocused] = useState(false);
   const sidebarWidth = collapsed ? 80 : 288;
-  const open = (href: string) => { if (Platform.OS === "web" && document.activeElement instanceof HTMLElement) document.activeElement.blur(); setMobileSidebarOpen(false); setSearchQuery(""); setSearchFocused(false); router.push(href as never); };
-  const normalizedSearch = searchQuery.trim().toLocaleLowerCase();
-  const searchResults = normalizedSearch ? adminLinks.filter((link) => `${link.label} ${link.href.replaceAll("/", " ")}`.toLocaleLowerCase().includes(normalizedSearch)).slice(0, 8) : [];
-  const submitSearch = () => { if (searchResults[0]) open(searchResults[0].href); };
+  const open = (href: string) => { if (Platform.OS === "web" && document.activeElement instanceof HTMLElement) document.activeElement.blur(); setMobileSidebarOpen(false); router.push(href as never); };
   const accountName = session?.profile.displayName || session?.email || "Admin account";
   const accountInitials = accountName.split(/[\s@]+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toLocaleUpperCase()).join("") || "A";
   const accountRole = adminRolePriority.find((role) => session?.principal.roles.includes(role)) ?? session?.principal.roles[0] ?? "ADMIN";
@@ -149,7 +145,7 @@ function AdminScreen({ children, description, desktop, eyebrow, hideHeading = fa
           {width >= 430 ? <View><Text style={[styles.workspaceName, dark && styles.adminDarkText]}>Amiyo-Go Admin</Text><Text style={[styles.workspaceLabel, dark && styles.adminDarkMuted]}>CONTROL CENTER</Text></View> : null}
         </Pressable>
       </View>
-      {desktop ? <View style={styles.adminSearchWrap}><View style={[styles.adminSearch, dark && styles.adminDarkSearch, searchFocused && styles.adminSearchFocused]}><Ionicons color={dark ? "#94a3b8" : colors.muted} name="search-outline" size={18} /><TextInput accessibilityLabel="Search admin pages" autoCapitalize="none" onBlur={() => setTimeout(() => setSearchFocused(false), 120)} onChangeText={setSearchQuery} onFocus={() => setSearchFocused(true)} onSubmitEditing={submitSearch} placeholder="Search admin pages..." placeholderTextColor="#94a3b8" returnKeyType="go" style={[styles.adminSearchInput, dark && styles.adminDarkText]} value={searchQuery} />{searchQuery ? <Pressable accessibilityLabel="Clear admin search" onPress={() => setSearchQuery("")}><Ionicons color={dark ? "#94a3b8" : colors.muted} name="close-circle" size={18} /></Pressable> : null}</View>{searchFocused && normalizedSearch ? <View style={[styles.adminSearchResults, dark && styles.adminDarkResults]}>{searchResults.length ? searchResults.map((link) => <Pressable accessibilityRole="button" key={link.href} onPress={() => open(link.href)} style={[styles.adminSearchResult, dark && styles.adminDarkResult]}><View style={styles.adminSearchIcon}><Ionicons color={colors.primary} name={link.icon as never} size={17} /></View><View style={styles.adminSearchCopy}><Text style={[styles.adminSearchLabel, dark && styles.adminDarkText]}>{link.label}</Text><Text style={styles.adminSearchPath}>{link.href}</Text></View><Ionicons color="#94a3b8" name="arrow-forward" size={15} /></Pressable>) : <View style={styles.adminSearchEmpty}><Ionicons color="#94a3b8" name="search-outline" size={18} /><Text style={styles.adminSearchEmptyText}>No admin page matches “{searchQuery.trim()}”</Text></View>}</View> : null}</View> : null}
+      {desktop ? <AdminGlobalSearch dark={dark} onOpen={open} routes={adminLinks} /> : null}
       <View style={[styles.workspaceActions, !desktop && styles.adminMobileActions]}>
         {desktop ? <><Pressable accessibilityLabel="Orders" onPress={() => open("/admin/orders")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="clipboard-outline" size={19} /></Pressable><Pressable accessibilityLabel="Vendors" onPress={() => open("/admin/vendor-requests")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="storefront-outline" size={19} /></Pressable><Pressable accessibilityLabel="Payments" onPress={() => open("/admin/payment-verification")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="card-outline" size={19} /></Pressable></> : null}
         {desktop ? <Pressable accessibilityLabel="Open storefront" onPress={() => open("/")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="storefront-outline" size={19} /></Pressable> : null}

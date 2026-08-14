@@ -7,6 +7,7 @@ import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "../identity/identity.middleware.js";
 import { IdentityService } from "../identity/identity.service.js";
 import { CommissionService } from "../finance/commission.service.js";
+import { AdminSearchService, type AdminSearchType } from "./admin-search.service.js";
 import { AdminService } from "./admin.service.js";
 
 const idSchema = z.object({ id: z.string().uuid() });
@@ -15,14 +16,29 @@ const adminChatInputSchema = z.object({ body: z.string().trim().min(1).max(4000)
 const couponInputSchema = z.object({ code: z.string().trim().min(3).max(40).transform((value) => value.toUpperCase()), discountType: z.enum(["PERCENT", "FIXED"]), value: z.number().int().positive(), minimumSpendMinor: z.string().regex(/^\d+$/).default("0"), usageLimit: z.number().int().positive().nullable().default(null), startsAt: z.string().datetime(), endsAt: z.string().datetime() }).refine((value) => value.startsAt < value.endsAt, "startsAt must precede endsAt");
 const campaignInputSchema = z.object({ name: z.string().trim().min(3).max(120), slug: z.string().trim().min(3).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), startsAt: z.string().datetime(), endsAt: z.string().datetime() }).refine((value) => value.startsAt < value.endsAt, "startsAt must precede endsAt");
 const categoryControlSchema = z.object({ status: z.enum(["active", "inactive"]).optional(), displayOrder: z.number().int().nonnegative().optional() }).refine((value) => value.status !== undefined || value.displayOrder !== undefined, "A category change is required");
+const adminSearchTypeSchema = z.enum(["order", "vendor", "product", "customer", "return", "support"]);
 
 export function createAdminRouter() {
   const router = Router();
   const service = new AdminService(prisma);
+  const search = new AdminSearchService(prisma);
   const commissions = new CommissionService(prisma);
   const authenticate = createAuthenticationMiddleware(new FirebaseTokenVerifier(), new IdentityService(prisma));
   const writes = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: "draft-7", legacyHeaders: false, message: { title: "Too many admin requests", status: 429, code: "ADMIN_RATE_LIMITED" } });
   router.use("/api/v2/admin/workspace", authenticate);
+  router.get("/api/v2/admin/workspace/search", async (req, res, next) => { try {
+    const query = z.string().trim().max(200).catch("").parse(req.query.q);
+    const typesValue = z.string().optional().parse(req.query.types);
+    const requestedTypes = typesValue ? typesValue.split(",").map((type) => adminSearchTypeSchema.parse(type)) as AdminSearchType[] : undefined;
+    const limit = z.coerce.number().int().min(1).max(10).catch(5).parse(req.query.limit);
+    const totalLimit = z.coerce.number().int().min(1).max(50).catch(24).parse(req.query.totalLimit);
+    res.json(await search.search(requireSession(req), query, requestedTypes, limit, totalLimit));
+  } catch (error) { next(error); } });
+  router.get("/api/v2/admin/workspace/search/:type/:id", async (req, res, next) => { try {
+    const type = adminSearchTypeSchema.parse(req.params.type);
+    const id = idSchema.parse(req.params).id;
+    res.json(await search.detail(requireSession(req), type, id));
+  } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace", async (req, res, next) => { try { res.json(await service.workspace(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/commerce", async (req, res, next) => { try { res.json(await service.commerce(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/orders/:id", async (req, res, next) => { try { res.json(await service.orderDetail(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
