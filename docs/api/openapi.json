@@ -25747,6 +25747,1371 @@
         }
       }
     },
+    "/api/v2/admin/workspace/campaigns": {
+      "get": {
+        "tags": [
+          "Admin Marketing"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Promotional offer workspace with eligible products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "campaigns": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 120
+                          },
+                          "slug": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 120,
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                          },
+                          "description": {
+                            "type": "string",
+                            "minLength": 10,
+                            "maxLength": 2000
+                          },
+                          "discountType": {
+                            "type": "string",
+                            "enum": [
+                              "PERCENT",
+                              "FIXED"
+                            ]
+                          },
+                          "discountValue": {
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                          },
+                          "imageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "draft",
+                              "active",
+                              "paused"
+                            ],
+                            "default": "draft"
+                          },
+                          "showAsPopup": {
+                            "type": "boolean",
+                            "default": true
+                          },
+                          "priority": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10000,
+                            "default": 0
+                          },
+                          "couponCode": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "buttonText": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 40,
+                            "default": "Shop now"
+                          },
+                          "buttonLink": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 300
+                          },
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "products": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "slug": {
+                                  "type": "string"
+                                },
+                                "priceMinor": {
+                                  "type": "string",
+                                  "pattern": "^\\d+$"
+                                },
+                                "imageUrl": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ],
+                                  "format": "uri"
+                                },
+                                "displayOrder": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "slug",
+                                "priceMinor",
+                                "imageUrl",
+                                "displayOrder"
+                              ]
+                            }
+                          },
+                          "eventCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "version": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "slug",
+                          "description",
+                          "discountType",
+                          "discountValue",
+                          "imageUrl",
+                          "startsAt",
+                          "endsAt",
+                          "couponCode",
+                          "buttonLink",
+                          "id",
+                          "products",
+                          "eventCount",
+                          "version"
+                        ]
+                      }
+                    },
+                    "products": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "priceMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "imageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "slug",
+                          "priceMinor",
+                          "imageUrl"
+                        ]
+                      }
+                    },
+                    "coupons": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "active"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "campaigns",
+                    "products",
+                    "coupons"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin Marketing"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 120
+                  },
+                  "slug": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 120,
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 2000
+                  },
+                  "discountType": {
+                    "type": "string",
+                    "enum": [
+                      "PERCENT",
+                      "FIXED"
+                    ]
+                  },
+                  "discountValue": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "imageUrl": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uri",
+                    "default": null
+                  },
+                  "startsAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "endsAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "draft",
+                      "active",
+                      "paused"
+                    ],
+                    "default": "draft"
+                  },
+                  "showAsPopup": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "priority": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10000,
+                    "default": 0
+                  },
+                  "couponCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^[A-Z0-9_-]{3,40}$",
+                    "default": null
+                  },
+                  "productIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "maxItems": 250,
+                    "default": []
+                  },
+                  "buttonText": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 40,
+                    "default": "Shop now"
+                  },
+                  "buttonLink": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  }
+                },
+                "required": [
+                  "name",
+                  "slug",
+                  "description",
+                  "discountType",
+                  "discountValue",
+                  "startsAt",
+                  "endsAt",
+                  "buttonLink"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Promotional offer created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "campaigns": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 120
+                          },
+                          "slug": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 120,
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                          },
+                          "description": {
+                            "type": "string",
+                            "minLength": 10,
+                            "maxLength": 2000
+                          },
+                          "discountType": {
+                            "type": "string",
+                            "enum": [
+                              "PERCENT",
+                              "FIXED"
+                            ]
+                          },
+                          "discountValue": {
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                          },
+                          "imageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "draft",
+                              "active",
+                              "paused"
+                            ],
+                            "default": "draft"
+                          },
+                          "showAsPopup": {
+                            "type": "boolean",
+                            "default": true
+                          },
+                          "priority": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10000,
+                            "default": 0
+                          },
+                          "couponCode": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "buttonText": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 40,
+                            "default": "Shop now"
+                          },
+                          "buttonLink": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 300
+                          },
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "products": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "slug": {
+                                  "type": "string"
+                                },
+                                "priceMinor": {
+                                  "type": "string",
+                                  "pattern": "^\\d+$"
+                                },
+                                "imageUrl": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ],
+                                  "format": "uri"
+                                },
+                                "displayOrder": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "slug",
+                                "priceMinor",
+                                "imageUrl",
+                                "displayOrder"
+                              ]
+                            }
+                          },
+                          "eventCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "version": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "slug",
+                          "description",
+                          "discountType",
+                          "discountValue",
+                          "imageUrl",
+                          "startsAt",
+                          "endsAt",
+                          "couponCode",
+                          "buttonLink",
+                          "id",
+                          "products",
+                          "eventCount",
+                          "version"
+                        ]
+                      }
+                    },
+                    "products": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "priceMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "imageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "slug",
+                          "priceMinor",
+                          "imageUrl"
+                        ]
+                      }
+                    },
+                    "coupons": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "active"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "campaigns",
+                    "products",
+                    "coupons"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/workspace/campaigns/{id}": {
+      "put": {
+        "tags": [
+          "Admin Marketing"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 120
+                  },
+                  "slug": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 120,
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 2000
+                  },
+                  "discountType": {
+                    "type": "string",
+                    "enum": [
+                      "PERCENT",
+                      "FIXED"
+                    ]
+                  },
+                  "discountValue": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "imageUrl": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uri",
+                    "default": null
+                  },
+                  "startsAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "endsAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "draft",
+                      "active",
+                      "paused"
+                    ],
+                    "default": "draft"
+                  },
+                  "showAsPopup": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "priority": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10000,
+                    "default": 0
+                  },
+                  "couponCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^[A-Z0-9_-]{3,40}$",
+                    "default": null
+                  },
+                  "productIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "maxItems": 250,
+                    "default": []
+                  },
+                  "buttonText": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 40,
+                    "default": "Shop now"
+                  },
+                  "buttonLink": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "name",
+                  "slug",
+                  "description",
+                  "discountType",
+                  "discountValue",
+                  "startsAt",
+                  "endsAt",
+                  "buttonLink",
+                  "expectedVersion"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Promotional offer updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "campaigns": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 120
+                          },
+                          "slug": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 120,
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                          },
+                          "description": {
+                            "type": "string",
+                            "minLength": 10,
+                            "maxLength": 2000
+                          },
+                          "discountType": {
+                            "type": "string",
+                            "enum": [
+                              "PERCENT",
+                              "FIXED"
+                            ]
+                          },
+                          "discountValue": {
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                          },
+                          "imageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "draft",
+                              "active",
+                              "paused"
+                            ],
+                            "default": "draft"
+                          },
+                          "showAsPopup": {
+                            "type": "boolean",
+                            "default": true
+                          },
+                          "priority": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10000,
+                            "default": 0
+                          },
+                          "couponCode": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "buttonText": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 40,
+                            "default": "Shop now"
+                          },
+                          "buttonLink": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 300
+                          },
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "products": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "slug": {
+                                  "type": "string"
+                                },
+                                "priceMinor": {
+                                  "type": "string",
+                                  "pattern": "^\\d+$"
+                                },
+                                "imageUrl": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ],
+                                  "format": "uri"
+                                },
+                                "displayOrder": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "slug",
+                                "priceMinor",
+                                "imageUrl",
+                                "displayOrder"
+                              ]
+                            }
+                          },
+                          "eventCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "version": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "slug",
+                          "description",
+                          "discountType",
+                          "discountValue",
+                          "imageUrl",
+                          "startsAt",
+                          "endsAt",
+                          "couponCode",
+                          "buttonLink",
+                          "id",
+                          "products",
+                          "eventCount",
+                          "version"
+                        ]
+                      }
+                    },
+                    "products": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "priceMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "imageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "slug",
+                          "priceMinor",
+                          "imageUrl"
+                        ]
+                      }
+                    },
+                    "coupons": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "active"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "campaigns",
+                    "products",
+                    "coupons"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin Marketing"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Promotional offer deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "campaigns": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 120
+                          },
+                          "slug": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 120,
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                          },
+                          "description": {
+                            "type": "string",
+                            "minLength": 10,
+                            "maxLength": 2000
+                          },
+                          "discountType": {
+                            "type": "string",
+                            "enum": [
+                              "PERCENT",
+                              "FIXED"
+                            ]
+                          },
+                          "discountValue": {
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                          },
+                          "imageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "draft",
+                              "active",
+                              "paused"
+                            ],
+                            "default": "draft"
+                          },
+                          "showAsPopup": {
+                            "type": "boolean",
+                            "default": true
+                          },
+                          "priority": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10000,
+                            "default": 0
+                          },
+                          "couponCode": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "buttonText": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 40,
+                            "default": "Shop now"
+                          },
+                          "buttonLink": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 300
+                          },
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "products": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "slug": {
+                                  "type": "string"
+                                },
+                                "priceMinor": {
+                                  "type": "string",
+                                  "pattern": "^\\d+$"
+                                },
+                                "imageUrl": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ],
+                                  "format": "uri"
+                                },
+                                "displayOrder": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "slug",
+                                "priceMinor",
+                                "imageUrl",
+                                "displayOrder"
+                              ]
+                            }
+                          },
+                          "eventCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "version": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "slug",
+                          "description",
+                          "discountType",
+                          "discountValue",
+                          "imageUrl",
+                          "startsAt",
+                          "endsAt",
+                          "couponCode",
+                          "buttonLink",
+                          "id",
+                          "products",
+                          "eventCount",
+                          "version"
+                        ]
+                      }
+                    },
+                    "products": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "priceMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "imageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "slug",
+                          "priceMinor",
+                          "imageUrl"
+                        ]
+                      }
+                    },
+                    "coupons": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "active"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "campaigns",
+                    "products",
+                    "coupons"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/admin/workspace/vouchers": {
       "post": {
         "tags": [
