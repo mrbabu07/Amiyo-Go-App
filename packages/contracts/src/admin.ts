@@ -120,6 +120,9 @@ export const adminInventoryItemSchema = z.object({ id: uuidSchema, version: vers
 export const adminInventoryWorkspaceSchema = z.object({ items: z.array(adminInventoryItemSchema), movements: z.array(adminInventoryMovementSchema.extend({ product: z.string(), sku: z.string() })), summary: z.object({ totalVariants: z.number().int().nonnegative(), inStock: z.number().int().nonnegative(), lowStock: z.number().int().nonnegative(), outOfStock: z.number().int().nonnegative(), stockUnits: z.number().int().nonnegative(), reservedUnits: z.number().int().nonnegative(), valueMinor: z.string().regex(/^\d+$/), currency: z.string().length(3) }) });
 export const adminInventoryUpdateSchema = z.object({ expectedVersion: versionSchema, onHand: z.number().int().nonnegative(), reorderLevel: z.number().int().nonnegative(), reason: z.string().trim().min(5).max(500) });
 export const adminInventoryBulkUpdateSchema = z.object({ items: z.array(adminInventoryUpdateSchema.omit({ reason: true }).extend({ id: uuidSchema })).min(1).max(300), reason: z.string().trim().min(5).max(500) }).superRefine((value, context) => { if (new Set(value.items.map((item) => item.id)).size !== value.items.length) context.addIssue({ code: "custom", message: "Inventory items must be unique", path: ["items"] }); });
+export const adminOrderStatusOverrideSchema = z.object({ expectedVersion: versionSchema, status: z.enum(["PENDING_PAYMENT", "CONFIRMED", "PROCESSING", "READY_TO_SHIP", "SHIPPED", "DELIVERED", "CANCELLED", "RETURN_REQUESTED", "RETURNED", "REFUNDED"]), reason: z.string().trim().min(5).max(500) });
+export const adminOrderAddressInputSchema = z.object({ recipientName: z.string().trim().min(2).max(120), phone: z.string().trim().min(7).max(30), line1: z.string().trim().min(3).max(240), line2: z.string().trim().max(240).nullable().default(null), division: z.string().trim().min(2).max(100), district: z.string().trim().min(2).max(100), upazila: z.string().trim().max(100).nullable().default(null), unionName: z.string().trim().max(100).nullable().default(null), postalCode: z.string().trim().max(20).nullable().default(null), reason: z.string().trim().min(5).max(500) });
+export const adminOrderCourierInputSchema = z.object({ vendorOrderId: uuidSchema, expectedVersion: versionSchema, provider: z.string().trim().min(2).max(120), trackingNumber: z.string().trim().min(2).max(160), reason: z.string().trim().min(5).max(500) });
 
 export type AdminUserStatusInput = z.infer<typeof adminUserStatusInputSchema>;
 export type AdminUserRolesInput = z.infer<typeof adminUserRolesInputSchema>;
@@ -154,3 +157,6 @@ export type AdminChatThreadDto = z.infer<typeof adminChatThreadSchema>;
 export type AdminInventoryWorkspaceDto = z.infer<typeof adminInventoryWorkspaceSchema>;
 export type AdminInventoryUpdate = z.infer<typeof adminInventoryUpdateSchema>;
 export type AdminInventoryBulkUpdate = z.infer<typeof adminInventoryBulkUpdateSchema>;
+export type AdminOrderStatusOverride = z.infer<typeof adminOrderStatusOverrideSchema>;
+export type AdminOrderAddressInput = z.infer<typeof adminOrderAddressInputSchema>;
+export type AdminOrderCourierInput = z.infer<typeof adminOrderCourierInputSchema>;
