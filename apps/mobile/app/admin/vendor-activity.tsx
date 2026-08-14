@@ -1,2 +1,2 @@
-import { AdminCommerceWorkspaceScreen } from "../../src/features/admin/AdminCommerceWorkspaceScreen";
-export default function Route() { return <AdminCommerceWorkspaceScreen kind="vendor-activity" />; }
+import { AdminVendorActivityScreen } from "../../src/features/admin/AdminVendorActivityScreen";
+export default function Route() { return <AdminVendorActivityScreen />; }
