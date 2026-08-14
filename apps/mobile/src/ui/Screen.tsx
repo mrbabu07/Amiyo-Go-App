@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { usePathname, useRouter } from "expo-router";
 import { useState, type PropsWithChildren } from "react";
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, useColorScheme, useWindowDimensions, View } from "react-native";
+import { Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, useColorScheme, useWindowDimensions, View } from "react-native";
 import { BottomNav } from "../features/home/components/BottomNav";
 import { StoreHeader } from "../features/home/components/StoreHeader";
 import { useAuthStore } from "../features/auth/auth.store";
@@ -120,7 +120,7 @@ function AdminScreen({ children, description, desktop, eyebrow, hideHeading = fa
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const sidebarWidth = collapsed ? 80 : 288;
-  const open = (href: string) => { setSearchQuery(""); setSearchFocused(false); router.push(href as never); };
+  const open = (href: string) => { if (Platform.OS === "web" && document.activeElement instanceof HTMLElement) document.activeElement.blur(); setSearchQuery(""); setSearchFocused(false); router.push(href as never); };
   const normalizedSearch = searchQuery.trim().toLocaleLowerCase();
   const searchResults = normalizedSearch ? adminLinks.filter((link) => `${link.label} ${link.href.replaceAll("/", " ")}`.toLocaleLowerCase().includes(normalizedSearch)).slice(0, 8) : [];
   const submitSearch = () => { if (searchResults[0]) open(searchResults[0].href); };
@@ -166,7 +166,7 @@ function AdminScreen({ children, description, desktop, eyebrow, hideHeading = fa
         <Pressable onPress={() => open("/")} style={[styles.storefrontLink, collapsed && styles.navCollapsed]}><Ionicons color="#cbd5e1" name="home-outline" size={19} />{!collapsed ? <Text style={styles.storefrontText}>View storefront</Text> : null}</Pressable>
       </View> : null}
       <ScrollView contentContainerStyle={[styles.adminPage, !desktop && styles.adminMobilePage]} showsVerticalScrollIndicator={false} style={[styles.adminMain, dark && styles.adminDarkMain]}>
-        {!hideHeading ? <AdminHeading dark={dark} description={description} eyebrow={eyebrow} onBack={() => router.push("/admin" as never)} title={title} /> : null}
+        {!hideHeading ? <AdminHeading dark={dark} description={description} eyebrow={eyebrow} onBack={() => open("/admin")} title={title} /> : null}
         <View style={styles.content}>{children}</View>
       </ScrollView>
     </View>
