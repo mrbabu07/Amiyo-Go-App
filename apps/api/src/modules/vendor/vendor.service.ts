@@ -42,6 +42,9 @@ export class VendorService {
   constructor(private readonly client: PrismaClient) {}
   async register(session: Session, input: VendorRegistration, correlationId?: string) {
     if (session.status !== "ACTIVE") throw new ApiProblem(403, "ACCOUNT_NOT_ACTIVE", "An active customer account is required");
+    const configuration = await this.client.platformConfiguration?.findUnique({ where: { key: "default" } }); const flags = configuration?.featureFlags as { sellerRegistration?: boolean } | undefined; const maintenance = configuration?.maintenanceMode as { enabled?: boolean; message?: string } | undefined;
+    if (maintenance?.enabled) throw new ApiProblem(503, "PLATFORM_MAINTENANCE", maintenance.message || "Seller registration is temporarily unavailable");
+    if (flags?.sellerRegistration === false) throw new ApiProblem(503, "SELLER_REGISTRATION_DISABLED", "Seller registration is temporarily paused");
     const existing = await this.client.vendorMember.findFirst({ where: { userId: session.principal.userId } });
     if (existing) throw new ApiProblem(409, "VENDOR_MEMBERSHIP_EXISTS", "This account already belongs to a vendor workspace");
     return withSerializableTransaction(this.client, async (transaction) => {

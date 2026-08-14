@@ -63,3 +63,9 @@ test("seller cannot reply to another shop review", async () => {
   const client = { review: { findFirst: async () => null } } as unknown as PrismaClient;
   await assert.rejects(() => new EngagementService(client).replyToReview(seller, "55555555-5555-4555-8555-555555555555", { body: "Reply" }), /not found for this seller/);
 });
+
+test("growth feed hides flash sales when the platform flag is disabled", async () => {
+  const client = { banner: { findMany: async () => [] }, coupon: { findMany: async () => [] }, campaign: { findMany: async () => [] }, flashSale: { findMany: async () => [{ id: "44444444-4444-4444-8444-444444444444", name: "Flash", startsAt: new Date(), endsAt: new Date(), products: [] }] }, platformConfiguration: { findUnique: async () => ({ featureFlags: { flashSales: false } }) } } as unknown as PrismaClient;
+  const result = await new EngagementService(client).growthFeed();
+  assert.deepEqual(result.flashSales, []);
+});

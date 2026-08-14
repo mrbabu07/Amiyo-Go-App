@@ -14,6 +14,13 @@ test("vendor registration rejects an existing membership", async () => {
   await assert.rejects(() => new VendorService(client).register(session, input), /already belongs to a vendor workspace/);
 });
 
+test("vendor registration obeys platform availability controls", async () => {
+  const disabled = { platformConfiguration: { findUnique: async () => ({ featureFlags: { sellerRegistration: false }, maintenanceMode: { enabled: false } }) } } as unknown as PrismaClient;
+  await assert.rejects(() => new VendorService(disabled).register(session, input), /temporarily paused/);
+  const maintenance = { platformConfiguration: { findUnique: async () => ({ featureFlags: { sellerRegistration: true }, maintenanceMode: { enabled: true, message: "Scheduled maintenance is active" } }) } } as unknown as PrismaClient;
+  await assert.rejects(() => new VendorService(maintenance).register(session, input), /Scheduled maintenance is active/);
+});
+
 test("vendor registration creates an owner workspace atomically", async () => {
   let vendorData: Record<string, unknown> | undefined;
   let roleAssigned = false;

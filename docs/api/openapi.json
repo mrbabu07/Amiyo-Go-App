@@ -24046,6 +24046,884 @@
         }
       }
     },
+    "/api/v2/admin/workspace/settings": {
+      "get": {
+        "tags": [
+          "Admin Platform"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Versioned platform settings and safe service health",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "featureFlags": {
+                      "type": "object",
+                      "properties": {
+                        "sellerRegistration": {
+                          "type": "boolean"
+                        },
+                        "reviews": {
+                          "type": "boolean"
+                        },
+                        "questions": {
+                          "type": "boolean"
+                        },
+                        "flashSales": {
+                          "type": "boolean"
+                        },
+                        "loyalty": {
+                          "type": "boolean"
+                        },
+                        "voiceSearch": {
+                          "type": "boolean"
+                        },
+                        "googleLogin": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "sellerRegistration",
+                        "reviews",
+                        "questions",
+                        "flashSales",
+                        "loyalty",
+                        "voiceSearch",
+                        "googleLogin"
+                      ]
+                    },
+                    "paymentMethods": {
+                      "type": "object",
+                      "properties": {
+                        "cod": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "enabled"
+                          ]
+                        },
+                        "sslcommerz": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "enabled"
+                          ]
+                        },
+                        "bkashManual": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "enabled"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "cod",
+                        "sslcommerz",
+                        "bkashManual"
+                      ]
+                    },
+                    "maintenanceMode": {
+                      "type": "object",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "message": {
+                          "type": "string",
+                          "minLength": 10,
+                          "maxLength": 500
+                        }
+                      },
+                      "required": [
+                        "enabled",
+                        "message"
+                      ]
+                    },
+                    "returnPolicy": {
+                      "type": "object",
+                      "properties": {
+                        "windowDays": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 90
+                        },
+                        "restockingFeePercent": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 100
+                        },
+                        "requireEvidence": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "windowDays",
+                        "restockingFeePercent",
+                        "requireEvidence"
+                      ]
+                    },
+                    "tax": {
+                      "type": "object",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "rateBps": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 10000
+                        },
+                        "pricesIncludeTax": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "enabled",
+                        "rateBps",
+                        "pricesIncludeTax"
+                      ]
+                    },
+                    "seo": {
+                      "type": "object",
+                      "properties": {
+                        "title": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 120
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 10,
+                          "maxLength": 300
+                        }
+                      },
+                      "required": [
+                        "title",
+                        "description"
+                      ]
+                    },
+                    "notificationControls": {
+                      "type": "object",
+                      "properties": {
+                        "orderUpdates": {
+                          "type": "boolean"
+                        },
+                        "promotions": {
+                          "type": "boolean"
+                        },
+                        "sellerAlerts": {
+                          "type": "boolean"
+                        },
+                        "adminAlerts": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "orderUpdates",
+                        "promotions",
+                        "sellerAlerts",
+                        "adminAlerts"
+                      ]
+                    },
+                    "key": {
+                      "type": "string",
+                      "enum": [
+                        "default"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "updatedBy": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "uuid"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "health": {
+                      "type": "object",
+                      "properties": {
+                        "overall": {
+                          "type": "string",
+                          "enum": [
+                            "healthy",
+                            "degraded"
+                          ]
+                        },
+                        "checkedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "environment": {
+                          "type": "string"
+                        },
+                        "services": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "healthy",
+                                  "degraded"
+                                ]
+                              },
+                              "detail": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "label",
+                              "status",
+                              "detail"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "overall",
+                        "checkedAt",
+                        "environment",
+                        "services"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "featureFlags",
+                    "paymentMethods",
+                    "maintenanceMode",
+                    "returnPolicy",
+                    "tax",
+                    "seo",
+                    "notificationControls",
+                    "key",
+                    "version",
+                    "updatedBy",
+                    "updatedAt",
+                    "health"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin Platform"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "featureFlags": {
+                    "type": "object",
+                    "properties": {
+                      "sellerRegistration": {
+                        "type": "boolean"
+                      },
+                      "reviews": {
+                        "type": "boolean"
+                      },
+                      "questions": {
+                        "type": "boolean"
+                      },
+                      "flashSales": {
+                        "type": "boolean"
+                      },
+                      "loyalty": {
+                        "type": "boolean"
+                      },
+                      "voiceSearch": {
+                        "type": "boolean"
+                      },
+                      "googleLogin": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "sellerRegistration",
+                      "reviews",
+                      "questions",
+                      "flashSales",
+                      "loyalty",
+                      "voiceSearch",
+                      "googleLogin"
+                    ]
+                  },
+                  "paymentMethods": {
+                    "type": "object",
+                    "properties": {
+                      "cod": {
+                        "type": "object",
+                        "properties": {
+                          "enabled": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "enabled"
+                        ]
+                      },
+                      "sslcommerz": {
+                        "type": "object",
+                        "properties": {
+                          "enabled": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "enabled"
+                        ]
+                      },
+                      "bkashManual": {
+                        "type": "object",
+                        "properties": {
+                          "enabled": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "enabled"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "cod",
+                      "sslcommerz",
+                      "bkashManual"
+                    ]
+                  },
+                  "maintenanceMode": {
+                    "type": "object",
+                    "properties": {
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "message": {
+                        "type": "string",
+                        "minLength": 10,
+                        "maxLength": 500
+                      }
+                    },
+                    "required": [
+                      "enabled",
+                      "message"
+                    ]
+                  },
+                  "returnPolicy": {
+                    "type": "object",
+                    "properties": {
+                      "windowDays": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 90
+                      },
+                      "restockingFeePercent": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "requireEvidence": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "windowDays",
+                      "restockingFeePercent",
+                      "requireEvidence"
+                    ]
+                  },
+                  "tax": {
+                    "type": "object",
+                    "properties": {
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "rateBps": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10000
+                      },
+                      "pricesIncludeTax": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "enabled",
+                      "rateBps",
+                      "pricesIncludeTax"
+                    ]
+                  },
+                  "seo": {
+                    "type": "object",
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 120
+                      },
+                      "description": {
+                        "type": "string",
+                        "minLength": 10,
+                        "maxLength": 300
+                      }
+                    },
+                    "required": [
+                      "title",
+                      "description"
+                    ]
+                  },
+                  "notificationControls": {
+                    "type": "object",
+                    "properties": {
+                      "orderUpdates": {
+                        "type": "boolean"
+                      },
+                      "promotions": {
+                        "type": "boolean"
+                      },
+                      "sellerAlerts": {
+                        "type": "boolean"
+                      },
+                      "adminAlerts": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "orderUpdates",
+                      "promotions",
+                      "sellerAlerts",
+                      "adminAlerts"
+                    ]
+                  }
+                },
+                "required": [
+                  "expectedVersion",
+                  "featureFlags",
+                  "paymentMethods",
+                  "maintenanceMode",
+                  "returnPolicy",
+                  "tax",
+                  "seo",
+                  "notificationControls"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Platform settings updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "featureFlags": {
+                      "type": "object",
+                      "properties": {
+                        "sellerRegistration": {
+                          "type": "boolean"
+                        },
+                        "reviews": {
+                          "type": "boolean"
+                        },
+                        "questions": {
+                          "type": "boolean"
+                        },
+                        "flashSales": {
+                          "type": "boolean"
+                        },
+                        "loyalty": {
+                          "type": "boolean"
+                        },
+                        "voiceSearch": {
+                          "type": "boolean"
+                        },
+                        "googleLogin": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "sellerRegistration",
+                        "reviews",
+                        "questions",
+                        "flashSales",
+                        "loyalty",
+                        "voiceSearch",
+                        "googleLogin"
+                      ]
+                    },
+                    "paymentMethods": {
+                      "type": "object",
+                      "properties": {
+                        "cod": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "enabled"
+                          ]
+                        },
+                        "sslcommerz": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "enabled"
+                          ]
+                        },
+                        "bkashManual": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "enabled"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "cod",
+                        "sslcommerz",
+                        "bkashManual"
+                      ]
+                    },
+                    "maintenanceMode": {
+                      "type": "object",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "message": {
+                          "type": "string",
+                          "minLength": 10,
+                          "maxLength": 500
+                        }
+                      },
+                      "required": [
+                        "enabled",
+                        "message"
+                      ]
+                    },
+                    "returnPolicy": {
+                      "type": "object",
+                      "properties": {
+                        "windowDays": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 90
+                        },
+                        "restockingFeePercent": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 100
+                        },
+                        "requireEvidence": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "windowDays",
+                        "restockingFeePercent",
+                        "requireEvidence"
+                      ]
+                    },
+                    "tax": {
+                      "type": "object",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "rateBps": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 10000
+                        },
+                        "pricesIncludeTax": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "enabled",
+                        "rateBps",
+                        "pricesIncludeTax"
+                      ]
+                    },
+                    "seo": {
+                      "type": "object",
+                      "properties": {
+                        "title": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 120
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 10,
+                          "maxLength": 300
+                        }
+                      },
+                      "required": [
+                        "title",
+                        "description"
+                      ]
+                    },
+                    "notificationControls": {
+                      "type": "object",
+                      "properties": {
+                        "orderUpdates": {
+                          "type": "boolean"
+                        },
+                        "promotions": {
+                          "type": "boolean"
+                        },
+                        "sellerAlerts": {
+                          "type": "boolean"
+                        },
+                        "adminAlerts": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "orderUpdates",
+                        "promotions",
+                        "sellerAlerts",
+                        "adminAlerts"
+                      ]
+                    },
+                    "key": {
+                      "type": "string",
+                      "enum": [
+                        "default"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "updatedBy": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "uuid"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "health": {
+                      "type": "object",
+                      "properties": {
+                        "overall": {
+                          "type": "string",
+                          "enum": [
+                            "healthy",
+                            "degraded"
+                          ]
+                        },
+                        "checkedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "environment": {
+                          "type": "string"
+                        },
+                        "services": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "healthy",
+                                  "degraded"
+                                ]
+                              },
+                              "detail": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "label",
+                              "status",
+                              "detail"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "overall",
+                        "checkedAt",
+                        "environment",
+                        "services"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "featureFlags",
+                    "paymentMethods",
+                    "maintenanceMode",
+                    "returnPolicy",
+                    "tax",
+                    "seo",
+                    "notificationControls",
+                    "key",
+                    "version",
+                    "updatedBy",
+                    "updatedAt",
+                    "health"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/admin/workspace/vouchers": {
       "post": {
         "tags": [

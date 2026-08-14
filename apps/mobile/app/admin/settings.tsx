@@ -1,1 +1,1 @@
-export { AdminPlatformScreen as default } from "../../src/features/admin/AdminPlatformScreen";
+export { AdminSettingsScreen as default } from "../../src/features/admin/AdminSettingsScreen";

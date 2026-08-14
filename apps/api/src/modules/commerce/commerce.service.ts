@@ -95,7 +95,7 @@ export class CommerceService {
   }
 
   async checkout(session: Session, input: CheckoutInput, idempotencyKey: string): Promise<CheckoutResult> {
-    const userId = session.principal.userId; const requestHash = createHash("sha256").update(JSON.stringify(input)).digest("hex");
+    const userId = session.principal.userId; const requestHash = createHash("sha256").update(JSON.stringify(input)).digest("hex"); const configuration = await this.client.platformConfiguration?.findUnique({ where: { key: "default" } }); const maintenance = configuration?.maintenanceMode as { enabled?: boolean; message?: string } | undefined; const methods = configuration?.paymentMethods as { cod?: { enabled?: boolean }; sslcommerz?: { enabled?: boolean }; bkashManual?: { enabled?: boolean } } | undefined; const paymentEnabled = input.paymentMethod === "COD" ? methods?.cod?.enabled !== false : input.paymentMethod === "SSLCOMMERZ" ? methods?.sslcommerz?.enabled !== false : methods?.bkashManual?.enabled !== false; if (maintenance?.enabled) throw new ApiProblem(503, "PLATFORM_MAINTENANCE", maintenance.message || "Checkout is temporarily unavailable"); if (!paymentEnabled) throw new ApiProblem(409, "PAYMENT_METHOD_DISABLED", `${input.paymentMethod} is not currently available`);
     return withSerializableTransaction(this.client, async (transaction) => {
       const previous = await transaction.idempotencyRecord.findUnique({ where: { scope_key: { scope: `checkout:${userId}`, key: idempotencyKey } } });
       if (previous) { if (previous.requestHash !== requestHash) throw new ApiProblem(409, "IDEMPOTENCY_KEY_REUSED", "Idempotency key was used for different checkout data"); return previous.response as CheckoutResult; }
