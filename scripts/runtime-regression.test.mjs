@@ -21,3 +21,13 @@ test("development launcher reuses healthy API and Expo servers", async () => {
   assert.match(source, /Reusing the Expo web server/);
   assert.match(source, /name !== "mobile" \|\| !mobileRunning/);
 });
+
+test("web launcher exposes one command and reuses port 8081", async () => {
+  const rootPackage = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  const mobilePackage = JSON.parse(await readFile(new URL("../apps/mobile/package.json", import.meta.url), "utf8"));
+  const source = await readFile(new URL("web.mjs", import.meta.url), "utf8");
+  assert.equal(rootPackage.scripts.web, "node scripts/web.mjs");
+  assert.equal(mobilePackage.scripts.web, "node ../../scripts/web.mjs");
+  assert.match(source, /Amiyo web is already running/);
+  assert.match(source, /"--web", "--clear", "--port", "8081"/);
+});
