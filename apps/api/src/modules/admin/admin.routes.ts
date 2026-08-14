@@ -1,4 +1,4 @@
-import { adminAnalyticsQuerySchema, adminBannerInputSchema, adminCategoryAttributesInputSchema, adminCategoryInputSchema, adminCategoryRequestReviewSchema, adminFlashSaleInputSchema, adminKycReviewInputSchema, adminToggleInputSchema, adminUserRolesInputSchema, adminUserStatusInputSchema, adminVendorStatusInputSchema, adminVoucherInputSchema, commissionRuleInputSchema, endCommissionRuleSchema, paymentVerificationReviewSchema, trustCaseActionInputSchema, updateCommissionRuleSchema } from "@amiyo/contracts";
+import { adminAnalyticsQuerySchema, adminAuditQuerySchema, adminBannerInputSchema, adminCategoryAttributesInputSchema, adminCategoryInputSchema, adminCategoryRequestReviewSchema, adminFlashSaleInputSchema, adminKycReviewInputSchema, adminToggleInputSchema, adminUserRolesInputSchema, adminUserStatusInputSchema, adminVendorStatusInputSchema, adminVoucherInputSchema, commissionRuleInputSchema, endCommissionRuleSchema, paymentVerificationReviewSchema, trustCaseActionInputSchema, updateCommissionRuleSchema } from "@amiyo/contracts";
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
@@ -43,6 +43,7 @@ export function createAdminRouter() {
   router.get("/api/v2/admin/workspace/customers/:id", async (req, res, next) => { try { res.json(await service.customerDetail(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/payment-verifications", async (req, res, next) => { try { res.json(await service.paymentVerifications(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/marketing", async (req, res, next) => { try { res.json(await service.marketing(requireSession(req))); } catch (error) { next(error); } });
+  router.get("/api/v2/admin/workspace/audit", async (req, res, next) => { try { res.json(await service.audit(requireSession(req), adminAuditQuerySchema.parse(req.query))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/commerce", async (req, res, next) => { try { res.json(await service.commerce(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/orders/:id", async (req, res, next) => { try { res.json(await service.orderDetail(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/commission-rules", async (req, res, next) => { try { res.json(await commissions.list(requireSession(req))); } catch (error) { next(error); } });
