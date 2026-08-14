@@ -7,7 +7,25 @@ if (!npmCli) {
   throw new Error("npm_execpath is unavailable. Start this script with npm run dev.");
 }
 
-const processes = [
+async function fetchAvailable(url, validate = () => true) {
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(1_500) });
+    if (!response.ok) return false;
+    return validate(await response.text());
+  } catch {
+    return false;
+  }
+}
+
+const [apiRunning, mobileRunning] = await Promise.all([
+  fetchAvailable("http://127.0.0.1:4000/health", (body) => body.includes('"service":"amiyo-api"')),
+  fetchAvailable("http://127.0.0.1:8081")
+]);
+
+if (apiRunning) console.log("[api] Reusing the Amiyo API already running on http://127.0.0.1:4000.");
+if (mobileRunning) console.log("[mobile] Reusing the Expo web server already running on http://localhost:8081.");
+
+const services = [
   {
     name: "firebase",
     args: ["run", "dev:firebase"]
@@ -22,9 +40,9 @@ const processes = [
     args: ["--workspace", "@amiyo/mobile", "run", "start"],
     env: { EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL: process.env.EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL || "http://127.0.0.1:9099" }
   }
-];
+].filter(({ name }) => name !== "api" || !apiRunning).filter(({ name }) => name !== "mobile" || !mobileRunning);
 
-const children = processes.map(({ name, args, env }) => {
+const children = services.map(({ name, args, env }) => {
   const child = spawn(process.execPath, [npmCli, ...args], {
     env: { ...process.env, ...env },
     shell: false,
