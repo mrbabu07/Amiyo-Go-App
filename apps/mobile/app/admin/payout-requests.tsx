@@ -1,2 +1,2 @@
-import { AdminReferenceWorkspaceScreen } from "../../src/features/admin/AdminReferenceWorkspaceScreen";
-export default function Route() { return <AdminReferenceWorkspaceScreen kind="payout-requests" />; }
+import { AdminPayoutsScreen } from "../../src/features/admin/AdminPayoutsScreen";
+export default function Route() { return <AdminPayoutsScreen requestsOnly />; }
