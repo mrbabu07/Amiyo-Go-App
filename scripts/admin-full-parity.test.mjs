@@ -30,3 +30,10 @@ test("commerce aliases are replaced with dedicated live workspaces", async () =>
   for (const model of ["order.findMany", "inventoryItem.findMany", "coupon.findMany", "campaign.findMany", "chatThread.findMany", "codCollection.findMany"]) assert.match(service, new RegExp(model.replace(".", "\\.")));
   for (const endpoint of ["/commerce", "/inventory/:id", "/coupons/:id", "/chats/:id/messages"]) assert.match(routes, new RegExp(endpoint.replaceAll("/", "\\/")));
 });
+
+test("admin logistics preserves the reference lifecycle routes and controls", async () => {
+  const routes = await readFile(new URL("../apps/api/src/modules/operations/operations.routes.ts", import.meta.url), "utf8");
+  const screen = await readFile(new URL("../apps/mobile/src/features/operations/AdminLogisticsScreen.tsx", import.meta.url), "utf8");
+  for (const endpoint of ["/dashboard", "/state-machine", "/tracking-events", "/shipments/:id/mark-rto", "/shipments/:id/generate-label", "/dispatch-manifest/export", "/manifests/:id/confirm-pickup", "/courier-provider-status", "/cod/:id/mark-collected", "/cod/:id/mark-remitted", "/cod/:id/mark-failed", "/cod/:id/mark-disputed", "/returns/:returnId/inspection-result", "/returns/:returnId/refurbish", "/audit-log"]) assert.match(routes, new RegExp(endpoint.replaceAll("/", "\\/")));
+  for (const control of ["Generate label", "Mark RTO", "Confirm RTO received", "Confirm pickup", "Mark collected", "Mark remitted", "Dispute", "Mark failed"]) assert.match(screen, new RegExp(control));
+});

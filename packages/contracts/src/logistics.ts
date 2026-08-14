@@ -48,6 +48,22 @@ export const logisticsDeliveryAttemptSchema = z.object({ outcome: z.enum(["deliv
 export const codRemittanceInputSchema = z.object({ courierPartnerId: uuidSchema.nullable().default(null), courierName: z.string().trim().min(2).max(120), collectedAmountMinor: minorSchema, remittedAmountMinor: minorSchema, forwardedToVendorMinor: minorSchema, reference: z.string().trim().max(160).nullable().default(null), notes: z.string().trim().max(1000).nullable().default(null), orderIds: z.array(uuidSchema).max(500) });
 export const failedDeliveryReattemptSchema = z.object({ nextAttemptAt: timestampSchema, redeliveryFeeMinor: minorSchema, reason: z.string().trim().min(2).max(500), note: z.string().trim().max(1000).nullable().default(null) });
 export const failedDeliveryReturnSchema = z.object({ returnFeeMinor: minorSchema, reason: z.string().trim().min(2).max(500), note: z.string().trim().max(1000).nullable().default(null) });
+export const logisticsNoteSchema = z.object({ note: z.string().trim().min(2).max(1000) });
+export const logisticsTrackingEventSchema = z.object({
+  shipmentId: uuidSchema, status: shipmentStatusSchema, description: z.string().trim().min(2).max(500),
+  location: z.string().trim().max(200).nullable().default(null), occurredAt: timestampSchema,
+  providerEventId: z.string().trim().max(160).nullable().default(null)
+});
+export const logisticsManifestPickupSchema = z.object({ shipmentIds: z.array(uuidSchema).min(1).max(250), note: z.string().trim().min(2).max(1000) });
+export const logisticsReturnActionSchema = z.object({
+  note: z.string().trim().min(2).max(1000), trackingNumber: z.string().trim().max(160).nullable().default(null),
+  pickupAt: timestampSchema.nullable().default(null), inspection: z.record(z.unknown()).nullable().default(null)
+});
+export const logisticsCodStateInputSchema = z.object({
+  reference: z.string().trim().min(2).max(160).nullable().default(null),
+  reason: z.string().trim().min(2).max(500).nullable().default(null),
+  note: z.string().trim().min(2).max(1000)
+});
 
 export type LogisticsZoneInput = z.infer<typeof logisticsZoneInputSchema>;
 export type CourierPartnerInput = z.infer<typeof courierPartnerInputSchema>;
@@ -56,6 +72,11 @@ export type DeliveryFeeRuleInput = z.infer<typeof deliveryFeeRuleInputSchema>;
 export type LogisticsAssignmentInput = z.infer<typeof logisticsAssignmentInputSchema>;
 export type LogisticsShipmentTransition = z.infer<typeof logisticsShipmentTransitionSchema>;
 export type LogisticsDeliveryAttempt = z.infer<typeof logisticsDeliveryAttemptSchema>;
+export type LogisticsNote = z.infer<typeof logisticsNoteSchema>;
+export type LogisticsTrackingEvent = z.infer<typeof logisticsTrackingEventSchema>;
+export type LogisticsManifestPickup = z.infer<typeof logisticsManifestPickupSchema>;
+export type LogisticsReturnAction = z.infer<typeof logisticsReturnActionSchema>;
+export type LogisticsCodStateInput = z.infer<typeof logisticsCodStateInputSchema>;
 export type CodRemittanceInput = z.infer<typeof codRemittanceInputSchema>;
 export type FailedDeliveryReattempt = z.infer<typeof failedDeliveryReattemptSchema>;
 export type FailedDeliveryReturn = z.infer<typeof failedDeliveryReturnSchema>;

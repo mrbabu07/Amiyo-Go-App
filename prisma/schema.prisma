@@ -1017,6 +1017,10 @@ model Shipment {
   status         ShipmentStatus        @default(PENDING)
   provider       String?
   trackingNumber String?               @unique @map("tracking_number")
+  codState       String                @default("cod_pending") @map("cod_state")
+  codRemittanceReference String?       @map("cod_remittance_reference")
+  codDisputeReason String?              @map("cod_dispute_reason")
+  rtoReceivedAt  DateTime?             @map("rto_received_at") @db.Timestamptz(3)
   shippedAt      DateTime?             @map("shipped_at") @db.Timestamptz(3)
   deliveredAt    DateTime?             @map("delivered_at") @db.Timestamptz(3)
   createdAt      DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -1027,6 +1031,7 @@ model Shipment {
   failedDelivery FailedDeliveryRecord?
 
   @@index([vendorOrderId])
+  @@index([codState, updatedAt])
   @@map("shipments")
 }
 
