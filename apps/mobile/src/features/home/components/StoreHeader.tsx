@@ -51,7 +51,7 @@ export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; view
         <Pressable onPress={() => router.replace("/")}><BrandLogo compact={compact} /></Pressable>
         {desktop ? <SearchBox onVoiceResult={voiceSearch} query={query} onChange={setQuery} onSearch={search} /> : null}
         <View style={styles.actions}>
-          <ThemeToggle compact={!desktop} />
+          {desktop ? <ThemeToggle /> : <ThemeToggle compact />}
           {desktop ? <Pressable accessibilityLabel="My account" onPress={() => router.push("/account")} style={styles.iconButton}><Ionicons color={colors.text} name="person-outline" size={22} /></Pressable> : null}
           <Pressable accessibilityLabel="Notifications" onPress={() => router.push("/notifications")} style={styles.iconButton}><Ionicons color={colors.text} name="notifications-outline" size={22} /></Pressable>
           <Pressable accessibilityLabel={`Shopping cart with ${cart.data?.itemCount ?? 0} items`} onPress={() => router.push("/cart")} style={styles.iconButton}><Ionicons color={colors.text} name="cart-outline" size={23} /><View style={styles.cartBadge}><Text style={styles.cartBadgeText}>{Math.min(cart.data?.itemCount ?? 0, 99)}</Text></View></Pressable>
