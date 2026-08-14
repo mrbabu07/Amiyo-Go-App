@@ -40,6 +40,7 @@ export function createAdminRouter() {
     res.json(await search.detail(requireSession(req), type, id));
   } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace", async (req, res, next) => { try { res.json(await service.workspace(requireSession(req))); } catch (error) { next(error); } });
+  router.get("/api/v2/admin/workspace/customers/:id", async (req, res, next) => { try { res.json(await service.customerDetail(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/commerce", async (req, res, next) => { try { res.json(await service.commerce(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/orders/:id", async (req, res, next) => { try { res.json(await service.orderDetail(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/commission-rules", async (req, res, next) => { try { res.json(await commissions.list(requireSession(req))); } catch (error) { next(error); } });
