@@ -25474,6 +25474,1120 @@
         }
       }
     },
+    "/api/v2/admin/workspace/inventory": {
+      "get": {
+        "tags": [
+          "Admin Inventory"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inventory control workspace with movement evidence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "version": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          },
+                          "productId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "product": {
+                            "type": "string"
+                          },
+                          "productStatus": {
+                            "type": "string"
+                          },
+                          "sku": {
+                            "type": "string"
+                          },
+                          "variant": {
+                            "type": "string"
+                          },
+                          "vendor": {
+                            "type": "string"
+                          },
+                          "shop": {
+                            "type": "string"
+                          },
+                          "priceMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "currency": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 3
+                          },
+                          "onHand": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "reserved": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "available": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "reorderLevel": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "stockValueMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "in_stock",
+                              "low_stock",
+                              "out_of_stock"
+                            ]
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "movements": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "inventoryId": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "RECEIPT",
+                                    "ADJUSTMENT",
+                                    "RESERVATION",
+                                    "RELEASE",
+                                    "SALE",
+                                    "RETURN"
+                                  ]
+                                },
+                                "quantity": {
+                                  "type": "integer"
+                                },
+                                "referenceType": {
+                                  "type": "string"
+                                },
+                                "referenceId": {
+                                  "type": "string"
+                                },
+                                "reason": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "createdAt": {
+                                  "type": "string",
+                                  "format": "date-time"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "inventoryId",
+                                "type",
+                                "quantity",
+                                "referenceType",
+                                "referenceId",
+                                "reason",
+                                "createdAt"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "version",
+                          "productId",
+                          "product",
+                          "productStatus",
+                          "sku",
+                          "variant",
+                          "vendor",
+                          "shop",
+                          "priceMinor",
+                          "currency",
+                          "onHand",
+                          "reserved",
+                          "available",
+                          "reorderLevel",
+                          "stockValueMinor",
+                          "status",
+                          "updatedAt",
+                          "movements"
+                        ]
+                      }
+                    },
+                    "movements": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "inventoryId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "RECEIPT",
+                              "ADJUSTMENT",
+                              "RESERVATION",
+                              "RELEASE",
+                              "SALE",
+                              "RETURN"
+                            ]
+                          },
+                          "quantity": {
+                            "type": "integer"
+                          },
+                          "referenceType": {
+                            "type": "string"
+                          },
+                          "referenceId": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "product": {
+                            "type": "string"
+                          },
+                          "sku": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "inventoryId",
+                          "type",
+                          "quantity",
+                          "referenceType",
+                          "referenceId",
+                          "reason",
+                          "createdAt",
+                          "product",
+                          "sku"
+                        ]
+                      }
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "totalVariants": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "inStock": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "lowStock": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "outOfStock": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "stockUnits": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "reservedUnits": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "valueMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3
+                        }
+                      },
+                      "required": [
+                        "totalVariants",
+                        "inStock",
+                        "lowStock",
+                        "outOfStock",
+                        "stockUnits",
+                        "reservedUnits",
+                        "valueMinor",
+                        "currency"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "movements",
+                    "summary"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/workspace/inventory/{id}": {
+      "put": {
+        "tags": [
+          "Admin Inventory"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "onHand": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "reorderLevel": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "expectedVersion",
+                  "onHand",
+                  "reorderLevel",
+                  "reason"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Inventory item adjusted with optimistic concurrency",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "version": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          },
+                          "productId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "product": {
+                            "type": "string"
+                          },
+                          "productStatus": {
+                            "type": "string"
+                          },
+                          "sku": {
+                            "type": "string"
+                          },
+                          "variant": {
+                            "type": "string"
+                          },
+                          "vendor": {
+                            "type": "string"
+                          },
+                          "shop": {
+                            "type": "string"
+                          },
+                          "priceMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "currency": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 3
+                          },
+                          "onHand": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "reserved": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "available": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "reorderLevel": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "stockValueMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "in_stock",
+                              "low_stock",
+                              "out_of_stock"
+                            ]
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "movements": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "inventoryId": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "RECEIPT",
+                                    "ADJUSTMENT",
+                                    "RESERVATION",
+                                    "RELEASE",
+                                    "SALE",
+                                    "RETURN"
+                                  ]
+                                },
+                                "quantity": {
+                                  "type": "integer"
+                                },
+                                "referenceType": {
+                                  "type": "string"
+                                },
+                                "referenceId": {
+                                  "type": "string"
+                                },
+                                "reason": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "createdAt": {
+                                  "type": "string",
+                                  "format": "date-time"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "inventoryId",
+                                "type",
+                                "quantity",
+                                "referenceType",
+                                "referenceId",
+                                "reason",
+                                "createdAt"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "version",
+                          "productId",
+                          "product",
+                          "productStatus",
+                          "sku",
+                          "variant",
+                          "vendor",
+                          "shop",
+                          "priceMinor",
+                          "currency",
+                          "onHand",
+                          "reserved",
+                          "available",
+                          "reorderLevel",
+                          "stockValueMinor",
+                          "status",
+                          "updatedAt",
+                          "movements"
+                        ]
+                      }
+                    },
+                    "movements": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "inventoryId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "RECEIPT",
+                              "ADJUSTMENT",
+                              "RESERVATION",
+                              "RELEASE",
+                              "SALE",
+                              "RETURN"
+                            ]
+                          },
+                          "quantity": {
+                            "type": "integer"
+                          },
+                          "referenceType": {
+                            "type": "string"
+                          },
+                          "referenceId": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "product": {
+                            "type": "string"
+                          },
+                          "sku": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "inventoryId",
+                          "type",
+                          "quantity",
+                          "referenceType",
+                          "referenceId",
+                          "reason",
+                          "createdAt",
+                          "product",
+                          "sku"
+                        ]
+                      }
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "totalVariants": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "inStock": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "lowStock": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "outOfStock": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "stockUnits": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "reservedUnits": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "valueMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3
+                        }
+                      },
+                      "required": [
+                        "totalVariants",
+                        "inStock",
+                        "lowStock",
+                        "outOfStock",
+                        "stockUnits",
+                        "reservedUnits",
+                        "valueMinor",
+                        "currency"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "movements",
+                    "summary"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/workspace/inventory/bulk": {
+      "post": {
+        "tags": [
+          "Admin Inventory"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "expectedVersion": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0
+                        },
+                        "onHand": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "reorderLevel": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": [
+                        "expectedVersion",
+                        "onHand",
+                        "reorderLevel",
+                        "id"
+                      ]
+                    },
+                    "minItems": 1,
+                    "maxItems": 300
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "items",
+                  "reason"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Inventory items adjusted atomically",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "version": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          },
+                          "productId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "product": {
+                            "type": "string"
+                          },
+                          "productStatus": {
+                            "type": "string"
+                          },
+                          "sku": {
+                            "type": "string"
+                          },
+                          "variant": {
+                            "type": "string"
+                          },
+                          "vendor": {
+                            "type": "string"
+                          },
+                          "shop": {
+                            "type": "string"
+                          },
+                          "priceMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "currency": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 3
+                          },
+                          "onHand": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "reserved": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "available": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "reorderLevel": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "stockValueMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "in_stock",
+                              "low_stock",
+                              "out_of_stock"
+                            ]
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "movements": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "inventoryId": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "RECEIPT",
+                                    "ADJUSTMENT",
+                                    "RESERVATION",
+                                    "RELEASE",
+                                    "SALE",
+                                    "RETURN"
+                                  ]
+                                },
+                                "quantity": {
+                                  "type": "integer"
+                                },
+                                "referenceType": {
+                                  "type": "string"
+                                },
+                                "referenceId": {
+                                  "type": "string"
+                                },
+                                "reason": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "createdAt": {
+                                  "type": "string",
+                                  "format": "date-time"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "inventoryId",
+                                "type",
+                                "quantity",
+                                "referenceType",
+                                "referenceId",
+                                "reason",
+                                "createdAt"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "version",
+                          "productId",
+                          "product",
+                          "productStatus",
+                          "sku",
+                          "variant",
+                          "vendor",
+                          "shop",
+                          "priceMinor",
+                          "currency",
+                          "onHand",
+                          "reserved",
+                          "available",
+                          "reorderLevel",
+                          "stockValueMinor",
+                          "status",
+                          "updatedAt",
+                          "movements"
+                        ]
+                      }
+                    },
+                    "movements": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "inventoryId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "RECEIPT",
+                              "ADJUSTMENT",
+                              "RESERVATION",
+                              "RELEASE",
+                              "SALE",
+                              "RETURN"
+                            ]
+                          },
+                          "quantity": {
+                            "type": "integer"
+                          },
+                          "referenceType": {
+                            "type": "string"
+                          },
+                          "referenceId": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "product": {
+                            "type": "string"
+                          },
+                          "sku": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "inventoryId",
+                          "type",
+                          "quantity",
+                          "referenceType",
+                          "referenceId",
+                          "reason",
+                          "createdAt",
+                          "product",
+                          "sku"
+                        ]
+                      }
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "totalVariants": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "inStock": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "lowStock": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "outOfStock": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "stockUnits": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "reservedUnits": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "valueMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3
+                        }
+                      },
+                      "required": [
+                        "totalVariants",
+                        "inStock",
+                        "lowStock",
+                        "outOfStock",
+                        "stockUnits",
+                        "reservedUnits",
+                        "valueMinor",
+                        "currency"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "movements",
+                    "summary"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/admin/workspace/coupons": {
       "get": {
         "tags": [

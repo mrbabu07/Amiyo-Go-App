@@ -1,4 +1,4 @@
-import { adminAnalyticsQuerySchema, adminAuditQuerySchema, adminBannerInputSchema, adminCampaignInputSchema, adminCategoryAttributesInputSchema, adminCategoryInputSchema, adminCategoryRequestReviewSchema, adminCouponInputSchema, adminFlashSaleInputSchema, adminKycReviewInputSchema, adminToggleInputSchema, adminUserRolesInputSchema, adminUserStatusInputSchema, adminVendorStatusInputSchema, adminVoucherInputSchema, commissionRuleInputSchema, endCommissionRuleSchema, paymentVerificationReviewSchema, platformSettingsInputSchema, trustCaseActionInputSchema, updateAdminCampaignSchema, updateAdminCouponSchema, updateCommissionRuleSchema } from "@amiyo/contracts";
+import { adminAnalyticsQuerySchema, adminAuditQuerySchema, adminBannerInputSchema, adminCampaignInputSchema, adminCategoryAttributesInputSchema, adminCategoryInputSchema, adminCategoryRequestReviewSchema, adminCouponInputSchema, adminFlashSaleInputSchema, adminInventoryBulkUpdateSchema, adminInventoryUpdateSchema, adminKycReviewInputSchema, adminToggleInputSchema, adminUserRolesInputSchema, adminUserStatusInputSchema, adminVendorStatusInputSchema, adminVoucherInputSchema, commissionRuleInputSchema, endCommissionRuleSchema, paymentVerificationReviewSchema, platformSettingsInputSchema, trustCaseActionInputSchema, updateAdminCampaignSchema, updateAdminCouponSchema, updateCommissionRuleSchema } from "@amiyo/contracts";
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
@@ -11,7 +11,6 @@ import { AdminSearchService, type AdminSearchType } from "./admin-search.service
 import { AdminService } from "./admin.service.js";
 
 const idSchema = z.object({ id: z.string().uuid() });
-const inventoryInputSchema = z.object({ expectedVersion: z.number().int().positive(), onHand: z.number().int().nonnegative(), reorderLevel: z.number().int().nonnegative() });
 const adminChatInputSchema = z.object({ body: z.string().trim().min(1).max(4000) });
 const categoryControlSchema = z.object({ status: z.enum(["active", "inactive"]).optional(), displayOrder: z.number().int().nonnegative().optional() }).refine((value) => value.status !== undefined || value.displayOrder !== undefined, "A category change is required");
 const adminSearchTypeSchema = z.enum(["order", "vendor", "product", "customer", "return", "support"]);
@@ -45,6 +44,7 @@ export function createAdminRouter() {
   router.get("/api/v2/admin/workspace/settings", async (req, res, next) => { try { res.json(await service.settings(requireSession(req))); } catch (error) { next(error); } });
   router.put("/api/v2/admin/workspace/settings", writes, async (req, res, next) => { try { res.json(await service.updateSettings(requireSession(req), platformSettingsInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/commerce", async (req, res, next) => { try { res.json(await service.commerce(requireSession(req))); } catch (error) { next(error); } });
+  router.get("/api/v2/admin/workspace/inventory", async (req, res, next) => { try { res.json(await service.inventory(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/coupons", async (req, res, next) => { try { res.json(await service.coupons(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/campaigns", async (req, res, next) => { try { res.json(await service.campaigns(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/chats", async (req, res, next) => { try { res.json(await service.chats(requireSession(req))); } catch (error) { next(error); } });
@@ -54,7 +54,8 @@ export function createAdminRouter() {
   router.post("/api/v2/admin/workspace/commission-rules", writes, async (req, res, next) => { try { res.status(201).json(await commissions.create(requireSession(req), commissionRuleInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.put("/api/v2/admin/workspace/commission-rules/:id", writes, async (req, res, next) => { try { res.json(await commissions.update(requireSession(req), idSchema.parse(req.params).id, updateCommissionRuleSchema.parse(req.body))); } catch (error) { next(error); } });
   router.delete("/api/v2/admin/workspace/commission-rules/:id", writes, async (req, res, next) => { try { res.json(await commissions.end(requireSession(req), idSchema.parse(req.params).id, endCommissionRuleSchema.parse(req.body).expectedVersion)); } catch (error) { next(error); } });
-  router.patch("/api/v2/admin/workspace/inventory/:id", writes, async (req, res, next) => { try { res.json(await service.updateInventory(requireSession(req), idSchema.parse(req.params).id, inventoryInputSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.post("/api/v2/admin/workspace/inventory/bulk", writes, async (req, res, next) => { try { res.json(await service.bulkUpdateInventory(requireSession(req), adminInventoryBulkUpdateSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.put("/api/v2/admin/workspace/inventory/:id", writes, async (req, res, next) => { try { res.json(await service.updateInventory(requireSession(req), idSchema.parse(req.params).id, adminInventoryUpdateSchema.parse(req.body))); } catch (error) { next(error); } });
   router.patch("/api/v2/admin/workspace/coupons/:id", writes, async (req, res, next) => { try { res.json(await service.toggleCoupon(requireSession(req), idSchema.parse(req.params).id, adminToggleInputSchema.parse(req.body).active)); } catch (error) { next(error); } });
   router.post("/api/v2/admin/workspace/coupons", writes, async (req, res, next) => { try { res.status(201).json(await service.createCoupon(requireSession(req), adminCouponInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.put("/api/v2/admin/workspace/coupons/:id", writes, async (req, res, next) => { try { res.json(await service.updateCoupon(requireSession(req), idSchema.parse(req.params).id, updateAdminCouponSchema.parse(req.body))); } catch (error) { next(error); } });

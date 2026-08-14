@@ -1,2 +1,2 @@
-import { AdminCommerceWorkspaceScreen } from "../../src/features/admin/AdminCommerceWorkspaceScreen";
-export default function Route() { return <AdminCommerceWorkspaceScreen kind="inventory" />; }
+import { AdminInventoryScreen } from "../../src/features/admin/AdminInventoryScreen";
+export default function Route() { return <AdminInventoryScreen />; }
