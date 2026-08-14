@@ -80,6 +80,8 @@ const ids = {
   , customerReview: "00000000-0000-4000-8000-000000002801"
   , manualPayment: "00000000-0000-4000-8000-000000002901"
   , paymentVerification: "00000000-0000-4000-8000-000000003001"
+  , marketplaceVoucher: "00000000-0000-4000-8000-000000003101"
+  , flashSale: "00000000-0000-4000-8000-000000003201"
 };
 
 async function seedAccessControl() {
@@ -258,6 +260,12 @@ async function seedDemoCatalog() {
       }
     });
   }
+
+  const marketingStartsAt = new Date(Date.now() - 60 * 60_000);
+  const marketingEndsAt = new Date(Date.now() + 30 * 86_400_000);
+  await prisma.voucher.upsert({ where: { id: ids.marketplaceVoucher }, update: { code: "AMIYO20", ownerType: "platform", ownerId: "marketplace", rules: { discountType: "PERCENT", value: 20, minimumSpendMinor: "100000", usageLimit: 500 }, startsAt: marketingStartsAt, endsAt: marketingEndsAt, active: true }, create: { id: ids.marketplaceVoucher, code: "AMIYO20", ownerType: "platform", ownerId: "marketplace", rules: { discountType: "PERCENT", value: 20, minimumSpendMinor: "100000", usageLimit: 500 }, startsAt: marketingStartsAt, endsAt: marketingEndsAt, active: true } });
+  await prisma.flashSale.upsert({ where: { id: ids.flashSale }, update: { name: "Amiyo Mega Flash Hour", status: "active", startsAt: marketingStartsAt, endsAt: marketingEndsAt }, create: { id: ids.flashSale, name: "Amiyo Mega Flash Hour", status: "active", startsAt: marketingStartsAt, endsAt: marketingEndsAt } });
+  for (const item of [{ productId: ids.product, priceMinor: 199000n, quantityLimit: 25 }, { productId: "00000000-0000-4000-8000-000000000410", priceMinor: 149000n, quantityLimit: 40 }]) await prisma.flashSaleProduct.upsert({ where: { flashSaleId_productId: { flashSaleId: ids.flashSale, productId: item.productId } }, update: { priceMinor: item.priceMinor, quantityLimit: item.quantityLimit }, create: { flashSaleId: ids.flashSale, ...item } });
 
   const moderationProducts = [
     { suffix: "433", variant: "533", inventory: "633", name: "Vendor Submitted Denim Jacket", slug: "vendor-submitted-denim-jacket", sku: "DHAKA-DENIM-001", status: "SUBMITTED" as const, categoryId: categoryIds.get("mens-clothing")!, priceMinor: 249000n, image: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=900&h=900&fit=crop" },

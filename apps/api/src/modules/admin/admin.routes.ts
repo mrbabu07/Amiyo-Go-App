@@ -1,4 +1,4 @@
-import { adminAnalyticsQuerySchema, adminBannerInputSchema, adminCategoryAttributesInputSchema, adminCategoryInputSchema, adminCategoryRequestReviewSchema, adminKycReviewInputSchema, adminToggleInputSchema, adminUserRolesInputSchema, adminUserStatusInputSchema, adminVendorStatusInputSchema, commissionRuleInputSchema, endCommissionRuleSchema, paymentVerificationReviewSchema, trustCaseActionInputSchema, updateCommissionRuleSchema } from "@amiyo/contracts";
+import { adminAnalyticsQuerySchema, adminBannerInputSchema, adminCategoryAttributesInputSchema, adminCategoryInputSchema, adminCategoryRequestReviewSchema, adminFlashSaleInputSchema, adminKycReviewInputSchema, adminToggleInputSchema, adminUserRolesInputSchema, adminUserStatusInputSchema, adminVendorStatusInputSchema, adminVoucherInputSchema, commissionRuleInputSchema, endCommissionRuleSchema, paymentVerificationReviewSchema, trustCaseActionInputSchema, updateCommissionRuleSchema } from "@amiyo/contracts";
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
@@ -42,6 +42,7 @@ export function createAdminRouter() {
   router.get("/api/v2/admin/workspace", async (req, res, next) => { try { res.json(await service.workspace(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/customers/:id", async (req, res, next) => { try { res.json(await service.customerDetail(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/payment-verifications", async (req, res, next) => { try { res.json(await service.paymentVerifications(requireSession(req))); } catch (error) { next(error); } });
+  router.get("/api/v2/admin/workspace/marketing", async (req, res, next) => { try { res.json(await service.marketing(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/commerce", async (req, res, next) => { try { res.json(await service.commerce(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/orders/:id", async (req, res, next) => { try { res.json(await service.orderDetail(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/commission-rules", async (req, res, next) => { try { res.json(await commissions.list(requireSession(req))); } catch (error) { next(error); } });
@@ -74,5 +75,11 @@ export function createAdminRouter() {
   router.patch("/api/v2/admin/workspace/banners/:id", writes, async (req, res, next) => { try { res.json(await service.toggleBanner(requireSession(req), idSchema.parse(req.params).id, adminToggleInputSchema.parse(req.body).active)); } catch (error) { next(error); } });
   router.patch("/api/v2/admin/workspace/vouchers/:id", writes, async (req, res, next) => { try { res.json(await service.toggleVoucher(requireSession(req), idSchema.parse(req.params).id, adminToggleInputSchema.parse(req.body).active)); } catch (error) { next(error); } });
   router.patch("/api/v2/admin/workspace/flash-sales/:id", writes, async (req, res, next) => { try { res.json(await service.toggleFlashSale(requireSession(req), idSchema.parse(req.params).id, adminToggleInputSchema.parse(req.body).active)); } catch (error) { next(error); } });
+  router.post("/api/v2/admin/workspace/vouchers", writes, async (req, res, next) => { try { res.status(201).json(await service.createVoucher(requireSession(req), adminVoucherInputSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.put("/api/v2/admin/workspace/vouchers/:id", writes, async (req, res, next) => { try { res.json(await service.updateVoucher(requireSession(req), idSchema.parse(req.params).id, adminVoucherInputSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.delete("/api/v2/admin/workspace/vouchers/:id", writes, async (req, res, next) => { try { res.json(await service.deleteVoucher(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
+  router.post("/api/v2/admin/workspace/flash-sales", writes, async (req, res, next) => { try { res.status(201).json(await service.createFlashSale(requireSession(req), adminFlashSaleInputSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.put("/api/v2/admin/workspace/flash-sales/:id", writes, async (req, res, next) => { try { res.json(await service.updateFlashSale(requireSession(req), idSchema.parse(req.params).id, adminFlashSaleInputSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.delete("/api/v2/admin/workspace/flash-sales/:id", writes, async (req, res, next) => { try { res.json(await service.deleteFlashSale(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   return router;
 }
