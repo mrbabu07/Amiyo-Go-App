@@ -112,6 +112,9 @@ export const adminCampaignInputSchema = adminCampaignFieldsSchema.superRefine(va
 export const updateAdminCampaignSchema = adminCampaignFieldsSchema.extend({ expectedVersion: versionSchema }).superRefine(validateAdminCampaign);
 export const adminCampaignSchema = adminCampaignFieldsSchema.omit({ productIds: true }).extend({ id: uuidSchema, imageUrl: z.string().url().nullable(), couponCode: z.string().nullable(), products: z.array(z.object({ id: uuidSchema, name: z.string(), slug: z.string(), priceMinor: z.string().regex(/^\d+$/), imageUrl: z.string().url().nullable(), displayOrder: z.number().int().nonnegative() })), eventCount: z.number().int().nonnegative(), version: versionSchema });
 export const adminCampaignWorkspaceSchema = z.object({ campaigns: z.array(adminCampaignSchema), products: z.array(z.object({ id: uuidSchema, name: z.string(), slug: z.string(), priceMinor: z.string().regex(/^\d+$/), imageUrl: z.string().url().nullable() })), coupons: z.array(z.object({ code: z.string(), active: z.boolean() })) });
+export const adminChatThreadSummarySchema = z.object({ id: uuidSchema, vendorId: uuidSchema.nullable(), vendorName: z.string(), vendorStatus: z.string().nullable(), subject: z.string(), status: z.string(), unreadCount: z.number().int().nonnegative(), messageCount: z.number().int().nonnegative(), lastMessage: z.object({ body: z.string(), senderId: uuidSchema, senderName: z.string(), createdAt: timestampSchema }).nullable(), updatedAt: timestampSchema });
+export const adminChatWorkspaceSchema = z.object({ threads: z.array(adminChatThreadSummarySchema), summary: z.object({ total: z.number().int().nonnegative(), unread: z.number().int().nonnegative(), open: z.number().int().nonnegative() }) });
+export const adminChatThreadSchema = z.object({ id: uuidSchema, vendorId: uuidSchema.nullable(), vendorName: z.string(), vendorStatus: z.string().nullable(), subject: z.string(), status: z.string(), participants: z.array(z.object({ userId: uuidSchema, role: z.string(), displayName: z.string() })), messages: z.array(z.object({ id: uuidSchema, senderId: uuidSchema, senderName: z.string(), senderRole: z.string(), body: z.string(), attachments: z.unknown().nullable(), createdAt: timestampSchema })), createdAt: timestampSchema, updatedAt: timestampSchema });
 
 export type AdminUserStatusInput = z.infer<typeof adminUserStatusInputSchema>;
 export type AdminUserRolesInput = z.infer<typeof adminUserRolesInputSchema>;
@@ -141,3 +144,5 @@ export type AdminCampaignInput = z.infer<typeof adminCampaignInputSchema>;
 export type UpdateAdminCampaign = z.infer<typeof updateAdminCampaignSchema>;
 export type AdminCampaignDto = z.infer<typeof adminCampaignSchema>;
 export type AdminCampaignWorkspaceDto = z.infer<typeof adminCampaignWorkspaceSchema>;
+export type AdminChatWorkspaceDto = z.infer<typeof adminChatWorkspaceSchema>;
+export type AdminChatThreadDto = z.infer<typeof adminChatThreadSchema>;

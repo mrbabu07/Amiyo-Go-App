@@ -1,2 +1,3 @@
-import { AdminCommerceWorkspaceScreen } from "../../../src/features/admin/AdminCommerceWorkspaceScreen";
-export default function Route() { return <AdminCommerceWorkspaceScreen kind="chats" />; }
+import { useLocalSearchParams } from "expo-router";
+import { AdminChatDetailScreen } from "../../../src/features/admin/AdminChatDetailScreen";
+export default function Route() { const { vendorId } = useLocalSearchParams<{ vendorId: string }>(); return <AdminChatDetailScreen threadId={vendorId} />; }

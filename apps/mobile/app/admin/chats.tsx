@@ -1,2 +1,2 @@
-import { AdminCommerceWorkspaceScreen } from "../../src/features/admin/AdminCommerceWorkspaceScreen";
-export default function Route() { return <AdminCommerceWorkspaceScreen kind="chats" />; }
+import { AdminChatsScreen } from "../../src/features/admin/AdminChatsScreen";
+export default function Route() { return <AdminChatsScreen />; }
