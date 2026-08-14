@@ -1,2 +1,2 @@
-import { AdminReferenceWorkspaceScreen } from "../../src/features/admin/AdminReferenceWorkspaceScreen";
-export default function Route() { return <AdminReferenceWorkspaceScreen kind="returns" />; }
+import { AdminReturnsScreen } from "../../src/features/admin/AdminReturnsScreen";
+export default function Route() { return <AdminReturnsScreen />; }

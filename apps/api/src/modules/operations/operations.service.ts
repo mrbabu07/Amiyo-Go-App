@@ -98,6 +98,18 @@ export class OperationsService {
     const rows = await this.client.return.findMany({ where: admin && elevated(session) ? {} : { userId: session.principal.userId }, include: { items: true }, orderBy: { createdAt: "desc" }, take: 100 }); return rows.map(returnDto);
   }
 
+  async returnDetail(session: Session, id: string) {
+    requirePermission(session, "returns:manage"); if (!elevated(session)) throw new ApiProblem(403, "ADMIN_REQUIRED", "Operations access is required");
+    const row = await this.client.return.findUnique({ where: { id }, include: {
+      items: { include: { orderItem: { select: { productNameSnapshot: true, skuSnapshot: true, unitPriceMinor: true, lineTotalMinor: true } } } },
+      order: { select: { orderNumber: true, user: { select: { normalizedEmail: true, normalizedPhone: true, profile: { select: { displayName: true } } } } } },
+      vendorOrder: { select: { vendor: { select: { displayName: true, legalName: true } }, shop: { select: { name: true } } } },
+      events: { orderBy: { createdAt: "asc" } }, refunds: { orderBy: { createdAt: "desc" } }
+    } });
+    if (!row) throw new ApiProblem(404, "RETURN_NOT_FOUND", "Return not found");
+    return { ...returnDto(row), orderNumber: row.order.orderNumber, reasonDetail: row.reasonDetail, customer: { name: row.order.user?.profile?.displayName ?? "Guest customer", email: row.order.user?.normalizedEmail ?? null, phone: row.order.user?.normalizedPhone ?? null }, vendor: { name: row.vendorOrder.vendor.displayName, legalName: row.vendorOrder.vendor.legalName, shop: row.vendorOrder.shop.name }, items: row.items.map((item) => ({ id: item.id, orderItemId: item.orderItemId, name: item.orderItem.productNameSnapshot, sku: item.orderItem.skuSnapshot, quantity: item.quantity, requestedAmount: money(item.requestedMinor, row.currency), unitPrice: money(item.orderItem.unitPriceMinor, row.currency), lineTotal: money(item.orderItem.lineTotalMinor, row.currency), inspection: item.inspection as Record<string, unknown> | null })), events: row.events.map((event) => ({ id: event.id, fromStatus: event.fromStatus, toStatus: event.toStatus, actorType: event.actorType, note: event.note, createdAt: event.createdAt.toISOString() })), refunds: row.refunds.map((refund) => ({ id: refund.id, status: refund.status, amount: money(refund.amountMinor, refund.currency), providerRefundId: refund.providerRefundId, reason: refund.reason, createdAt: refund.createdAt.toISOString(), completedAt: refund.completedAt?.toISOString() ?? null })) };
+  }
+
   async respondToVendorReturn(session: Session, id: string, input: SellerReturnResponse, key: string, correlationId?: string) {
     requirePermission(session, "returns:manage"); const vendorId = session.principal.vendorIds[0]; if (!vendorId) throw new ApiProblem(403, "VENDOR_REQUIRED", "Vendor membership is required"); const scope = `vendor-return-response:${id}`;
     return withSerializableTransaction(this.client, async (transaction) => {
