@@ -20,6 +20,7 @@ export const adminOrderDetailSchema = z.object({
   version: versionSchema,
   createdAt: timestampSchema,
   placedAt: timestampSchema.nullable(),
+  returnWindowUntil: timestampSchema.nullable().default(null),
   customer: z.object({ id: uuidSchema.nullable(), displayName: z.string(), email: z.string().nullable(), phone: z.string().nullable() }),
   deliveryAddress: z.object({ recipientName: z.string(), phone: z.string(), line1: z.string(), line2: z.string().nullable(), division: z.string(), district: z.string(), upazila: z.string().nullable(), unionName: z.string().nullable(), postalCode: z.string().nullable() }).nullable(),
   payment: z.object({ id: uuidSchema, provider: z.string(), method: z.string(), status: z.string(), amount: adminOrderMoneySchema, refunded: adminOrderMoneySchema, transactionId: z.string().nullable(), createdAt: timestampSchema }).nullable(),
@@ -123,6 +124,7 @@ export const adminInventoryBulkUpdateSchema = z.object({ items: z.array(adminInv
 export const adminOrderStatusOverrideSchema = z.object({ expectedVersion: versionSchema, status: z.enum(["PENDING_PAYMENT", "CONFIRMED", "PROCESSING", "READY_TO_SHIP", "SHIPPED", "DELIVERED", "CANCELLED", "RETURN_REQUESTED", "RETURNED", "REFUNDED"]), reason: z.string().trim().min(5).max(500) });
 export const adminOrderAddressInputSchema = z.object({ recipientName: z.string().trim().min(2).max(120), phone: z.string().trim().min(7).max(30), line1: z.string().trim().min(3).max(240), line2: z.string().trim().max(240).nullable().default(null), division: z.string().trim().min(2).max(100), district: z.string().trim().min(2).max(100), upazila: z.string().trim().max(100).nullable().default(null), unionName: z.string().trim().max(100).nullable().default(null), postalCode: z.string().trim().max(20).nullable().default(null), reason: z.string().trim().min(5).max(500) });
 export const adminOrderCourierInputSchema = z.object({ vendorOrderId: uuidSchema, expectedVersion: versionSchema, provider: z.string().trim().min(2).max(120), trackingNumber: z.string().trim().min(2).max(160), reason: z.string().trim().min(5).max(500) });
+export const adminOrderReturnWindowInputSchema = z.object({ expectedVersion: versionSchema, returnWindowUntil: timestampSchema, reason: z.string().trim().min(5).max(500) }).refine((value) => new Date(value.returnWindowUntil).getTime() > Date.now(), "Return window must end in the future");
 
 export type AdminUserStatusInput = z.infer<typeof adminUserStatusInputSchema>;
 export type AdminUserRolesInput = z.infer<typeof adminUserRolesInputSchema>;
@@ -160,3 +162,4 @@ export type AdminInventoryBulkUpdate = z.infer<typeof adminInventoryBulkUpdateSc
 export type AdminOrderStatusOverride = z.infer<typeof adminOrderStatusOverrideSchema>;
 export type AdminOrderAddressInput = z.infer<typeof adminOrderAddressInputSchema>;
 export type AdminOrderCourierInput = z.infer<typeof adminOrderCourierInputSchema>;
+export type AdminOrderReturnWindowInput = z.infer<typeof adminOrderReturnWindowInputSchema>;

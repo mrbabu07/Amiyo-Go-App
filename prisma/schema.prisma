@@ -888,6 +888,7 @@ model Order {
   totalMinor        BigInt                 @map("total_minor")
   version           Int                    @default(1)
   placedAt          DateTime?              @map("placed_at") @db.Timestamptz(3)
+  returnWindowUntil DateTime?              @map("return_window_until") @db.Timestamptz(3)
   createdAt         DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
   user              User?                  @relation(fields: [userId], references: [id], onDelete: Restrict)
