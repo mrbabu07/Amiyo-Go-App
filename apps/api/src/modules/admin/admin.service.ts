@@ -8,6 +8,7 @@ function requireAdmin(session: Session, write = false) {
 }
 function json(value: unknown) { return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue; }
 function mediaUrl(key: string | null) { if (!key) return null; if (/^https?:\/\//.test(key)) return key; const base = process.env.OBJECT_STORAGE_PUBLIC_URL?.replace(/\/$/, ""); return base ? `${base}/${key}` : null; }
+function money(amountMinor: bigint, currency = "BDT") { return { amountMinor: amountMinor.toString(), currency }; }
 function bannerStatus(active: boolean, startsAt: Date, endsAt: Date) { const now = new Date(); return !active ? "inactive" as const : startsAt > now ? "scheduled" as const : endsAt <= now ? "expired" as const : "active" as const; }
 const assignableRoles = ["SUPPORT_AGENT", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "SUPER_ADMIN"] as const;
 
@@ -90,6 +91,23 @@ export class AdminService {
       codCollections: codCollections.map((item) => ({ id: item.id, orderNumber: item.payment.order.orderNumber, expectedMinor: item.payment.amountMinor.toString(), collectedMinor: item.collectedMinor.toString(), currency: item.currency, collectorRef: item.collectorRef, collectedAt: item.collectedAt.toISOString() })),
       codReconciliations: codReconciliations.map((item) => ({ id: item.id, periodStart: item.periodStart.toISOString(), periodEnd: item.periodEnd.toISOString(), expectedMinor: item.expectedMinor.toString(), receivedMinor: item.receivedMinor.toString(), currency: item.currency, status: item.status, itemCount: item._count.items, createdAt: item.createdAt.toISOString() })),
       vendorActivity: vendorActivity.map((item) => ({ id: item.id, vendor: item.displayName, status: item.status, products: item._count.products, orders: item._count.vendorOrders, chats: item._count.chatThreads, payoutRequests: item._count.payoutRequests, gmvMinor: item.vendorOrders.reduce((sum, row) => sum + row.totalMinor, 0n).toString(), commissionMinor: item.vendorOrders.reduce((sum, row) => sum + row.commissionMinor, 0n).toString(), updatedAt: item.updatedAt.toISOString() }))
+    };
+  }
+  async orderDetail(session: Session, id: string) {
+    requireAdmin(session);
+    const order = await this.client.order.findUnique({ where: { id }, include: { user: { include: { profile: true } }, addresses: true, payments: { orderBy: { createdAt: "desc" }, take: 1 }, invoice: true, statusEvents: { orderBy: { createdAt: "asc" } }, vendorOrders: { include: { vendor: true, shop: true, items: true, shipments: { orderBy: { createdAt: "desc" }, take: 1 } } } } });
+    if (!order) throw new ApiProblem(404, "ORDER_NOT_FOUND", "Order not found");
+    const payment = order.payments[0];
+    const deliveryAddress = order.addresses.find((address) => address.type === "delivery") ?? null;
+    return {
+      id: order.id, orderNumber: order.orderNumber, status: order.status, version: order.version, createdAt: order.createdAt.toISOString(), placedAt: order.placedAt?.toISOString() ?? null,
+      customer: { id: order.userId, displayName: order.user?.profile?.displayName ?? order.user?.normalizedEmail ?? "Guest customer", email: order.user?.normalizedEmail ?? null, phone: order.user?.normalizedPhone ?? null },
+      deliveryAddress: deliveryAddress ? { recipientName: deliveryAddress.recipientName, phone: deliveryAddress.phone, line1: deliveryAddress.line1, line2: deliveryAddress.line2, division: deliveryAddress.division, district: deliveryAddress.district, upazila: deliveryAddress.upazila, unionName: deliveryAddress.unionName, postalCode: deliveryAddress.postalCode } : null,
+      payment: payment ? { id: payment.id, provider: payment.provider, method: payment.method, status: payment.status, amount: money(payment.amountMinor, payment.currency), refunded: money(payment.refundedMinor, payment.currency), transactionId: payment.providerTransactionId, createdAt: payment.createdAt.toISOString() } : null,
+      invoice: order.invoice ? { id: order.invoice.id, number: order.invoice.number, issuedAt: order.invoice.issuedAt.toISOString(), storageUrl: mediaUrl(order.invoice.storageKey) } : null,
+      subtotal: money(order.subtotalMinor, order.currency), discount: money(order.discountMinor, order.currency), delivery: money(order.deliveryMinor, order.currency), tax: money(order.taxMinor, order.currency), total: money(order.totalMinor, order.currency),
+      events: order.statusEvents.map((event) => ({ id: event.id, fromStatus: event.fromStatus, toStatus: event.toStatus, actorType: event.actorType, reason: event.reason, createdAt: event.createdAt.toISOString() })),
+      vendorOrders: order.vendorOrders.map((vendorOrder) => ({ id: vendorOrder.id, vendorId: vendorOrder.vendorId, vendorName: vendorOrder.vendor.displayName, shopName: vendorOrder.shop.name, status: vendorOrder.status, version: vendorOrder.version, subtotal: money(vendorOrder.subtotalMinor, order.currency), discount: money(vendorOrder.discountMinor, order.currency), delivery: money(vendorOrder.deliveryMinor, order.currency), total: money(vendorOrder.totalMinor, order.currency), commission: money(vendorOrder.commissionMinor, order.currency), shipment: vendorOrder.shipments[0] ? { status: vendorOrder.shipments[0].status, provider: vendorOrder.shipments[0].provider, trackingNumber: vendorOrder.shipments[0].trackingNumber } : null, items: vendorOrder.items.map((item) => ({ id: item.id, productName: item.productNameSnapshot, sku: item.skuSnapshot, quantity: item.quantity, unitPrice: money(item.unitPriceMinor, item.currency), lineTotal: money(item.lineTotalMinor, item.currency) })) }))
     };
   }
   async updateInventory(session: Session, id: string, input: { expectedVersion: number; onHand: number; reorderLevel: number }) {

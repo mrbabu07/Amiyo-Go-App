@@ -37,6 +37,7 @@ const vendorLinks: WorkspaceLink[] = [
 
 const adminPrimaryLinks: WorkspaceLink[] = [
   { label: "Dashboard", href: "/admin", icon: "grid-outline" },
+  { label: "Notifications", href: "/admin/notifications", icon: "notifications-outline" },
   { label: "Operations", href: "/admin/operations", icon: "pulse-outline" },
   { label: "University", href: "/admin/university", icon: "school-outline" },
   { label: "Audit Logs", href: "/admin/audit", icon: "time-outline" },
@@ -142,7 +143,7 @@ function AdminScreen({ children, description, desktop, eyebrow, hideHeading = fa
       <View style={styles.workspaceActions}>
         {desktop ? <><Pressable accessibilityLabel="Orders" onPress={() => open("/admin/orders")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="clipboard-outline" size={19} /></Pressable><Pressable accessibilityLabel="Vendors" onPress={() => open("/admin/vendor-requests")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="storefront-outline" size={19} /></Pressable><Pressable accessibilityLabel="Payments" onPress={() => open("/admin/payment-verification")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="card-outline" size={19} /></Pressable></> : null}
         <Pressable accessibilityLabel="Open storefront" onPress={() => open("/")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="storefront-outline" size={19} /></Pressable>
-        <Pressable accessibilityLabel="Notifications" onPress={() => open("/notifications")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="notifications-outline" size={19} /><View style={styles.notificationDot} /></Pressable>
+        <Pressable accessibilityLabel="Notifications" onPress={() => open("/admin/notifications")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="notifications-outline" size={19} /><View style={styles.notificationDot} /></Pressable>
         <Pressable accessibilityLabel={dark ? "Use light admin theme" : "Use dark admin theme"} accessibilityRole="button" onPress={toggleTheme} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name={dark ? "sunny-outline" : "moon-outline"} size={19} /></Pressable>
         <Pressable accessibilityLabel={`Account: ${accountName}, ${roleLabel(accountRole)}`} onPress={() => open("/account")} style={[styles.adminAccount, dark && styles.adminDarkAccount]}><View style={styles.avatar}><Text style={styles.avatarText}>{accountInitials}</Text></View>{desktop ? <View><Text numberOfLines={1} style={[styles.accountName, dark && styles.adminDarkText]}>{accountName}</Text><Text style={[styles.accountRole, dark && styles.adminDarkMuted]}>{roleLabel(accountRole)}</Text></View> : null}</Pressable>
       </View>

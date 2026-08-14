@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { addCartItemSchema, addressInputSchema, catalogQuerySchema, checkoutInputSchema, commissionRuleInputSchema, createOpenApiDocument, createProductSchema, createReturnSchema, deviceInputSchema, minorUnitSchema, moneySchema, productReportInputSchema, vendorOrderStatusSchema, vendorRegistrationSchema } from "./index.js";
+import { addCartItemSchema, addressInputSchema, adminOrderDetailSchema, catalogQuerySchema, checkoutInputSchema, commissionRuleInputSchema, createOpenApiDocument, createProductSchema, createReturnSchema, deviceInputSchema, minorUnitSchema, moneySchema, productReportInputSchema, vendorOrderStatusSchema, vendorRegistrationSchema } from "./index.js";
 
 test("money contracts preserve bigint-safe minor units", () => {
   assert.deepEqual(moneySchema.parse({ amountMinor: "249000", currency: "bdt" }), { amountMinor: "249000", currency: "BDT" });
@@ -26,6 +26,7 @@ test("OpenAPI document exposes typed v2 resources", () => {
   assert.ok(document.paths?.["/api/v2/vendor/orders/{id}/transitions"]);
   assert.ok(document.paths?.["/api/v2/orders/{id}/tracking"]);
   assert.ok(document.paths?.["/api/v2/orders/{id}/invoice"]);
+  assert.ok(document.paths?.["/api/v2/admin/workspace/orders/{id}"]);
   assert.ok(document.paths?.["/api/v2/returns"]);
   assert.ok(document.paths?.["/api/v2/vendor/finance"]);
   assert.ok(document.paths?.["/api/v2/admin/cod/reconciliations"]);
@@ -82,6 +83,12 @@ test("commission rules require bounded non-zero fees and valid dates", () => {
   assert.equal(commissionRuleInputSchema.safeParse(base).success, true);
   assert.equal(commissionRuleInputSchema.safeParse({ ...base, rateBps: 0 }).success, false);
   assert.equal(commissionRuleInputSchema.safeParse({ ...base, rateBps: 5001 }).success, false);
+});
+
+test("admin order detail keeps printable commerce records structured", () => {
+  const base = { amountMinor: "10000", currency: "BDT" };
+  const parsed = adminOrderDetailSchema.safeParse({ id: "11111111-1111-4111-8111-111111111111", orderNumber: "AGO-100", status: "CONFIRMED", version: 1, createdAt: "2026-08-14T00:00:00.000Z", placedAt: "2026-08-14T00:00:00.000Z", customer: { id: "22222222-2222-4222-8222-222222222222", displayName: "Customer", email: "customer@example.com", phone: null }, deliveryAddress: null, payment: null, invoice: null, subtotal: base, discount: { amountMinor: "0", currency: "BDT" }, delivery: { amountMinor: "0", currency: "BDT" }, tax: { amountMinor: "0", currency: "BDT" }, total: base, events: [], vendorOrders: [] });
+  assert.equal(parsed.success, true);
 });
 
 test("catalog contracts enforce bounded pagination and integer money", () => {

@@ -25,6 +25,7 @@ export function createAdminRouter() {
   router.use("/api/v2/admin/workspace", authenticate);
   router.get("/api/v2/admin/workspace", async (req, res, next) => { try { res.json(await service.workspace(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/commerce", async (req, res, next) => { try { res.json(await service.commerce(requireSession(req))); } catch (error) { next(error); } });
+  router.get("/api/v2/admin/workspace/orders/:id", async (req, res, next) => { try { res.json(await service.orderDetail(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/commission-rules", async (req, res, next) => { try { res.json(await commissions.list(requireSession(req))); } catch (error) { next(error); } });
   router.post("/api/v2/admin/workspace/commission-rules", writes, async (req, res, next) => { try { res.status(201).json(await commissions.create(requireSession(req), commissionRuleInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.put("/api/v2/admin/workspace/commission-rules/:id", writes, async (req, res, next) => { try { res.json(await commissions.update(requireSession(req), idSchema.parse(req.params).id, updateCommissionRuleSchema.parse(req.body))); } catch (error) { next(error); } });

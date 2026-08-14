@@ -12,6 +12,40 @@ export const adminKycReviewInputSchema = z.object({ status: z.enum(["REVIEWING",
 export const trustCaseSchema = z.object({ id: uuidSchema, subjectType: z.string(), subjectId: z.string(), caseType: z.string(), severity: z.string(), status: z.string(), assignedTo: uuidSchema.nullable(), summary: z.string(), createdAt: timestampSchema, actions: z.array(z.object({ id: uuidSchema, actionType: z.string(), actorUserId: uuidSchema, reason: z.string(), createdAt: timestampSchema })) });
 export const trustCaseActionInputSchema = z.object({ action: z.enum(["INVESTIGATE", "RESOLVE", "CLOSE"]), reason: z.string().trim().min(3).max(1000) });
 export const adminWorkspaceSchema = z.object({ users: z.array(adminUserSchema), vendors: z.array(adminVendorSchema), kyc: z.array(adminKycSubmissionSchema), trustCases: z.array(trustCaseSchema) });
+const adminOrderMoneySchema = z.object({ amountMinor: z.string().regex(/^\d+$/), currency: z.string().length(3) });
+export const adminOrderDetailSchema = z.object({
+  id: uuidSchema,
+  orderNumber: z.string(),
+  status: z.string(),
+  version: versionSchema,
+  createdAt: timestampSchema,
+  placedAt: timestampSchema.nullable(),
+  customer: z.object({ id: uuidSchema.nullable(), displayName: z.string(), email: z.string().nullable(), phone: z.string().nullable() }),
+  deliveryAddress: z.object({ recipientName: z.string(), phone: z.string(), line1: z.string(), line2: z.string().nullable(), division: z.string(), district: z.string(), upazila: z.string().nullable(), unionName: z.string().nullable(), postalCode: z.string().nullable() }).nullable(),
+  payment: z.object({ id: uuidSchema, provider: z.string(), method: z.string(), status: z.string(), amount: adminOrderMoneySchema, refunded: adminOrderMoneySchema, transactionId: z.string().nullable(), createdAt: timestampSchema }).nullable(),
+  invoice: z.object({ id: uuidSchema, number: z.string(), issuedAt: timestampSchema, storageUrl: z.string().url().nullable() }).nullable(),
+  subtotal: adminOrderMoneySchema,
+  discount: adminOrderMoneySchema,
+  delivery: adminOrderMoneySchema,
+  tax: adminOrderMoneySchema,
+  total: adminOrderMoneySchema,
+  events: z.array(z.object({ id: uuidSchema, fromStatus: z.string().nullable(), toStatus: z.string(), actorType: z.string(), reason: z.string().nullable(), createdAt: timestampSchema })),
+  vendorOrders: z.array(z.object({
+    id: uuidSchema,
+    vendorId: uuidSchema,
+    vendorName: z.string(),
+    shopName: z.string(),
+    status: z.string(),
+    version: versionSchema,
+    subtotal: adminOrderMoneySchema,
+    discount: adminOrderMoneySchema,
+    delivery: adminOrderMoneySchema,
+    total: adminOrderMoneySchema,
+    commission: adminOrderMoneySchema,
+    shipment: z.object({ status: z.string(), provider: z.string().nullable(), trackingNumber: z.string().nullable() }).nullable(),
+    items: z.array(z.object({ id: uuidSchema, productName: z.string(), sku: z.string(), quantity: z.number().int().positive(), unitPrice: adminOrderMoneySchema, lineTotal: adminOrderMoneySchema }))
+  }))
+});
 export const paymentVerificationSchema = z.object({ id: uuidSchema, paymentId: uuidSchema, orderId: uuidSchema, orderNumber: z.string(), provider: z.string(), amountMinor: z.string(), currency: z.string(), status: z.string(), transactionRef: z.string(), senderMasked: z.string().nullable(), evidenceStorageKey: z.string().nullable(), createdAt: timestampSchema });
 export const paymentVerificationReviewSchema = z.object({ status: z.enum(["approved", "rejected"]), reason: z.string().trim().min(3).max(500) });
 export const adminCategoryInputSchema = z.object({ parentId: uuidSchema.nullable().optional(), name: z.string().trim().min(2).max(120), slug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), description: z.string().trim().max(1000).nullable().optional(), displayOrder: z.number().int().default(0) });
@@ -72,3 +106,4 @@ export type AdminCategoryRequestReview = z.infer<typeof adminCategoryRequestRevi
 export type AdminAnalyticsDto = z.infer<typeof adminAnalyticsSchema>;
 export type AdminBannerInput = z.infer<typeof adminBannerInputSchema>;
 export type AdminBannerDto = z.infer<typeof adminBannerSchema>;
+export type AdminOrderDetail = z.infer<typeof adminOrderDetailSchema>;
