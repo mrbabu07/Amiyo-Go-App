@@ -171,40 +171,40 @@ enum NotificationStatus {
 }
 
 model User {
-  id                String                   @id @default(uuid()) @db.Uuid
-  legacyId          String?                  @unique @map("legacy_id")
-  providerSubject   String?                  @unique @map("provider_subject")
-  normalizedEmail   String?                  @unique @map("normalized_email")
-  normalizedPhone   String?                  @unique @map("normalized_phone")
-  status            UserStatus               @default(ACTIVE)
-  lastLoginAt       DateTime?                @map("last_login_at") @db.Timestamptz(3)
-  deletedAt         DateTime?                @map("deleted_at") @db.Timestamptz(3)
-  createdAt         DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt         DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(3)
-  profile           UserProfile?
-  addresses         Address[]
-  roles             UserRole[]
-  refreshSessions   RefreshSession[]
-  devices           Device[]
-  pushTokens        PushToken[]
-  deletionRequests  AccountDeletionRequest[]
-  vendorMemberships VendorMember[]
-  carts             Cart[]
-  wishlists         Wishlist[]
-  orders            Order[]
-  stockAlerts       StockAlert[]
-  couponRedemptions CouponRedemption[]
-  reviews           Review[]
-  questions         Question[]
-  answers           Answer[]
-  returnRequests    Return[]
-  supportTickets    SupportTicket[]
-  supportMessages   SupportMessage[]
-  chatMessages      ChatMessage[]
+  id                 String                   @id @default(uuid()) @db.Uuid
+  legacyId           String?                  @unique @map("legacy_id")
+  providerSubject    String?                  @unique @map("provider_subject")
+  normalizedEmail    String?                  @unique @map("normalized_email")
+  normalizedPhone    String?                  @unique @map("normalized_phone")
+  status             UserStatus               @default(ACTIVE)
+  lastLoginAt        DateTime?                @map("last_login_at") @db.Timestamptz(3)
+  deletedAt          DateTime?                @map("deleted_at") @db.Timestamptz(3)
+  createdAt          DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(3)
+  profile            UserProfile?
+  addresses          Address[]
+  roles              UserRole[]
+  refreshSessions    RefreshSession[]
+  devices            Device[]
+  pushTokens         PushToken[]
+  deletionRequests   AccountDeletionRequest[]
+  vendorMemberships  VendorMember[]
+  carts              Cart[]
+  wishlists          Wishlist[]
+  orders             Order[]
+  stockAlerts        StockAlert[]
+  couponRedemptions  CouponRedemption[]
+  reviews            Review[]
+  questions          Question[]
+  answers            Answer[]
+  returnRequests     Return[]
+  supportTickets     SupportTicket[]
+  supportMessages    SupportMessage[]
+  chatMessages       ChatMessage[]
   chatParticipations ChatParticipant[]
-  notifications     Notification[]
-  loyaltyAccount    LoyaltyAccount?
-  mediaUploads      MediaUpload[]
+  notifications      Notification[]
+  loyaltyAccount     LoyaltyAccount?
+  mediaUploads       MediaUpload[]
 
   @@map("users")
 }
@@ -350,26 +350,26 @@ model AccountDeletionRequest {
 }
 
 model Vendor {
-  id              String                @id @default(uuid()) @db.Uuid
-  legacyId        String?               @unique @map("legacy_id")
-  legalName       String                @map("legal_name")
-  displayName     String                @map("display_name")
-  status          VendorStatus          @default(PENDING)
-  version         Int                   @default(1)
-  approvedAt      DateTime?             @map("approved_at") @db.Timestamptz(3)
-  createdAt       DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt       DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
-  members         VendorMember[]
-  shops           VendorShop[]
-  kycSubmissions  VendorKycSubmission[]
-  bankAccounts    VendorBankAccount[]
-  wallet          VendorWallet?
-  payoutRequests  VendorPayoutRequest[]
-  payouts         VendorPayout[]
-  products        Product[]
-  vendorOrders    VendorOrder[]
-  commissionRules CommissionRule[]
-  chatThreads     ChatThread[]
+  id               String                  @id @default(uuid()) @db.Uuid
+  legacyId         String?                 @unique @map("legacy_id")
+  legalName        String                  @map("legal_name")
+  displayName      String                  @map("display_name")
+  status           VendorStatus            @default(PENDING)
+  version          Int                     @default(1)
+  approvedAt       DateTime?               @map("approved_at") @db.Timestamptz(3)
+  createdAt        DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime                @updatedAt @map("updated_at") @db.Timestamptz(3)
+  members          VendorMember[]
+  shops            VendorShop[]
+  kycSubmissions   VendorKycSubmission[]
+  bankAccounts     VendorBankAccount[]
+  wallet           VendorWallet?
+  payoutRequests   VendorPayoutRequest[]
+  payouts          VendorPayout[]
+  products         Product[]
+  vendorOrders     VendorOrder[]
+  commissionRules  CommissionRule[]
+  chatThreads      ChatThread[]
   categoryRequests VendorCategoryRequest[]
 
   @@index([status, createdAt])
@@ -457,16 +457,16 @@ model VendorKycDocument {
 }
 
 model VendorBankAccount {
-  id                  String    @id @default(uuid()) @db.Uuid
-  vendorId            String    @map("vendor_id") @db.Uuid
+  id                  String                @id @default(uuid()) @db.Uuid
+  vendorId            String                @map("vendor_id") @db.Uuid
   provider            String
-  accountName         String    @map("account_name")
-  accountNumberMasked String    @map("account_number_masked")
-  encryptedPayload    Bytes     @map("encrypted_payload")
-  isDefault           Boolean   @default(false) @map("is_default")
-  verifiedAt          DateTime? @map("verified_at") @db.Timestamptz(3)
-  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  vendor              Vendor    @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  accountName         String                @map("account_name")
+  accountNumberMasked String                @map("account_number_masked")
+  encryptedPayload    Bytes                 @map("encrypted_payload")
+  isDefault           Boolean               @default(false) @map("is_default")
+  verifiedAt          DateTime?             @map("verified_at") @db.Timestamptz(3)
+  createdAt           DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  vendor              Vendor                @relation(fields: [vendorId], references: [id], onDelete: Restrict)
   payoutRequests      VendorPayoutRequest[]
 
   @@index([vendorId])
@@ -503,20 +503,20 @@ model VendorLedgerEntry {
 }
 
 model VendorPayoutRequest {
-  id            String         @id @default(uuid()) @db.Uuid
-  vendorId      String         @map("vendor_id") @db.Uuid
-  bankAccountId String         @map("bank_account_id") @db.Uuid
-  amountMinor   BigInt         @map("amount_minor")
-  currency      String         @default("BDT") @db.Char(3)
-  status        PayoutStatus   @default(REQUESTED)
-  requestedAt   DateTime       @default(now()) @map("requested_at") @db.Timestamptz(3)
-  reviewedAt    DateTime?      @map("reviewed_at") @db.Timestamptz(3)
-  reviewedBy    String?        @map("reviewed_by") @db.Uuid
-  rejectionReason String?      @map("rejection_reason")
-  version       Int            @default(1)
-  vendor        Vendor         @relation(fields: [vendorId], references: [id], onDelete: Restrict)
-  bankAccount   VendorBankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Restrict)
-  payouts       VendorPayout[]
+  id              String            @id @default(uuid()) @db.Uuid
+  vendorId        String            @map("vendor_id") @db.Uuid
+  bankAccountId   String            @map("bank_account_id") @db.Uuid
+  amountMinor     BigInt            @map("amount_minor")
+  currency        String            @default("BDT") @db.Char(3)
+  status          PayoutStatus      @default(REQUESTED)
+  requestedAt     DateTime          @default(now()) @map("requested_at") @db.Timestamptz(3)
+  reviewedAt      DateTime?         @map("reviewed_at") @db.Timestamptz(3)
+  reviewedBy      String?           @map("reviewed_by") @db.Uuid
+  rejectionReason String?           @map("rejection_reason")
+  version         Int               @default(1)
+  vendor          Vendor            @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  bankAccount     VendorBankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Restrict)
+  payouts         VendorPayout[]
 
   @@index([vendorId, status])
   @@index([bankAccountId])
@@ -542,20 +542,20 @@ model VendorPayout {
 }
 
 model Category {
-  id                String              @id @default(uuid()) @db.Uuid
-  legacyId          String?             @unique @map("legacy_id")
-  parentId          String?             @map("parent_id") @db.Uuid
+  id                String                  @id @default(uuid()) @db.Uuid
+  legacyId          String?                 @unique @map("legacy_id")
+  parentId          String?                 @map("parent_id") @db.Uuid
   name              String
-  slug              String              @unique
+  slug              String                  @unique
   description       String?
-  status            String              @default("active")
-  displayOrder      Int                 @default(0) @map("display_order")
-  commissionRateBps Int                 @default(0) @map("commission_rate_bps")
-  version           Int                 @default(1)
-  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt         DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
-  parent            Category?           @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
-  children          Category[]          @relation("CategoryTree")
+  status            String                  @default("active")
+  displayOrder      Int                     @default(0) @map("display_order")
+  commissionRateBps Int                     @default(0) @map("commission_rate_bps")
+  version           Int                     @default(1)
+  createdAt         DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime                @updatedAt @map("updated_at") @db.Timestamptz(3)
+  parent            Category?               @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children          Category[]              @relation("CategoryTree")
   attributes        CategoryAttribute[]
   products          Product[]
   commissionRules   CommissionRule[]
@@ -566,22 +566,22 @@ model Category {
 }
 
 model MediaUpload {
-  id               String    @id @default(uuid()) @db.Uuid
-  userId           String    @map("user_id") @db.Uuid
-  purpose          String
-  visibility       String
-  storageKey       String    @unique @map("storage_key")
-  originalName     String    @map("original_name")
-  mimeType         String    @map("mime_type")
-  expectedSize     Int       @map("expected_size")
-  uploadedSize     Int?      @map("uploaded_size")
-  checksum         String?
-  status           String    @default("pending")
-  errorCode        String?   @map("error_code")
-  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  expiresAt        DateTime  @map("expires_at") @db.Timestamptz(3)
-  completedAt      DateTime? @map("completed_at") @db.Timestamptz(3)
-  user             User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  purpose      String
+  visibility   String
+  storageKey   String    @unique @map("storage_key")
+  originalName String    @map("original_name")
+  mimeType     String    @map("mime_type")
+  expectedSize Int       @map("expected_size")
+  uploadedSize Int?      @map("uploaded_size")
+  checksum     String?
+  status       String    @default("pending")
+  errorCode    String?   @map("error_code")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(3)
+  completedAt  DateTime? @map("completed_at") @db.Timestamptz(3)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@index([userId, status, createdAt])
   @@map("media_uploads")
@@ -1011,20 +1011,186 @@ model OrderStatusEvent {
 }
 
 model Shipment {
-  id             String          @id @default(uuid()) @db.Uuid
-  vendorOrderId  String          @unique @map("vendor_order_id") @db.Uuid
-  status         ShipmentStatus  @default(PENDING)
+  id             String                @id @default(uuid()) @db.Uuid
+  vendorOrderId  String                @unique @map("vendor_order_id") @db.Uuid
+  status         ShipmentStatus        @default(PENDING)
   provider       String?
-  trackingNumber String?         @unique @map("tracking_number")
-  shippedAt      DateTime?       @map("shipped_at") @db.Timestamptz(3)
-  deliveredAt    DateTime?       @map("delivered_at") @db.Timestamptz(3)
-  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
-  vendorOrder    VendorOrder     @relation(fields: [vendorOrderId], references: [id], onDelete: Restrict)
+  trackingNumber String?               @unique @map("tracking_number")
+  shippedAt      DateTime?             @map("shipped_at") @db.Timestamptz(3)
+  deliveredAt    DateTime?             @map("delivered_at") @db.Timestamptz(3)
+  createdAt      DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+  vendorOrder    VendorOrder           @relation(fields: [vendorOrderId], references: [id], onDelete: Restrict)
   events         ShipmentEvent[]
+  assignment     LogisticsAssignment?
+  failedDelivery FailedDeliveryRecord?
 
   @@index([vendorOrderId])
   @@map("shipments")
+}
+
+model LogisticsZone {
+  id                 String   @id @default(uuid()) @db.Uuid
+  name               String
+  code               String   @unique
+  districts          Json     @default("[]") @db.JsonB
+  courierPartnerIds  Json     @default("[]") @map("courier_partner_ids") @db.JsonB
+  defaultCourierName String?  @map("default_courier_name")
+  codAvailable       Boolean  @default(true) @map("cod_available")
+  status             String   @default("active")
+  slaHours           Int      @default(48) @map("sla_hours")
+  sortOrder          Int      @default(100) @map("sort_order")
+  notes              String?
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([status, sortOrder])
+  @@map("logistics_zones")
+}
+
+model CourierPartner {
+  id                    String                @id @default(uuid()) @db.Uuid
+  name                  String
+  code                  String                @unique
+  status                String                @default("active")
+  provider              String                @default("manual")
+  bookingMode           String                @default("manual") @map("booking_mode")
+  coverageType          String                @default("outside_district") @map("coverage_type")
+  outsideDistrict       Boolean               @default(true) @map("outside_district")
+  localArea             Boolean               @default(false) @map("local_area")
+  instantDelivery       Boolean               @default(false) @map("instant_delivery")
+  trackingUrlPattern    String?               @map("tracking_url_pattern")
+  contactName           String?               @map("contact_name")
+  phone                 String?
+  email                 String?
+  serviceZones          Json                  @default("[]") @map("service_zones") @db.JsonB
+  codSupported          Boolean               @default(true) @map("cod_supported")
+  baseDeliveryCostMinor BigInt                @default(8000) @map("base_delivery_cost_minor")
+  codCollectionFeeMinor BigInt                @default(1000) @map("cod_collection_fee_minor")
+  defaultSlaHours       Int                   @default(72) @map("default_sla_hours")
+  slaZoneCode           String?               @map("sla_zone_code")
+  slaProcessingHours    Int                   @default(24) @map("sla_processing_hours")
+  slaDeliveryDaysMin    Int                   @default(1) @map("sla_delivery_days_min")
+  slaDeliveryDaysMax    Int                   @default(3) @map("sla_delivery_days_max")
+  notes                 String?
+  createdAt             DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+  assignments           LogisticsAssignment[]
+  remittances           CodRemittance[]
+
+  @@index([status, name])
+  @@map("courier_partners")
+}
+
+model PickupStaff {
+  id                String                @id @default(uuid()) @db.Uuid
+  name              String
+  phone             String?
+  email             String?
+  userId            String?               @map("user_id") @db.Uuid
+  status            String                @default("active")
+  routeName         String?               @map("route_name")
+  assignedZones     Json                  @default("[]") @map("assigned_zones") @db.JsonB
+  assignedLocations Json                  @default("[]") @map("assigned_locations") @db.JsonB
+  assignedVendorIds Json                  @default("[]") @map("assigned_vendor_ids") @db.JsonB
+  vehicleType       String                @default("bike") @map("vehicle_type")
+  capacityOrders    Int                   @default(25) @map("capacity_orders")
+  shiftStart        String                @default("09:00") @map("shift_start")
+  shiftEnd          String                @default("18:00") @map("shift_end")
+  notes             String?
+  createdAt         DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+  assignments       LogisticsAssignment[]
+
+  @@index([status, name])
+  @@index([userId])
+  @@map("pickup_staff")
+}
+
+model DeliveryFeeRule {
+  id                    String   @id @default(uuid()) @db.Uuid
+  name                  String
+  ruleType              String   @default("zone_rate") @map("rule_type")
+  status                String   @default("active")
+  priority              Int      @default(100)
+  zoneCode              String?  @map("zone_code")
+  minOrderAmountMinor   BigInt   @default(0) @map("min_order_amount_minor")
+  maxOrderAmountMinor   BigInt   @default(0) @map("max_order_amount_minor")
+  minWeightGrams        Int      @default(0) @map("min_weight_grams")
+  maxWeightGrams        Int      @default(0) @map("max_weight_grams")
+  baseFeeMinor          BigInt   @default(8000) @map("base_fee_minor")
+  perItemFeeMinor       BigInt   @default(0) @map("per_item_fee_minor")
+  feePerKgMinor         BigInt   @default(1000) @map("fee_per_kg_minor")
+  codFeeMinor           BigInt   @default(0) @map("cod_fee_minor")
+  redeliveryFeeMinor    BigInt   @default(0) @map("redelivery_fee_minor")
+  freeShippingThreshold BigInt   @default(0) @map("free_shipping_threshold_minor")
+  paymentMethods        Json     @default("[]") @map("payment_methods") @db.JsonB
+  notes                 String?
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([status, priority])
+  @@map("delivery_fee_rules")
+}
+
+model LogisticsAssignment {
+  id                    String          @id @default(uuid()) @db.Uuid
+  shipmentId            String          @unique @map("shipment_id") @db.Uuid
+  courierPartnerId      String?         @map("courier_partner_id") @db.Uuid
+  pickupStaffId         String?         @map("pickup_staff_id") @db.Uuid
+  bookingMode           String          @default("manual") @map("booking_mode")
+  trackingNumber        String?         @map("tracking_number")
+  pickupDate            DateTime?       @map("pickup_date") @db.Timestamptz(3)
+  pickupWindow          String?         @map("pickup_window")
+  estimatedDeliveryDate DateTime?       @map("estimated_delivery_date") @db.Timestamptz(3)
+  note                  String?
+  version               Int             @default(1)
+  createdAt             DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  shipment              Shipment        @relation(fields: [shipmentId], references: [id], onDelete: Restrict)
+  courierPartner        CourierPartner? @relation(fields: [courierPartnerId], references: [id], onDelete: Restrict)
+  pickupStaff           PickupStaff?    @relation(fields: [pickupStaffId], references: [id], onDelete: Restrict)
+
+  @@index([courierPartnerId, pickupDate])
+  @@index([pickupStaffId, pickupDate])
+  @@map("logistics_assignments")
+}
+
+model CodRemittance {
+  id                     String          @id @default(uuid()) @db.Uuid
+  courierPartnerId       String?         @map("courier_partner_id") @db.Uuid
+  courierName            String          @map("courier_name")
+  collectedAmountMinor   BigInt          @map("collected_amount_minor")
+  remittedAmountMinor    BigInt          @map("remitted_amount_minor")
+  forwardedToVendorMinor BigInt          @default(0) @map("forwarded_to_vendor_minor")
+  reference              String?
+  notes                  String?
+  orderIds               Json            @default("[]") @map("order_ids") @db.JsonB
+  createdBy              String          @map("created_by") @db.Uuid
+  createdAt              DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  courierPartner         CourierPartner? @relation(fields: [courierPartnerId], references: [id], onDelete: Restrict)
+
+  @@index([courierPartnerId, createdAt])
+  @@map("cod_remittances")
+}
+
+model FailedDeliveryRecord {
+  id                 String    @id @default(uuid()) @db.Uuid
+  shipmentId         String    @unique @map("shipment_id") @db.Uuid
+  courierName        String?   @map("courier_name")
+  reason             String
+  attemptCount       Int       @default(1) @map("attempt_count")
+  nextAttemptAt      DateTime? @map("next_attempt_at") @db.Timestamptz(3)
+  redeliveryFeeMinor BigInt    @default(0) @map("redelivery_fee_minor")
+  returnFeeMinor     BigInt    @default(0) @map("return_fee_minor")
+  resolution         String    @default("pending")
+  note               String?
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  shipment           Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Restrict)
+
+  @@index([resolution, nextAttemptAt])
+  @@map("failed_delivery_records")
 }
 
 model ShipmentEvent {
@@ -1468,20 +1634,20 @@ model FlashSaleProduct {
 }
 
 model Banner {
-  id           String   @id @default(uuid()) @db.Uuid
-  placement    String
-  title        String?
-  subtitle     String?
-  storageKey   String   @map("storage_key")
-  mobileStorageKey String? @map("mobile_storage_key")
-  ctaLabel     String?  @map("cta_label")
-  badgeText    String?  @map("badge_text")
-  targetType   String?  @map("target_type")
-  targetValue  String?  @map("target_value")
-  startsAt     DateTime @map("starts_at") @db.Timestamptz(3)
-  endsAt       DateTime @map("ends_at") @db.Timestamptz(3)
-  active       Boolean  @default(true)
-  displayOrder Int      @default(0) @map("display_order")
+  id               String   @id @default(uuid()) @db.Uuid
+  placement        String
+  title            String?
+  subtitle         String?
+  storageKey       String   @map("storage_key")
+  mobileStorageKey String?  @map("mobile_storage_key")
+  ctaLabel         String?  @map("cta_label")
+  badgeText        String?  @map("badge_text")
+  targetType       String?  @map("target_type")
+  targetValue      String?  @map("target_value")
+  startsAt         DateTime @map("starts_at") @db.Timestamptz(3)
+  endsAt           DateTime @map("ends_at") @db.Timestamptz(3)
+  active           Boolean  @default(true)
+  displayOrder     Int      @default(0) @map("display_order")
 
   @@index([placement, active, startsAt, endsAt])
   @@map("banners")
@@ -1502,22 +1668,22 @@ model RecommendationEvent {
 }
 
 model Review {
-  id          String        @id @default(uuid()) @db.Uuid
-  userId      String        @map("user_id") @db.Uuid
-  productId   String        @map("product_id") @db.Uuid
-  orderItemId String?       @unique @map("order_item_id") @db.Uuid
-  rating      Int
-  title       String?
-  body        String?
-  status      String        @default("published")
-  vendorReply String?       @map("vendor_reply")
-  vendorRepliedAt DateTime? @map("vendor_replied_at") @db.Timestamptz(3)
-  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
-  version     Int           @default(1)
-  user        User          @relation(fields: [userId], references: [id], onDelete: Restrict)
-  product     Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
-  media       ReviewMedia[]
+  id              String        @id @default(uuid()) @db.Uuid
+  userId          String        @map("user_id") @db.Uuid
+  productId       String        @map("product_id") @db.Uuid
+  orderItemId     String?       @unique @map("order_item_id") @db.Uuid
+  rating          Int
+  title           String?
+  body            String?
+  status          String        @default("published")
+  vendorReply     String?       @map("vendor_reply")
+  vendorRepliedAt DateTime?     @map("vendor_replied_at") @db.Timestamptz(3)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  version         Int           @default(1)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  product         Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
+  media           ReviewMedia[]
 
   @@index([productId, status, createdAt])
   @@map("reviews")
@@ -1654,15 +1820,15 @@ model SupportMessage {
 }
 
 model ChatThread {
-  id        String        @id @default(uuid()) @db.Uuid
-  vendorId  String?       @map("vendor_id") @db.Uuid
-  subject   String?
-  status    String        @default("open")
-  metadata  Json?
-  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
-  vendor    Vendor?       @relation(fields: [vendorId], references: [id], onDelete: Restrict)
-  messages  ChatMessage[]
+  id           String            @id @default(uuid()) @db.Uuid
+  vendorId     String?           @map("vendor_id") @db.Uuid
+  subject      String?
+  status       String            @default("open")
+  metadata     Json?
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+  vendor       Vendor?           @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  messages     ChatMessage[]
   participants ChatParticipant[]
 
   @@index([vendorId, updatedAt])
@@ -1749,17 +1915,17 @@ model AuditLog {
 }
 
 model Notification {
-  id         String                 @id @default(uuid()) @db.Uuid
-  userId     String                 @map("user_id") @db.Uuid
-  type       String
-  title      String
-  body       String
-  data       Json?
-  readAt     DateTime?              @map("read_at") @db.Timestamptz(3)
-  createdAt  DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
-  idempotencyKey String?             @unique @map("idempotency_key")
-  user       User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
-  deliveries NotificationDelivery[]
+  id             String                 @id @default(uuid()) @db.Uuid
+  userId         String                 @map("user_id") @db.Uuid
+  type           String
+  title          String
+  body           String
+  data           Json?
+  readAt         DateTime?              @map("read_at") @db.Timestamptz(3)
+  createdAt      DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  idempotencyKey String?                @unique @map("idempotency_key")
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  deliveries     NotificationDelivery[]
 
   @@index([userId, readAt, createdAt])
   @@map("notifications")
@@ -1811,14 +1977,14 @@ model NotificationDelivery {
 }
 
 model NewsletterSubscriber {
-  id               String    @id @default(uuid()) @db.Uuid
-  email            String    @unique
-  source           String    @default("app")
-  active           Boolean   @default(true)
-  unsubscribeToken String    @unique @map("unsubscribe_token") @db.Uuid
-  unsubscribedAt   DateTime? @map("unsubscribed_at") @db.Timestamptz(3)
-  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id               String               @id @default(uuid()) @db.Uuid
+  email            String               @unique
+  source           String               @default("app")
+  active           Boolean              @default(true)
+  unsubscribeToken String               @unique @map("unsubscribe_token") @db.Uuid
+  unsubscribedAt   DateTime?            @map("unsubscribed_at") @db.Timestamptz(3)
+  createdAt        DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
   deliveries       NewsletterDelivery[]
 
   @@index([active, createdAt])
@@ -1826,41 +1992,41 @@ model NewsletterSubscriber {
 }
 
 model NewsletterBroadcast {
-  id             String    @id @default(uuid()) @db.Uuid
+  id             String               @id @default(uuid()) @db.Uuid
   subject        String
-  previewText    String?   @map("preview_text")
+  previewText    String?              @map("preview_text")
   body           String
-  status         String    @default("draft")
-  scheduledAt    DateTime? @map("scheduled_at") @db.Timestamptz(3)
-  recipientCount Int       @default(0) @map("recipient_count")
-  sentCount      Int       @default(0) @map("sent_count")
-  failedCount    Int       @default(0) @map("failed_count")
-  openCount      Int       @default(0) @map("open_count")
-  createdBy      String    @map("created_by") @db.Uuid
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
-  deliveries    NewsletterDelivery[]
+  status         String               @default("draft")
+  scheduledAt    DateTime?            @map("scheduled_at") @db.Timestamptz(3)
+  recipientCount Int                  @default(0) @map("recipient_count")
+  sentCount      Int                  @default(0) @map("sent_count")
+  failedCount    Int                  @default(0) @map("failed_count")
+  openCount      Int                  @default(0) @map("open_count")
+  createdBy      String               @map("created_by") @db.Uuid
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deliveries     NewsletterDelivery[]
 
   @@index([status, scheduledAt, createdAt])
   @@map("newsletter_broadcasts")
 }
 
 model NewsletterDelivery {
-  id            String               @id @default(uuid()) @db.Uuid
-  broadcastId   String               @map("broadcast_id") @db.Uuid
-  subscriberId  String               @map("subscriber_id") @db.Uuid
-  email         String
-  status        String               @default("pending")
-  provider      String?
-  providerRef   String?              @map("provider_ref")
-  attempts      Int                  @default(0)
-  lastError     String?              @map("last_error")
-  attemptedAt   DateTime?            @map("attempted_at") @db.Timestamptz(3)
-  sentAt        DateTime?            @map("sent_at") @db.Timestamptz(3)
-  createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt     DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
-  broadcast     NewsletterBroadcast  @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
-  subscriber    NewsletterSubscriber @relation(fields: [subscriberId], references: [id], onDelete: Restrict)
+  id           String               @id @default(uuid()) @db.Uuid
+  broadcastId  String               @map("broadcast_id") @db.Uuid
+  subscriberId String               @map("subscriber_id") @db.Uuid
+  email        String
+  status       String               @default("pending")
+  provider     String?
+  providerRef  String?              @map("provider_ref")
+  attempts     Int                  @default(0)
+  lastError    String?              @map("last_error")
+  attemptedAt  DateTime?            @map("attempted_at") @db.Timestamptz(3)
+  sentAt       DateTime?            @map("sent_at") @db.Timestamptz(3)
+  createdAt    DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+  broadcast    NewsletterBroadcast  @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
+  subscriber   NewsletterSubscriber @relation(fields: [subscriberId], references: [id], onDelete: Restrict)
 
   @@unique([broadcastId, subscriberId])
   @@index([status, createdAt])

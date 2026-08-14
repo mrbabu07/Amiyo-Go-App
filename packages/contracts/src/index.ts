@@ -18,3 +18,4 @@ export * from "./vendor.js";
 export * from "./admin.js";
 export * from "./media.js";
 export * from "./commission.js";
+export * from "./logistics.js";

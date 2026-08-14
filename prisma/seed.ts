@@ -61,6 +61,12 @@ const ids = {
   , customerVendorOrder: "00000000-0000-4000-8000-000000000901"
   , customerOrderItem: "00000000-0000-4000-8000-000000001001"
   , customerShipment: "00000000-0000-4000-8000-000000001101"
+  , logisticsZone: "00000000-0000-4000-8000-000000001301"
+  , courierPartner: "00000000-0000-4000-8000-000000001302"
+  , pickupStaff: "00000000-0000-4000-8000-000000001303"
+  , feeRule: "00000000-0000-4000-8000-000000001304"
+  , logisticsAssignment: "00000000-0000-4000-8000-000000001305"
+  , codRemittance: "00000000-0000-4000-8000-000000001306"
 };
 
 async function seedAccessControl() {
@@ -268,6 +274,12 @@ async function seedDemoCatalog() {
   await prisma.vendorOrder.upsert({ where: { id: ids.customerVendorOrder }, update: { status: "IN_TRANSIT" }, create: { id: ids.customerVendorOrder, orderId: ids.customerOrder, vendorId: ids.vendor, shopId: ids.shop, status: "IN_TRANSIT", subtotalMinor: 249000n, deliveryMinor: 6000n, totalMinor: 255000n, commissionMinor: 24900n, createdAt: orderPlacedAt } });
   await prisma.orderItem.upsert({ where: { id: ids.customerOrderItem }, update: {}, create: { id: ids.customerOrderItem, orderId: ids.customerOrder, vendorOrderId: ids.customerVendorOrder, productId: ids.product, variantId: ids.variant, productNameSnapshot: "Premium Wireless Headphones", skuSnapshot: "AMIYO-WH-001-BLK", attributesSnapshot: { color: "Black" }, quantity: 1, unitPriceMinor: 249000n, lineTotalMinor: 249000n } });
   await prisma.shipment.upsert({ where: { vendorOrderId: ids.customerVendorOrder }, update: { status: "IN_TRANSIT", provider: "Amiyo Delivery", trackingNumber: "AGD-DEMO-1001" }, create: { id: ids.customerShipment, vendorOrderId: ids.customerVendorOrder, status: "IN_TRANSIT", provider: "Amiyo Delivery", trackingNumber: "AGD-DEMO-1001", shippedAt: new Date(orderPlacedAt.getTime() + 2 * 86_400_000) } });
+  await prisma.logisticsZone.upsert({ where: { id: ids.logisticsZone }, update: { status: "active" }, create: { id: ids.logisticsZone, name: "Dhaka Metro", code: "DHAKA-METRO", districts: ["Dhaka"], courierPartnerIds: [ids.courierPartner], defaultCourierName: "Amiyo Delivery", codAvailable: true, slaHours: 24, sortOrder: 10 } });
+  await prisma.courierPartner.upsert({ where: { id: ids.courierPartner }, update: { status: "active" }, create: { id: ids.courierPartner, name: "Amiyo Delivery", code: "AMIYO-DELIVERY", provider: "amiyo_delivery", bookingMode: "manual", coverageType: "metro", outsideDistrict: true, localArea: true, instantDelivery: true, serviceZones: ["DHAKA-METRO"], codSupported: true, baseDeliveryCostMinor: 6000n, codCollectionFeeMinor: 1000n, defaultSlaHours: 24 } });
+  await prisma.pickupStaff.upsert({ where: { id: ids.pickupStaff }, update: { status: "active" }, create: { id: ids.pickupStaff, name: "Demo Pickup Rider", phone: "01700000001", email: "rider@amiyo.test", status: "active", routeName: "Dhaka Metro Route", assignedZones: ["DHAKA-METRO"], assignedLocations: [{ division: "Dhaka", district: "Dhaka" }], assignedVendorIds: [ids.vendor], vehicleType: "bike", capacityOrders: 30, shiftStart: "09:00", shiftEnd: "18:00" } });
+  await prisma.deliveryFeeRule.upsert({ where: { id: ids.feeRule }, update: { status: "active" }, create: { id: ids.feeRule, name: "Dhaka Metro Standard", ruleType: "zone_rate", status: "active", priority: 10, zoneCode: "DHAKA-METRO", baseFeeMinor: 6000n, feePerKgMinor: 1000n, codFeeMinor: 1000n, redeliveryFeeMinor: 5000n, freeShippingThreshold: 1100000n, paymentMethods: ["COD", "ONLINE"] } });
+  await prisma.logisticsAssignment.upsert({ where: { shipmentId: ids.customerShipment }, update: { courierPartnerId: ids.courierPartner, pickupStaffId: ids.pickupStaff, trackingNumber: "AGD-DEMO-1001" }, create: { id: ids.logisticsAssignment, shipmentId: ids.customerShipment, courierPartnerId: ids.courierPartner, pickupStaffId: ids.pickupStaff, bookingMode: "manual", trackingNumber: "AGD-DEMO-1001", pickupDate: new Date(orderPlacedAt.getTime() + 2 * 86_400_000), pickupWindow: "09:00-12:00", estimatedDeliveryDate: new Date(orderPlacedAt.getTime() + 4 * 86_400_000) } });
+  await prisma.codRemittance.upsert({ where: { id: ids.codRemittance }, update: { reference: "COD-DEMO-1001" }, create: { id: ids.codRemittance, courierPartnerId: ids.courierPartner, courierName: "Amiyo Delivery", collectedAmountMinor: 255000n, remittedAmountMinor: 200000n, forwardedToVendorMinor: 180000n, reference: "COD-DEMO-1001", notes: "Demo partial remittance for admin workflow testing", orderIds: [ids.customerOrder], createdBy: ids.adminUser } });
   const shipmentEvents = [
     ["1201", "READY_TO_SHIP", "Seller prepared your package", "Dhaka warehouse", new Date(orderPlacedAt.getTime() + 1 * 86_400_000)],
     ["1202", "PICKED_UP", "Courier picked up the package", "Tejgaon hub", new Date(orderPlacedAt.getTime() + 2 * 86_400_000)],

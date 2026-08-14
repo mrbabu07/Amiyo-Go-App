@@ -1,18 +1,19 @@
 import { Router } from "express";
 import { z } from "zod";
-import { cancelOrderSchema, codReconciliationInputSchema, completePayoutSchema, completeRefundSchema, createPayoutRequestSchema, createReturnSchema, deliveryRetryInputSchema, deliverySettingsInputSchema, returnTransitionSchema, reviewPayoutSchema, sellerReturnReceiptSchema, sellerReturnResponseSchema, serviceabilityInputSchema } from "@amiyo/contracts";
+import { cancelOrderSchema, codReconciliationInputSchema, codRemittanceInputSchema, completePayoutSchema, completeRefundSchema, courierPartnerInputSchema, createPayoutRequestSchema, createReturnSchema, deliveryFeeRuleInputSchema, deliveryRetryInputSchema, deliverySettingsInputSchema, failedDeliveryReattemptSchema, failedDeliveryReturnSchema, logisticsAssignmentInputSchema, logisticsDeliveryAttemptSchema, logisticsShipmentTransitionSchema, logisticsZoneInputSchema, pickupStaffInputSchema, returnTransitionSchema, reviewPayoutSchema, sellerReturnReceiptSchema, sellerReturnResponseSchema, serviceabilityInputSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
 import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "../identity/identity.middleware.js";
 import { IdentityService } from "../identity/identity.service.js";
 import { OperationsService } from "./operations.service.js";
+import { LogisticsService } from "./logistics.service.js";
 
 const idSchema = z.object({ id: z.string().uuid() });
 function key(value: string | undefined) { if (!value || !z.string().uuid().safeParse(value).success) throw new ApiProblem(400, "IDEMPOTENCY_KEY_REQUIRED", "A UUID Idempotency-Key header is required"); return value; }
 
 export function createOperationsRouter() {
-  const router = Router(); const service = new OperationsService(prisma); const authenticate = createAuthenticationMiddleware(new FirebaseTokenVerifier(), new IdentityService(prisma));
+  const router = Router(); const service = new OperationsService(prisma); const logistics = new LogisticsService(prisma); const authenticate = createAuthenticationMiddleware(new FirebaseTokenVerifier(), new IdentityService(prisma));
   router.get("/api/v2/delivery/settings", async (_req, res, next) => { try { res.json(await service.deliverySettings()); } catch (error) { next(error); } });
   router.post("/api/v2/delivery/serviceability", async (req, res, next) => { try { res.json(await service.serviceability(serviceabilityInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.use(["/api/v2/orders", "/api/v2/returns", "/api/v2/vendor/finance", "/api/v2/vendor/payouts", "/api/v2/vendor/returns", "/api/v2/admin"], authenticate);
@@ -35,5 +36,26 @@ export function createOperationsRouter() {
   router.put("/api/v2/admin/delivery-settings", async (req, res, next) => { try { res.json(await service.updateDeliverySettings(requireSession(req), deliverySettingsInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.post("/api/v2/admin/delivery-queue/:id/retry", async (req, res, next) => { try { res.json(await service.retryDelivery(requireSession(req), idSchema.parse(req.params).id, deliveryRetryInputSchema.parse(req.body), key(req.header("idempotency-key")), req.header("x-correlation-id"))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/audit", async (req, res, next) => { try { res.json(await service.audit(requireSession(req))); } catch (error) { next(error); } });
+  router.get("/api/v2/admin/logistics/overview", async (req, res, next) => { try { res.json(await logistics.overview(requireSession(req))); } catch (error) { next(error); } });
+  router.get("/api/v2/admin/logistics/shipments", async (req, res, next) => { try { res.json(await logistics.shipments(requireSession(req))); } catch (error) { next(error); } });
+  router.post("/api/v2/admin/logistics/shipments/:id/assign-courier", async (req, res, next) => { try { res.json(await logistics.assignShipment(requireSession(req), idSchema.parse(req.params).id, logisticsAssignmentInputSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.post("/api/v2/admin/logistics/shipments/:id/state", async (req, res, next) => { try { res.json(await logistics.transitionShipment(requireSession(req), idSchema.parse(req.params).id, logisticsShipmentTransitionSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.post("/api/v2/admin/logistics/shipments/:id/delivery-attempt", async (req, res, next) => { try { res.json(await logistics.recordDeliveryAttempt(requireSession(req), idSchema.parse(req.params).id, logisticsDeliveryAttemptSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.get("/api/v2/admin/logistics/delivery-zones", async (req, res, next) => { try { res.json(await logistics.zones(requireSession(req))); } catch (error) { next(error); } });
+  router.post("/api/v2/admin/logistics/delivery-zones", async (req, res, next) => { try { res.status(201).json(await logistics.saveZone(requireSession(req), logisticsZoneInputSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.patch("/api/v2/admin/logistics/delivery-zones/:id", async (req, res, next) => { try { res.json(await logistics.saveZone(requireSession(req), logisticsZoneInputSchema.parse(req.body), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
+  router.get("/api/v2/admin/logistics/courier-partners", async (req, res, next) => { try { res.json(await logistics.couriers(requireSession(req))); } catch (error) { next(error); } });
+  router.post("/api/v2/admin/logistics/courier-partners", async (req, res, next) => { try { res.status(201).json(await logistics.saveCourier(requireSession(req), courierPartnerInputSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.patch("/api/v2/admin/logistics/courier-partners/:id", async (req, res, next) => { try { res.json(await logistics.saveCourier(requireSession(req), courierPartnerInputSchema.parse(req.body), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
+  router.get("/api/v2/admin/logistics/pickup-staff", async (req, res, next) => { try { res.json(await logistics.staff(requireSession(req))); } catch (error) { next(error); } });
+  router.post("/api/v2/admin/logistics/pickup-staff", async (req, res, next) => { try { res.status(201).json(await logistics.saveStaff(requireSession(req), pickupStaffInputSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.patch("/api/v2/admin/logistics/pickup-staff/:id", async (req, res, next) => { try { res.json(await logistics.saveStaff(requireSession(req), pickupStaffInputSchema.parse(req.body), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
+  router.get("/api/v2/admin/logistics/fee-rules", async (req, res, next) => { try { res.json(await logistics.feeRules(requireSession(req))); } catch (error) { next(error); } });
+  router.post("/api/v2/admin/logistics/fee-rules", async (req, res, next) => { try { res.status(201).json(await logistics.saveFeeRule(requireSession(req), deliveryFeeRuleInputSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.patch("/api/v2/admin/logistics/fee-rules/:id", async (req, res, next) => { try { res.json(await logistics.saveFeeRule(requireSession(req), deliveryFeeRuleInputSchema.parse(req.body), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
+  router.post("/api/v2/admin/logistics/cod-remittances", async (req, res, next) => { try { res.status(201).json(await logistics.recordCodRemittance(requireSession(req), codRemittanceInputSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.get("/api/v2/admin/logistics/failed-deliveries", async (req, res, next) => { try { res.json(await logistics.failedDeliveries(requireSession(req))); } catch (error) { next(error); } });
+  router.post("/api/v2/admin/logistics/failed-deliveries/:id/reattempt", async (req, res, next) => { try { res.json(await logistics.scheduleReattempt(requireSession(req), idSchema.parse(req.params).id, failedDeliveryReattemptSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.post("/api/v2/admin/logistics/failed-deliveries/:id/return-to-seller", async (req, res, next) => { try { res.json(await logistics.returnToSeller(requireSession(req), idSchema.parse(req.params).id, failedDeliveryReturnSchema.parse(req.body))); } catch (error) { next(error); } });
   return router;
 }
