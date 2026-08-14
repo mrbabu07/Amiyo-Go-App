@@ -10631,6 +10631,556 @@
         }
       }
     },
+    "/api/v2/admin/cod": {
+      "get": {
+        "tags": [
+          "Admin COD"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "COD delivery, cash collection and reconciliation workspace",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "orders": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "orderId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "orderNumber": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          },
+                          "customerName": {
+                            "type": "string"
+                          },
+                          "customerPhone": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "vendorNames": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "deliveryZone": {
+                            "type": "string"
+                          },
+                          "courierName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "shipmentStatus": {
+                            "type": "string"
+                          },
+                          "delivered": {
+                            "type": "boolean"
+                          },
+                          "waitingDelivery": {
+                            "type": "boolean"
+                          },
+                          "awaitingConfirmation": {
+                            "type": "boolean"
+                          },
+                          "paymentId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "paymentStatus": {
+                            "type": "string"
+                          },
+                          "paymentConfirmed": {
+                            "type": "boolean"
+                          },
+                          "totalMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "currency": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 3
+                          },
+                          "reconciliationStatus": {
+                            "type": "string",
+                            "enum": [
+                              "pending_dispatch",
+                              "dispatched",
+                              "delivered",
+                              "awaiting_confirmation",
+                              "collected",
+                              "discrepancy",
+                              "remitted"
+                            ]
+                          },
+                          "collectedMinor": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "pattern": "^\\d+$"
+                          },
+                          "discrepancyMinor": {
+                            "type": "string",
+                            "pattern": "^-?\\d+$"
+                          },
+                          "hasDiscrepancy": {
+                            "type": "boolean"
+                          },
+                          "collectorRef": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "collectedAt": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "date-time"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "orderId",
+                          "orderNumber",
+                          "version",
+                          "customerName",
+                          "customerPhone",
+                          "vendorNames",
+                          "deliveryZone",
+                          "courierName",
+                          "shipmentStatus",
+                          "delivered",
+                          "waitingDelivery",
+                          "awaitingConfirmation",
+                          "paymentId",
+                          "paymentStatus",
+                          "paymentConfirmed",
+                          "totalMinor",
+                          "currency",
+                          "reconciliationStatus",
+                          "collectedMinor",
+                          "discrepancyMinor",
+                          "hasDiscrepancy",
+                          "collectorRef",
+                          "collectedAt",
+                          "createdAt"
+                        ]
+                      }
+                    },
+                    "reconciliations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "periodStart": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "periodEnd": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "expectedMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "receivedMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "varianceMinor": {
+                            "type": "string",
+                            "pattern": "^-?\\d+$"
+                          },
+                          "currency": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 3
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "itemCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "periodStart",
+                          "periodEnd",
+                          "expectedMinor",
+                          "receivedMinor",
+                          "varianceMinor",
+                          "currency",
+                          "status",
+                          "itemCount",
+                          "createdAt"
+                        ]
+                      }
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "totalCod": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "codValueMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "awaitingConfirmation": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "confirmed": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "waitingDelivery": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "discrepancies": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "remitted": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "outstandingMinor": {
+                          "type": "string",
+                          "pattern": "^-?\\d+$"
+                        }
+                      },
+                      "required": [
+                        "totalCod",
+                        "codValueMinor",
+                        "awaitingConfirmation",
+                        "confirmed",
+                        "waitingDelivery",
+                        "discrepancies",
+                        "remitted",
+                        "outstandingMinor"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "orders",
+                    "reconciliations",
+                    "summary"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/cod/orders/{id}/delivered": {
+      "post": {
+        "tags": [
+          "Admin COD"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "courierName": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 120
+                  },
+                  "note": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 500,
+                    "default": null
+                  }
+                },
+                "required": [
+                  "expectedVersion",
+                  "courierName"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "COD order delivery confirmed by operations"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/cod/orders/{id}/confirm": {
+      "post": {
+        "tags": [
+          "Admin COD"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "collectedAmountMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "reference": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 200
+                  },
+                  "courierName": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 120
+                  },
+                  "note": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 500,
+                    "default": null
+                  }
+                },
+                "required": [
+                  "expectedVersion",
+                  "collectedAmountMinor",
+                  "reference",
+                  "courierName"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "COD cash receipt confirmed and payment captured"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/admin/delivery-queue": {
       "get": {
         "tags": [

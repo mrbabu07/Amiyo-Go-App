@@ -1,4 +1,4 @@
-import { deliveryQueueItemSchema, deliveryRetryResultSchema, returnSchema, vendorFinanceSchema, type CancelOrder, type CreateReturn, type DeliveryRetryInput, type SellerReturnReceipt, type SellerReturnResponse } from "@amiyo/contracts";
+import { adminCodWorkspaceSchema, deliveryQueueItemSchema, deliveryRetryResultSchema, returnSchema, vendorFinanceSchema, type AdminCodConfirmationInput, type AdminCodDeliveryInput, type CancelOrder, type CreateReturn, type DeliveryRetryInput, type SellerReturnReceipt, type SellerReturnResponse } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
 import * as Crypto from "expo-crypto";
 
@@ -27,5 +27,9 @@ export async function completeAdminRefundCase(user: User, id: string, providerRe
 export async function completeAdminPayout(user: User, id: string) { return request(user, `/api/v2/admin/payouts/${id}/completion`, { method: "POST", headers: { "Idempotency-Key": Crypto.randomUUID() }, body: JSON.stringify({ provider: "manual_admin", providerRef: `ADMIN-${Date.now()}` }) }); }
 export async function completeAdminPayoutCase(user: User, id: string, provider: string, providerRef: string) { return request(user, `/api/v2/admin/payouts/${id}/completion`, { method: "POST", headers: { "Idempotency-Key": Crypto.randomUUID() }, body: JSON.stringify({ provider, providerRef }) }); }
 export async function createCodReconciliation(user: User, periodStart: string, periodEnd: string) { return request(user, "/api/v2/admin/cod/reconciliations", { method: "POST", headers: { "Idempotency-Key": Crypto.randomUUID() }, body: JSON.stringify({ periodStart, periodEnd }) }); }
+export async function getAdminCodWorkspace(user: User) { return adminCodWorkspaceSchema.parse(await request(user, "/api/v2/admin/cod")); }
+export async function markAdminCodDelivered(user: User, orderId: string, input: AdminCodDeliveryInput) { return request(user, `/api/v2/admin/cod/orders/${orderId}/delivered`, { method: "POST", headers: { "Idempotency-Key": Crypto.randomUUID() }, body: JSON.stringify(input) }); }
+export async function confirmAdminCodPayment(user: User, orderId: string, input: AdminCodConfirmationInput) { return request(user, `/api/v2/admin/cod/orders/${orderId}/confirm`, { method: "POST", headers: { "Idempotency-Key": Crypto.randomUUID() }, body: JSON.stringify(input) }); }
+export type { AdminCodConfirmationInput, AdminCodDeliveryInput, AdminCodWorkspaceDto } from "@amiyo/contracts";
 export async function getDeliveryQueue(user: User) { return deliveryQueueItemSchema.array().parse(await request(user, "/api/v2/admin/delivery-queue")); }
 export async function retryDelivery(user: User, id: string, input: DeliveryRetryInput, idempotencyKey: string) { return deliveryRetryResultSchema.parse(await request(user, `/api/v2/admin/delivery-queue/${id}/retry`, { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: JSON.stringify(input) })); }
