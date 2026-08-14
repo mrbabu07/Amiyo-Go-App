@@ -18,6 +18,7 @@ if (await expoRunning()) {
 }
 
 const expoCli = fileURLToPath(new URL("../node_modules/expo/bin/cli", import.meta.url));
-const child = spawn(process.execPath, [expoCli, "start", "--web", "--clear", "--port", "8081"], { stdio: "inherit" });
+const mobileDirectory = fileURLToPath(new URL("../apps/mobile/", import.meta.url));
+const child = spawn(process.execPath, [expoCli, "start", "--web", "--clear", "--port", "8081"], { cwd: mobileDirectory, stdio: "inherit" });
 child.on("exit", (code) => process.exit(code ?? 0));
 for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => child.kill(signal));

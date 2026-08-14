@@ -30,4 +30,6 @@ test("web launcher exposes one command and reuses port 8081", async () => {
   assert.equal(mobilePackage.scripts.web, "node ../../scripts/web.mjs");
   assert.match(source, /Amiyo web is already running/);
   assert.match(source, /"--web", "--clear", "--port", "8081"/);
+  assert.match(source, /new URL\("\.\.\/apps\/mobile\/"/);
+  assert.match(source, /cwd: mobileDirectory/);
 });
