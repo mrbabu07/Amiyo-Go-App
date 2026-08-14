@@ -41,6 +41,11 @@ export class AdminService {
     await this.client.$transaction([this.client.user.update({ where: { id: userId }, data: { status: input.status } }), this.client.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "admin", action: "admin.user.status_changed", resourceType: "user", resourceId: userId, before: json({ status: before.status }), after: json(input) } })]);
     return this.workspace(session);
   }
+  async paymentVerifications(session: Session) {
+    requireAdmin(session);
+    const rows = await this.client.paymentVerification.findMany({ include: { payment: { include: { order: { include: { user: { include: { profile: true } } } } } } }, orderBy: [{ status: "asc" }, { createdAt: "asc" }], take: 150 });
+    return rows.map((item) => ({ id: item.id, paymentId: item.paymentId, orderId: item.payment.orderId, orderNumber: item.payment.order.orderNumber, customer: item.payment.order.user?.profile?.displayName ?? item.payment.order.user?.normalizedEmail ?? "Guest customer", provider: item.payment.provider, method: item.payment.method, amount: money(item.payment.amountMinor, item.payment.currency), paymentStatus: item.payment.status, status: item.status, transactionRef: item.transactionRef, senderMasked: item.senderMasked, evidenceStorageKey: item.evidenceStorageKey, reviewedAt: item.reviewedAt?.toISOString() ?? null, createdAt: item.createdAt.toISOString() }));
+  }
   async updateUserRoles(session: Session, userId: string, input: AdminUserRolesInput) {
     requireAdmin(session, true);
     if (userId === session.principal.userId) throw new ApiProblem(409, "SELF_ROLE_CHANGE_FORBIDDEN", "You cannot change your own platform roles");

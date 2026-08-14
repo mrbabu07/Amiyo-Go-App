@@ -78,6 +78,8 @@ const ids = {
   , payoutRequest: "00000000-0000-4000-8000-000000002601"
   , customerTicket: "00000000-0000-4000-8000-000000002701"
   , customerReview: "00000000-0000-4000-8000-000000002801"
+  , manualPayment: "00000000-0000-4000-8000-000000002901"
+  , paymentVerification: "00000000-0000-4000-8000-000000003001"
 };
 
 async function seedAccessControl() {
@@ -296,6 +298,8 @@ async function seedDemoCatalog() {
   await prisma.vendorPayoutRequest.upsert({ where: { id: ids.payoutRequest }, update: { status: "REQUESTED", version: 1, rejectionReason: null }, create: { id: ids.payoutRequest, vendorId: ids.vendor, bankAccountId: ids.vendorBankAccount, amountMinor: 50000n, currency: "BDT", status: "REQUESTED", version: 1 } });
   await prisma.supportTicket.upsert({ where: { id: ids.customerTicket }, update: { status: "open", priority: "high" }, create: { id: ids.customerTicket, userId: ids.customerUser, orderId: ids.returnOrder, subject: "Return pickup status", category: "returns", priority: "high", status: "open" } });
   await prisma.review.upsert({ where: { id: ids.customerReview }, update: { rating: 4, status: "published" }, create: { id: ids.customerReview, userId: ids.customerUser, productId: ids.product, orderItemId: ids.returnOrderItem, rating: 4, title: "Great sound, packaging issue", body: "The headphones sound excellent, but the delivery packaging needs improvement.", status: "published" } });
+  await prisma.payment.upsert({ where: { id: ids.manualPayment }, update: { status: "INITIATED" }, create: { id: ids.manualPayment, orderId: ids.customerOrder, provider: "bkash_manual", method: "mobile_banking", status: "INITIATED", amountMinor: 255000n, currency: "BDT" } });
+  await prisma.paymentVerification.upsert({ where: { id: ids.paymentVerification }, update: { status: "pending", transactionRef: "BKS-DEMO-778899" }, create: { id: ids.paymentVerification, paymentId: ids.manualPayment, status: "pending", transactionRef: "BKS-DEMO-778899", senderMasked: "017****0002", evidenceStorageKey: "seed/payments/bkash-demo-receipt.jpg" } });
   await prisma.shipment.upsert({ where: { vendorOrderId: ids.customerVendorOrder }, update: { status: "IN_TRANSIT", provider: "Amiyo Delivery", trackingNumber: "AGD-DEMO-1001" }, create: { id: ids.customerShipment, vendorOrderId: ids.customerVendorOrder, status: "IN_TRANSIT", provider: "Amiyo Delivery", trackingNumber: "AGD-DEMO-1001", shippedAt: new Date(orderPlacedAt.getTime() + 2 * 86_400_000) } });
   await prisma.logisticsZone.upsert({ where: { id: ids.logisticsZone }, update: { status: "active" }, create: { id: ids.logisticsZone, name: "Dhaka Metro", code: "DHAKA-METRO", districts: ["Dhaka"], courierPartnerIds: [ids.courierPartner], defaultCourierName: "Amiyo Delivery", codAvailable: true, slaHours: 24, sortOrder: 10 } });
   await prisma.courierPartner.upsert({ where: { id: ids.courierPartner }, update: { status: "active" }, create: { id: ids.courierPartner, name: "Amiyo Delivery", code: "AMIYO-DELIVERY", provider: "amiyo_delivery", bookingMode: "manual", coverageType: "metro", outsideDistrict: true, localArea: true, instantDelivery: true, serviceZones: ["DHAKA-METRO"], codSupported: true, baseDeliveryCostMinor: 6000n, codCollectionFeeMinor: 1000n, defaultSlaHours: 24 } });
