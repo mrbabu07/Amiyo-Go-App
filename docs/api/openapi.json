@@ -24924,6 +24924,829 @@
         }
       }
     },
+    "/api/v2/admin/workspace/coupons": {
+      "get": {
+        "tags": [
+          "Admin Marketing"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Coupon rules with redemption performance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "discountType": {
+                        "type": "string",
+                        "enum": [
+                          "PERCENT",
+                          "FIXED"
+                        ]
+                      },
+                      "value": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "maxDiscountMinor": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "pattern": "^\\d+$"
+                      },
+                      "minimumSpendMinor": {
+                        "type": "string",
+                        "pattern": "^\\d+$"
+                      },
+                      "currency": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 3
+                      },
+                      "usageLimit": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "exclusiveMinimum": 0
+                      },
+                      "perUserLimit": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "redemptions": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "redeemedMinor": {
+                        "type": "string",
+                        "pattern": "^\\d+$"
+                      },
+                      "startsAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "endsAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "active": {
+                        "type": "boolean"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "active",
+                          "scheduled",
+                          "expired",
+                          "disabled"
+                        ]
+                      },
+                      "version": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "code",
+                      "discountType",
+                      "value",
+                      "maxDiscountMinor",
+                      "minimumSpendMinor",
+                      "currency",
+                      "usageLimit",
+                      "perUserLimit",
+                      "redemptions",
+                      "redeemedMinor",
+                      "startsAt",
+                      "endsAt",
+                      "active",
+                      "status",
+                      "version"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin Marketing"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 40
+                  },
+                  "discountType": {
+                    "type": "string",
+                    "enum": [
+                      "PERCENT",
+                      "FIXED"
+                    ]
+                  },
+                  "value": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "maxDiscountMinor": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^\\d+$",
+                    "default": null
+                  },
+                  "minimumSpendMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$",
+                    "default": "0"
+                  },
+                  "usageLimit": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "exclusiveMinimum": 0,
+                    "default": null
+                  },
+                  "perUserLimit": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "default": 1
+                  },
+                  "startsAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "endsAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "active": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "required": [
+                  "code",
+                  "discountType",
+                  "value",
+                  "startsAt",
+                  "endsAt"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Coupon created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "discountType": {
+                        "type": "string",
+                        "enum": [
+                          "PERCENT",
+                          "FIXED"
+                        ]
+                      },
+                      "value": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "maxDiscountMinor": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "pattern": "^\\d+$"
+                      },
+                      "minimumSpendMinor": {
+                        "type": "string",
+                        "pattern": "^\\d+$"
+                      },
+                      "currency": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 3
+                      },
+                      "usageLimit": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "exclusiveMinimum": 0
+                      },
+                      "perUserLimit": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "redemptions": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "redeemedMinor": {
+                        "type": "string",
+                        "pattern": "^\\d+$"
+                      },
+                      "startsAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "endsAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "active": {
+                        "type": "boolean"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "active",
+                          "scheduled",
+                          "expired",
+                          "disabled"
+                        ]
+                      },
+                      "version": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "code",
+                      "discountType",
+                      "value",
+                      "maxDiscountMinor",
+                      "minimumSpendMinor",
+                      "currency",
+                      "usageLimit",
+                      "perUserLimit",
+                      "redemptions",
+                      "redeemedMinor",
+                      "startsAt",
+                      "endsAt",
+                      "active",
+                      "status",
+                      "version"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/workspace/coupons/{id}": {
+      "put": {
+        "tags": [
+          "Admin Marketing"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 40
+                  },
+                  "discountType": {
+                    "type": "string",
+                    "enum": [
+                      "PERCENT",
+                      "FIXED"
+                    ]
+                  },
+                  "value": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "maxDiscountMinor": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^\\d+$",
+                    "default": null
+                  },
+                  "minimumSpendMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$",
+                    "default": "0"
+                  },
+                  "usageLimit": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "exclusiveMinimum": 0,
+                    "default": null
+                  },
+                  "perUserLimit": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "default": 1
+                  },
+                  "startsAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "endsAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "active": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "code",
+                  "discountType",
+                  "value",
+                  "startsAt",
+                  "endsAt",
+                  "expectedVersion"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Coupon updated with optimistic concurrency",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "discountType": {
+                        "type": "string",
+                        "enum": [
+                          "PERCENT",
+                          "FIXED"
+                        ]
+                      },
+                      "value": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "maxDiscountMinor": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "pattern": "^\\d+$"
+                      },
+                      "minimumSpendMinor": {
+                        "type": "string",
+                        "pattern": "^\\d+$"
+                      },
+                      "currency": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 3
+                      },
+                      "usageLimit": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "exclusiveMinimum": 0
+                      },
+                      "perUserLimit": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "redemptions": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "redeemedMinor": {
+                        "type": "string",
+                        "pattern": "^\\d+$"
+                      },
+                      "startsAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "endsAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "active": {
+                        "type": "boolean"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "active",
+                          "scheduled",
+                          "expired",
+                          "disabled"
+                        ]
+                      },
+                      "version": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "code",
+                      "discountType",
+                      "value",
+                      "maxDiscountMinor",
+                      "minimumSpendMinor",
+                      "currency",
+                      "usageLimit",
+                      "perUserLimit",
+                      "redemptions",
+                      "redeemedMinor",
+                      "startsAt",
+                      "endsAt",
+                      "active",
+                      "status",
+                      "version"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin Marketing"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unused coupon deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "discountType": {
+                        "type": "string",
+                        "enum": [
+                          "PERCENT",
+                          "FIXED"
+                        ]
+                      },
+                      "value": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "maxDiscountMinor": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "pattern": "^\\d+$"
+                      },
+                      "minimumSpendMinor": {
+                        "type": "string",
+                        "pattern": "^\\d+$"
+                      },
+                      "currency": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 3
+                      },
+                      "usageLimit": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "exclusiveMinimum": 0
+                      },
+                      "perUserLimit": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "redemptions": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "redeemedMinor": {
+                        "type": "string",
+                        "pattern": "^\\d+$"
+                      },
+                      "startsAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "endsAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "active": {
+                        "type": "boolean"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "active",
+                          "scheduled",
+                          "expired",
+                          "disabled"
+                        ]
+                      },
+                      "version": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "code",
+                      "discountType",
+                      "value",
+                      "maxDiscountMinor",
+                      "minimumSpendMinor",
+                      "currency",
+                      "usageLimit",
+                      "perUserLimit",
+                      "redemptions",
+                      "redeemedMinor",
+                      "startsAt",
+                      "endsAt",
+                      "active",
+                      "status",
+                      "version"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/admin/workspace/vouchers": {
       "post": {
         "tags": [
