@@ -11,6 +11,7 @@ import { firebaseAuth } from "../auth/firebase";
 import { cancelCustomerOrder } from "../operations/operations.api";
 import { transitionVendorOrder } from "../orders/orders.api";
 import { getAdminOrderDetail } from "./admin.api";
+import { AdminOrderInterventions } from "./AdminOrderInterventions";
 
 const nextStatuses: Record<string, string[]> = { PLACED: ["ACCEPTED", "REJECTED", "CANCELLED"], ACCEPTED: ["PROCESSING", "CANCELLED"], PROCESSING: ["READY_TO_SHIP", "CANCELLED"], READY_TO_SHIP: ["PICKED_UP"], PICKED_UP: ["IN_TRANSIT"], IN_TRANSIT: ["DELIVERED"] };
 const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
@@ -58,6 +59,7 @@ export function AdminOrderDetailScreen() {
     </ModuleCard>)}
     <View style={styles.twoColumn}><View style={[styles.columnCard, compact && styles.columnCardCompact]}><ModuleCard title="Order totals" meta="Customer-facing invoice amounts"><Info label="Subtotal" value={money(data.subtotal.amountMinor)} /><Info label="Discount" value={`−${money(data.discount.amountMinor)}`} /><Info label="Delivery" value={money(data.delivery.amountMinor)} /><Info label="Tax" value={money(data.tax.amountMinor)} /><View style={styles.totalLine}><Text style={styles.totalLabel}>Grand total</Text><Text style={styles.totalValue}>{money(data.total.amountMinor)}</Text></View></ModuleCard></View><View style={[styles.columnCard, compact && styles.columnCardCompact]}><ModuleCard title="Status timeline" meta={`${data.events.length} recorded event(s)`}>{data.events.map((event, index) => <View key={event.id} style={styles.event}><View style={[styles.eventDot, index === data.events.length - 1 && styles.eventDotActive]} /><View style={styles.flex}><Text style={styles.itemTitle}>{statusLabel(event.toStatus)}</Text><Text style={styles.muted}>{new Date(event.createdAt).toLocaleString("en-BD")} · {event.actorType}</Text>{event.reason ? <Text style={styles.reason}>{event.reason}</Text> : null}</View></View>)}</ModuleCard></View></View>
     {["PENDING_PAYMENT", "CONFIRMED", "PROCESSING"].includes(data.status) ? <ModuleCard title="Administrative cancellation" meta="Cancels all seller fulfillments, releases reserved stock and starts any eligible refund."><TextInput multiline onChangeText={setCancelReason} placeholder="Operational reason for force cancellation" placeholderTextColor={colors.muted} style={styles.cancelInput} value={cancelReason} /><Pressable disabled={cancelOrder.isPending || cancelReason.trim().length < 3} onPress={() => cancelOrder.mutate()} style={[styles.cancelButton, compact && styles.cancelButtonCompact, (cancelOrder.isPending || cancelReason.trim().length < 3) && styles.disabled]}><Ionicons color="#fff" name="close-circle-outline" size={18} /><Text style={styles.primaryText}>{cancelOrder.isPending ? "Cancelling…" : "Force cancel order"}</Text></Pressable></ModuleCard> : null}
+    <AdminOrderInterventions key={`${data.id}:${data.version}`} order={data} />
   </Screen>;
 }
 
