@@ -1,4 +1,4 @@
-import { adminCodWorkspaceSchema, deliveryQueueItemSchema, deliveryRetryResultSchema, returnSchema, vendorFinanceSchema, type AdminCodConfirmationInput, type AdminCodDeliveryInput, type CancelOrder, type CreateReturn, type DeliveryRetryInput, type SellerReturnReceipt, type SellerReturnResponse } from "@amiyo/contracts";
+import { adminCodWorkspaceSchema, adminOrderRefundResultSchema, deliveryQueueItemSchema, deliveryRetryResultSchema, returnSchema, vendorFinanceSchema, type AdminCodConfirmationInput, type AdminCodDeliveryInput, type AdminOrderRefundInput, type CancelOrder, type CreateReturn, type DeliveryRetryInput, type SellerReturnReceipt, type SellerReturnResponse } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
 import * as Crypto from "expo-crypto";
 
@@ -33,3 +33,4 @@ export async function confirmAdminCodPayment(user: User, orderId: string, input:
 export type { AdminCodConfirmationInput, AdminCodDeliveryInput, AdminCodWorkspaceDto } from "@amiyo/contracts";
 export async function getDeliveryQueue(user: User) { return deliveryQueueItemSchema.array().parse(await request(user, "/api/v2/admin/delivery-queue")); }
 export async function retryDelivery(user: User, id: string, input: DeliveryRetryInput, idempotencyKey: string) { return deliveryRetryResultSchema.parse(await request(user, `/api/v2/admin/delivery-queue/${id}/retry`, { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: JSON.stringify(input) })); }
+export async function forceAdminOrderRefund(user: User, orderId: string, input: AdminOrderRefundInput) { return adminOrderRefundResultSchema.parse(await request(user, `/api/v2/admin/orders/${orderId}/refunds`, { method: "POST", headers: { "Idempotency-Key": Crypto.randomUUID() }, body: JSON.stringify(input) })); }

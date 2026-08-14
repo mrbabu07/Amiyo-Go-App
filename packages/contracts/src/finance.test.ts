@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { adminCodConfirmationInputSchema, adminCodDeliveryInputSchema, adminCodWorkspaceSchema } from "./finance.js";
+import { adminCodConfirmationInputSchema, adminCodDeliveryInputSchema, adminCodWorkspaceSchema, adminOrderRefundInputSchema } from "./finance.js";
 
 test("COD admin mutations require versioned operational evidence", () => { assert.equal(adminCodDeliveryInputSchema.safeParse({ expectedVersion: 2, courierName: "Amiyo Delivery", note: "Customer received parcel" }).success, true); assert.equal(adminCodDeliveryInputSchema.safeParse({ expectedVersion: 0, courierName: "A" }).success, false); assert.equal(adminCodConfirmationInputSchema.safeParse({ expectedVersion: 2, collectedAmountMinor: "125000", reference: "HANDOVER-101", courierName: "Amiyo Delivery" }).success, true); assert.equal(adminCodConfirmationInputSchema.safeParse({ expectedVersion: 2, collectedAmountMinor: "12.50", reference: "x", courierName: "A" }).success, false); });
 
 test("COD workspace preserves signed discrepancy evidence", () => { const workspace = { orders: [{ orderId: "00000000-0000-4000-8000-000000000801", orderNumber: "AGO-1001", version: 2, customerName: "Demo Customer", customerPhone: "01700000000", vendorNames: ["Demo Vendor"], deliveryZone: "Dhaka", courierName: "Amiyo Delivery", shipmentStatus: "DELIVERED", delivered: true, waitingDelivery: false, awaitingConfirmation: false, paymentId: "00000000-0000-4000-8000-000000000802", paymentStatus: "CAPTURED", paymentConfirmed: true, totalMinor: "100000", currency: "BDT", reconciliationStatus: "discrepancy", collectedMinor: "99000", discrepancyMinor: "-1000", hasDiscrepancy: true, collectorRef: "HANDOVER-101", collectedAt: "2026-08-14T12:00:00.000Z", createdAt: "2026-08-14T10:00:00.000Z" }], reconciliations: [], summary: { totalCod: 1, codValueMinor: "100000", awaitingConfirmation: 0, confirmed: 1, waitingDelivery: 0, discrepancies: 1, remitted: 0, outstandingMinor: "1000" } }; assert.equal(adminCodWorkspaceSchema.parse(workspace).orders[0]?.discrepancyMinor, "-1000"); });
+
+test("admin refunds require a positive minor amount and operational evidence", () => {
+  assert.equal(adminOrderRefundInputSchema.safeParse({ expectedVersion: 2, amountMinor: "25000", reason: "Customer service settlement", providerRefundId: "SSL-REFUND-101" }).success, true);
+  assert.equal(adminOrderRefundInputSchema.safeParse({ expectedVersion: 2, amountMinor: "0", reason: "Customer service settlement", providerRefundId: "SSL-REFUND-101" }).success, false);
+  assert.equal(adminOrderRefundInputSchema.safeParse({ expectedVersion: 2, amountMinor: "25000", reason: "bad", providerRefundId: "x" }).success, false);
+});

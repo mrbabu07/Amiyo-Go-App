@@ -12,6 +12,7 @@ import { cancelCustomerOrder } from "../operations/operations.api";
 import { transitionVendorOrder } from "../orders/orders.api";
 import { getAdminOrderDetail } from "./admin.api";
 import { AdminOrderInterventions } from "./AdminOrderInterventions";
+import { AdminOrderRefund } from "./AdminOrderRefund";
 import { AdminOrderReturnWindow } from "./AdminOrderReturnWindow";
 
 const nextStatuses: Record<string, string[]> = { PLACED: ["ACCEPTED", "REJECTED", "CANCELLED"], ACCEPTED: ["PROCESSING", "CANCELLED"], PROCESSING: ["READY_TO_SHIP", "CANCELLED"], READY_TO_SHIP: ["PICKED_UP"], PICKED_UP: ["IN_TRANSIT"], IN_TRANSIT: ["DELIVERED"] };
@@ -62,6 +63,7 @@ export function AdminOrderDetailScreen() {
     {["PENDING_PAYMENT", "CONFIRMED", "PROCESSING"].includes(data.status) ? <ModuleCard title="Administrative cancellation" meta="Cancels all seller fulfillments, releases reserved stock and starts any eligible refund."><TextInput multiline onChangeText={setCancelReason} placeholder="Operational reason for force cancellation" placeholderTextColor={colors.muted} style={styles.cancelInput} value={cancelReason} /><Pressable disabled={cancelOrder.isPending || cancelReason.trim().length < 3} onPress={() => cancelOrder.mutate()} style={[styles.cancelButton, compact && styles.cancelButtonCompact, (cancelOrder.isPending || cancelReason.trim().length < 3) && styles.disabled]}><Ionicons color="#fff" name="close-circle-outline" size={18} /><Text style={styles.primaryText}>{cancelOrder.isPending ? "Cancelling…" : "Force cancel order"}</Text></Pressable></ModuleCard> : null}
     <AdminOrderInterventions key={`${data.id}:${data.version}`} order={data} />
     <AdminOrderReturnWindow key={`return:${data.id}:${data.version}`} order={data} />
+    <AdminOrderRefund key={`refund:${data.id}:${data.version}:${data.payment?.refunded.amountMinor ?? "0"}`} order={data} />
   </Screen>;
 }
 
