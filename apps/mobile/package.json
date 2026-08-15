@@ -9,7 +9,8 @@
     "ios": "expo start --ios",
     "web": "node ../../scripts/web.mjs",
     "export:web": "expo export --platform web --output-dir dist-ci",
-    "type-check": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit"
+    "type-check": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
+    "test": "tsx --test src/features/auth/*.test.ts"
   },
   "dependencies": {
     "@amiyo/contracts": "file:../../packages/contracts",

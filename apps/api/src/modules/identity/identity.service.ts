@@ -211,15 +211,20 @@ export class IdentityService {
     const email = !user.normalizedEmail && identity.email ? normalized(identity.email) : undefined;
     const phone = !user.normalizedPhone && identity.phone ? normalized(identity.phone) : undefined;
     if (!loginWriteDue && email === undefined && phone === undefined) return user;
-    return this.client.user.update({
-      where: { id: user.id },
-      data: {
-        ...(loginWriteDue ? { lastLoginAt: new Date() } : {}),
-        ...(email === undefined ? {} : { normalizedEmail: email }),
-        ...(phone === undefined ? {} : { normalizedPhone: phone })
-      },
-      include: sessionInclude
-    });
+    try {
+      return await this.client.user.update({
+        where: { id: user.id },
+        data: {
+          ...(loginWriteDue ? { lastLoginAt: new Date() } : {}),
+          ...(email === undefined ? {} : { normalizedEmail: email }),
+          ...(phone === undefined ? {} : { normalizedPhone: phone })
+        },
+        include: sessionInclude
+      });
+    } catch (error) {
+      if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2034") throw error;
+      return await this.client.user.findUnique({ where: { id: user.id }, include: sessionInclude }) ?? user;
+    }
   }
 
   async getSession(userId: string) {

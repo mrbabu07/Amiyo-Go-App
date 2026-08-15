@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 import { IdentityService } from "./identity.service.js";
 
 const userId = "11111111-1111-4111-8111-111111111111";
@@ -48,6 +48,21 @@ test("session synchronization refreshes stale login activity without a serializa
   } as unknown as PrismaClient;
   await new IdentityService(client).synchronizeSession({ subject: "firebase-customer", email: "customer@example.com" });
   assert.ok(updateData?.lastLoginAt instanceof Date);
+});
+
+test("session synchronization recovers from a concurrent login activity write", async () => {
+  const user = sessionUser(new Date(Date.now() - 10 * 60_000));
+  let reads = 0;
+  const conflict = new Prisma.PrismaClientKnownRequestError("Concurrent login update", { code: "P2034", clientVersion: "5.22.0" });
+  const client = {
+    user: {
+      findUnique: async () => { reads += 1; return { ...user, lastLoginAt: reads > 1 ? new Date() : user.lastLoginAt }; },
+      update: async () => { throw conflict; }
+    }
+  } as unknown as PrismaClient;
+  const session = await new IdentityService(client).synchronizeSession({ subject: "firebase-customer", email: "customer@example.com" });
+  assert.equal(session.status, "ACTIVE");
+  assert.equal(reads, 2);
 });
 
 test("account deletion can be cancelled inside the recovery window", async () => {
