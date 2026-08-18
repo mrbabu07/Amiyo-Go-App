@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
@@ -35,8 +36,15 @@ const benefits = [
   { icon: "refresh-outline", title: "Easy returns", text: "Simple return policy" },
   { icon: "headset-outline", title: "24/7 support", text: "Always here to help" }
 ];
+const quickDeals = [
+  { icon: "flash-outline", title: "Flash Deals", href: "/search" },
+  { icon: "ticket-outline", title: "Vouchers", href: "/cart" },
+  { icon: "storefront-outline", title: "Official Stores", href: "/shops" },
+  { icon: "sparkles-outline", title: "New Arrivals", href: "/products" }
+];
 
 export function CustomerHomeScreen() {
+  const router = useRouter();
   const { width } = useWindowDimensions();
   const desktop = width >= 900;
   const columns = width >= 1180 ? 5 : width >= 820 ? 4 : width < 360 ? 1 : 2;
@@ -59,6 +67,7 @@ export function CustomerHomeScreen() {
           <StoreHeader desktop={desktop} viewportWidth={width} />
           <View style={[styles.content, { width: contentWidth }]}>
             <View style={styles.heroShowcase}><View style={styles.heroMain}><HeroBanner banner={heroBanner} desktop={desktop} /></View>{desktop ? <PromoTiles campaigns={growthQuery.data?.campaigns || []} couponCode={growthQuery.data?.coupons[0]?.code} /> : null}</View>
+            <View style={styles.quickDeals}>{quickDeals.map((deal) => <Pressable key={deal.title} onPress={() => router.push(deal.href as never)} style={styles.quickDeal}><View style={styles.quickIcon}><Ionicons color={colors.accent} name={deal.icon as never} size={22} /></View><Text style={styles.quickText}>{deal.title}</Text></Pressable>)}</View>
             <View style={styles.section}><HomeSectionTitle eyebrow="EXPLORE DEPARTMENTS" href="/categories" title="Shop by category" />{categoryQuery.isLoading ? <ActivityIndicator color={colors.primary} /> : <CategoryRail data={liveCategories} />}{categoryQuery.error ? <RetryState label="Categories unavailable. Start the API and run npm run demo:setup." onRetry={() => categoryQuery.refetch()} /> : null}</View>
 
             {activeFlashSale ? <View style={[styles.flashSection, desktop && styles.desktopFlash]}>
@@ -108,10 +117,14 @@ function RetryState({ label, onRetry }: { label: string; onRetry(): void }) {
 const styles = StyleSheet.create({
   safe: { backgroundColor: colors.surface, flex: 1 },
   screen: { flex: 1 },
-  scrollContent: { backgroundColor: colors.background, paddingBottom: 4 },
+  scrollContent: { backgroundColor: "#f4f6f9", paddingBottom: 4 },
   content: { alignSelf: "center", gap: 18, paddingHorizontal: spacing.sm, paddingVertical: spacing.md },
-  section: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, padding: spacing.md },
+  section: { backgroundColor: colors.surface, borderColor: "#edf1f5", borderRadius: radius.md, borderWidth: 1, padding: spacing.md },
   heroShowcase: { flexDirection: "row", gap: spacing.md }, heroMain: { flex: 1 },
+  quickDeals: { backgroundColor: colors.surface, borderColor: "#edf1f5", borderRadius: radius.md, borderWidth: 1, flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, padding: spacing.sm },
+  quickDeal: { alignItems: "center", flex: 1, flexDirection: "row", gap: spacing.sm, minWidth: 150, paddingHorizontal: spacing.sm, paddingVertical: 10 },
+  quickIcon: { alignItems: "center", backgroundColor: colors.accentSoft, borderRadius: radius.pill, height: 38, justifyContent: "center", width: 38 },
+  quickText: { color: colors.text, fontSize: 12, fontWeight: "900" },
   flashSection: { backgroundColor: colors.navy, borderRadius: radius.lg, overflow: "hidden", padding: spacing.md },
   desktopFlash: { padding: spacing.lg },
   flashHeading: { alignItems: "center", flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, justifyContent: "space-between", marginBottom: spacing.md },
