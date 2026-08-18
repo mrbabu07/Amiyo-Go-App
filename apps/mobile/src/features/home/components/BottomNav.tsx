@@ -6,6 +6,7 @@ import { colors } from "../../../ui/tokens";
 const items = [
   { label: "Home", icon: "home", href: "/" },
   { label: "Categories", icon: "grid-outline", href: "/categories" },
+  { label: "Wishlist", icon: "heart-outline", href: "/wishlist" },
   { label: "Cart", icon: "cart-outline", href: "/cart" },
   { label: "Orders", icon: "bag-handle-outline", href: "/orders" },
   { label: "Account", icon: "person-outline", href: "/account" }

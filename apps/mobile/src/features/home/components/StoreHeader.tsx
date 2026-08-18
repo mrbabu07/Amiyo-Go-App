@@ -9,6 +9,7 @@ import { firebaseAuth } from "../../auth/firebase";
 import { getCategoryNavigation } from "../../catalog/catalog.api";
 import { buildCategoryTree } from "../../catalog/category-tree";
 import { getCart } from "../../commerce/commerce.api";
+import { getWishlist } from "../../engagement/engagement.api";
 import { BrandLogo } from "./BrandLogo";
 import { VoiceSearchButton } from "./VoiceSearchButton";
 import { ThemeToggle } from "../../../ui/ThemeToggle";
@@ -18,6 +19,7 @@ export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; view
   const hasVendorWorkspace = useAuthStore((state) => Boolean(state.session?.vendorMemberships.length));
   const user = firebaseAuth?.currentUser ?? null;
   const cart = useQuery({ queryKey: ["cart"], queryFn: () => getCart(user!), enabled: Boolean(user) });
+  const wishlist = useQuery({ queryKey: ["wishlist"], queryFn: () => getWishlist(user!), enabled: Boolean(user), staleTime: 30_000 });
   const categories = useQuery({ queryKey: ["catalog", "category-navigation"], queryFn: getCategoryNavigation, enabled: desktop, staleTime: 5 * 60_000 });
   const categoryTree = useMemo(() => buildCategoryTree(categories.data || []), [categories.data]);
   const [query, setQuery] = useState("");
@@ -54,6 +56,7 @@ export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; view
         <View style={styles.actions}>
           {desktop ? <ThemeToggle /> : <ThemeToggle compact />}
           {desktop ? <Pressable accessibilityLabel="My account" onPress={() => router.push("/account")} style={styles.iconButton}><Ionicons color={colors.text} name="person-outline" size={22} /></Pressable> : null}
+          <Pressable accessibilityLabel={`Wishlist with ${wishlist.data?.items.length ?? 0} items`} onPress={() => router.push("/wishlist")} style={styles.iconButton}><Ionicons color={colors.text} name={wishlist.data?.items.length ? "heart" : "heart-outline"} size={22} />{wishlist.data?.items.length ? <View style={styles.cartBadge}><Text style={styles.cartBadgeText}>{Math.min(wishlist.data.items.length, 99)}</Text></View> : null}</Pressable>
           <Pressable accessibilityLabel="Notifications" onPress={() => router.push("/notifications")} style={styles.iconButton}><Ionicons color={colors.text} name="notifications-outline" size={22} /></Pressable>
           <Pressable accessibilityLabel={`Shopping cart with ${cart.data?.itemCount ?? 0} items`} onPress={() => router.push("/cart")} style={styles.iconButton}><Ionicons color={colors.text} name="cart-outline" size={23} /><View style={styles.cartBadge}><Text style={styles.cartBadgeText}>{Math.min(cart.data?.itemCount ?? 0, 99)}</Text></View></Pressable>
         </View>
