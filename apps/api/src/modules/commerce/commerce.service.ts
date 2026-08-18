@@ -110,7 +110,7 @@ export class CommerceService {
       for (const [groupIndex, [vendorId, items]] of groupEntries.entries()) {
         const vendorSubtotal = vendorSubtotals[groupIndex]!;
         const vendorDiscount = vendorDiscounts[groupIndex]!;
-        const commissionMinor = await this.commissions.calculateForVendorOrder(transaction, order.id, vendorId, items.map((item) => ({ productId: item.productId, categoryId: item.product.categoryId, quantity: item.quantity, unitPriceMinor: item.variant.priceMinor })));
+        const commissionMinor = await this.commissions.calculateForVendorOrder(transaction, order.id, vendorId, items.map((item) => ({ productId: item.productId, shopId: item.product.shopId, categoryId: item.product.categoryId, quantity: item.quantity, unitPriceMinor: item.variant.priceMinor })));
         const vendorOrder = await transaction.vendorOrder.create({ data: { orderId: order.id, vendorId, shopId: items[0]!.product.shopId, subtotalMinor: vendorSubtotal, discountMinor: vendorDiscount, deliveryMinor: deliveryFee, totalMinor: vendorSubtotal - vendorDiscount + deliveryFee, commissionMinor } });
         for (const item of items) {
           await transaction.orderItem.create({ data: { orderId: order.id, vendorOrderId: vendorOrder.id, productId: item.productId, variantId: item.variantId, productNameSnapshot: item.product.name, skuSnapshot: item.variant.sku, attributesSnapshot: item.variant.attributes ?? Prisma.JsonNull, quantity: item.quantity, unitPriceMinor: item.variant.priceMinor, lineTotalMinor: item.variant.priceMinor * BigInt(item.quantity), currency: item.variant.currency } });

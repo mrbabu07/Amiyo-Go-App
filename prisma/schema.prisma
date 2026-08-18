@@ -420,6 +420,7 @@ model VendorShop {
   products         Product[]
   shopProducts     ShopProduct[]
   vendorOrders     VendorOrder[]
+  commissionRules  CommissionRule[]
 
   @@index([vendorId, status])
   @@map("vendor_shops")
@@ -667,6 +668,7 @@ model Product {
   reviews              Review[]
   questions            Question[]
   recommendationEvents RecommendationEvent[]
+  commissionRules  CommissionRule[]
 
   @@index([categoryId, status, createdAt])
   @@index([vendorId, status])
@@ -1433,7 +1435,9 @@ model CodReconciliationItem {
 model CommissionRule {
   id            String            @id @default(uuid()) @db.Uuid
   vendorId      String?           @map("vendor_id") @db.Uuid
+  shopId        String?           @map("shop_id") @db.Uuid
   categoryId    String?           @map("category_id") @db.Uuid
+  productId     String?           @map("product_id") @db.Uuid
   rateBps       Int               @map("rate_bps")
   fixedMinor    BigInt            @default(0) @map("fixed_minor")
   currency      String            @default("BDT") @db.Char(3)
@@ -1441,10 +1445,12 @@ model CommissionRule {
   effectiveTo   DateTime?         @map("effective_to") @db.Timestamptz(3)
   version       Int               @default(1)
   vendor        Vendor?           @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  shop          VendorShop?       @relation(fields: [shopId], references: [id], onDelete: Restrict)
   category      Category?         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  product       Product?          @relation(fields: [productId], references: [id], onDelete: Restrict)
   entries       CommissionEntry[]
 
-  @@index([vendorId, categoryId, effectiveFrom])
+  @@index([vendorId, shopId, categoryId, productId, effectiveFrom])
   @@map("commission_rules")
 }
 

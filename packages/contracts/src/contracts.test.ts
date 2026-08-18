@@ -79,8 +79,9 @@ test("identity mutation contracts reject incomplete data", () => {
 });
 
 test("commission rules require bounded non-zero fees and valid dates", () => {
-  const base = { vendorId: null, categoryId: null, rateBps: 750, fixedMinor: "0", currency: "BDT", effectiveFrom: new Date().toISOString(), effectiveTo: null };
+  const base = { vendorId: null, shopId: null, categoryId: null, productId: null, rateBps: 750, fixedMinor: "0", currency: "BDT", effectiveFrom: new Date().toISOString(), effectiveTo: null };
   assert.equal(commissionRuleInputSchema.safeParse(base).success, true);
+  assert.equal(commissionRuleInputSchema.safeParse({ ...base, productId: "11111111-1111-4111-8111-111111111111", rateBps: 150 }).success, true);
   assert.equal(commissionRuleInputSchema.safeParse({ ...base, rateBps: 0 }).success, false);
   assert.equal(commissionRuleInputSchema.safeParse({ ...base, rateBps: 5001 }).success, false);
 });
