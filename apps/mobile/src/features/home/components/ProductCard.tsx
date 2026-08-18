@@ -1,7 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
+import type { GestureResponderEvent } from "react-native";
 import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, radius, spacing } from "../../../ui/tokens";
+import { firebaseAuth } from "../../auth/firebase";
+import { addWishlistItem, getWishlist, removeWishlistItem } from "../../engagement/engagement.api";
 import type { HomeProduct } from "../home.data";
 
 const money = (value: number) => `৳${value.toLocaleString("en-BD")}`;
@@ -9,13 +13,33 @@ const fallbackImage = "https://images.unsplash.com/photo-1560343090-f0409e92791a
 
 export function ProductCard({ product }: { product: HomeProduct }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const user = firebaseAuth?.currentUser ?? null;
   const discount = product.originalPrice ? Math.max(1, Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)) : 0;
+  const wishlist = useQuery({ queryKey: ["wishlist"], queryFn: () => getWishlist(user!), enabled: Boolean(user), staleTime: 30_000 });
+  const saved = Boolean(wishlist.data?.items.some((item) => item.productId === product.id));
+  const toggleWishlist = useMutation({
+    mutationFn: () => saved ? removeWishlistItem(user!, product.id) : addWishlistItem(user!, product.id),
+    onSuccess: (data) => queryClient.setQueryData(["wishlist"], data)
+  });
+
+  function onWishlist(event: GestureResponderEvent) {
+    event.stopPropagation();
+    if (!user) {
+      router.push("/auth" as never);
+      return;
+    }
+    if (!toggleWishlist.isPending) toggleWishlist.mutate();
+  }
+
   return (
     <Pressable accessibilityRole="button" onPress={() => router.push(`/product/${product.slug || product.id}` as never)} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       <View style={styles.imageWrap}>
         <Image accessibilityLabel={product.title} resizeMode="cover" source={{ uri: product.image || fallbackImage }} style={styles.image} />
         <View style={styles.topBadge}>{discount ? <Text style={styles.discountText}>-{discount}%</Text> : <Text style={styles.verifiedText}>VERIFIED</Text>}</View>
-        <View style={styles.heart}><Ionicons color={colors.accent} name="heart-outline" size={18} /></View>
+        <Pressable accessibilityLabel={`${saved ? "Remove" : "Save"} ${product.title} ${saved ? "from" : "to"} wishlist`} accessibilityRole="button" disabled={toggleWishlist.isPending} onPress={onWishlist} style={[styles.heart, saved && styles.heartActive, toggleWishlist.isPending && styles.heartBusy]}>
+          <Ionicons color={saved ? colors.surface : colors.accent} name={saved ? "heart" : "heart-outline"} size={18} />
+        </Pressable>
       </View>
       <View style={styles.body}>
         {product.badge ? <Text numberOfLines={1} style={styles.badge}>{product.badge}</Text> : null}
@@ -38,6 +62,8 @@ const styles = StyleSheet.create({
   discountText: { color: colors.surface, fontSize: 9, fontWeight: "900" },
   verifiedText: { color: colors.surface, fontSize: 8, fontWeight: "900" },
   heart: { alignItems: "center", backgroundColor: "rgba(255,255,255,0.96)", borderColor: "#fff", borderRadius: radius.pill, borderWidth: 1, height: 32, justifyContent: "center", position: "absolute", right: 7, top: 7, width: 32 },
+  heartActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  heartBusy: { opacity: 0.65 },
   body: { flex: 1, padding: spacing.sm },
   badge: { alignSelf: "flex-start", backgroundColor: colors.accentSoft, borderRadius: 3, color: colors.accent, fontSize: 8, fontWeight: "900", marginBottom: 6, paddingHorizontal: 5, paddingVertical: 3, textTransform: "uppercase" },
   title: { color: colors.text, fontSize: 13, fontWeight: "800", lineHeight: 18, minHeight: 36 },
