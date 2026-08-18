@@ -12,6 +12,7 @@ const money = (amountMinor: bigint, currency = "BDT") => ({ amountMinor: amountM
 const requestHash = (input: unknown) => createHash("sha256").update(JSON.stringify(input)).digest("hex");
 const elevated = (session: Session) => session.principal.roles.some((role) => ["FINANCE_ADMIN", "OPERATIONS_ADMIN", "SUPER_ADMIN"].includes(role));
 const deliveryOperator = (session: Session) => session.principal.roles.some((role) => ["OPERATIONS_ADMIN", "SUPER_ADMIN"].includes(role));
+const customerCancellationWindowMs = 30 * 60_000;
 
 function requirePermission(session: Session, permission: string) {
   if (session.status !== "ACTIVE" || !session.permissions.includes(permission)) throw new ApiProblem(403, "OPERATION_FORBIDDEN", "You cannot perform this operation");
@@ -47,14 +48,16 @@ export class OperationsService {
   async updateDeliverySettings(session: Session, input: DeliverySettingsInput) { requirePermission(session, "settings:manage"); const current = await this.deliverySettingsRow(); if (current.version !== input.expectedVersion) throw new ApiProblem(409, "DELIVERY_SETTINGS_VERSION_CONFLICT", "Delivery settings changed; refresh and try again"); const updated = await this.client.deliverySetting.update({ where: { key: "default" }, data: { standardChargeMinor: BigInt(input.standardChargeMinor), freeDeliveryEnabled: input.freeDeliveryEnabled, freeDeliveryThresholdMinor: BigInt(input.freeDeliveryThresholdMinor), baseDivision: input.baseLocation.division, baseDistrict: input.baseLocation.district, baseUpazila: input.baseLocation.upazila, baseUnion: input.baseLocation.union, sameUnionFeeMinor: BigInt(input.zoneFees.sameUnionMinor), sameUpazilaFeeMinor: BigInt(input.zoneFees.sameUpazilaMinor), sameDistrictFeeMinor: BigInt(input.zoneFees.sameDistrictMinor), outsideDistrictFeeMinor: BigInt(input.zoneFees.outsideDistrictMinor), estimatedMinDays: input.estimatedDays.min, estimatedMaxDays: input.estimatedDays.max, version: { increment: 1 } } }); await this.client.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "admin", action: "delivery.settings.updated", resourceType: "delivery_settings", resourceId: "default", before: json(this.deliverySettingsDto(current)), after: json(this.deliverySettingsDto(updated)) } }); return this.deliverySettingsDto(updated); }
 
   async cancelOrder(session: Session, orderId: string, input: CancelOrder, key: string, correlationId?: string) {
-    requirePermission(session, "orders:manage");
     const adminCancellation = session.permissions.includes("admin:manage");
+    requirePermission(session, adminCancellation ? "orders:manage" : "orders:read");
     const scope = `order-cancel:${session.principal.userId}:${orderId}`;
     return withSerializableTransaction(this.client, async (transaction) => {
       const prior = await replay(transaction, scope, key, input); if (prior.response) return prior.response;
       const order = await transaction.order.findFirst({ where: { id: orderId, ...(adminCancellation ? {} : { userId: session.principal.userId }) }, include: { vendorOrders: true, payments: { orderBy: { createdAt: "desc" }, take: 1 }, reservations: { where: { status: "ACTIVE" } } } });
       if (!order) throw new ApiProblem(404, "ORDER_NOT_FOUND", "Order not found");
       if (order.version !== input.expectedVersion) throw new ApiProblem(409, "ORDER_VERSION_CONFLICT", "Order changed; refresh and try again");
+      const placedAt = order.placedAt ?? order.createdAt;
+      if (!adminCancellation && placedAt.getTime() + customerCancellationWindowMs < Date.now()) throw new ApiProblem(409, "ORDER_CANCELLATION_WINDOW_EXPIRED", "Orders can only be cancelled within 30 minutes of placement");
       if (!["PENDING_PAYMENT", "CONFIRMED", "PROCESSING"].includes(order.status) || order.vendorOrders.some((item) => !["PLACED", "ACCEPTED", "PROCESSING"].includes(item.status))) throw new ApiProblem(409, "ORDER_CANCELLATION_NOT_ALLOWED", "Order can no longer be cancelled");
       for (const reservation of order.reservations) {
         const inventory = await transaction.inventoryItem.findUniqueOrThrow({ where: { variantId: reservation.variantId } });
