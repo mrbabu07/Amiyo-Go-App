@@ -1,15 +1,13 @@
-import { DynamicColorIOS, Platform, PlatformColor } from "react-native";
+import { DynamicColorIOS, Platform } from "react-native";
 
-export const lightPalette = { background: "#f7f8fa", surface: "#ffffff", primary: "#1e7098", primaryDark: "#15506e", primarySoft: "#eaf4f8", accent: "#f57224", accentSoft: "#fff1e8", navy: "#1a1a2e", text: "#1a1a2e", muted: "#64748b", border: "#dde3ea", danger: "#dc2626", warning: "#d97706", success: "#059669" } as const;
-export const darkPalette = { background: "#0f172a", surface: "#111827", primary: "#38bdf8", primaryDark: "#7dd3fc", primarySoft: "#172b3a", accent: "#fb923c", accentSoft: "#3a2418", navy: "#090f1d", text: "#f8fafc", muted: "#94a3b8", border: "#334155", danger: "#f87171", warning: "#fbbf24", success: "#34d399" } as const;
+export const lightPalette = { background: "#FBF4EC", surface: "#FFFDF9", primary: "#C1614A", primaryDark: "#3A2318", primarySoft: "#F7E8D9", accent: "#E0B98F", accentSoft: "#F2D8B7", navy: "#3A2318", text: "#3A2318", muted: "#7B6256", border: "#E8D7C5", danger: "#B42318", warning: "#B7791F", success: "#2F7D4E" } as const;
+export const darkPalette = { background: "#1B100B", surface: "#2A1811", primary: "#E07B63", primaryDark: "#FBF4EC", primarySoft: "#3A2318", accent: "#E0B98F", accentSoft: "#5B3A2D", navy: "#24130D", text: "#FBF4EC", muted: "#D8C4B3", border: "#5B3A2D", danger: "#FF8A80", warning: "#E0B98F", success: "#6FCF97" } as const;
 
 type PaletteKey = keyof typeof lightPalette;
-const androidSystemNames: Partial<Record<PaletteKey, string>> = { background: "?android:attr/colorBackground", surface: "?android:attr/colorBackgroundFloating", text: "?android:attr/textColorPrimary", muted: "?android:attr/textColorSecondary", border: "?android:attr/textColorTertiary" };
 
 const adaptive = (key: PaletteKey): string => {
   if (Platform.OS === "web") return `var(--amiyo-${key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}, ${lightPalette[key]})`;
   if (Platform.OS === "ios") return DynamicColorIOS({ light: lightPalette[key], dark: darkPalette[key] }) as unknown as string;
-  if (Platform.OS === "android" && androidSystemNames[key]) return PlatformColor(androidSystemNames[key]) as unknown as string;
   return lightPalette[key];
 };
 
