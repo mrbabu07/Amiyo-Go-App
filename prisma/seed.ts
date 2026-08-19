@@ -82,6 +82,10 @@ const ids = {
   , paymentVerification: "00000000-0000-4000-8000-000000003001"
   , marketplaceVoucher: "00000000-0000-4000-8000-000000003101"
   , flashSale: "00000000-0000-4000-8000-000000003201"
+  , commissionGlobal: "00000000-0000-4000-8000-000000003301"
+  , commissionShopIntro: "00000000-0000-4000-8000-000000003302"
+  , commissionCategory: "00000000-0000-4000-8000-000000003303"
+  , commissionProduct: "00000000-0000-4000-8000-000000003304"
 };
 
 async function seedAccessControl() {
@@ -266,6 +270,14 @@ async function seedDemoCatalog() {
   await prisma.voucher.upsert({ where: { id: ids.marketplaceVoucher }, update: { code: "AMIYO20", ownerType: "platform", ownerId: "marketplace", rules: { discountType: "PERCENT", value: 20, minimumSpendMinor: "100000", usageLimit: 500 }, startsAt: marketingStartsAt, endsAt: marketingEndsAt, active: true }, create: { id: ids.marketplaceVoucher, code: "AMIYO20", ownerType: "platform", ownerId: "marketplace", rules: { discountType: "PERCENT", value: 20, minimumSpendMinor: "100000", usageLimit: 500 }, startsAt: marketingStartsAt, endsAt: marketingEndsAt, active: true } });
   await prisma.flashSale.upsert({ where: { id: ids.flashSale }, update: { name: "Amiyo Mega Flash Hour", status: "active", startsAt: marketingStartsAt, endsAt: marketingEndsAt }, create: { id: ids.flashSale, name: "Amiyo Mega Flash Hour", status: "active", startsAt: marketingStartsAt, endsAt: marketingEndsAt } });
   for (const item of [{ productId: ids.product, priceMinor: 199000n, quantityLimit: 25 }, { productId: "00000000-0000-4000-8000-000000000410", priceMinor: 149000n, quantityLimit: 40 }]) await prisma.flashSaleProduct.upsert({ where: { flashSaleId_productId: { flashSaleId: ids.flashSale, productId: item.productId } }, update: { priceMinor: item.priceMinor, quantityLimit: item.quantityLimit }, create: { flashSaleId: ids.flashSale, ...item } });
+  const commissionStartsAt = new Date("2026-01-01T00:00:00.000Z");
+  const commissionSeeds = [
+    { id: ids.commissionGlobal, vendorId: null, shopId: null, categoryId: null, productId: null, rateBps: 600, fixedMinor: 0n },
+    { id: ids.commissionShopIntro, vendorId: null, shopId: ids.shop, categoryId: null, productId: null, rateBps: 300, fixedMinor: 0n },
+    { id: ids.commissionCategory, vendorId: null, shopId: null, categoryId: categoryIds.get("mobiles")!, productId: null, rateBps: 800, fixedMinor: 0n },
+    { id: ids.commissionProduct, vendorId: null, shopId: null, categoryId: null, productId: ids.product, rateBps: 200, fixedMinor: 0n }
+  ];
+  for (const rule of commissionSeeds) await prisma.commissionRule.upsert({ where: { id: rule.id }, update: { vendorId: rule.vendorId, shopId: rule.shopId, categoryId: rule.categoryId, productId: rule.productId, rateBps: rule.rateBps, fixedMinor: rule.fixedMinor, currency: "BDT", effectiveFrom: commissionStartsAt, effectiveTo: null }, create: { ...rule, currency: "BDT", effectiveFrom: commissionStartsAt } });
 
   const moderationProducts = [
     { suffix: "433", variant: "533", inventory: "633", name: "Vendor Submitted Denim Jacket", slug: "vendor-submitted-denim-jacket", sku: "DHAKA-DENIM-001", status: "SUBMITTED" as const, categoryId: categoryIds.get("mens-clothing")!, priceMinor: 249000n, image: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=900&h=900&fit=crop" },
