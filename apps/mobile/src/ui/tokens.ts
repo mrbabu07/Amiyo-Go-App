@@ -1,7 +1,7 @@
 import { DynamicColorIOS, Platform } from "react-native";
 
-export const lightPalette = { background: "#FBF4EC", surface: "#FFFDF9", primary: "#C1614A", primaryDark: "#3A2318", primarySoft: "#F7E8D9", accent: "#E0B98F", accentSoft: "#F2D8B7", navy: "#3A2318", text: "#3A2318", muted: "#7B6256", border: "#E8D7C5", danger: "#B42318", warning: "#B7791F", success: "#2F7D4E" } as const;
-export const darkPalette = { background: "#1B100B", surface: "#2A1811", primary: "#E07B63", primaryDark: "#FBF4EC", primarySoft: "#3A2318", accent: "#E0B98F", accentSoft: "#5B3A2D", navy: "#24130D", text: "#FBF4EC", muted: "#D8C4B3", border: "#5B3A2D", danger: "#FF8A80", warning: "#E0B98F", success: "#6FCF97" } as const;
+export const lightPalette = { background: "#FBFCFC", surface: "#FFFFFF", primary: "#14746F", primaryDark: "#0F3D3E", primarySoft: "#E6F2EE", accent: "#8EB69B", accentSoft: "#E8F1EA", navy: "#0F3D3E", text: "#0F3D3E", muted: "#52706B", border: "#D8E8E1", danger: "#B42318", warning: "#B7791F", success: "#14746F" } as const;
+export const darkPalette = { background: "#071F20", surface: "#0F3D3E", primary: "#5FB3AB", primaryDark: "#FBFCFC", primarySoft: "#123536", accent: "#8EB69B", accentSoft: "#1D5552", navy: "#061A1B", text: "#FBFCFC", muted: "#B9D0C3", border: "#235C59", danger: "#FF8A80", warning: "#E0B98F", success: "#8EB69B" } as const;
 
 type PaletteKey = keyof typeof lightPalette;
 

@@ -1,4 +1,4 @@
-﻿# Amiyo-Go Stitch AI Premium Design Documentation
+# Amiyo-Go Stitch AI Premium Design Documentation
 
 Version: 1.0  
 Owner: Amiyo-Go  
@@ -7,7 +7,7 @@ Platform: Mobile-first Expo React Native app with responsive web support
 
 ## 1. Design Goal
 
-Create a premium Bangladeshi marketplace experience for Amiyo-Go that feels warm, trusted, modern, and conversion-focused. The UI should carry the shopping energy of Cartup/Daraz-style ecommerce, but with a softer boutique identity: clean spacing, polished cards, strong product imagery, elegant brown/terracotta accents, and clear operational dashboards for admin and sellers.
+Create a premium Bangladeshi marketplace experience for Amiyo-Go that feels warm, trusted, modern, and conversion-focused. The UI should carry the shopping energy of Cartup/Daraz-style ecommerce, but with a softer boutique identity: clean spacing, polished cards, strong product imagery, elegant deep teal/sage accents, and clear operational dashboards for admin and sellers.
 
 The app must feel:
 
@@ -23,35 +23,35 @@ Use these exact core colors throughout the design system.
 
 | Token | Hex | RGB | Usage |
 | --- | --- | --- | --- |
-| `creamCanvas` | `#FBF4EC` | `251, 244, 236` | App background, soft page canvas, section wash |
-| `espressoText` | `#3A2318` | `58, 35, 24` | Main text, premium dark surfaces, invoice header |
-| `terracottaPrimary` | `#C1614A` | `193, 97, 74` | Primary CTA, sale badges, active tabs, highlights |
-| `sandGold` | `#E0B98F` | `224, 185, 143` | Secondary accent, cards, borders, premium dividers |
+| `porcelainCanvas` | `#FBFCFC` | `251, 252, 252` | App background, soft page canvas, section wash |
+| `deepTealText` | `#0F3D3E` | `15, 61, 62` | Main text, premium dark surfaces, invoice header |
+| `marketTealPrimary` | `#14746F` | `20, 116, 111` | Primary CTA, sale badges, active tabs, highlights |
+| `sageMintAccent` | `#8EB69B` | `142, 182, 155` | Secondary accent, cards, borders, premium dividers |
 
 ### Extended Supporting Palette
 
 | Token | Hex | Usage |
 | --- | --- | --- |
-| `paperSurface` | `#FFFDF9` | Cards, sheets, form panels |
-| `warmSurface` | `#F7E8D9` | Secondary card backgrounds |
-| `deepEspresso` | `#24130D` | Dark nav, admin sidebar, footer |
-| `copperHover` | `#A84F3C` | Pressed/hover state for primary buttons |
-| `goldSoft` | `#F2D8B7` | Chips, category pills, empty states |
-| `successLeaf` | `#2F7D4E` | Success states, paid status, delivered |
+| `paperSurface` | `#FFFFFF` | Cards, sheets, form panels |
+| `aquaMistSurface` | `#E6F2EE` | Secondary card backgrounds |
+| `deepTealShell` | `#071F20` | Dark nav, admin sidebar, footer |
+| `tealHover` | `#0F5F5B` | Pressed/hover state for primary buttons |
+| `mintSoft` | `#E8F1EA` | Chips, category pills, empty states |
+| `successLeaf` | `#14746F` | Success states, paid status, delivered |
 | `warningAmber` | `#B7791F` | Pending, COD, payout review |
 | `dangerRose` | `#B42318` | Errors, rejected, cancel actions |
-| `mutedBrown` | `#7B6256` | Secondary text |
-| `lineWarm` | `#E8D7C5` | Borders and separators |
+| `mutedTeal` | `#52706B` | Secondary text |
+| `lineMint` | `#D8E8E1` | Borders and separators |
 
 ### Color Usage Rules
 
-- App/page background should normally be `#FBF4EC`.
-- Main body text should be `#3A2318`.
-- Primary action buttons should use `#C1614A` with white text.
-- Premium highlights, badges, dividers, and subtle card accents should use `#E0B98F`.
+- App/page background should normally be `#FBFCFC`.
+- Main body text should be `#0F3D3E`.
+- Primary action buttons should use `#14746F` with white text.
+- Premium highlights, badges, dividers, and subtle card accents should use `#8EB69B`.
 - Avoid cold blue as a primary marketplace color; reserve blue only for neutral system links if unavoidable.
-- Avoid pure black. Use espresso tones instead.
-- Use dark espresso surfaces for admin/vendor command areas, but keep form cards cream/paper for readability.
+- Avoid pure black. Use deep teal tones instead.
+- Use dark teal surfaces for admin/vendor command areas, but keep form cards cream/paper for readability.
 
 ## 3. Typography
 
@@ -107,7 +107,7 @@ Use the project font direction:
 - Category chips: pill radius.
 - Dashboard panels: `20-24px` radius.
 - Bottom sheets/modals: `24px` top radius.
-- Use warm soft shadows: `rgba(58,35,24,0.10)` not black shadows.
+- Use soft teal-tinted shadows: `rgba(15,61,62,0.10)` not black shadows.
 
 ## 5. Core App Shell
 
@@ -132,7 +132,7 @@ Mobile tabs:
 
 Rules:
 
-- Active tab uses terracotta icon and subtle gold/cream pill.
+- Active tab uses teal icon and subtle mint/porcelain pill.
 - Cart can be a floating mini button if bottom nav is full.
 - Do not hide wishlist inside account only.
 
@@ -140,7 +140,7 @@ Rules:
 
 - Mobile must not use a wide desktop sidebar.
 - Use a top command bar and scrollable module chips.
-- Desktop can use espresso sidebar with warm active highlight.
+- Desktop can use deep teal sidebar with warm active highlight.
 - Important admin actions should stay visible: Orders, Products, Vendors, Payouts, Commission, Notifications, Invoices.
 
 ## 6. Component Library
@@ -154,40 +154,40 @@ Must include:
 - Discount badge top-left.
 - Rating + sold count.
 - Shop name or verified seller line.
-- Price in terracotta.
+- Price in rich teal.
 - Compare-at price muted with strikethrough.
 - Quick add/cart button.
 - Pressing card body opens product details; pressing heart toggles wishlist only.
 
 Visual style:
 
-- Surface: `#FFFDF9`.
-- Border: `#E8D7C5`.
+- Surface: `#FFFFFF`.
+- Border: `#D8E8E1`.
 - Radius: `20px`.
 - Shadow: soft warm shadow.
-- Sale badge: terracotta background, white text.
+- Sale badge: rich teal background, white text.
 
 ### Category Card
 
 - Use icon/image tile with cream/gold background.
 - Main category cards should have subcategory count.
 - Dropdown should show subcategories in grouped columns on desktop and accordion on mobile.
-- Active/hover uses `#C1614A` text and `#F2D8B7` background.
+- Active/hover uses `#14746F` text and `#E8F1EA` background.
 
 ### Buttons
 
 | Type | Background | Text | Usage |
 | --- | --- | --- | --- |
-| Primary | `#C1614A` | White | Buy now, checkout, save, approve |
-| Secondary | `#E0B98F` | `#3A2318` | Filters, alternate actions |
-| Ghost | Transparent | `#3A2318` | Cancel, tertiary actions |
+| Primary | `#14746F` | White | Buy now, checkout, save, approve |
+| Secondary | `#8EB69B` | `#0F3D3E` | Filters, alternate actions |
+| Ghost | Transparent | `#0F3D3E` | Cancel, tertiary actions |
 | Danger | `#B42318` | White | Reject, remove, delete |
 
 ### Forms
 
 - Labels above fields, never placeholder-only.
 - Inputs use paper background with warm border.
-- Focus border: terracotta.
+- Focus border: rich teal.
 - Error text: dangerRose.
 - Seller registration should feel like a guided onboarding wizard with progress.
 
@@ -208,7 +208,7 @@ Goal: premium marketplace landing page.
 Sections:
 
 1. Header with search, voice search, location, wishlist, cart.
-2. Hero banner with warm cream + terracotta gradient, marketplace offer, CTA.
+2. Hero banner with warm porcelain + teal gradient, marketplace offer, CTA.
 3. Main categories with subcategory dropdown/accordion.
 4. Flash deals countdown.
 5. Grocery/fresh picks.
@@ -478,21 +478,21 @@ Dark mode should keep the same brand warmth.
 
 | Token | Dark Value |
 | --- | --- |
-| Background | `#1B100B` |
-| Surface | `#2A1811` |
-| Elevated | `#3A2318` |
-| Text | `#FBF4EC` |
-| Muted | `#D8C4B3` |
-| Primary | `#E07B63` |
-| Accent | `#E0B98F` |
-| Border | `#5B3A2D` |
+| Background | `#071F20` |
+| Surface | `#0F3D3E` |
+| Elevated | `#0F3D3E` |
+| Text | `#FBFCFC` |
+| Muted | `#B9D0C3` |
+| Primary | `#5FB3AB` |
+| Accent | `#8EB69B` |
+| Border | `#235C59` |
 
 Rules:
 
 - Do not invert into cold gray/blue.
-- Keep terracotta CTAs.
+- Keep rich teal CTAs.
 - Product images remain bright.
-- Admin dark shell can be espresso with gold active states.
+- Admin dark shell can be deep teal with sage active states.
 
 ## 9. Motion and Interaction
 
@@ -507,7 +507,7 @@ Rules:
 ## 10. Accessibility
 
 - Minimum tap target: `44x44`.
-- Text contrast must be checked, especially terracotta on cream.
+- Text contrast must be checked, especially teal on porcelain.
 - Do not put tiny light text on gold.
 - Every icon-only button must have an accessible label.
 - Product cards cannot nest button inside button.
@@ -518,7 +518,7 @@ Rules:
 Use this prompt in Stitch AI when generating screens:
 
 ```text
-Design a premium mobile-first marketplace app for Amiyo-Go using a warm Bangladeshi ecommerce visual identity. Use #FBF4EC as the cream background, #3A2318 as espresso text/dark shell, #C1614A as terracotta primary CTA, and #E0B98F as sand-gold accent. The style should feel like a polished Cartup/Daraz-inspired shopping app but more boutique, warm, elegant, and trustworthy. Use rounded product cards, strong product imagery, clean ecommerce hierarchy, visible wishlist/cart/search/voice search, main and subcategory navigation, professional order tracking, premium invoices, seller dashboards, admin finance controls, commission rules, and payout workflows. Make every screen responsive for 360px mobile first and scalable to tablet/web.
+Design a premium mobile-first marketplace app for Amiyo-Go using a fresh premium Bangladeshi ecommerce visual identity. Use #FBFCFC as the porcelain background, #0F3D3E as deep teal text/dark shell, #14746F as rich teal primary CTA, and #8EB69B as sage mint accent. The style should feel like a polished Cartup/Daraz-inspired shopping app but more boutique, fresh, elegant, and trustworthy. Use rounded product cards, strong product imagery, clean ecommerce hierarchy, visible wishlist/cart/search/voice search, main and subcategory navigation, professional order tracking, premium invoices, seller dashboards, admin finance controls, commission rules, and payout workflows. Make every screen responsive for 360px mobile first and scalable to tablet/web.
 ```
 
 ## 12. Screen Generation Checklist
@@ -534,7 +534,7 @@ Before accepting any Stitch AI output, confirm:
 - Invoice is printable and beautiful.
 - Vendor screens include product, order, payout, and seller registration flows.
 - Admin screens include orders, invoice, commission, payout, vendors, notifications, and queues.
-- Buttons and cards use warm ecommerce styling.
+- Buttons and cards use fresh premium ecommerce styling.
 - No nested button/pressable issues.
 - Empty, loading, error, and success states are designed.
 
@@ -544,17 +544,17 @@ Recommended mapping for `apps/mobile/src/ui/tokens.ts`:
 
 ```ts
 export const lightPalette = {
-  background: "#FBF4EC",
-  surface: "#FFFDF9",
-  primary: "#C1614A",
-  primaryDark: "#3A2318",
-  primarySoft: "#F7E8D9",
-  accent: "#E0B98F",
-  accentSoft: "#F2D8B7",
-  navy: "#3A2318",
-  text: "#3A2318",
-  muted: "#7B6256",
-  border: "#E8D7C5",
+  background: "#FBFCFC",
+  surface: "#FFFFFF",
+  primary: "#14746F",
+  primaryDark: "#0F3D3E",
+  primarySoft: "#E6F2EE",
+  accent: "#8EB69B",
+  accentSoft: "#E8F1EA",
+  navy: "#0F3D3E",
+  text: "#0F3D3E",
+  muted: "#52706B",
+  border: "#D8E8E1",
   danger: "#B42318",
   warning: "#B7791F",
   success: "#2F7D4E"
