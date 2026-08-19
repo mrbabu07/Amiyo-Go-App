@@ -1,4 +1,40 @@
-import { useQuery } from "@tanstack/react-query"; import { useLocalSearchParams } from "expo-router"; import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from "react-native"; import { ModuleCard } from "../../ui/ModuleCard"; import { Screen } from "../../ui/Screen"; import { colors, radius, spacing } from "../../ui/tokens"; import { firebaseAuth } from "../auth/firebase"; import { getInvoice } from "./orders.api";
-export function InvoiceScreen() { const { id } = useLocalSearchParams<{ id: string }>(); const user = firebaseAuth?.currentUser ?? null; const invoice = useQuery({ queryKey: ["invoice", id], queryFn: () => getInvoice(user!, id), enabled: Boolean(user && id) }); if (invoice.isLoading) return <Screen title="Invoice"><ActivityIndicator color={colors.primary} /></Screen>; return <Screen eyebrow="RECEIPT" title={invoice.data?.number || "Invoice"} description={invoice.data ? `Issued ${new Date(invoice.data.issuedAt).toLocaleDateString()}` : "Could not load invoice"}>{invoice.data ? <><ModuleCard title={invoice.data.order.orderNumber} meta={invoice.data.order.status}><Row label="Subtotal" value={money(invoice.data.order.subtotal.amountMinor)} /><Row label="Discount" value={`-${money(invoice.data.order.discount.amountMinor)}`} /><Row label="Delivery" value={money(invoice.data.order.delivery.amountMinor)} /><Row label="Tax" value={money(invoice.data.order.tax.amountMinor)} /><View style={styles.divider} /><Row label="Total" value={money(invoice.data.order.total.amountMinor)} strong /></ModuleCard>{invoice.data.order.vendorOrders.map((vendor) => <ModuleCard key={vendor.id} title={`${vendor.items.length} seller item(s)`} meta={vendor.status}>{vendor.items.map((item) => <Text key={item.id} style={styles.item}>{item.productName} × {item.quantity} · {money(item.lineTotal.amountMinor)}</Text>)}</ModuleCard>)}{invoice.data.storageUrl ? <Pressable onPress={() => Linking.openURL(invoice.data!.storageUrl!)} style={styles.button}><Text style={styles.buttonText}>Open PDF invoice</Text></Pressable> : null}</> : null}</Screen>; }
-function money(value: string) { return `৳${(Number(value) / 100).toLocaleString("en-BD")}`; } function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) { return <View style={styles.row}><Text style={[styles.label, strong && styles.strong]}>{label}</Text><Text style={[styles.value, strong && styles.strong]}>{value}</Text></View>; }
-const styles = StyleSheet.create({ row: { flexDirection: "row", justifyContent: "space-between" }, label: { color: colors.muted }, value: { color: colors.text }, strong: { fontSize: 17, fontWeight: "700" }, divider: { backgroundColor: colors.border, height: 1, marginVertical: spacing.sm }, item: { color: colors.text, lineHeight: 21 }, button: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, minHeight: 46, justifyContent: "center" }, buttonText: { color: "#fff", fontWeight: "700" } });
+import { Ionicons } from "@expo/vector-icons";
+import { useQuery } from "@tanstack/react-query";
+import { useLocalSearchParams } from "expo-router";
+import { ActivityIndicator, Linking, Platform, Pressable, Share, StyleSheet, Text, View } from "react-native";
+import { Screen } from "../../ui/Screen";
+import { colors, radius, spacing } from "../../ui/tokens";
+import { firebaseAuth } from "../auth/firebase";
+import { OrderInvoiceDocument, useInvoicePrintStyles } from "./components/OrderInvoiceDocument";
+import { getInvoice } from "./orders.api";
+
+const printId = "customer-print-invoice";
+
+export function InvoiceScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const user = firebaseAuth?.currentUser ?? null;
+  const invoice = useQuery({ queryKey: ["invoice", id], queryFn: () => getInvoice(user!, id), enabled: Boolean(user && id) });
+  useInvoicePrintStyles(printId);
+
+  async function printInvoice() {
+    if (!invoice.data) return;
+    if (Platform.OS === "web") { window.print(); return; }
+    if (invoice.data.storageUrl) await Linking.openURL(invoice.data.storageUrl);
+    else await Share.share({ title: invoice.data.number, message: `${invoice.data.number}\nOrder ${invoice.data.order.orderNumber}\nTotal ${invoice.data.order.total.currency} ${Number(invoice.data.order.total.amountMinor) / 100}` });
+  }
+
+  if (invoice.isLoading) return <Screen title="Invoice"><ActivityIndicator color={colors.primary} /></Screen>;
+  if (!invoice.data) return <Screen eyebrow="RECEIPT" title="Invoice unavailable" description="We could not load this invoice right now."><Text style={styles.error}>{invoice.error?.message ?? "Could not load invoice"}</Text></Screen>;
+
+  return <Screen eyebrow="RECEIPT" title={invoice.data.number} description={`Issued ${new Date(invoice.data.issuedAt).toLocaleDateString("en-BD")} with ${invoice.data.order.vendorOrders.length} seller package split.`}>
+    <View style={styles.actions}><Pressable onPress={printInvoice} style={styles.print}><Ionicons color="#fff" name="print-outline" size={18} /><Text style={styles.printText}>{Platform.OS === "web" ? "Print / Save PDF" : invoice.data.storageUrl ? "Open PDF invoice" : "Share invoice"}</Text></Pressable></View>
+    <OrderInvoiceDocument invoiceNumber={invoice.data.number} issuedAt={invoice.data.issuedAt} nativeID={printId} order={invoice.data.order} />
+  </Screen>;
+}
+
+const styles = StyleSheet.create({
+  actions: { alignItems: "flex-end" },
+  print: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, flexDirection: "row", gap: 7, minHeight: 44, paddingHorizontal: spacing.lg },
+  printText: { color: "#fff", fontWeight: "700" },
+  error: { backgroundColor: "#fef2f2", borderRadius: radius.md, color: colors.danger, padding: spacing.md }
+});

@@ -8,7 +8,7 @@ import { OutboxRepository } from "../outbox/outbox.repository.js";
 import { synchronizeParentOrderStatus } from "./parent-status.service.js";
 
 const vendorOrderInclude = {
-  order: { include: { addresses: true, payments: { orderBy: { createdAt: "desc" as const }, take: 1 } } },
+  order: { include: { addresses: true, payments: { orderBy: { createdAt: "desc" as const }, take: 1 }, user: { include: { profile: true } } } },
   shop: true,
   vendor: true,
   items: true,
@@ -27,8 +27,13 @@ function shipmentDto(shipment: LoadedVendorOrder["shipments"][number] | undefine
 }
 
 function vendorOrderDto(row: LoadedVendorOrder) {
+  const deliveryAddress = row.order.addresses.find((address) => address.type === "delivery");
+  const payment = row.order.payments[0];
   return {
     id: row.id, orderId: row.orderId, orderNumber: row.order.orderNumber, vendorId: row.vendorId, shopId: row.shopId, shopName: row.shop.name, status: row.status,
+    customer: { displayName: row.order.user?.profile?.displayName ?? row.order.user?.normalizedEmail ?? row.order.user?.normalizedPhone ?? "Customer", email: row.order.user?.normalizedEmail ?? null, phone: row.order.user?.normalizedPhone ?? null },
+    deliveryAddress: deliveryAddress ? { recipientName: deliveryAddress.recipientName, phone: deliveryAddress.phone, line1: deliveryAddress.line1, line2: deliveryAddress.line2, division: deliveryAddress.division, district: deliveryAddress.district, upazila: deliveryAddress.upazila, unionName: deliveryAddress.unionName, postalCode: deliveryAddress.postalCode } : null,
+    payment: payment ? { provider: payment.provider, method: payment.method, status: payment.status, amount: money(payment.amountMinor, payment.currency), transactionId: payment.providerTransactionId, createdAt: payment.createdAt.toISOString() } : null,
     subtotal: money(row.subtotalMinor, row.order.currency), discount: money(row.discountMinor, row.order.currency), delivery: money(row.deliveryMinor, row.order.currency), total: money(row.totalMinor, row.order.currency), version: row.version, createdAt: row.createdAt.toISOString(),
     items: row.items.map((item) => ({ id: item.id, productId: item.productId, variantId: item.variantId, productName: item.productNameSnapshot, sku: item.skuSnapshot, attributes: item.attributesSnapshot as Record<string, unknown> | null, quantity: item.quantity, unitPrice: money(item.unitPriceMinor, item.currency), discount: money(item.discountMinor, item.currency), lineTotal: money(item.lineTotalMinor, item.currency) })),
     shipment: shipmentDto(row.shipments[0]), dispatchStatus: row.dispatches[0]?.status ?? null
@@ -114,9 +119,11 @@ export class OrderService {
   }
 
   async customerOrder(session: Session, id: string) {
-    const order = await this.client.order.findFirst({ where: { id, userId: session.principal.userId }, include: { vendorOrders: { include: { items: true } } } });
+    const order = await this.client.order.findFirst({ where: { id, userId: session.principal.userId }, include: { user: { include: { profile: true } }, addresses: true, payments: { orderBy: { createdAt: "desc" }, take: 1 }, vendorOrders: { include: { vendor: true, shop: true, items: true } } } });
     if (!order) throw new ApiProblem(404, "ORDER_NOT_FOUND", "Order not found");
-    return { id: order.id, orderNumber: order.orderNumber, status: order.status, subtotal: money(order.subtotalMinor, order.currency), discount: money(order.discountMinor, order.currency), delivery: money(order.deliveryMinor, order.currency), tax: money(order.taxMinor, order.currency), total: money(order.totalMinor, order.currency), version: order.version, createdAt: order.createdAt.toISOString(), vendorOrders: order.vendorOrders.map((vendor) => ({ id: vendor.id, vendorId: vendor.vendorId, shopId: vendor.shopId, status: vendor.status, subtotal: money(vendor.subtotalMinor, order.currency), discount: money(vendor.discountMinor, order.currency), delivery: money(vendor.deliveryMinor, order.currency), total: money(vendor.totalMinor, order.currency), commission: money(vendor.commissionMinor, order.currency), version: vendor.version, items: vendor.items.map((item) => ({ id: item.id, productId: item.productId, variantId: item.variantId, productName: item.productNameSnapshot, sku: item.skuSnapshot, attributes: item.attributesSnapshot as Record<string, unknown> | null, quantity: item.quantity, unitPrice: money(item.unitPriceMinor, item.currency), discount: money(item.discountMinor, item.currency), lineTotal: money(item.lineTotalMinor, item.currency) })) })) };
+    const deliveryAddress = order.addresses.find((address) => address.type === "delivery");
+    const payment = order.payments[0];
+    return { id: order.id, orderNumber: order.orderNumber, status: order.status, subtotal: money(order.subtotalMinor, order.currency), discount: money(order.discountMinor, order.currency), delivery: money(order.deliveryMinor, order.currency), tax: money(order.taxMinor, order.currency), total: money(order.totalMinor, order.currency), version: order.version, createdAt: order.createdAt.toISOString(), customer: { displayName: order.user?.profile?.displayName ?? order.user?.normalizedEmail ?? order.user?.normalizedPhone ?? "Customer", email: order.user?.normalizedEmail ?? null, phone: order.user?.normalizedPhone ?? null }, deliveryAddress: deliveryAddress ? { recipientName: deliveryAddress.recipientName, phone: deliveryAddress.phone, line1: deliveryAddress.line1, line2: deliveryAddress.line2, division: deliveryAddress.division, district: deliveryAddress.district, upazila: deliveryAddress.upazila, unionName: deliveryAddress.unionName, postalCode: deliveryAddress.postalCode } : null, payment: payment ? { provider: payment.provider, method: payment.method, status: payment.status, amount: money(payment.amountMinor, payment.currency), refunded: money(payment.refundedMinor, payment.currency), transactionId: payment.providerTransactionId, createdAt: payment.createdAt.toISOString() } : null, vendorOrders: order.vendorOrders.map((vendor) => ({ id: vendor.id, vendorId: vendor.vendorId, shopId: vendor.shopId, vendorName: vendor.vendor.displayName, shopName: vendor.shop.name, status: vendor.status, subtotal: money(vendor.subtotalMinor, order.currency), discount: money(vendor.discountMinor, order.currency), delivery: money(vendor.deliveryMinor, order.currency), total: money(vendor.totalMinor, order.currency), commission: money(vendor.commissionMinor, order.currency), version: vendor.version, items: vendor.items.map((item) => ({ id: item.id, productId: item.productId, variantId: item.variantId, productName: item.productNameSnapshot, sku: item.skuSnapshot, attributes: item.attributesSnapshot as Record<string, unknown> | null, quantity: item.quantity, unitPrice: money(item.unitPriceMinor, item.currency), discount: money(item.discountMinor, item.currency), lineTotal: money(item.lineTotalMinor, item.currency) })) })) };
   }
   async invoice(session: Session, id: string) {
     const detail = await this.customerOrder(session, id);

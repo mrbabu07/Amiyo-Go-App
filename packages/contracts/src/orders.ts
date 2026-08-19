@@ -27,6 +27,8 @@ export const vendorOrderSchema = z.object({
   id: uuidSchema,
   vendorId: uuidSchema,
   shopId: uuidSchema,
+  vendorName: z.string().optional(),
+  shopName: z.string().optional(),
   status: vendorOrderStatusSchema,
   subtotal: moneySchema,
   discount: moneySchema,
@@ -35,6 +37,28 @@ export const vendorOrderSchema = z.object({
   commission: moneySchema,
   version: versionSchema,
   items: z.array(orderItemSchema)
+});
+
+export const orderAddressSchema = z.object({
+  recipientName: z.string(),
+  phone: z.string(),
+  line1: z.string(),
+  line2: z.string().nullable(),
+  division: z.string(),
+  district: z.string(),
+  upazila: z.string().nullable(),
+  unionName: z.string().nullable(),
+  postalCode: z.string().nullable()
+});
+
+export const orderPaymentSchema = z.object({
+  provider: z.string(),
+  method: z.string(),
+  status: z.string(),
+  amount: moneySchema,
+  refunded: moneySchema.optional(),
+  transactionId: z.string().nullable(),
+  createdAt: timestampSchema
 });
 
 export const orderSchema = z.object({
@@ -48,6 +72,9 @@ export const orderSchema = z.object({
   total: moneySchema,
   version: versionSchema,
   createdAt: timestampSchema,
+  customer: z.object({ displayName: z.string(), email: z.string().nullable(), phone: z.string().nullable() }).optional(),
+  deliveryAddress: orderAddressSchema.nullable().optional(),
+  payment: orderPaymentSchema.nullable().optional(),
   vendorOrders: z.array(vendorOrderSchema)
 });
 
