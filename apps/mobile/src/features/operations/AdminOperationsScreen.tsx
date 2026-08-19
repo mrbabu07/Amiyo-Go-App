@@ -48,10 +48,10 @@ export function AdminOperationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  badge: { borderRadius: radius.pill, color: "#fff", fontSize: 12, fontWeight: "800", overflow: "hidden", paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+  badge: { borderRadius: radius.pill, color: "#fff", fontSize: 12, fontWeight: "600", overflow: "hidden", paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
   disabled: { opacity: 0.45 },
   dispatch: { borderTopColor: colors.border, borderTopWidth: 1, gap: spacing.sm, paddingTop: spacing.md },
-  dispatchTitle: { color: colors.text, fontSize: 16, fontWeight: "800" },
+  dispatchTitle: { color: colors.text, fontSize: 16, fontWeight: "600" },
   error: { color: colors.danger, lineHeight: 20 },
   failed: { backgroundColor: colors.danger },
   input: { borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, minHeight: 72, padding: spacing.sm, textAlignVertical: "top" },
@@ -59,8 +59,8 @@ const styles = StyleSheet.create({
   muted: { color: colors.muted, lineHeight: 20 },
   pending: { backgroundColor: colors.warning },
   primary: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.sm },
-  primaryText: { color: "#fff", fontWeight: "800" },
+  primaryText: { color: "#fff", fontWeight: "600" },
   row: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
   secondary: { alignItems: "center", borderColor: colors.primary, borderRadius: radius.md, borderWidth: 1, marginTop: spacing.sm, padding: spacing.sm },
-  secondaryText: { color: colors.primary, fontWeight: "800" }
+  secondaryText: { color: colors.primary, fontWeight: "600" }
 });

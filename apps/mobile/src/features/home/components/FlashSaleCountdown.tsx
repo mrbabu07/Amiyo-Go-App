@@ -20,6 +20,6 @@ export function FlashSaleCountdown({ endAt }: { endAt: string }) {
 const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: 5 },
   box: { alignItems: "center", backgroundColor: colors.surface, borderRadius: 5, minWidth: 38, paddingHorizontal: 7, paddingVertical: 6 },
-  value: { color: colors.navy, fontSize: 12, fontWeight: "900" },
-  label: { color: colors.muted, fontSize: 7, fontWeight: "800", marginTop: 1 }
+  value: { color: colors.navy, fontSize: 12, fontWeight: "700" },
+  label: { color: colors.muted, fontSize: 7, fontWeight: "600", marginTop: 1 }
 });

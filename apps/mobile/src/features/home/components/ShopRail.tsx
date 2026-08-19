@@ -13,6 +13,6 @@ const styles = StyleSheet.create({
   card: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: "row", gap: 12, minHeight: 112, padding: 14, width: 270 },
   logo: { borderRadius: radius.pill, height: 64, width: 64 },
   fallback: { alignItems: "center", backgroundColor: colors.navy, borderRadius: radius.pill, height: 64, justifyContent: "center", width: 64 },
-  initial: { color: colors.surface, fontSize: 25, fontWeight: "900" },
-  copy: { flex: 1 }, name: { color: colors.text, fontSize: 15, fontWeight: "900" }, description: { color: colors.muted, fontSize: 10, lineHeight: 14, marginTop: 4 }, count: { color: colors.primary, fontSize: 10, fontWeight: "900", marginTop: 7 }
+  initial: { color: colors.surface, fontSize: 25, fontWeight: "700" },
+  copy: { flex: 1 }, name: { color: colors.text, fontSize: 15, fontWeight: "700" }, description: { color: colors.muted, fontSize: 10, lineHeight: 14, marginTop: 4 }, count: { color: colors.primary, fontSize: 10, fontWeight: "700", marginTop: 7 }
 });

@@ -25,6 +25,6 @@ const styles = StyleSheet.create({
   item: { alignItems: "center", backgroundColor: colors.surface, borderColor: "#edf1f5", borderRadius: radius.md, borderWidth: 1, minHeight: 112, padding: 9, position: "relative", width: 104, ...shadow },
   pressed: { opacity: 0.9, transform: [{ translateY: 1 }] },
   icon: { alignItems: "center", borderRadius: radius.md, height: 54, justifyContent: "center", width: "100%" },
-  label: { color: colors.text, fontSize: 11, fontWeight: "900", lineHeight: 15, marginTop: 8, minHeight: 30, textAlign: "center" },
+  label: { color: colors.text, fontSize: 11, fontWeight: "700", lineHeight: 15, marginTop: 8, minHeight: 30, textAlign: "center" },
   arrow: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.pill, bottom: 6, height: 18, justifyContent: "center", position: "absolute", right: 6, width: 18 }
 });

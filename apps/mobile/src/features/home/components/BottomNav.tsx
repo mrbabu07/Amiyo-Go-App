@@ -33,5 +33,5 @@ const styles = StyleSheet.create({
   nav: { backgroundColor: colors.surface, borderTopColor: colors.border, borderTopWidth: 1, flexDirection: "row", minHeight: 66, paddingBottom: 4, ...Platform.select({ web: { boxShadow: "0 -4px 12px rgba(15,23,42,0.08)" }, default: { shadowColor: "#0f172a", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.08, shadowRadius: 12 } }) },
   item: { alignItems: "center", flex: 1, gap: 3, justifyContent: "center" },
   label: { color: colors.muted, fontSize: 9, fontWeight: "700" },
-  active: { color: colors.primary, fontWeight: "900" }
+  active: { color: colors.primary, fontWeight: "700" }
 });

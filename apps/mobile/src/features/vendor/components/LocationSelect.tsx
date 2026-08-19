@@ -101,8 +101,8 @@ const styles = StyleSheet.create({
   backdrop: { alignItems: "center", backgroundColor: "rgba(15,23,42,.48)", flex: 1, justifyContent: "center", padding: spacing.md },
   modal: { backgroundColor: colors.surface, borderRadius: radius.lg, maxHeight: "78%", maxWidth: 520, padding: spacing.lg, width: "100%" },
   modalHeader: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
-  modalEyebrow: { color: colors.primary, fontSize: 10, fontWeight: "900", letterSpacing: 0.8 },
-  modalTitle: { color: colors.text, fontSize: 20, fontWeight: "900", marginTop: 3 },
+  modalEyebrow: { color: colors.primary, fontSize: 10, fontWeight: "700", letterSpacing: 0.8 },
+  modalTitle: { color: colors.text, fontSize: 20, fontWeight: "700", marginTop: 3 },
   close: { alignItems: "center", backgroundColor: "#f3f4f6", borderRadius: radius.pill, height: 38, justifyContent: "center", width: 38 },
   search: { alignItems: "center", borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flexDirection: "row", gap: 8, marginTop: spacing.md, paddingHorizontal: 12 },
   searchInput: { color: colors.text, flex: 1, minHeight: 46, outlineStyle: "none" } as never,
@@ -110,6 +110,6 @@ const styles = StyleSheet.create({
   option: { alignItems: "center", borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: "row", minHeight: 48, paddingHorizontal: 10 },
   optionActive: { backgroundColor: colors.primarySoft, borderRadius: radius.sm },
   optionText: { color: colors.text, flex: 1, fontSize: 14 },
-  optionTextActive: { color: colors.primary, fontWeight: "800" },
+  optionTextActive: { color: colors.primary, fontWeight: "600" },
   empty: { color: colors.muted, padding: spacing.lg, textAlign: "center" }
 });

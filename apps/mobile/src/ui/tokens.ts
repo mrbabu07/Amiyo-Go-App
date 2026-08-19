@@ -17,3 +17,12 @@ export const colors = Object.fromEntries((Object.keys(lightPalette) as PaletteKe
 
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 };
 export const radius = { sm: 6, md: 8, lg: 12, xl: 16, pill: 999 };
+export const typography = {
+  fontFamily: Platform.select({
+    web: '"Quicksand", "Noto Serif", "Lora", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    default: "System"
+  }) as string,
+  serifFamily: Platform.select({ web: '"Lora", "Noto Serif", Georgia, serif', default: "serif" }) as string,
+  brandFamily: Platform.select({ web: '"Croissant One", "Lora", serif', default: "serif" }) as string,
+  weights: { regular: "400", medium: "500", semibold: "600", bold: "700" } as const
+};
