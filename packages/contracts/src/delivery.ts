@@ -52,7 +52,15 @@ export const customerOrderSummarySchema = z.object({
   status: parentOrderStatusSchema,
   total: moneySchema,
   createdAt: timestampSchema,
-  vendorOrderCount: z.number().int().positive()
+  vendorOrderCount: z.number().int().positive(),
+  itemCount: z.number().int().nonnegative(),
+  previewItems: z.array(z.object({
+    productId: uuidSchema,
+    name: z.string(),
+    sku: z.string(),
+    quantity: z.number().int().positive(),
+    thumbnailUrl: z.string().url().nullable()
+  }))
 });
 
 export const orderTrackingSchema = z.object({

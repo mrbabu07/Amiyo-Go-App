@@ -19,6 +19,7 @@ type LoadedVendorOrder = Prisma.VendorOrderGetPayload<{ include: typeof vendorOr
 
 const money = (amount: bigint, currency = "BDT") => ({ amountMinor: amount.toString(), currency });
 const json = (value: unknown) => JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+function mediaUrl(key: string | null | undefined) { if (!key) return null; if (/^https?:\/\//.test(key)) return key; const base = process.env.OBJECT_STORAGE_PUBLIC_URL?.replace(/\/$/, ""); return base ? `${base}/${key}` : null; }
 
 function shipmentDto(shipment: LoadedVendorOrder["shipments"][number] | undefined) {
   if (!shipment) return null;
@@ -108,8 +109,8 @@ export class OrderService {
   }
 
   async customerOrders(session: Session) {
-    const rows = await this.client.order.findMany({ where: { userId: session.principal.userId }, include: { _count: { select: { vendorOrders: true } } }, orderBy: { createdAt: "desc" }, take: 100 });
-    return rows.map((order) => ({ id: order.id, orderNumber: order.orderNumber, status: order.status, total: money(order.totalMinor, order.currency), createdAt: order.createdAt.toISOString(), vendorOrderCount: order._count.vendorOrders }));
+    const rows = await this.client.order.findMany({ where: { userId: session.principal.userId }, include: { _count: { select: { vendorOrders: true, items: true } }, items: { orderBy: { id: "asc" }, take: 4, include: { product: { select: { media: { orderBy: { displayOrder: "asc" }, take: 1 } } } } } }, orderBy: { createdAt: "desc" }, take: 100 });
+    return rows.map((order) => ({ id: order.id, orderNumber: order.orderNumber, status: order.status, total: money(order.totalMinor, order.currency), createdAt: order.createdAt.toISOString(), vendorOrderCount: order._count.vendorOrders, itemCount: order._count.items, previewItems: order.items.map((item) => ({ productId: item.productId, name: item.productNameSnapshot, sku: item.skuSnapshot, quantity: item.quantity, thumbnailUrl: mediaUrl(item.product.media[0]?.storageKey) })) }));
   }
 
   async customerOrder(session: Session, id: string) {
