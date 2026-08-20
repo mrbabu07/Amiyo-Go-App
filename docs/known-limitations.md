@@ -12,7 +12,7 @@
 
 - npm audit has moderate transitive findings in mobile/native tooling; critical/high findings are blocked by CI.
 - Failed BullMQ jobs are durable and have authenticated API/mobile retry controls, but complete queue metrics and alert dashboards are still required.
-- Expo Push delivery now uses transactional outbox/BullMQ jobs and native token registration; EAS/FCM/APNs credentials remain operator configuration. Automatic loyalty mutation, promotion stacking, automatic settlement, and provider-specific refunds remain disabled pending approved financial rules/providers.
+- Expo Push delivery now uses transactional outbox/BullMQ jobs and native token registration; EAS/FCM/APNs credentials remain operator configuration. Provider-specific refund evidence, promotion stacking, and payout settlement guardrails are implemented in `docs/business-rules-approval.md`; automatic loyalty mutation and live-provider payout/refund evidence still require finance/operator approval.
 - Firebase Storage signed uploads and worker content validation are implemented; production service-account IAM, bucket CORS/CDN policy, and final Sentry/OTel exporters still require operator configuration.
 - Current automated mobile coverage validates source semantics and web export; Android/iOS component and Maestro/Detox suites still require devices and staging identities.
 

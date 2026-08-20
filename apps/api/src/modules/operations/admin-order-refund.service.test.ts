@@ -18,7 +18,7 @@ function fixture(amountMinor = 100000n) {
   let orderUpdates = 0;
   const transaction = {
     idempotencyRecord: { findUnique: async () => null, create: async ({ data }: { data: { scope: string; key: string } }) => { idempotency.push(data); return data; } },
-    order: { findUnique: async () => ({ id: orderId, userId: "55555555-5555-4555-8555-555555555555", status: "DELIVERED", version: 3, payments: [{ id: "payment-1", amountMinor, refundedMinor: 0n, currency: "BDT", status: "CAPTURED", version: 1 }], vendorOrders: [{ vendorId: "vendor-1", totalMinor: 60000n }, { vendorId: "vendor-2", totalMinor: 40000n }] }), updateMany: async () => { orderUpdates += 1; return { count: 1 }; } },
+    order: { findUnique: async () => ({ id: orderId, userId: "55555555-5555-4555-8555-555555555555", status: "DELIVERED", version: 3, payments: [{ id: "payment-1", provider: "sslcommerz", method: "SSLCOMMERZ", amountMinor, refundedMinor: 0n, currency: "BDT", status: "CAPTURED", version: 1 }], vendorOrders: [{ vendorId: "vendor-1", totalMinor: 60000n }, { vendorId: "vendor-2", totalMinor: 40000n }] }), updateMany: async () => { orderUpdates += 1; return { count: 1 }; } },
     payment: { updateMany: async () => ({ count: 1 }) },
     refund: { create: async () => ({ id: refundId }) },
     vendorWallet: { upsert: async ({ where }: { where: { vendorId: string } }) => ({ id: `wallet-${where.vendorId}`, entries: [] }) },

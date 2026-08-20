@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import type { CheckoutInput, CheckoutQuoteInput, CheckoutResult, Session } from "@amiyo/contracts";
+import { stackedPromotionDiscount, type PromotionCandidate } from "@amiyo/domain";
 import { withSerializableTransaction } from "../../infrastructure/database/transaction.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
 import { CommissionService } from "../finance/commission.service.js";
@@ -35,6 +36,23 @@ async function couponDiscount(database: CommerceDatabase, userId: string, code: 
   if (discount > subtotal) discount = subtotal;
   if (discount <= 0n) throw new ApiProblem(400, "COUPON_INVALID", "This coupon does not apply to the current cart");
   return { coupon, discount, summary: { code: coupon.code, discountType: coupon.discountType as "PERCENT" | "FIXED", value: coupon.value } };
+}
+
+function promotionCandidate(row: Prisma.PromotionGetPayload<{ include: { rules: true } }>): PromotionCandidate | null {
+  const rule = row.rules.find((item) => item.ruleType === "ORDER_DISCOUNT");
+  if (!rule) return null;
+  const conditions = rule.conditions as { minimumSubtotalMinor?: string | number | bigint } | null;
+  const effects = rule.effects as { type?: string; amountMinor?: string | number | bigint; rateBps?: number; maxDiscountMinor?: string | number | bigint | null } | null;
+  if (!effects?.type) return null;
+  if (effects.type === "FIXED") return { id: row.id, priority: row.priority, minimumSubtotalMinor: BigInt(conditions?.minimumSubtotalMinor ?? 0), effect: { type: "FIXED", amountMinor: BigInt(effects.amountMinor ?? 0) } };
+  if (effects.type === "PERCENT") return { id: row.id, priority: row.priority, minimumSubtotalMinor: BigInt(conditions?.minimumSubtotalMinor ?? 0), effect: { type: "PERCENT", rateBps: Number(effects.rateBps ?? 0), maxDiscountMinor: effects.maxDiscountMinor === null || effects.maxDiscountMinor === undefined ? null : BigInt(effects.maxDiscountMinor) } };
+  return null;
+}
+
+async function activePromotionCandidates(database: CommerceDatabase) {
+  const now = new Date();
+  const rows = await database.promotion.findMany({ where: { status: "active", startsAt: { lte: now }, endsAt: { gt: now } }, include: { rules: true }, orderBy: [{ priority: "desc" }, { id: "asc" }], take: 50 });
+  return rows.map(promotionCandidate).filter((item): item is PromotionCandidate => Boolean(item));
 }
 
 function allocateDiscount(subtotals: bigint[], discount: bigint) {
@@ -90,7 +108,7 @@ export class CommerceService {
   async quote(userId: string, input: CheckoutQuoteInput = {}) {
     const cart = await this.activeCart(userId); if (!cart.items.length) throw new ApiProblem(409, "CART_EMPTY", "Your cart is empty");
     for (const item of cart.items) if (!item.variant.inventory || item.quantity > item.variant.inventory.onHand - item.variant.inventory.reserved) throw new ApiProblem(409, "INSUFFICIENT_STOCK", `${item.product.name} is no longer available in that quantity`);
-    const dto = cartDto(cart); const subtotal = BigInt(dto.subtotal.amountMinor); const vendors = new Set(cart.items.map((item) => item.product.vendorId)).size; const delivery = BigInt(process.env.CHECKOUT_DELIVERY_FEE_MINOR || "6000") * BigInt(vendors); const applied = await couponDiscount(this.client, userId, input.couponCode, subtotal); const discount = applied?.discount ?? 0n; const expiresAt = new Date(Date.now() + 5 * 60_000).toISOString();
+    const dto = cartDto(cart); const subtotal = BigInt(dto.subtotal.amountMinor); const vendors = new Set(cart.items.map((item) => item.product.vendorId)).size; const delivery = BigInt(process.env.CHECKOUT_DELIVERY_FEE_MINOR || "6000") * BigInt(vendors); const applied = await couponDiscount(this.client, userId, input.couponCode, subtotal); const promotionPlan = stackedPromotionDiscount(subtotal, applied?.discount ?? 0n, await activePromotionCandidates(this.client)); const discount = promotionPlan.totalDiscountMinor; const expiresAt = new Date(Date.now() + 5 * 60_000).toISOString();
     return { cart: dto, subtotal: money(subtotal), discount: money(discount), delivery: money(delivery), tax: money(0n), total: money(subtotal - discount + delivery), vendorCount: vendors, coupon: applied?.summary ?? null, expiresAt };
   }
 
@@ -104,7 +122,7 @@ export class CommerceService {
       for (const item of initial.items) if (item.variant.inventory) await transaction.$queryRaw`SELECT id FROM inventory_items WHERE id = ${item.variant.inventory.id}::uuid FOR UPDATE`;
       const cart = await transaction.cart.findUniqueOrThrow({ where: { id: initial.id }, include: cartInclude });
       const groups = new Map<string, typeof cart.items>(); for (const item of cart.items) { const available = (item.variant.inventory?.onHand ?? 0) - (item.variant.inventory?.reserved ?? 0); if (!item.variant.inventory || item.quantity > available || item.product.status !== "APPROVED" || item.product.shop.status !== "ACTIVE") throw new ApiProblem(409, "CHECKOUT_ITEM_UNAVAILABLE", `${item.product.name} is unavailable`); const rows = groups.get(item.product.vendorId) ?? []; rows.push(item); groups.set(item.product.vendorId, rows); }
-      const subtotal = cart.items.reduce((sum, item) => sum + item.variant.priceMinor * BigInt(item.quantity), 0n); if (input.couponCode) await transaction.$queryRaw`SELECT id FROM coupons WHERE code = ${input.couponCode} FOR UPDATE`; const applied = await couponDiscount(transaction, userId, input.couponCode, subtotal); const discount = applied?.discount ?? 0n; const deliveryFee = BigInt(process.env.CHECKOUT_DELIVERY_FEE_MINOR || "6000"); const delivery = deliveryFee * BigInt(groups.size); const total = subtotal - discount + delivery; const confirmed = input.paymentMethod === "COD";
+      const subtotal = cart.items.reduce((sum, item) => sum + item.variant.priceMinor * BigInt(item.quantity), 0n); if (input.couponCode) await transaction.$queryRaw`SELECT id FROM coupons WHERE code = ${input.couponCode} FOR UPDATE`; const applied = await couponDiscount(transaction, userId, input.couponCode, subtotal); const promotionPlan = stackedPromotionDiscount(subtotal, applied?.discount ?? 0n, await activePromotionCandidates(transaction)); const discount = promotionPlan.totalDiscountMinor; const deliveryFee = BigInt(process.env.CHECKOUT_DELIVERY_FEE_MINOR || "6000"); const delivery = deliveryFee * BigInt(groups.size); const total = subtotal - discount + delivery; const confirmed = input.paymentMethod === "COD";
       const order = await transaction.order.create({ data: { orderNumber: `AGO-${Date.now()}-${randomUUID().slice(0, 8).toUpperCase()}`, userId, status: confirmed ? "CONFIRMED" : "PENDING_PAYMENT", subtotalMinor: subtotal, discountMinor: discount, deliveryMinor: delivery, totalMinor: total, placedAt: new Date(), addresses: { create: { type: "delivery", recipientName: address.recipientName, phone: address.phone, line1: address.line1, line2: address.line2, division: address.division, district: address.district, upazila: address.upazila, unionName: address.unionName, postalCode: address.postalCode } } } });
       const groupEntries = [...groups.entries()]; const vendorSubtotals = groupEntries.map(([, items]) => items.reduce((sum, item) => sum + item.variant.priceMinor * BigInt(item.quantity), 0n)); const vendorDiscounts = allocateDiscount(vendorSubtotals, discount);
       for (const [groupIndex, [vendorId, items]] of groupEntries.entries()) {
@@ -118,7 +136,7 @@ export class CommerceService {
           await transaction.inventoryReservation.create({ data: { variantId: item.variantId, orderId: order.id, quantity: item.quantity, expiresAt: new Date(Date.now() + 30 * 60_000) } });
         }
       }
-      if (applied) await transaction.couponRedemption.create({ data: { couponId: applied.coupon.id, userId, orderId: order.id, amountMinor: discount } });
+      if (applied && promotionPlan.couponDiscountMinor > 0n) await transaction.couponRedemption.create({ data: { couponId: applied.coupon.id, userId, orderId: order.id, amountMinor: promotionPlan.couponDiscountMinor } });
       const provider = input.paymentMethod === "COD" ? "cod" : input.paymentMethod.toLowerCase(); const payment = await transaction.payment.create({ data: { orderId: order.id, provider, method: input.paymentMethod, status: confirmed ? "AUTHORIZED" : "REQUIRES_ACTION", amountMinor: total, attempts: { create: { attemptNumber: 1, status: confirmed ? "authorized" : "requires_action", requestSnapshot: { method: input.paymentMethod } } } } });
       const invoice = await transaction.invoice.create({ data: { orderId: order.id, number: `INV-${order.orderNumber}` } }); await transaction.cart.update({ where: { id: cart.id }, data: { status: "CONVERTED" } }); await transaction.orderStatusEvent.create({ data: { orderId: order.id, toStatus: order.status, actorType: "customer", actorId: userId } }); await notifyOrderAdmins(transaction, order); await this.outbox.enqueue(transaction, { aggregateType: "order", aggregateId: order.id, eventType: "order.placed", idempotencyKey: `order-placed:${order.id}`, payload: { orderId: order.id, paymentMethod: input.paymentMethod } });
       const loadedOrder = await transaction.order.findUniqueOrThrow({ where: { id: order.id }, include: orderInclude }); const result: CheckoutResult = { order: orderDto(loadedOrder), payment: { id: payment.id, orderId: payment.orderId, provider: payment.provider, method: payment.method, status: payment.status, amount: money(payment.amountMinor), refunded: money(payment.refundedMinor), version: payment.version, createdAt: payment.createdAt.toISOString() }, invoiceNumber: invoice.number, actionUrl: confirmed ? null : `${process.env.API_PUBLIC_URL || "http://localhost:4000"}/sandbox/payments/${payment.id}`, instructions: confirmed ? "Pay cash when your order is delivered." : `Complete the ${input.paymentMethod} sandbox payment.` };
