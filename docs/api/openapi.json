@@ -1420,12 +1420,90 @@
               "value": {
                 "type": "integer",
                 "exclusiveMinimum": 0
+              },
+              "sourceType": {
+                "type": "string",
+                "enum": [
+                  "coupon",
+                  "voucher"
+                ],
+                "default": "coupon"
               }
             },
             "required": [
               "code",
               "discountType",
               "value"
+            ]
+          },
+          "automaticPromotion": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "amount": {
+                "type": "object",
+                "properties": {
+                  "amountMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3,
+                    "default": "BDT"
+                  }
+                },
+                "required": [
+                  "amountMinor"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "amount"
+            ]
+          },
+          "loyalty": {
+            "type": "object",
+            "properties": {
+              "availablePoints": {
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "redeemedPoints": {
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "discount": {
+                "type": "object",
+                "properties": {
+                  "amountMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3,
+                    "default": "BDT"
+                  }
+                },
+                "required": [
+                  "amountMinor"
+                ]
+              }
+            },
+            "required": [
+              "availablePoints",
+              "redeemedPoints",
+              "discount"
             ]
           },
           "expiresAt": {
@@ -1442,6 +1520,8 @@
           "total",
           "vendorCount",
           "coupon",
+          "automaticPromotion",
+          "loyalty",
           "expiresAt"
         ]
       },
@@ -1572,6 +1652,160 @@
                 "type": "string",
                 "format": "date-time"
               },
+              "customer": {
+                "type": "object",
+                "properties": {
+                  "displayName": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "phone": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "displayName",
+                  "email",
+                  "phone"
+                ]
+              },
+              "deliveryAddress": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "recipientName": {
+                    "type": "string"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "line1": {
+                    "type": "string"
+                  },
+                  "line2": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "division": {
+                    "type": "string"
+                  },
+                  "district": {
+                    "type": "string"
+                  },
+                  "upazila": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "unionName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "postalCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "recipientName",
+                  "phone",
+                  "line1",
+                  "line2",
+                  "division",
+                  "district",
+                  "upazila",
+                  "unionName",
+                  "postalCode"
+                ]
+              },
+              "payment": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "provider": {
+                    "type": "string"
+                  },
+                  "method": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "object",
+                    "properties": {
+                      "amountMinor": {
+                        "type": "string",
+                        "pattern": "^\\d+$"
+                      },
+                      "currency": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 3,
+                        "default": "BDT"
+                      }
+                    },
+                    "required": [
+                      "amountMinor"
+                    ]
+                  },
+                  "refunded": {
+                    "type": "object",
+                    "properties": {
+                      "amountMinor": {
+                        "type": "string",
+                        "pattern": "^\\d+$"
+                      },
+                      "currency": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 3,
+                        "default": "BDT"
+                      }
+                    },
+                    "required": [
+                      "amountMinor"
+                    ]
+                  },
+                  "transactionId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "provider",
+                  "method",
+                  "status",
+                  "amount",
+                  "transactionId",
+                  "createdAt"
+                ]
+              },
               "vendorOrders": {
                 "type": "array",
                 "items": {
@@ -1588,6 +1822,12 @@
                     "shopId": {
                       "type": "string",
                       "format": "uuid"
+                    },
+                    "vendorName": {
+                      "type": "string"
+                    },
+                    "shopName": {
+                      "type": "string"
                     },
                     "status": {
                       "type": "string",
@@ -1971,6 +2211,142 @@
           "shopName": {
             "type": "string"
           },
+          "customer": {
+            "type": "object",
+            "properties": {
+              "displayName": {
+                "type": "string"
+              },
+              "email": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "phone": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "displayName",
+              "email",
+              "phone"
+            ]
+          },
+          "deliveryAddress": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "recipientName": {
+                "type": "string"
+              },
+              "phone": {
+                "type": "string"
+              },
+              "line1": {
+                "type": "string"
+              },
+              "line2": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "division": {
+                "type": "string"
+              },
+              "district": {
+                "type": "string"
+              },
+              "upazila": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "unionName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "postalCode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "recipientName",
+              "phone",
+              "line1",
+              "line2",
+              "division",
+              "district",
+              "upazila",
+              "unionName",
+              "postalCode"
+            ]
+          },
+          "payment": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "provider": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "amount": {
+                "type": "object",
+                "properties": {
+                  "amountMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3,
+                    "default": "BDT"
+                  }
+                },
+                "required": [
+                  "amountMinor"
+                ]
+              },
+              "transactionId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "provider",
+              "method",
+              "status",
+              "amount",
+              "transactionId",
+              "createdAt"
+            ]
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -2279,6 +2655,9 @@
           "vendorId",
           "shopId",
           "shopName",
+          "customer",
+          "deliveryAddress",
+          "payment",
           "status",
           "subtotal",
           "discount",
@@ -2341,6 +2720,46 @@
           "vendorOrderCount": {
             "type": "integer",
             "exclusiveMinimum": 0
+          },
+          "itemCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "previewItems": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "productId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "sku": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "thumbnailUrl": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uri"
+                }
+              },
+              "required": [
+                "productId",
+                "name",
+                "sku",
+                "quantity",
+                "thumbnailUrl"
+              ]
+            }
           }
         },
         "required": [
@@ -2349,7 +2768,9 @@
           "status",
           "total",
           "createdAt",
-          "vendorOrderCount"
+          "vendorOrderCount",
+          "itemCount",
+          "previewItems"
         ]
       },
       "OrderTracking": {
@@ -2619,6 +3040,160 @@
             "type": "string",
             "format": "date-time"
           },
+          "customer": {
+            "type": "object",
+            "properties": {
+              "displayName": {
+                "type": "string"
+              },
+              "email": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "phone": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "displayName",
+              "email",
+              "phone"
+            ]
+          },
+          "deliveryAddress": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "recipientName": {
+                "type": "string"
+              },
+              "phone": {
+                "type": "string"
+              },
+              "line1": {
+                "type": "string"
+              },
+              "line2": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "division": {
+                "type": "string"
+              },
+              "district": {
+                "type": "string"
+              },
+              "upazila": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "unionName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "postalCode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "recipientName",
+              "phone",
+              "line1",
+              "line2",
+              "division",
+              "district",
+              "upazila",
+              "unionName",
+              "postalCode"
+            ]
+          },
+          "payment": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "provider": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "amount": {
+                "type": "object",
+                "properties": {
+                  "amountMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3,
+                    "default": "BDT"
+                  }
+                },
+                "required": [
+                  "amountMinor"
+                ]
+              },
+              "refunded": {
+                "type": "object",
+                "properties": {
+                  "amountMinor": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3,
+                    "default": "BDT"
+                  }
+                },
+                "required": [
+                  "amountMinor"
+                ]
+              },
+              "transactionId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "provider",
+              "method",
+              "status",
+              "amount",
+              "transactionId",
+              "createdAt"
+            ]
+          },
           "vendorOrders": {
             "type": "array",
             "items": {
@@ -2635,6 +3210,12 @@
                 "shopId": {
                   "type": "string",
                   "format": "uuid"
+                },
+                "vendorName": {
+                  "type": "string"
+                },
+                "shopName": {
+                  "type": "string"
                 },
                 "status": {
                   "type": "string",
@@ -3023,6 +3604,160 @@
                 "type": "string",
                 "format": "date-time"
               },
+              "customer": {
+                "type": "object",
+                "properties": {
+                  "displayName": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "phone": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "displayName",
+                  "email",
+                  "phone"
+                ]
+              },
+              "deliveryAddress": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "recipientName": {
+                    "type": "string"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "line1": {
+                    "type": "string"
+                  },
+                  "line2": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "division": {
+                    "type": "string"
+                  },
+                  "district": {
+                    "type": "string"
+                  },
+                  "upazila": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "unionName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "postalCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "recipientName",
+                  "phone",
+                  "line1",
+                  "line2",
+                  "division",
+                  "district",
+                  "upazila",
+                  "unionName",
+                  "postalCode"
+                ]
+              },
+              "payment": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "provider": {
+                    "type": "string"
+                  },
+                  "method": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "object",
+                    "properties": {
+                      "amountMinor": {
+                        "type": "string",
+                        "pattern": "^\\d+$"
+                      },
+                      "currency": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 3,
+                        "default": "BDT"
+                      }
+                    },
+                    "required": [
+                      "amountMinor"
+                    ]
+                  },
+                  "refunded": {
+                    "type": "object",
+                    "properties": {
+                      "amountMinor": {
+                        "type": "string",
+                        "pattern": "^\\d+$"
+                      },
+                      "currency": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 3,
+                        "default": "BDT"
+                      }
+                    },
+                    "required": [
+                      "amountMinor"
+                    ]
+                  },
+                  "transactionId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "provider",
+                  "method",
+                  "status",
+                  "amount",
+                  "transactionId",
+                  "createdAt"
+                ]
+              },
               "vendorOrders": {
                 "type": "array",
                 "items": {
@@ -3039,6 +3774,12 @@
                     "shopId": {
                       "type": "string",
                       "format": "uuid"
+                    },
+                    "vendorName": {
+                      "type": "string"
+                    },
+                    "shopName": {
+                      "type": "string"
                     },
                     "status": {
                       "type": "string",
@@ -4254,7 +4995,23 @@
             "format": "uuid",
             "default": null
           },
+          "shopId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "default": null
+          },
           "categoryId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "default": null
+          },
+          "productId": {
             "type": [
               "string",
               "null"
@@ -4301,7 +5058,19 @@
               "null"
             ]
           },
+          "shopName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "categoryName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "productName": {
             "type": [
               "string",
               "null"
@@ -4313,6 +5082,8 @@
               "GLOBAL",
               "CATEGORY",
               "VENDOR",
+              "SHOP",
+              "PRODUCT",
               "VENDOR_CATEGORY"
             ]
           },
@@ -4334,7 +5105,9 @@
           "effectiveFrom",
           "id",
           "vendorName",
+          "shopName",
           "categoryName",
+          "productName",
           "scope",
           "status",
           "version"
@@ -5303,6 +6076,10 @@
                     ],
                     "minLength": 3,
                     "maxLength": 40
+                  },
+                  "loyaltyPoints": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
                   }
                 }
               }
@@ -5410,6 +6187,10 @@
                     ],
                     "minLength": 3,
                     "maxLength": 40
+                  },
+                  "loyaltyPoints": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
                   }
                 },
                 "required": [
@@ -10277,14 +11058,14 @@
                 "type": "object",
                 "properties": {
                   "providerRefundId": {
-                    "type": "string",
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "minLength": 2,
                     "maxLength": 200
                   }
-                },
-                "required": [
-                  "providerRefundId"
-                ]
+                }
               }
             }
           }
@@ -18373,6 +19154,226 @@
                   "required": [
                     "name",
                     "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/loyalty/referral": {
+      "get": {
+        "tags": [
+          "Engagement & Growth"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current customer's referral program summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "pattern": "^AMIYO[A-Z0-9]{8,12}$"
+                    },
+                    "shareUrl": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "referralCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "convertedCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "rewardPoints": {
+                      "type": "string",
+                      "pattern": "^\\d+$"
+                    },
+                    "appliedCode": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "pattern": "^AMIYO[A-Z0-9]{8,12}$"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "shareUrl",
+                    "referralCount",
+                    "convertedCount",
+                    "rewardPoints",
+                    "appliedCode"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/loyalty/referral/apply": {
+      "post": {
+        "tags": [
+          "Engagement & Growth"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "pattern": "^AMIYO[A-Z0-9]{8,12}$"
+                  }
+                },
+                "required": [
+                  "code"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Referral reward applied to both customer ledgers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "pattern": "^AMIYO[A-Z0-9]{8,12}$"
+                    },
+                    "shareUrl": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "referralCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "convertedCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "rewardPoints": {
+                      "type": "string",
+                      "pattern": "^\\d+$"
+                    },
+                    "appliedCode": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "pattern": "^AMIYO[A-Z0-9]{8,12}$"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "shareUrl",
+                    "referralCount",
+                    "convertedCount",
+                    "rewardPoints",
+                    "appliedCode"
                   ]
                 }
               }
@@ -29635,6 +30636,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "businessRulesVersion": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "default": 1
+                    },
                     "featureFlags": {
                       "type": "object",
                       "properties": {
@@ -29816,6 +30822,152 @@
                         "adminAlerts"
                       ]
                     },
+                    "businessRules": {
+                      "type": "object",
+                      "properties": {
+                        "loyalty": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            },
+                            "earnAmountMinorPerPoint": {
+                              "type": "string",
+                              "pattern": "^\\d+$"
+                            },
+                            "redeemMinorPerPoint": {
+                              "type": "string",
+                              "pattern": "^\\d+$"
+                            },
+                            "minimumRedemptionPoints": {
+                              "type": "string",
+                              "pattern": "^\\d+$"
+                            },
+                            "maximumRedemptionBps": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10000
+                            },
+                            "fraudHoldDays": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 90
+                            },
+                            "expiryDays": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 3650
+                            },
+                            "referralRewardPoints": {
+                              "type": "string",
+                              "pattern": "^\\d+$"
+                            }
+                          },
+                          "required": [
+                            "enabled",
+                            "earnAmountMinorPerPoint",
+                            "redeemMinorPerPoint",
+                            "minimumRedemptionPoints",
+                            "maximumRedemptionBps",
+                            "fraudHoldDays",
+                            "expiryDays",
+                            "referralRewardPoints"
+                          ]
+                        },
+                        "promotions": {
+                          "type": "object",
+                          "properties": {
+                            "maximumStackedDiscountBps": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10000
+                            },
+                            "allowCodeWithAutomatic": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "maximumStackedDiscountBps",
+                            "allowCodeWithAutomatic"
+                          ]
+                        },
+                        "settlement": {
+                          "type": "object",
+                          "properties": {
+                            "minimumPayoutMinor": {
+                              "type": "string",
+                              "pattern": "^\\d+$"
+                            },
+                            "holdDays": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 90
+                            },
+                            "cadenceDays": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 31
+                            },
+                            "automaticProposal": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "minimumPayoutMinor",
+                            "holdDays",
+                            "cadenceDays",
+                            "automaticProposal"
+                          ]
+                        },
+                        "refunds": {
+                          "type": "object",
+                          "properties": {
+                            "requireProviderReference": {
+                              "type": "boolean"
+                            },
+                            "allowPartial": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "requireProviderReference",
+                            "allowPartial"
+                          ]
+                        }
+                      },
+                      "default": {
+                        "loyalty": {
+                          "enabled": true,
+                          "earnAmountMinorPerPoint": "10000",
+                          "redeemMinorPerPoint": "100",
+                          "minimumRedemptionPoints": "100",
+                          "maximumRedemptionBps": 2000,
+                          "fraudHoldDays": 7,
+                          "expiryDays": 365,
+                          "referralRewardPoints": "500"
+                        },
+                        "promotions": {
+                          "maximumStackedDiscountBps": 3500,
+                          "allowCodeWithAutomatic": true
+                        },
+                        "settlement": {
+                          "minimumPayoutMinor": "50000",
+                          "holdDays": 7,
+                          "cadenceDays": 7,
+                          "automaticProposal": true
+                        },
+                        "refunds": {
+                          "requireProviderReference": true,
+                          "allowPartial": true
+                        }
+                      },
+                      "required": [
+                        "loyalty",
+                        "promotions",
+                        "settlement",
+                        "refunds"
+                      ]
+                    },
                     "key": {
                       "type": "string",
                       "enum": [
@@ -29971,6 +31123,11 @@
                   "expectedVersion": {
                     "type": "integer",
                     "exclusiveMinimum": 0
+                  },
+                  "businessRulesVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "default": 1
                   },
                   "featureFlags": {
                     "type": "object",
@@ -30152,6 +31309,152 @@
                       "sellerAlerts",
                       "adminAlerts"
                     ]
+                  },
+                  "businessRules": {
+                    "type": "object",
+                    "properties": {
+                      "loyalty": {
+                        "type": "object",
+                        "properties": {
+                          "enabled": {
+                            "type": "boolean"
+                          },
+                          "earnAmountMinorPerPoint": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "redeemMinorPerPoint": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "minimumRedemptionPoints": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "maximumRedemptionBps": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10000
+                          },
+                          "fraudHoldDays": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 90
+                          },
+                          "expiryDays": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 3650
+                          },
+                          "referralRewardPoints": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          }
+                        },
+                        "required": [
+                          "enabled",
+                          "earnAmountMinorPerPoint",
+                          "redeemMinorPerPoint",
+                          "minimumRedemptionPoints",
+                          "maximumRedemptionBps",
+                          "fraudHoldDays",
+                          "expiryDays",
+                          "referralRewardPoints"
+                        ]
+                      },
+                      "promotions": {
+                        "type": "object",
+                        "properties": {
+                          "maximumStackedDiscountBps": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10000
+                          },
+                          "allowCodeWithAutomatic": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "maximumStackedDiscountBps",
+                          "allowCodeWithAutomatic"
+                        ]
+                      },
+                      "settlement": {
+                        "type": "object",
+                        "properties": {
+                          "minimumPayoutMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "holdDays": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 90
+                          },
+                          "cadenceDays": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 31
+                          },
+                          "automaticProposal": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "minimumPayoutMinor",
+                          "holdDays",
+                          "cadenceDays",
+                          "automaticProposal"
+                        ]
+                      },
+                      "refunds": {
+                        "type": "object",
+                        "properties": {
+                          "requireProviderReference": {
+                            "type": "boolean"
+                          },
+                          "allowPartial": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "requireProviderReference",
+                          "allowPartial"
+                        ]
+                      }
+                    },
+                    "default": {
+                      "loyalty": {
+                        "enabled": true,
+                        "earnAmountMinorPerPoint": "10000",
+                        "redeemMinorPerPoint": "100",
+                        "minimumRedemptionPoints": "100",
+                        "maximumRedemptionBps": 2000,
+                        "fraudHoldDays": 7,
+                        "expiryDays": 365,
+                        "referralRewardPoints": "500"
+                      },
+                      "promotions": {
+                        "maximumStackedDiscountBps": 3500,
+                        "allowCodeWithAutomatic": true
+                      },
+                      "settlement": {
+                        "minimumPayoutMinor": "50000",
+                        "holdDays": 7,
+                        "cadenceDays": 7,
+                        "automaticProposal": true
+                      },
+                      "refunds": {
+                        "requireProviderReference": true,
+                        "allowPartial": true
+                      }
+                    },
+                    "required": [
+                      "loyalty",
+                      "promotions",
+                      "settlement",
+                      "refunds"
+                    ]
                   }
                 },
                 "required": [
@@ -30176,6 +31479,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "businessRulesVersion": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "default": 1
+                    },
                     "featureFlags": {
                       "type": "object",
                       "properties": {
@@ -30355,6 +31663,152 @@
                         "promotions",
                         "sellerAlerts",
                         "adminAlerts"
+                      ]
+                    },
+                    "businessRules": {
+                      "type": "object",
+                      "properties": {
+                        "loyalty": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            },
+                            "earnAmountMinorPerPoint": {
+                              "type": "string",
+                              "pattern": "^\\d+$"
+                            },
+                            "redeemMinorPerPoint": {
+                              "type": "string",
+                              "pattern": "^\\d+$"
+                            },
+                            "minimumRedemptionPoints": {
+                              "type": "string",
+                              "pattern": "^\\d+$"
+                            },
+                            "maximumRedemptionBps": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10000
+                            },
+                            "fraudHoldDays": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 90
+                            },
+                            "expiryDays": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 3650
+                            },
+                            "referralRewardPoints": {
+                              "type": "string",
+                              "pattern": "^\\d+$"
+                            }
+                          },
+                          "required": [
+                            "enabled",
+                            "earnAmountMinorPerPoint",
+                            "redeemMinorPerPoint",
+                            "minimumRedemptionPoints",
+                            "maximumRedemptionBps",
+                            "fraudHoldDays",
+                            "expiryDays",
+                            "referralRewardPoints"
+                          ]
+                        },
+                        "promotions": {
+                          "type": "object",
+                          "properties": {
+                            "maximumStackedDiscountBps": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10000
+                            },
+                            "allowCodeWithAutomatic": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "maximumStackedDiscountBps",
+                            "allowCodeWithAutomatic"
+                          ]
+                        },
+                        "settlement": {
+                          "type": "object",
+                          "properties": {
+                            "minimumPayoutMinor": {
+                              "type": "string",
+                              "pattern": "^\\d+$"
+                            },
+                            "holdDays": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 90
+                            },
+                            "cadenceDays": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 31
+                            },
+                            "automaticProposal": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "minimumPayoutMinor",
+                            "holdDays",
+                            "cadenceDays",
+                            "automaticProposal"
+                          ]
+                        },
+                        "refunds": {
+                          "type": "object",
+                          "properties": {
+                            "requireProviderReference": {
+                              "type": "boolean"
+                            },
+                            "allowPartial": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "requireProviderReference",
+                            "allowPartial"
+                          ]
+                        }
+                      },
+                      "default": {
+                        "loyalty": {
+                          "enabled": true,
+                          "earnAmountMinorPerPoint": "10000",
+                          "redeemMinorPerPoint": "100",
+                          "minimumRedemptionPoints": "100",
+                          "maximumRedemptionBps": 2000,
+                          "fraudHoldDays": 7,
+                          "expiryDays": 365,
+                          "referralRewardPoints": "500"
+                        },
+                        "promotions": {
+                          "maximumStackedDiscountBps": 3500,
+                          "allowCodeWithAutomatic": true
+                        },
+                        "settlement": {
+                          "minimumPayoutMinor": "50000",
+                          "holdDays": 7,
+                          "cadenceDays": 7,
+                          "automaticProposal": true
+                        },
+                        "refunds": {
+                          "requireProviderReference": true,
+                          "allowPartial": true
+                        }
+                      },
+                      "required": [
+                        "loyalty",
+                        "promotions",
+                        "settlement",
+                        "refunds"
                       ]
                     },
                     "key": {
@@ -38654,7 +40108,10 @@
                     "maxLength": 500
                   },
                   "providerRefundId": {
-                    "type": "string",
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "minLength": 2,
                     "maxLength": 200
                   }
@@ -38662,8 +40119,7 @@
                 "required": [
                   "expectedVersion",
                   "amountMinor",
-                  "reason",
-                  "providerRefundId"
+                  "reason"
                 ]
               }
             }
@@ -38872,7 +40328,23 @@
                     "format": "uuid",
                     "default": null
                   },
+                  "shopId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid",
+                    "default": null
+                  },
                   "categoryId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid",
+                    "default": null
+                  },
+                  "productId": {
                     "type": [
                       "string",
                       "null"
@@ -39007,7 +40479,23 @@
                     "format": "uuid",
                     "default": null
                   },
+                  "shopId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid",
+                    "default": null
+                  },
                   "categoryId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid",
+                    "default": null
+                  },
+                  "productId": {
                     "type": [
                       "string",
                       "null"

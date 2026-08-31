@@ -1,5 +1,10 @@
-import { z } from "zod";
 import { moneySchema, timestampSchema, uuidSchema } from "./common.js";
+import { z } from "zod";
+
+export const referralCodeInputSchema = z.object({ code: z.string().trim().toUpperCase().regex(/^AMIYO[A-Z0-9]{8,12}$/) });
+export const referralSummarySchema = z.object({ code: z.string().regex(/^AMIYO[A-Z0-9]{8,12}$/), shareUrl: z.string().url(), referralCount: z.number().int().nonnegative(), convertedCount: z.number().int().nonnegative(), rewardPoints: z.string().regex(/^\d+$/), appliedCode: z.string().regex(/^AMIYO[A-Z0-9]{8,12}$/).nullable() });
+export type ReferralCodeInput = z.infer<typeof referralCodeInputSchema>;
+export type ReferralSummary = z.infer<typeof referralSummarySchema>;
 
 export const wishlistSchema = z.object({ id: uuidSchema, name: z.string(), isDefault: z.boolean(), shareUrl: z.string().url().nullable(), items: z.array(z.object({ productId: uuidSchema, name: z.string(), slug: z.string(), thumbnailUrl: z.string().url().nullable(), price: moneySchema.nullable(), addedAt: timestampSchema })) });
 export const sharedWishlistSchema = z.object({ name: z.string(), items: z.array(z.object({ productId: uuidSchema, name: z.string(), slug: z.string(), price: moneySchema.nullable() })) });

@@ -3,6 +3,8 @@ export const notificationMatrix = {
   "chat.message.created": ["IN_APP", "PUSH"],
   "stock.available": ["IN_APP", "PUSH"],
   "price.target.reached": ["IN_APP", "PUSH"],
+  "referral.rewarded": ["IN_APP", "PUSH"],
+  "cart.abandoned": ["IN_APP", "PUSH"],
   "campaign.started": ["IN_APP"]
 } as const;
 

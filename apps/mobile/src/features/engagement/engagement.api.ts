@@ -13,6 +13,9 @@ export async function getNotifications(user: User) { return notificationSchema.a
 export async function getMyReviews(user: User) { return reviewSchema.array().parse(await request(user, "/api/v2/reviews")); }
 export async function readNotification(user: User, id: string) { return notificationSchema.array().parse(await request(user, `/api/v2/notifications/${id}/read`, { method: "POST" })); }
 export async function getLoyalty(user: User) { return await request(user, "/api/v2/loyalty") as { id: string; pointsBalance: string; version: number; transactions: Array<{ id: string; points: string; entryType: string; createdAt: string }> }; }
+export type ReferralSummary = { code: string; shareUrl: string; referralCount: number; convertedCount: number; rewardPoints: string; appliedCode: string | null };
+export async function getReferral(user: User) { return await request(user, "/api/v2/loyalty/referral") as ReferralSummary; }
+export async function applyReferral(user: User, code: string) { return await request(user, "/api/v2/loyalty/referral/apply", { method: "POST", body: JSON.stringify({ code }) }) as ReferralSummary; }
 export async function getThreads(user: User) { return chatThreadSchema.array().parse(await request(user, "/api/v2/chat/threads")); }
 export async function createThread(user: User, vendorId: string, subject: string) { return chatThreadCreatedSchema.parse(await request(user, "/api/v2/chat/threads", { method: "POST", body: JSON.stringify({ vendorId, subject }) })); }
 export async function sendMessage(user: User, threadId: string, body: string) { await request(user, `/api/v2/chat/threads/${threadId}/messages`, { method: "POST", body: JSON.stringify({ body }) }); }

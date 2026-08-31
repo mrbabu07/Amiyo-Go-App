@@ -16,6 +16,9 @@ Status: reference-parity business-rule code is implemented; production launch re
 - Admin business rules: loyalty, promotion stacking, partial-refund policy, provider evidence, payout minimum, hold, cadence, and automatic proposal controls are versioned platform settings.
 - Settlement proposals: eligible approved payouts can be grouped into an auditable finance proposal; payment still requires explicit finance completion and provider evidence.
 - SSLCommerz refunds: the API can initiate a sandbox/live refund through the official transaction-validation endpoint and persist the returned provider reference before ledger reconciliation.
+- Referral program: each customer receives a shareable code; a valid first referral awards both accounts through an idempotent loyalty ledger entry.
+- Customer operations: admin customer 360 includes referral history, loyalty balance, recent ledger entries, and audited manual award/deduct controls.
+- Cart recovery: the worker creates deduplicated in-app/push reminders for signed-in customers whose active carts remain untouched for one hour.
 
 ## Production Work Still Pending
 
@@ -77,6 +80,7 @@ Sources:
 - 30-minute customer cancellation window is explicit and enforceable.
 - Evidence-backed returns, product images in order details, tracking timeline, invoice, support, and seller contact live in one account flow.
 - Wishlist is first-class in navigation, not buried inside account.
+- Referral rewards and a transparent points ledger give customers a visible reason to invite and return.
 
 ### Admin Control Advantage
 
@@ -84,10 +88,12 @@ Sources:
 - Promotion stacking is deterministic and capped, reducing margin surprises.
 - Provider refund references are mandatory for gateway refunds, reducing manual finance mismatch.
 - Payout completion requires verified bank/MFS and transaction evidence.
+- Customer loyalty corrections require an admin permission, a positive amount, and a mandatory audit reason.
 
 ### Marketplace Experience Advantage
 
 - Voice search, main/subcategory navigation, dynamic product attributes, modern seller registration, multi-store checkout, coupons, flash campaigns, and personalized account features can make the app feel more complete for local buyers.
+- Automated abandoned-cart recovery and referral rewards add lifecycle growth loops without relying on manual campaign work.
 - The brand can position itself as a “transparent seller-first marketplace”: lower starting commission, evidence-backed finance, faster seller onboarding, and clearer order/invoice tracking.
 
 ## Remaining Launch Priority

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
-import { answerInputSchema, chatMessageInputSchema, chatThreadInputSchema, contentModerationInputSchema, createPromotionSchema, newsletterBroadcastInputSchema, newsletterSubscribeInputSchema, productReportInputSchema, questionInputSchema, reviewInputSchema, stockAlertInputSchema, vendorReviewReplyInputSchema, wishlistItemInputSchema } from "@amiyo/contracts";
+import { answerInputSchema, chatMessageInputSchema, chatThreadInputSchema, contentModerationInputSchema, createPromotionSchema, newsletterBroadcastInputSchema, newsletterSubscribeInputSchema, productReportInputSchema, questionInputSchema, referralCodeInputSchema, reviewInputSchema, stockAlertInputSchema, vendorReviewReplyInputSchema, wishlistItemInputSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "../identity/identity.middleware.js";
@@ -52,6 +52,8 @@ router.put("/api/v2/vendor/engagement/reviews/:id/reply", writeLimit, async (req
   router.post("/api/v2/chat/threads/:id/messages", chatLimit, async (req, res, next) => { try { res.status(201).json(await service.message(requireSession(req), idSchema.parse(req.params).id, chatMessageInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.post("/api/v2/chat/threads/:id/read", async (req, res, next) => { try { await service.readThread(requireSession(req).principal.userId, idSchema.parse(req.params).id); res.status(204).end(); } catch (error) { next(error); } });
   router.get("/api/v2/loyalty", async (req, res, next) => { try { res.json(await service.loyalty(requireSession(req).principal.userId)); } catch (error) { next(error); } });
+  router.get("/api/v2/loyalty/referral", async (req, res, next) => { try { res.json(await service.referral(requireSession(req).principal.userId)); } catch (error) { next(error); } });
+  router.post("/api/v2/loyalty/referral/apply", writeLimit, async (req, res, next) => { try { res.json(await service.applyReferral(requireSession(req).principal.userId, referralCodeInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/promotions", async (req, res, next) => { try { res.json(await service.promotions(requireSession(req))); } catch (error) { next(error); } });
   router.post("/api/v2/admin/promotions", writeLimit, async (req, res, next) => { try { res.status(201).json(await service.createPromotion(requireSession(req), createPromotionSchema.parse(req.body))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/newsletter", async (req, res, next) => { try { res.json(await service.newsletterWorkspace(requireSession(req))); } catch (error) { next(error); } });

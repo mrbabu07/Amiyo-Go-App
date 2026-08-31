@@ -6,6 +6,7 @@ export type LoyaltyPolicy = {
   maximumRedemptionBps: number;
   fraudHoldDays: number;
   expiryDays: number;
+  referralRewardPoints: bigint;
 };
 
 export const defaultLoyaltyPolicy: LoyaltyPolicy = {
@@ -15,7 +16,8 @@ export const defaultLoyaltyPolicy: LoyaltyPolicy = {
   minimumRedemptionPoints: 100n,
   maximumRedemptionBps: 2_000,
   fraudHoldDays: 7,
-  expiryDays: 365
+  expiryDays: 365,
+  referralRewardPoints: 500n
 };
 
 export function loyaltyPointsEarned(eligibleAmountMinor: bigint, policy: LoyaltyPolicy = defaultLoyaltyPolicy) {

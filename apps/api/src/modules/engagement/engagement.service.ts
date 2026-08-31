@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { Prisma, type PrismaClient } from "@prisma/client";
-import type { AnswerInput, ChatMessageInput, ChatThreadInput, ContentModerationInput, CreatePromotion, NewsletterBroadcastInput, NewsletterSubscribeInput, ProductReportInput, QuestionInput, ReviewInput, Session, VendorReviewReplyInput } from "@amiyo/contracts";
-import { notificationChannels } from "@amiyo/domain";
+import type { AnswerInput, ChatMessageInput, ChatThreadInput, ContentModerationInput, CreatePromotion, NewsletterBroadcastInput, NewsletterSubscribeInput, ProductReportInput, QuestionInput, ReferralCodeInput, ReviewInput, Session, VendorReviewReplyInput } from "@amiyo/contracts";
+import { loyaltyExpiresAt, notificationChannels } from "@amiyo/domain";
 import { TtlCache } from "../../infrastructure/cache/ttl-cache.js";
+import { withSerializableTransaction } from "../../infrastructure/database/transaction.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
+import { loadBusinessRules } from "../admin/business-rules-config.js";
 import { expireLoyaltyBalance } from "./loyalty-ledger.js";
 
 const money = (amountMinor: bigint, currency = "BDT") => ({ amountMinor: amountMinor.toString(), currency });
@@ -73,6 +75,47 @@ export class EngagementService {
   async message(session: Session, threadId: string, input: ChatMessageInput) { const participant = await this.client.chatParticipant.findUnique({ where: { threadId_userId: { threadId, userId: session.principal.userId } } }); if (!participant) throw new ApiProblem(403, "CHAT_FORBIDDEN", "You are not a participant in this chat"); const message = await this.client.chatMessage.create({ data: { threadId, senderId: session.principal.userId, body: input.body } }); await this.client.chatThread.update({ where: { id: threadId }, data: { updatedAt: new Date() } }); const recipients = await this.client.chatParticipant.findMany({ where: { threadId, userId: { not: session.principal.userId } } }); await Promise.all(recipients.map((recipient) => this.notify(recipient.userId, "chat.message.created", "New message", input.body.slice(0, 160), `/messages/${threadId}`, `chat-message:${message.id}:${recipient.userId}`))); return message; }
 
   async loyalty(userId: string) { const account = await this.client.$transaction(async (transaction) => { await transaction.loyaltyAccount.upsert({ where: { userId }, create: { userId }, update: {} }); await expireLoyaltyBalance(transaction, userId); return transaction.loyaltyAccount.findUniqueOrThrow({ where: { userId }, include: { transactions: { orderBy: { createdAt: "desc" }, take: 100 } } }); }); return { id: account.id, pointsBalance: account.pointsBalance.toString(), version: account.version, transactions: account.transactions.map((row) => ({ id: row.id, points: row.points.toString(), entryType: row.entryType, referenceType: row.referenceType, referenceId: row.referenceId, createdAt: row.createdAt.toISOString() })) }; }
+
+  async referral(userId: string) {
+    const code = await this.client.referralCode.upsert({ where: { userId }, update: {}, create: { userId, code: `AMIYO${randomUUID().replaceAll("-", "").slice(0, 12).toUpperCase()}` } });
+    const [summary, received] = await Promise.all([
+      this.client.customerReferral.aggregate({ where: { referrerUserId: userId }, _count: { _all: true }, _sum: { rewardPoints: true } }),
+      this.client.customerReferral.findUnique({ where: { referredUserId: userId }, include: { referralCode: true } })
+    ]);
+    return { code: code.code, shareUrl: `${process.env.APP_PUBLIC_URL || "http://localhost:8081"}/register?ref=${code.code}`, referralCount: summary._count._all, convertedCount: summary._count._all, rewardPoints: (summary._sum.rewardPoints ?? 0n).toString(), appliedCode: received?.referralCode.code ?? null };
+  }
+
+  async applyReferral(userId: string, input: ReferralCodeInput) {
+    let reward: { referralId: string; referrerUserId: string; points: bigint };
+    try {
+      reward = await withSerializableTransaction(this.client, async (transaction) => {
+        const configuration = await loadBusinessRules(transaction);
+        if (!configuration.rules.loyalty.enabled) throw new ApiProblem(409, "LOYALTY_DISABLED", "Referral rewards are currently paused");
+        const referralCode = await transaction.referralCode.findFirst({ where: { code: input.code, active: true } });
+        if (!referralCode) throw new ApiProblem(404, "REFERRAL_CODE_NOT_FOUND", "Referral code was not found");
+        if (referralCode.userId === userId) throw new ApiProblem(409, "SELF_REFERRAL_FORBIDDEN", "You cannot use your own referral code");
+        if (await transaction.customerReferral.findUnique({ where: { referredUserId: userId } })) throw new ApiProblem(409, "REFERRAL_ALREADY_APPLIED", "A referral code has already been applied to this account");
+        const points = configuration.rules.loyalty.referralRewardPoints;
+        const referral = await transaction.customerReferral.create({ data: { referralCodeId: referralCode.id, referrerUserId: referralCode.userId, referredUserId: userId, rewardPoints: points, convertedAt: new Date() } });
+        const earnedAt = new Date();
+        for (const beneficiary of [{ userId: referralCode.userId, entryType: "REFERRAL_REWARD" }, { userId, entryType: "REFERRAL_WELCOME" }]) {
+          const account = await transaction.loyaltyAccount.upsert({ where: { userId: beneficiary.userId }, create: { userId: beneficiary.userId }, update: {} });
+          await transaction.loyaltyTransaction.create({ data: { accountId: account.id, points, entryType: beneficiary.entryType, referenceType: "referral", referenceId: referral.id, idempotencyKey: `referral:${referral.id}:${beneficiary.userId}`, expiresAt: loyaltyExpiresAt(earnedAt, configuration.rules.loyalty), createdAt: earnedAt } });
+          await transaction.loyaltyAccount.update({ where: { id: account.id }, data: { pointsBalance: { increment: points }, version: { increment: 1 } } });
+        }
+        await transaction.auditLog.create({ data: { actorUserId: userId, actorType: "customer", action: "loyalty.referral.applied", resourceType: "customer_referral", resourceId: referral.id, after: json({ code: input.code, referrerUserId: referralCode.userId, points: points.toString() }) } });
+        return { referralId: referral.id, referrerUserId: referralCode.userId, points };
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") throw new ApiProblem(409, "REFERRAL_ALREADY_APPLIED", "A referral code has already been applied to this account");
+      throw error;
+    }
+    await Promise.all([
+      this.notify(reward.referrerUserId, "referral.rewarded", "Referral reward unlocked", `You earned ${reward.points.toString()} Amiyo points.`, "/loyalty", `referral-reward:${reward.referralId}:referrer`),
+      this.notify(userId, "referral.rewarded", "Welcome reward unlocked", `You earned ${reward.points.toString()} Amiyo points.`, "/loyalty", `referral-reward:${reward.referralId}:referred`)
+    ]);
+    return this.referral(userId);
+  }
 
   async growthFeed() { return this.publicCache.getOrCreate("growth:feed", 30_000, async () => { const now = new Date(); const [banners, coupons, campaigns, flashSales, configuration] = await Promise.all([this.client.banner.findMany({ where: { active: true, startsAt: { lte: now }, endsAt: { gt: now } }, orderBy: [{ placement: "asc" }, { displayOrder: "asc" }], take: 30 }), this.client.coupon.findMany({ where: { active: true, startsAt: { lte: now }, endsAt: { gt: now } }, orderBy: { startsAt: "desc" }, take: 20 }), this.client.campaign.findMany({ where: { status: "active", startsAt: { lte: now }, endsAt: { gt: now } }, orderBy: { startsAt: "desc" }, take: 20 }), this.client.flashSale.findMany({ where: { status: "active", startsAt: { lte: now }, endsAt: { gt: now } }, include: { products: true }, orderBy: { startsAt: "asc" }, take: 10 }), this.client.platformConfiguration?.findUnique({ where: { key: "default" } })]); const flags = configuration?.featureFlags as { flashSales?: boolean } | undefined; return { banners: banners.map((row) => ({ id: row.id, placement: row.placement, title: row.title, subtitle: row.subtitle, imageUrl: mediaUrl(row.storageKey), mobileImageUrl: mediaUrl(row.mobileStorageKey ?? undefined), ctaLabel: row.ctaLabel, badgeText: row.badgeText, targetType: row.targetType, targetValue: row.targetValue, startsAt: row.startsAt.toISOString(), endsAt: row.endsAt.toISOString() })), coupons: coupons.map((row) => ({ id: row.id, code: row.code, discountType: row.discountType, value: row.value, minimumSpend: money(row.minimumSpendMinor, row.currency), startsAt: row.startsAt.toISOString(), endsAt: row.endsAt.toISOString() })), campaigns: campaigns.map((row) => ({ id: row.id, name: row.name, slug: row.slug, href: `/campaign/${row.slug}`, startsAt: row.startsAt.toISOString(), endsAt: row.endsAt.toISOString() })), flashSales: flags?.flashSales === false ? [] : flashSales.map((row) => ({ id: row.id, name: row.name, href: `/flash-sale/${row.id}`, startsAt: row.startsAt.toISOString(), endsAt: row.endsAt.toISOString(), products: row.products.map((product) => ({ productId: product.productId, price: money(product.priceMinor), quantityRemaining: product.quantityLimit === null ? null : Math.max(0, product.quantityLimit - product.soldCount) })) })) }; });
   }

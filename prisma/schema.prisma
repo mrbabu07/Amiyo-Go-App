@@ -204,6 +204,9 @@ model User {
   chatParticipations ChatParticipant[]
   notifications      Notification[]
   loyaltyAccount     LoyaltyAccount?
+  referralCode       ReferralCode?
+  referralsMade      CustomerReferral[]       @relation("ReferralReferrer")
+  referralReceived   CustomerReferral?        @relation("ReferralReferred")
   mediaUploads       MediaUpload[]
 
   @@map("users")
@@ -403,20 +406,20 @@ model VendorStaffPermission {
 }
 
 model VendorShop {
-  id               String        @id @default(uuid()) @db.Uuid
-  legacyId         String?       @unique @map("legacy_id")
-  vendorId         String        @map("vendor_id") @db.Uuid
+  id               String           @id @default(uuid()) @db.Uuid
+  legacyId         String?          @unique @map("legacy_id")
+  vendorId         String           @map("vendor_id") @db.Uuid
   name             String
-  slug             String        @unique
-  status           ShopStatus    @default(DRAFT)
+  slug             String           @unique
+  status           ShopStatus       @default(DRAFT)
   description      String?
-  logoStorageKey   String?       @map("logo_storage_key")
-  bannerStorageKey String?       @map("banner_storage_key")
+  logoStorageKey   String?          @map("logo_storage_key")
+  bannerStorageKey String?          @map("banner_storage_key")
   settings         Json?
-  version          Int           @default(1)
-  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
-  vendor           Vendor        @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  version          Int              @default(1)
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  vendor           Vendor           @relation(fields: [vendorId], references: [id], onDelete: Restrict)
   products         Product[]
   shopProducts     ShopProduct[]
   vendorOrders     VendorOrder[]
@@ -668,7 +671,7 @@ model Product {
   reviews              Review[]
   questions            Question[]
   recommendationEvents RecommendationEvent[]
-  commissionRules  CommissionRule[]
+  commissionRules      CommissionRule[]
 
   @@index([categoryId, status, createdAt])
   @@index([vendorId, status])
@@ -1014,23 +1017,23 @@ model OrderStatusEvent {
 }
 
 model Shipment {
-  id             String                @id @default(uuid()) @db.Uuid
-  vendorOrderId  String                @unique @map("vendor_order_id") @db.Uuid
-  status         ShipmentStatus        @default(PENDING)
-  provider       String?
-  trackingNumber String?               @unique @map("tracking_number")
-  codState       String                @default("cod_pending") @map("cod_state")
-  codRemittanceReference String?       @map("cod_remittance_reference")
-  codDisputeReason String?              @map("cod_dispute_reason")
-  rtoReceivedAt  DateTime?             @map("rto_received_at") @db.Timestamptz(3)
-  shippedAt      DateTime?             @map("shipped_at") @db.Timestamptz(3)
-  deliveredAt    DateTime?             @map("delivered_at") @db.Timestamptz(3)
-  createdAt      DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
-  vendorOrder    VendorOrder           @relation(fields: [vendorOrderId], references: [id], onDelete: Restrict)
-  events         ShipmentEvent[]
-  assignment     LogisticsAssignment?
-  failedDelivery FailedDeliveryRecord?
+  id                     String                @id @default(uuid()) @db.Uuid
+  vendorOrderId          String                @unique @map("vendor_order_id") @db.Uuid
+  status                 ShipmentStatus        @default(PENDING)
+  provider               String?
+  trackingNumber         String?               @unique @map("tracking_number")
+  codState               String                @default("cod_pending") @map("cod_state")
+  codRemittanceReference String?               @map("cod_remittance_reference")
+  codDisputeReason       String?               @map("cod_dispute_reason")
+  rtoReceivedAt          DateTime?             @map("rto_received_at") @db.Timestamptz(3)
+  shippedAt              DateTime?             @map("shipped_at") @db.Timestamptz(3)
+  deliveredAt            DateTime?             @map("delivered_at") @db.Timestamptz(3)
+  createdAt              DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+  vendorOrder            VendorOrder           @relation(fields: [vendorOrderId], references: [id], onDelete: Restrict)
+  events                 ShipmentEvent[]
+  assignment             LogisticsAssignment?
+  failedDelivery         FailedDeliveryRecord?
 
   @@index([vendorOrderId])
   @@index([codState, updatedAt])
@@ -1986,6 +1989,38 @@ model LoyaltyTransaction {
 
   @@index([accountId, createdAt])
   @@map("loyalty_transactions")
+}
+
+model ReferralCode {
+  id        String             @id @default(uuid()) @db.Uuid
+  userId    String             @unique @map("user_id") @db.Uuid
+  code      String             @unique @db.VarChar(24)
+  active    Boolean            @default(true)
+  createdAt DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  user      User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  referrals CustomerReferral[]
+
+  @@map("referral_codes")
+}
+
+model CustomerReferral {
+  id             String       @id @default(uuid()) @db.Uuid
+  referralCodeId String       @map("referral_code_id") @db.Uuid
+  referrerUserId String       @map("referrer_user_id") @db.Uuid
+  referredUserId String       @unique @map("referred_user_id") @db.Uuid
+  status         String       @default("CONVERTED")
+  rewardPoints   BigInt       @default(0) @map("reward_points")
+  fraudFlag      Boolean      @default(false) @map("fraud_flag")
+  convertedAt    DateTime?    @map("converted_at") @db.Timestamptz(3)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  referralCode   ReferralCode @relation(fields: [referralCodeId], references: [id], onDelete: Restrict)
+  referrer       User         @relation("ReferralReferrer", fields: [referrerUserId], references: [id], onDelete: Restrict)
+  referred       User         @relation("ReferralReferred", fields: [referredUserId], references: [id], onDelete: Restrict)
+
+  @@index([referrerUserId, createdAt])
+  @@index([status, createdAt])
+  @@map("customer_referrals")
 }
 
 model NotificationDelivery {

@@ -19,4 +19,5 @@ test("partial refunds reverse earned points conservatively", () => {
 
 test("loyalty fraud hold uses the configured release delay", () => {
   assert.equal(loyaltyReleaseAt(new Date("2026-09-01T00:00:00.000Z"), defaultLoyaltyPolicy).toISOString(), "2026-09-08T00:00:00.000Z");
+  assert.equal(defaultLoyaltyPolicy.referralRewardPoints, 500n);
 });

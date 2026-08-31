@@ -16,7 +16,7 @@ type StoredBusinessRules = {
 };
 
 export const defaultBusinessRules: BusinessRules = {
-  loyalty: { enabled: true, earnAmountMinorPerPoint: 10_000n, redeemMinorPerPoint: 100n, minimumRedemptionPoints: 100n, maximumRedemptionBps: 2_000, fraudHoldDays: 7, expiryDays: 365 },
+  loyalty: { enabled: true, earnAmountMinorPerPoint: 10_000n, redeemMinorPerPoint: 100n, minimumRedemptionPoints: 100n, maximumRedemptionBps: 2_000, fraudHoldDays: 7, expiryDays: 365, referralRewardPoints: 500n },
   promotions: { maximumStackedDiscountBps: 3_500, allowCodeWithAutomatic: true },
   settlement: { minimumPayoutMinor: 50_000n, holdDays: 7, cadenceDays: 7, automaticProposal: true },
   refunds: { requireProviderReference: true, allowPartial: true }
@@ -24,7 +24,7 @@ export const defaultBusinessRules: BusinessRules = {
 
 export function serializeBusinessRules(rules: BusinessRules) {
   return {
-    loyalty: { ...rules.loyalty, earnAmountMinorPerPoint: rules.loyalty.earnAmountMinorPerPoint.toString(), redeemMinorPerPoint: rules.loyalty.redeemMinorPerPoint.toString(), minimumRedemptionPoints: rules.loyalty.minimumRedemptionPoints.toString() },
+    loyalty: { ...rules.loyalty, earnAmountMinorPerPoint: rules.loyalty.earnAmountMinorPerPoint.toString(), redeemMinorPerPoint: rules.loyalty.redeemMinorPerPoint.toString(), minimumRedemptionPoints: rules.loyalty.minimumRedemptionPoints.toString(), referralRewardPoints: rules.loyalty.referralRewardPoints.toString() },
     promotions: rules.promotions,
     settlement: { ...rules.settlement, minimumPayoutMinor: rules.settlement.minimumPayoutMinor.toString() },
     refunds: rules.refunds
@@ -42,7 +42,8 @@ export function parseBusinessRules(value: Prisma.JsonValue | null | undefined): 
       minimumRedemptionPoints: BigInt(loyalty.minimumRedemptionPoints ?? defaultBusinessRules.loyalty.minimumRedemptionPoints),
       maximumRedemptionBps: Number(loyalty.maximumRedemptionBps ?? defaultBusinessRules.loyalty.maximumRedemptionBps),
       fraudHoldDays: Number(loyalty.fraudHoldDays ?? defaultBusinessRules.loyalty.fraudHoldDays),
-      expiryDays: Number(loyalty.expiryDays ?? defaultBusinessRules.loyalty.expiryDays)
+      expiryDays: Number(loyalty.expiryDays ?? defaultBusinessRules.loyalty.expiryDays),
+      referralRewardPoints: BigInt(loyalty.referralRewardPoints ?? defaultBusinessRules.loyalty.referralRewardPoints)
     },
     promotions: { ...defaultBusinessRules.promotions, ...stored.promotions },
     settlement: { ...defaultBusinessRules.settlement, ...stored.settlement, minimumPayoutMinor: BigInt(stored.settlement?.minimumPayoutMinor ?? defaultBusinessRules.settlement.minimumPayoutMinor) },
