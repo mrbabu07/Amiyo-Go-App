@@ -7,6 +7,7 @@ export type EnqueueOutboxInput = {
   eventType: string;
   idempotencyKey: string;
   payload: Prisma.InputJsonValue;
+  availableAt?: Date;
 };
 
 export class OutboxRepository {

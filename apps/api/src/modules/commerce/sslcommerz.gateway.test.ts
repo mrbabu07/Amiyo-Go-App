@@ -23,3 +23,20 @@ test("SSLCommerz rejects an untrusted redirect URL", async () => {
   const fetcher = async () => new Response(JSON.stringify({ status: "SUCCESS", sessionkey: "session-1", GatewayPageURL: "https://evil.example/checkout" }), { status: 200 });
   await assert.rejects(() => new SslCommerzGateway(fetcher as typeof fetch, env).initiate(input), /invalid payment URL/);
 });
+
+test("SSLCommerz refund uses the official sandbox validator endpoint", async () => {
+  let requestedUrl = "";
+  const fetcher = async (url: string | URL | Request) => { requestedUrl = String(url); return new Response(JSON.stringify({ APIConnect: "DONE", status: "success", refund_ref_id: "refund-123", bank_tran_id: "bank-123", trans_id: "AMY123" }), { status: 200 }); };
+  const result = await new SslCommerzGateway(fetcher as typeof fetch, env).initiateRefund({ bankTransactionId: "bank-123", refundTransactionId: "REF123", amountMinor: 12_345n, reason: "Customer return", referenceId: input.orderId });
+  const url = new URL(requestedUrl);
+  assert.equal(url.hostname, "sandbox.sslcommerz.com");
+  assert.equal(url.pathname, "/validator/api/merchantTransIDvalidationAPI.php");
+  assert.equal(url.searchParams.get("refund_amount"), "123.45");
+  assert.equal(url.searchParams.get("refund_trans_id"), "REF123");
+  assert.equal(result.refundRefId, "refund-123");
+});
+
+test("SSLCommerz refund status requires a successful API connection", async () => {
+  const fetcher = async () => new Response(JSON.stringify({ APIConnect: "FAILED", errorReason: "Invalid credentials" }), { status: 200 });
+  await assert.rejects(() => new SslCommerzGateway(fetcher as typeof fetch, env).refundStatus("refund-123"), /Invalid credentials/);
+});

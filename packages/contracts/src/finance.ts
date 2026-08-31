@@ -24,8 +24,10 @@ export const vendorFinanceSchema = z.object({
 export const createPayoutRequestSchema = z.object({ bankAccountId: uuidSchema, amountMinor: z.string().regex(/^[1-9]\d*$/) });
 export const reviewPayoutSchema = z.object({ expectedVersion: versionSchema, action: z.enum(["APPROVE", "REJECT"]), reason: z.string().trim().max(500).nullable().optional() });
 export const completePayoutSchema = z.object({ provider: z.string().trim().min(2).max(80), providerRef: z.string().trim().min(2).max(200) });
-export const completeRefundSchema = z.object({ providerRefundId: z.string().trim().min(2).max(200) });
-export const adminOrderRefundInputSchema = z.object({ expectedVersion: versionSchema, amountMinor: z.string().regex(/^[1-9]\d*$/), reason: z.string().trim().min(5).max(500), providerRefundId: z.string().trim().min(2).max(200) });
+export const createSettlementProposalSchema = z.object({ periodStart: timestampSchema.optional(), periodEnd: timestampSchema.optional(), payoutRequestIds: z.array(uuidSchema).max(500).default([]) }).refine((value) => !value.periodStart || !value.periodEnd || value.periodStart < value.periodEnd, "periodStart must precede periodEnd");
+export const completeRefundSchema = z.object({ providerRefundId: z.string().trim().min(2).max(200).nullable().optional() });
+export const adminOrderRefundInputSchema = z.object({ expectedVersion: versionSchema, amountMinor: z.string().regex(/^[1-9]\d*$/), reason: z.string().trim().min(5).max(500), providerRefundId: z.string().trim().min(2).max(200).nullable().optional() });
+export const providerOrderRefundInputSchema = adminOrderRefundInputSchema.omit({ providerRefundId: true });
 export const adminOrderRefundResultSchema = z.object({ orderId: uuidSchema, refundId: uuidSchema, status: z.enum(["PARTIALLY_REFUNDED", "REFUNDED"]), amount: moneySchema, refundedTotal: moneySchema });
 export const codReconciliationInputSchema = z.object({ periodStart: z.string().datetime(), periodEnd: z.string().datetime() }).refine((value) => value.periodStart < value.periodEnd, "periodStart must precede periodEnd");
 export const adminCodDeliveryInputSchema = z.object({ expectedVersion: versionSchema, courierName: z.string().trim().min(2).max(120), note: z.string().trim().max(500).nullable().default(null) });
@@ -36,8 +38,10 @@ export const adminCodWorkspaceSchema = z.object({ orders: z.array(adminCodOrderS
 export type CreatePayoutRequest = z.infer<typeof createPayoutRequestSchema>;
 export type ReviewPayout = z.infer<typeof reviewPayoutSchema>;
 export type CompletePayout = z.infer<typeof completePayoutSchema>;
+export type CreateSettlementProposal = z.infer<typeof createSettlementProposalSchema>;
 export type CompleteRefund = z.infer<typeof completeRefundSchema>;
 export type AdminOrderRefundInput = z.infer<typeof adminOrderRefundInputSchema>;
+export type ProviderOrderRefundInput = z.infer<typeof providerOrderRefundInputSchema>;
 export type AdminOrderRefundResult = z.infer<typeof adminOrderRefundResultSchema>;
 export type CodReconciliationInput = z.infer<typeof codReconciliationInputSchema>;
 export type AdminCodDeliveryInput = z.infer<typeof adminCodDeliveryInputSchema>;

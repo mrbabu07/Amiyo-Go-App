@@ -22,10 +22,11 @@ export function providerReferenceValid(payment: RefundPayment, providerRefundId?
   return !rule.requiresProviderReference || Boolean(providerRefundId?.trim());
 }
 
-export function stackedPromotionDiscount(subtotalMinor: bigint, couponDiscountMinor: bigint, candidates: readonly PromotionCandidate[] = []) {
+export function stackedPromotionDiscount(subtotalMinor: bigint, couponDiscountMinor: bigint, candidates: readonly PromotionCandidate[] = [], maximumDiscountBps = maximumStackedDiscountBps) {
   const selected = selectPromotion(subtotalMinor, candidates);
   const automaticDiscountMinor = selected ? promotionDiscount(subtotalMinor, selected) : 0n;
-  const cap = (subtotalMinor * BigInt(maximumStackedDiscountBps)) / 10_000n;
+  const safeMaximumDiscountBps = Math.max(0, Math.min(10_000, maximumDiscountBps));
+  const cap = (subtotalMinor * BigInt(safeMaximumDiscountBps)) / 10_000n;
   const total = couponDiscountMinor + automaticDiscountMinor;
   const cappedTotal = total > cap ? cap : total;
   return {
@@ -37,9 +38,17 @@ export function stackedPromotionDiscount(subtotalMinor: bigint, couponDiscountMi
   };
 }
 
-export function settlementDecision(input: SettlementInput): SettlementDecision {
+export function settlementProposalDecision(input: { amountMinor: bigint; bankAccountVerified: boolean; status: string; reviewedAt?: Date | null }, minimumAmountMinor = minimumPayoutMinor, holdDays = 0, now = new Date()): SettlementDecision {
+  if (input.status !== "APPROVED") return { eligible: false, code: "PAYOUT_NOT_APPROVED", reason: "Only approved payout requests can enter a settlement proposal." };
+  if (input.amountMinor < minimumAmountMinor) return { eligible: false, code: "PAYOUT_BELOW_MINIMUM", reason: "Payout amount is below the settlement proposal threshold." };
+  if (!input.bankAccountVerified) return { eligible: false, code: "PAYOUT_ACCOUNT_UNVERIFIED", reason: "A verified vendor bank or MFS account is required." };
+  if (holdDays > 0 && (!input.reviewedAt || input.reviewedAt.getTime() + holdDays * 86_400_000 > now.getTime())) return { eligible: false, code: "PAYOUT_HOLD_ACTIVE", reason: "The finance hold period has not elapsed." };
+  return { eligible: true, code: "PAYOUT_PROPOSAL_ELIGIBLE", reason: "Payout is eligible for finance settlement review." };
+}
+
+export function settlementDecision(input: SettlementInput, minimumAmountMinor = minimumPayoutMinor): SettlementDecision {
   if (!["APPROVED", "PROCESSING"].includes(input.status)) return { eligible: false, code: "PAYOUT_NOT_APPROVED", reason: "Payout must be approved before settlement." };
-  if (input.amountMinor < minimumPayoutMinor) return { eligible: false, code: "PAYOUT_BELOW_MINIMUM", reason: "Payout amount is below the minimum settlement threshold." };
+  if (input.amountMinor < minimumAmountMinor) return { eligible: false, code: "PAYOUT_BELOW_MINIMUM", reason: "Payout amount is below the minimum settlement threshold." };
   if (input.bankAccountVerified === false) return { eligible: false, code: "PAYOUT_ACCOUNT_UNVERIFIED", reason: "A verified vendor bank or MFS account is required." };
   if (!input.provider?.trim() || !input.providerRef?.trim()) return { eligible: false, code: "PAYOUT_REFERENCE_REQUIRED", reason: "Provider and transaction reference are required before marking a payout paid." };
   return { eligible: true, code: "PAYOUT_SETTLEMENT_APPROVED", reason: "Payout has the required approval and provider evidence." };

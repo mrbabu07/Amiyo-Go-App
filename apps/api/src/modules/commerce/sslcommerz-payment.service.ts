@@ -75,6 +75,7 @@ export class SslCommerzPaymentService {
       await this.client.paymentVerification.upsert({ where: { paymentId_transactionRef: { paymentId: payment.id, transactionRef: validation.val_id } }, create: { paymentId: payment.id, transactionRef: validation.val_id, status: "risk_hold" }, update: { status: "risk_hold" } });
       return { received: true, pending: true, held: true, paymentId: payment.id };
     }
+    await this.client.paymentAttempt.updateMany({ where: { paymentId: payment.id, attemptNumber: 1 }, data: { responseSnapshot: { validationId: validation.val_id, transactionId: validation.tran_id, bankTransactionId: validation.bank_tran_id ?? null, amount: validation.amount, currency: validation.currency || validation.currency_type || null, riskLevel: validation.risk_level ?? "0" } } });
     await this.webhook.process("sslcommerz", { eventId: `sslcommerz:${validation.val_id}`, paymentId: payment.id, status: "CAPTURED", transactionId: validation.tran_id, amountMinor: validatedAmount.toString() });
     return { received: true, pending: false, held: false, paymentId: payment.id, orderId: payment.orderId, orderNumber: payment.order.orderNumber, totalMinor: payment.amountMinor.toString(), invoice: payment.order.invoice?.number ?? "" };
   }

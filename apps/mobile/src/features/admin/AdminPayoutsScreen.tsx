@@ -6,7 +6,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDim
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { firebaseAuth } from "../auth/firebase";
-import { completeAdminPayoutCase, getAdminPayouts, reviewAdminPayoutCase, type AdminPayoutSummary } from "../operations/operations.api";
+import { completeAdminPayoutCase, createSettlementProposal, getAdminPayouts, getSettlementProposals, reviewAdminPayoutCase, type AdminPayoutSummary } from "../operations/operations.api";
 
 type PayoutAction = "APPROVE" | "REJECT" | "PAY";
 const statuses = ["ALL", "REQUESTED", "APPROVED", "PROCESSING", "PAID", "REJECTED"];
@@ -27,19 +27,22 @@ export function AdminPayoutsScreen({ requestsOnly = false }: { requestsOnly?: bo
   const [providerRef, setProviderRef] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const payouts = useQuery({ queryKey: ["admin", "payouts"], queryFn: () => getAdminPayouts(user!), enabled: Boolean(user), staleTime: 15_000 });
+  const proposals = useQuery({ queryKey: ["admin", "settlement-proposals"], queryFn: () => getSettlementProposals(user!), enabled: Boolean(user), staleTime: 15_000 });
   const rows = payouts.data ?? [];
   const filtered = useMemo(() => rows.filter((item) => status === "ALL" || item.status === status).filter((item) => `${item.id} ${item.vendor.displayName} ${item.vendor.legalName} ${item.bankAccount?.accountName ?? ""} ${item.bankAccount?.accountNumberMasked ?? ""}`.toLowerCase().includes(search.trim().toLowerCase())), [rows, search, status]);
   const requestedMinor = sum(rows.filter((item) => item.status === "REQUESTED"));
   const payableMinor = sum(rows.filter((item) => ["APPROVED", "PROCESSING"].includes(item.status)));
   const paidMinor = sum(rows.filter((item) => item.status === "PAID"));
-  const refresh = async () => { await Promise.all([cache.invalidateQueries({ queryKey: ["admin", "payouts"] }), cache.invalidateQueries({ queryKey: ["admin", "queues"] })]); };
+  const refresh = async () => { await Promise.all([cache.invalidateQueries({ queryKey: ["admin", "payouts"] }), cache.invalidateQueries({ queryKey: ["admin", "queues"] }), cache.invalidateQueries({ queryKey: ["admin", "settlement-proposals"] })]); };
   const closeAction = () => { setAction(null); setReason(""); setProviderRef(""); setFormError(null); };
   const review = useMutation({ mutationFn: async () => { if (!selected || !action || action === "PAY") return; if (action === "REJECT" && reason.trim().length < 3) throw new Error("Add a rejection reason."); return reviewAdminPayoutCase(user!, selected.id, { expectedVersion: selected.version, action, reason: reason.trim() || null }); }, onSuccess: async () => { closeAction(); setSelected(null); await refresh(); }, onError: (error) => setFormError(error.message) });
   const complete = useMutation({ mutationFn: async () => { if (!selected) return; if (provider.trim().length < 2 || providerRef.trim().length < 2) throw new Error("Provider and transaction reference are required."); return completeAdminPayoutCase(user!, selected.id, provider.trim(), providerRef.trim()); }, onSuccess: async () => { closeAction(); setSelected(null); await refresh(); }, onError: (error) => setFormError(error.message) });
+  const propose = useMutation({ mutationFn: () => createSettlementProposal(user!), onSuccess: refresh });
   const select = (item: AdminPayoutSummary) => { setSelected(item); closeAction(); };
 
   return <Screen eyebrow="FINANCE CONTROL" title={requestsOnly ? "Payout request review" : "Vendor payout desk"} description="Approve seller withdrawals, verify bank/MFS details and record settlement references with a clean audit trail.">
-    <View style={[styles.hero, compact && styles.heroCompact]}><View style={styles.heroCopy}><Text style={styles.heroTitle}>Seller settlement control</Text><Text style={styles.heroText}>{rows.filter((item) => item.status === "REQUESTED").length} waiting review | {rows.filter((item) => ["APPROVED", "PROCESSING"].includes(item.status)).length} ready to pay | {money(payableMinor)} payable now</Text></View><Pressable onPress={() => payouts.refetch()} style={styles.heroRefresh}><Ionicons color="#fff" name="refresh" size={19} /><Text style={styles.heroRefreshText}>Refresh</Text></Pressable></View>
+    <View style={[styles.hero, compact && styles.heroCompact]}><View style={styles.heroCopy}><Text style={styles.heroTitle}>Seller settlement control</Text><Text style={styles.heroText}>{rows.filter((item) => item.status === "REQUESTED").length} waiting review | {rows.filter((item) => ["APPROVED", "PROCESSING"].includes(item.status)).length} ready to pay | {money(payableMinor)} payable now</Text></View><View style={styles.actions}><Pressable disabled={propose.isPending} onPress={() => propose.mutate()} style={styles.heroRefresh}><Ionicons color="#fff" name="layers-outline" size={19} /><Text style={styles.heroRefreshText}>{propose.isPending ? "Preparing…" : "Build settlement batch"}</Text></Pressable><Pressable onPress={() => payouts.refetch()} style={styles.heroRefresh}><Ionicons color="#fff" name="refresh" size={19} /><Text style={styles.heroRefreshText}>Refresh</Text></Pressable></View></View>
+    {propose.error ? <ErrorBox message={propose.error.message} /> : null}{proposals.data?.length ? <View style={styles.proposal}><Ionicons color={colors.success} name="document-text-outline" size={21} /><View style={styles.flex}><Text style={styles.vendor}>Latest proposal · {proposals.data[0]!.status}</Text><Text style={styles.muted}>{money(Number(proposals.data[0]!.amount.amountMinor))} · {new Date(proposals.data[0]!.createdAt).toLocaleString("en-BD")}</Text></View><Text style={styles.status}>{proposals.data.length} BATCH{proposals.data.length === 1 ? "" : "ES"}</Text></View> : null}
     <View style={[styles.metrics, compact && styles.stack]}><Metric icon="time-outline" label="Review queue" value={money(requestedMinor)} detail={`${rows.filter((item) => item.status === "REQUESTED").length} request(s)`} /><Metric icon="wallet-outline" label="Payable approved" value={money(payableMinor)} detail="Approved or processing" /><Metric icon="shield-checkmark-outline" label="Paid total" value={money(paidMinor)} detail={`${rows.filter((item) => item.status === "PAID").length} completed`} /><Metric icon="alert-circle-outline" label="Needs bank check" value={String(rows.filter((item) => !item.bankAccount).length)} detail="Missing payout account" /></View>
     <View style={[styles.toolbar, compact && styles.stack]}><View style={styles.search}><Ionicons color={colors.muted} name="search-outline" size={18} /><TextInput onChangeText={setSearch} placeholder="Search vendor, request ID, bank or MFS..." placeholderTextColor="#94a3b8" style={styles.searchInput} value={search} /></View></View>
     <View style={styles.filters}>{statuses.map((item) => <Pressable key={item} onPress={() => setStatus(item)} style={[styles.filter, status === item && styles.filterActive]}><Text style={[styles.filterText, status === item && styles.filterTextActive]}>{item}</Text><Text style={[styles.count, status === item && styles.countActive]}>{item === "ALL" ? rows.length : rows.filter((row) => row.status === item).length}</Text></Pressable>)}</View>
@@ -96,6 +99,7 @@ const styles = StyleSheet.create({
   heroText: { color: "#cbd5e1", lineHeight: 20, marginTop: 5 },
   heroRefresh: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, flexDirection: "row", gap: 7, justifyContent: "center", minHeight: 44, paddingHorizontal: spacing.lg },
   heroRefreshText: { color: "#fff", fontWeight: "700" },
+  proposal: { alignItems: "center", backgroundColor: colors.accentSoft, borderColor: colors.accent, borderRadius: radius.lg, borderWidth: 1, flexDirection: "row", gap: spacing.sm, padding: spacing.md },
   metrics: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
   stack: { alignItems: "stretch", flexDirection: "column" },
   metric: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flex: 1, flexDirection: "row", gap: 12, minWidth: 190, padding: spacing.md },

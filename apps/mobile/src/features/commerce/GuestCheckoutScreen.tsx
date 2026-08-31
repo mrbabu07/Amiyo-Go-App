@@ -41,7 +41,7 @@ export function GuestCheckoutScreen() {
     setBusy(true); setError(null);
     try {
       const address = await createMyAddress(user, { label: "Guest delivery", recipientName: form.name, phone: form.phone, line1: form.line1, line2: form.line2 || null, division: form.division, district: form.district, upazila: form.upazila || null, unionName: form.unionName || null, postalCode: form.postalCode || null, isDefault: true });
-      const result = await placeOrder(user, { addressId: address.id, paymentMethod, couponCode }, Crypto.randomUUID());
+      const result = await placeOrder(user, { addressId: address.id, paymentMethod, couponCode, loyaltyPoints: "0" }, Crypto.randomUUID());
       queryClient.removeQueries({ queryKey: ["cart"] });
       queryClient.removeQueries({ queryKey: ["checkout"] });
       router.replace({ pathname: "/order-confirmation", params: { orderId: result.order.id, orderNumber: result.order.orderNumber, totalMinor: result.order.total.amountMinor, payment: result.payment.status, invoice: result.invoiceNumber, actionUrl: result.actionUrl || "", instructions: result.instructions || `Guest receipt for ${form.email}` } });

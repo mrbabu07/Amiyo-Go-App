@@ -1,6 +1,6 @@
 # Business Rules Approval Pack
 
-Date: 2026-08-21  
+Date: 2026-09-01
 Scope: refunds, promotion stacking, loyalty guardrails, payout settlement  
 Status: implemented in code; live-provider rollout still requires staging evidence and operator credentials.
 
@@ -10,15 +10,16 @@ Status: implemented in code; live-provider rollout still requires staging eviden
 - COD/manual/wallet refunds are reconciled through the marketplace ledger and do not require a gateway reference.
 - Unknown payment providers default to provider-evidence-required until the provider is explicitly classified.
 - Refunds remain bounded by captured payment minus already-refunded amount.
+- Admin can require provider evidence and enable/disable partial refunds through versioned platform rules.
 - Seller wallet debits and finance ledger entries are created proportionally by vendor-order value.
 
 ## Promotion and Loyalty Rules
 
-- Checkout can apply one explicit customer coupon plus one best active automatic order promotion.
+- Checkout applies an eligible flash-sale price first, one explicit customer coupon or seller/platform voucher second, one best active automatic order promotion third, and loyalty credit last.
 - Automatic promotion choice is deterministic by priority, then ID.
-- Total stacked discount is capped at 35% of cart subtotal.
+- Total promotion discount is bounded by the versioned cap, defaulting to 35% of cart subtotal.
 - Coupon redemption records store only the coupon-funded portion after the cap.
-- Loyalty account and ledger are available, but automatic earning/redemption still requires a separate earning-rate, expiry, reversal, and fraud-hold approval before mutation is enabled.
+- Loyalty earning is queued after the configured fraud hold; redemption has minimum/balance/payable caps; points expire; refunds reverse earned points and restore redeemed points proportionally.
 
 ## Payout Settlement Rules
 
@@ -27,6 +28,7 @@ Status: implemented in code; live-provider rollout still requires staging eviden
 - Admin payment completion requires payout status `APPROVED` or `PROCESSING`.
 - Provider name and transaction reference are required before marking a payout paid.
 - Rejected payout requests release the reserved seller balance back to the vendor wallet.
+- Finance can build an auditable settlement proposal from approved, verified, hold-eligible payouts; proposal generation never marks a payout paid automatically.
 
 ## Required External Evidence Before Production Launch
 
@@ -35,3 +37,5 @@ Status: implemented in code; live-provider rollout still requires staging eviden
 - Payout provider/MFS/bank reference format confirmed with finance operations.
 - Staging checkout confirms the 35% discount cap with coupon + automatic promotion.
 - Finance owner signs off on refund reversal, payout settlement, and loyalty earning/redemption rates.
+
+SSLCommerz refund implementation follows the official API documentation: https://developer.sslcommerz.com/doc/v4/

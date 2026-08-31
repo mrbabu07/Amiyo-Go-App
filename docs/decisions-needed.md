@@ -33,8 +33,8 @@ These decisions block production implementation. Do not guess them in code.
 | Notifications | PARTIAL | In-app and Expo Push are implemented through transactional outbox/BullMQ delivery. Approve any release-one SMS/email events, quiet hours, and opt-out policy. |
 | Push provider | Expo Push selected | Native token registration, durable retries, delivery status and revoked-device filtering are implemented. EAS/FCM/APNs project credentials remain operator configuration. |
 | Newsletter email | Resend selected | Drafts, schedules, recipient snapshots, unsubscribe links, durable retries, and delivery counters are implemented. `EMAIL_PROVIDER_TOKEN` and `EMAIL_FROM` remain operator configuration. |
-| Loyalty | TBD | Approve earning rates, tiers, expiry, redemption value, reversals, and fraud holds before points mutations are enabled. |
-| Promotion stacking | IMPLEMENTED | Checkout applies one coupon plus one deterministic automatic promotion with a 35% subtotal cap; voucher/flash-sale product-level precedence and staging evidence remain required before production launch. |
+| Loyalty | IMPLEMENTED | Delayed earning, redemption cap/minimum, expiry, refund reversal, and redemption restoration are versioned admin rules. Finance approval and staging evidence remain required. |
+| Promotion stacking | IMPLEMENTED | Checkout applies flash price, one coupon or voucher, one deterministic automatic promotion, then loyalty credit under a versioned cap. Staging margin evidence remains required. |
 | Data retention | TBD | Per table/file/log retention periods. |
 | Account deletion | TBD | Anonymization, legal retention, recovery window. |
 | Migration cutover | TBD | Maintenance window, rollback duration, read-only Mongo window. |

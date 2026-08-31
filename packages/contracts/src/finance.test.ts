@@ -8,6 +8,7 @@ test("COD workspace preserves signed discrepancy evidence", () => { const worksp
 
 test("admin refunds require a positive minor amount and operational evidence", () => {
   assert.equal(adminOrderRefundInputSchema.safeParse({ expectedVersion: 2, amountMinor: "25000", reason: "Customer service settlement", providerRefundId: "SSL-REFUND-101" }).success, true);
+  assert.equal(adminOrderRefundInputSchema.safeParse({ expectedVersion: 2, amountMinor: "25000", reason: "Internal ledger settlement" }).success, true);
   assert.equal(adminOrderRefundInputSchema.safeParse({ expectedVersion: 2, amountMinor: "0", reason: "Customer service settlement", providerRefundId: "SSL-REFUND-101" }).success, false);
   assert.equal(adminOrderRefundInputSchema.safeParse({ expectedVersion: 2, amountMinor: "25000", reason: "bad", providerRefundId: "x" }).success, false);
 });

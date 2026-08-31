@@ -9,11 +9,11 @@ export const cartItemSchema = z.object({
 export const cartSchema = z.object({ id: uuidSchema, currency: z.string().length(3), items: z.array(cartItemSchema), subtotal: moneySchema, itemCount: z.number().int().nonnegative(), updatedAt: timestampSchema });
 export const addCartItemSchema = z.object({ variantId: uuidSchema, quantity: z.number().int().min(1).max(99).default(1) });
 export const updateCartItemSchema = z.object({ quantity: z.number().int().min(1).max(99) });
-export const checkoutQuoteInputSchema = z.object({ couponCode: z.string().trim().min(3).max(40).transform((value) => value.toUpperCase()).nullable().optional() });
-export const appliedCouponSchema = z.object({ code: z.string(), discountType: z.enum(["PERCENT", "FIXED"]), value: z.number().int().positive() });
-export const checkoutQuoteSchema = z.object({ cart: cartSchema, subtotal: moneySchema, discount: moneySchema, delivery: moneySchema, tax: moneySchema, total: moneySchema, vendorCount: z.number().int().positive(), coupon: appliedCouponSchema.nullable(), expiresAt: timestampSchema });
+export const checkoutQuoteInputSchema = z.object({ couponCode: z.string().trim().min(3).max(40).transform((value) => value.toUpperCase()).nullable().optional(), loyaltyPoints: z.string().regex(/^\d+$/).optional() });
+export const appliedCouponSchema = z.object({ code: z.string(), discountType: z.enum(["PERCENT", "FIXED"]), value: z.number().int().positive(), sourceType: z.enum(["coupon", "voucher"]).default("coupon") });
+export const checkoutQuoteSchema = z.object({ cart: cartSchema, subtotal: moneySchema, discount: moneySchema, delivery: moneySchema, tax: moneySchema, total: moneySchema, vendorCount: z.number().int().positive(), coupon: appliedCouponSchema.nullable(), automaticPromotion: z.object({ id: uuidSchema, amount: moneySchema }).nullable(), loyalty: z.object({ availablePoints: z.string().regex(/^\d+$/), redeemedPoints: z.string().regex(/^\d+$/), discount: moneySchema }), expiresAt: timestampSchema });
 export const paymentMethodSchema = z.enum(["COD", "BKASH", "NAGAD", "SSLCOMMERZ"]);
-export const checkoutInputSchema = z.object({ addressId: uuidSchema, paymentMethod: paymentMethodSchema, couponCode: z.string().trim().min(3).max(40).transform((value) => value.toUpperCase()).nullable().optional() });
+export const checkoutInputSchema = z.object({ addressId: uuidSchema, paymentMethod: paymentMethodSchema, couponCode: z.string().trim().min(3).max(40).transform((value) => value.toUpperCase()).nullable().optional(), loyaltyPoints: z.string().regex(/^\d+$/).optional() });
 export const checkoutResultSchema = z.object({ order: orderSchema, payment: paymentSchema, invoiceNumber: z.string(), actionUrl: z.string().url().nullable(), instructions: z.string().nullable() });
 
 export type CartDto = z.infer<typeof cartSchema>;

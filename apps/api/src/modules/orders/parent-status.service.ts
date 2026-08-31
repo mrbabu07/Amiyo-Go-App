@@ -1,6 +1,8 @@
 import type { ParentOrderStatus, Prisma } from "@prisma/client";
 import { canTransitionParentOrder, deriveParentOrderStatus } from "@amiyo/domain";
+import { loyaltyReleaseAt } from "@amiyo/domain";
 import { OutboxRepository } from "../outbox/outbox.repository.js";
+import { loadBusinessRules } from "../admin/business-rules-config.js";
 
 const sequence: ParentOrderStatus[] = ["CONFIRMED", "PROCESSING", "READY_TO_SHIP", "SHIPPED", "DELIVERED"];
 
@@ -17,6 +19,7 @@ export async function synchronizeParentOrderStatus(transaction: Prisma.Transacti
     const updated = await transaction.order.update({ where: { id: orderId, version: current.version }, data: { status: next, version: { increment: 1 } } });
     await transaction.orderStatusEvent.create({ data: { orderId, fromStatus: current.status, toStatus: next, actorType, ...(actorId ? { actorId } : {}) } });
     await outbox.enqueue(transaction, { aggregateType: "order", aggregateId: orderId, eventType: "order.status.changed", idempotencyKey: `order-status:${orderId}:${updated.version}`, payload: { from: current.status, to: next, version: updated.version } });
+    if (next === "DELIVERED" && order.userId) { const { rules } = await loadBusinessRules(transaction); if (rules.loyalty.enabled) await outbox.enqueue(transaction, { aggregateType: "order", aggregateId: orderId, eventType: "loyalty.award.requested", idempotencyKey: `loyalty-award-requested:${orderId}`, payload: { orderId }, availableAt: loyaltyReleaseAt(new Date(), rules.loyalty) }); }
     current = { ...current, ...updated };
   }
   return current;

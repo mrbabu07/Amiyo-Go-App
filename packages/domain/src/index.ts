@@ -5,4 +5,5 @@ export * from "./access/authorization.js";
 export * from "./finance/finance.js";
 export * from "./finance/business-rules.js";
 export * from "./growth/promotion.js";
+export * from "./growth/loyalty.js";
 export * from "./growth/notification-matrix.js";

@@ -1,7 +1,7 @@
 # Production Gap and Marketplace Differentiator Map
 
-Date: 2026-08-21  
-Status: code foundation strong; production launch still blocked by external provider, evidence, and approval work.
+Date: 2026-09-01
+Status: reference-parity business-rule code is implemented; production launch remains blocked only by external configuration, rehearsal evidence, and named approvals.
 
 ## What Is Now Implemented
 
@@ -11,6 +11,11 @@ Status: code foundation strong; production launch still blocked by external prov
 - Discount safety: stacked discount is capped at 35% of subtotal.
 - Payout settlement: verified bank/MFS, BDT 500 minimum, approved/processing state, provider, and transaction reference are required.
 - Audit/ledger basis: seller wallet debits, finance ledger entries, payout reserves/releases, and admin audit records remain evidence-backed.
+- Loyalty lifecycle: delayed earning after the fraud hold, bounded redemption, expiry, partial/full refund reversal, and redemption restoration are ledger-backed and idempotent.
+- Promotion precedence: flash-sale price is applied first, then one coupon or voucher, then the best automatic promotion, then loyalty credit under the configured global cap.
+- Admin business rules: loyalty, promotion stacking, partial-refund policy, provider evidence, payout minimum, hold, cadence, and automatic proposal controls are versioned platform settings.
+- Settlement proposals: eligible approved payouts can be grouped into an auditable finance proposal; payment still requires explicit finance completion and provider evidence.
+- SSLCommerz refunds: the API can initiate a sandbox/live refund through the official transaction-validation endpoint and persist the returned provider reference before ledger reconciliation.
 
 ## Production Work Still Pending
 
@@ -31,9 +36,7 @@ Status: code foundation strong; production launch still blocked by external prov
 
 ### Finance and Operations
 
-- Finance owner sign-off on refund reversal, payout schedule, payout hold/dispute rules, and settlement cadence.
-- Loyalty earning/redemption rates, expiry, fraud hold, reversal, and redemption value.
-- Voucher/flash-sale/product-level discount precedence beyond the checkout coupon + automatic order promotion rule.
+- Finance owner sign-off on the configured refund reversal, payout schedule, payout hold/dispute rules, settlement cadence, loyalty rates, and promotion cap.
 - COD settlement operating model: one parent payment collection vs per-vendor shipment collection.
 - Migration rehearsal, reconciliation approval, and production cutover plan.
 
@@ -87,11 +90,11 @@ Sources:
 - Voice search, main/subcategory navigation, dynamic product attributes, modern seller registration, multi-store checkout, coupons, flash campaigns, and personalized account features can make the app feel more complete for local buyers.
 - The brand can position itself as a “transparent seller-first marketplace”: lower starting commission, evidence-backed finance, faster seller onboarding, and clearer order/invoice tracking.
 
-## Recommended Next Build Priority
+## Remaining Launch Priority
 
-1. Add loyalty earning/redemption engine with fraud hold and refund reversal.
-2. Add voucher/flash-sale/product-level precedence to the promotion engine.
-3. Add admin UI for business-rule settings instead of code constants.
-4. Add provider refund worker integration for SSLCommerz live mode.
-5. Add automated settlement batch proposal screen for finance review.
-6. Run staging real-device E2E for checkout, refund, return, payout, and seller product flows.
+1. Rotate shared secrets and configure production secret storage.
+2. Provision production hosting, PostgreSQL, Redis, storage/CDN, monitoring, and backups.
+3. Configure Firebase Admin, native app registrations, EAS signing, and store accounts.
+4. Run SSLCommerz live refund evidence and finance settlement rehearsal.
+5. Run staging real-device E2E for checkout, refund, return, payout, and seller product flows.
+6. Obtain finance, privacy, retention, migration, and release-owner sign-off.

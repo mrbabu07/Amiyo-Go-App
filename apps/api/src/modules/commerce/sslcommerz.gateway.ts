@@ -3,6 +3,8 @@ import { ApiProblem } from "../../middleware/api-problem.js";
 
 const sessionSchema = z.object({ status: z.string(), failedreason: z.string().optional(), sessionkey: z.string().optional(), GatewayPageURL: z.string().optional() });
 const validationSchema = z.object({ status: z.string(), tran_id: z.string(), val_id: z.string(), amount: z.string(), currency: z.string().optional(), currency_type: z.string().optional(), risk_level: z.union([z.string(), z.number()]).optional(), bank_tran_id: z.string().optional() }).passthrough();
+const refundSchema = z.object({ APIConnect: z.string(), status: z.string().optional(), refund_ref_id: z.string().optional(), bank_tran_id: z.string().optional(), trans_id: z.string().optional(), errorReason: z.string().optional() }).passthrough();
+const refundStatusSchema = z.object({ APIConnect: z.string(), status: z.string().optional(), refund_ref_id: z.string().optional(), bank_tran_id: z.string().optional(), tran_id: z.string().optional(), initiated_on: z.string().optional(), refunded_on: z.string().optional(), errorReason: z.string().optional() }).passthrough();
 
 type GatewayInput = {
   paymentId: string;
@@ -92,6 +94,15 @@ export class SslCommerzGateway {
     return validationSchema.parse(await response.json());
   }
 
+  async initiateRefund(input: { bankTransactionId: string; refundTransactionId: string; amountMinor: bigint; reason: string; referenceId?: string }) {
+    this.requireCredentials(); const query = new URLSearchParams({ bank_tran_id: input.bankTransactionId, refund_trans_id: input.refundTransactionId.slice(0, 30), refund_amount: (Number(input.amountMinor) / 100).toFixed(2), refund_remarks: input.reason.slice(0, 255), store_id: this.storeId, store_passwd: this.storePassword, v: "1", format: "json", ...(input.referenceId ? { refe_id: input.referenceId.slice(0, 50) } : {}) }); const response = await this.fetcher(`${this.baseUrl()}/validator/api/merchantTransIDvalidationAPI.php?${query}`, { signal: AbortSignal.timeout(30_000) }); if (!response.ok) throw new ApiProblem(502, "SSLCOMMERZ_REFUND_UNAVAILABLE", `SSLCommerz refund request failed (${response.status})`); const result = refundSchema.parse(await response.json()); if (result.APIConnect !== "DONE" || !["success", "processing"].includes(result.status || "") || !result.refund_ref_id) throw new ApiProblem(502, "SSLCOMMERZ_REFUND_FAILED", result.errorReason || "SSLCommerz did not initiate the refund"); return { refundRefId: result.refund_ref_id, status: result.status, bankTransactionId: result.bank_tran_id || input.bankTransactionId, transactionId: result.trans_id || null };
+  }
+
+  async refundStatus(refundRefId: string) {
+    this.requireCredentials(); const query = new URLSearchParams({ refund_ref_id: refundRefId, store_id: this.storeId, store_passwd: this.storePassword, format: "json" }); const response = await this.fetcher(`${this.baseUrl()}/validator/api/merchantTransIDvalidationAPI.php?${query}`, { signal: AbortSignal.timeout(30_000) }); if (!response.ok) throw new ApiProblem(502, "SSLCOMMERZ_REFUND_STATUS_UNAVAILABLE", `SSLCommerz refund status request failed (${response.status})`); const result = refundStatusSchema.parse(await response.json()); if (result.APIConnect !== "DONE") throw new ApiProblem(502, "SSLCOMMERZ_REFUND_STATUS_FAILED", result.errorReason || "SSLCommerz did not return refund status"); return result;
+  }
+
   private baseUrl() { return this.sandbox ? "https://sandbox.sslcommerz.com" : "https://securepay.sslcommerz.com"; }
-  private requireConfiguration() { if (!this.configured()) throw new ApiProblem(503, "SSLCOMMERZ_NOT_CONFIGURED", "SSLCommerz credentials and API public URL are required"); }
+  private requireCredentials() { if (!this.storeId || !this.storePassword) throw new ApiProblem(503, "SSLCOMMERZ_NOT_CONFIGURED", "SSLCommerz credentials are required"); }
+  private requireConfiguration() { this.requireCredentials(); if (!this.apiPublicUrl) throw new ApiProblem(503, "SSLCOMMERZ_NOT_CONFIGURED", "SSLCommerz credentials and API public URL are required"); }
 }

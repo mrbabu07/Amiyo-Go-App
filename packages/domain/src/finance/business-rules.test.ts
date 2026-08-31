@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { providerReferenceValid, refundProviderRule, settlementDecision, stackedPromotionDiscount } from "./business-rules.js";
+import { providerReferenceValid, refundProviderRule, settlementDecision, settlementProposalDecision, stackedPromotionDiscount } from "./business-rules.js";
 
 test("provider refunds require external evidence for gateway payments", () => {
   assert.equal(refundProviderRule({ provider: "sslcommerz", method: "SSLCOMMERZ" }).mode, "provider_refund");
@@ -24,4 +24,11 @@ test("settlement requires approval, minimum amount, account and provider referen
   assert.equal(settlementDecision({ amountMinor: 10_000n, status: "APPROVED", provider: "bank", providerRef: "TXN", bankAccountVerified: true }).code, "PAYOUT_BELOW_MINIMUM");
   assert.equal(settlementDecision({ amountMinor: 50_000n, status: "APPROVED", provider: "bank", providerRef: "", bankAccountVerified: true }).code, "PAYOUT_REFERENCE_REQUIRED");
   assert.equal(settlementDecision({ amountMinor: 50_000n, status: "APPROVED", provider: "bank", providerRef: "TXN", bankAccountVerified: true }).eligible, true);
+});
+
+test("settlement proposals enforce approval, verified account and hold period", () => {
+  const reviewedAt = new Date("2026-08-30T00:00:00.000Z");
+  const now = new Date("2026-09-01T00:00:00.000Z");
+  assert.equal(settlementProposalDecision({ amountMinor: 50_000n, status: "APPROVED", bankAccountVerified: true, reviewedAt }, 50_000n, 7, now).code, "PAYOUT_HOLD_ACTIVE");
+  assert.equal(settlementProposalDecision({ amountMinor: 50_000n, status: "APPROVED", bankAccountVerified: true, reviewedAt }, 50_000n, 1, now).eligible, true);
 });
