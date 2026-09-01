@@ -58,7 +58,7 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
 
 const cardShadow = Platform.select({ web: { boxShadow: "0 10px 24px rgba(15,23,42,0.08)" }, default: { elevation: 4, shadowColor: "#0f172a", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 14 } });
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderColor: "#edf1f5", borderRadius: radius.md, borderWidth: 1, flex: 1, overflow: "hidden", position: "relative", ...cardShadow },
+  card: { backgroundColor: colors.surface, borderRadius: radius.md, flex: 1, overflow: "hidden", position: "relative", ...cardShadow },
   openArea: { flex: 1 },
   pressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
   imageWrap: { aspectRatio: 1, backgroundColor: "#f5f7fb", position: "relative", width: "100%" },

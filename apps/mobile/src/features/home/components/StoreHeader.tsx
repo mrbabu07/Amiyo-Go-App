@@ -2,11 +2,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type NativeSyntheticEvent, type TextInputKeyPressEventData } from "react-native";
 import { colors, radius, spacing } from "../../../ui/tokens";
 import { useAuthStore } from "../../auth/auth.store";
 import { firebaseAuth } from "../../auth/firebase";
-import { getCategoryNavigation } from "../../catalog/catalog.api";
+import { getCategoryNavigation, searchProducts } from "../../catalog/catalog.api";
 import { buildCategoryTree } from "../../catalog/category-tree";
 import { getCart } from "../../commerce/commerce.api";
 import { getWishlist } from "../../engagement/engagement.api";
@@ -14,29 +14,44 @@ import { BrandLogo } from "./BrandLogo";
 import { VoiceSearchButton } from "./VoiceSearchButton";
 import { ThemeToggle } from "../../../ui/ThemeToggle";
 
+type SearchSuggestion = { href: string; icon?: string; id: string; image: string | null; meta: string; title: string; type: "category" | "product" | "shop" };
+
 export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; viewportWidth: number }) {
   const router = useRouter();
   const hasVendorWorkspace = useAuthStore((state) => Boolean(state.session?.vendorMemberships.length));
   const user = firebaseAuth?.currentUser ?? null;
   const cart = useQuery({ queryKey: ["cart"], queryFn: () => getCart(user!), enabled: Boolean(user) });
   const wishlist = useQuery({ queryKey: ["wishlist"], queryFn: () => getWishlist(user!), enabled: Boolean(user), staleTime: 30_000 });
-  const categories = useQuery({ queryKey: ["catalog", "category-navigation"], queryFn: getCategoryNavigation, enabled: desktop, staleTime: 5 * 60_000 });
-  const categoryTree = useMemo(() => buildCategoryTree(categories.data || []), [categories.data]);
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const categories = useQuery({ queryKey: ["catalog", "category-navigation"], queryFn: getCategoryNavigation, enabled: desktop || debouncedQuery.length >= 2, staleTime: 5 * 60_000 });
+  const suggestionQuery = useQuery({ queryKey: ["catalog", "search-suggestions", debouncedQuery], queryFn: () => searchProducts(debouncedQuery, 8), enabled: debouncedQuery.length >= 2, staleTime: 60_000 });
+  const categoryTree = useMemo(() => buildCategoryTree(categories.data || []), [categories.data]);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [activeCategoryId, setActiveCategoryId] = useState("");
   const compact = viewportWidth < 430;
   const innerWidth = Math.min(viewportWidth, 1280);
   const activeCategory = categoryTree.find((category) => category.id === activeCategoryId) || categoryTree[0];
+  const suggestions = useMemo<SearchSuggestion[]>(() => {
+    if (debouncedQuery.length < 2) return [];
+    const needle = debouncedQuery.toLocaleLowerCase();
+    const matchedCategories = (categories.data || []).filter((category) => `${category.name} ${category.slug}`.toLocaleLowerCase().includes(needle)).slice(0, 2).map((category) => ({ href: `/category/${category.slug}`, icon: "grid-outline", id: `category:${category.id}`, image: null, meta: "Category", title: category.name, type: "category" as const }));
+    const products = (suggestionQuery.data?.data || []).slice(0, 5).map((product) => ({ href: `/product/${product.slug}`, id: `product:${product.id}`, image: product.thumbnailUrl, meta: `${product.shopName} · ৳${(Number(product.minimumPrice.amountMinor) / 100).toLocaleString("en-BD")}`, title: product.name, type: "product" as const }));
+    const seenShops = new Set<string>();
+    const shops = (suggestionQuery.data?.data || []).flatMap((product) => { if (seenShops.has(product.shopId)) return []; seenShops.add(product.shopId); return [{ href: `/shop/${product.shopSlug}`, icon: "storefront-outline", id: `shop:${product.shopId}`, image: null, meta: "Verified shop", title: product.shopName, type: "shop" as const }]; }).slice(0, 2);
+    return [...matchedCategories, ...products, ...shops].slice(0, 8);
+  }, [categories.data, debouncedQuery, suggestionQuery.data?.data]);
 
   useEffect(() => {
     if (!activeCategoryId && categoryTree[0]) setActiveCategoryId(categoryTree[0].id);
   }, [activeCategoryId, categoryTree]);
+  useEffect(() => { const timeout = setTimeout(() => setDebouncedQuery(query.trim()), 250); return () => clearTimeout(timeout); }, [query]);
 
   const navigate = (href: string) => {
     setCategoriesOpen(false);
     router.push(href as never);
   };
+  const selectSuggestion = (suggestion: SearchSuggestion) => { setQuery(suggestion.title); navigate(suggestion.href); };
   const search = () => {
     const term = query.trim();
     if (term) navigate(`/search?q=${encodeURIComponent(term)}`);
@@ -52,7 +67,7 @@ export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; view
       {desktop ? <View style={styles.utilityStrip}><View style={[styles.utilityInner, { width: innerWidth }]}><Text style={styles.utilityText}>Free delivery offers | Verified marketplace sellers | Secure SSLCommerz checkout</Text><View style={styles.utilityLinks}><Pressable onPress={() => router.push("/orders" as never)}><Text style={styles.utilityLink}>Track order</Text></Pressable><Pressable onPress={() => router.push(hasVendorWorkspace ? "/vendor/dashboard" : "/vendor/register" as never)}><Text style={styles.utilityLink}>Sell on Amiyo</Text></Pressable></View></View></View> : null}
       <View style={[styles.topRow, { width: innerWidth }, desktop && styles.desktopTopRow]}>
         <Pressable onPress={() => router.replace("/")}><BrandLogo compact={compact} /></Pressable>
-        {desktop ? <SearchBox onVoiceResult={voiceSearch} query={query} onChange={setQuery} onSearch={search} /> : null}
+        {desktop ? <SearchBox loading={suggestionQuery.isFetching} onSelect={selectSuggestion} onVoiceResult={voiceSearch} query={query} onChange={setQuery} onSearch={search} suggestions={suggestions} /> : null}
         <View style={styles.actions}>
           {desktop ? <ThemeToggle /> : <ThemeToggle compact />}
           {desktop ? <Pressable accessibilityLabel="My account" onPress={() => router.push("/account")} style={styles.iconButton}><Ionicons color={colors.text} name="person-outline" size={22} /></Pressable> : null}
@@ -61,7 +76,7 @@ export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; view
           <Pressable accessibilityLabel={`Shopping cart with ${cart.data?.itemCount ?? 0} items`} onPress={() => router.push("/cart")} style={styles.iconButton}><Ionicons color={colors.text} name="cart-outline" size={23} /><View style={styles.cartBadge}><Text style={styles.cartBadgeText}>{Math.min(cart.data?.itemCount ?? 0, 99)}</Text></View></Pressable>
         </View>
       </View>
-      {!desktop ? <View style={[styles.mobileSearch, { width: innerWidth }]}><SearchBox compact={compact} onVoiceResult={voiceSearch} query={query} onChange={setQuery} onSearch={search} /></View> : null}
+      {!desktop ? <View style={[styles.mobileSearch, { width: innerWidth }]}><SearchBox compact={compact} loading={suggestionQuery.isFetching} onSelect={selectSuggestion} onVoiceResult={voiceSearch} query={query} onChange={setQuery} onSearch={search} suggestions={suggestions} /></View> : null}
 
       {desktop ? <View style={styles.navBorder}><View style={[styles.desktopNav, { width: innerWidth }]}>
         <Pressable accessibilityRole="button" onPress={() => setCategoriesOpen((open) => !open)} style={[styles.categoryButton, categoriesOpen && styles.activeCategoryButton]}><Ionicons color={categoriesOpen ? colors.surface : colors.primary} name="menu-outline" size={18} /><Text style={[styles.categoryButtonText, categoriesOpen && styles.activeCategoryButtonText]}>Shop by Category</Text><Ionicons color={categoriesOpen ? colors.surface : colors.primary} name={categoriesOpen ? "chevron-up" : "chevron-down"} size={14} /></Pressable>
@@ -80,14 +95,19 @@ export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; view
   );
 }
 
-function SearchBox({ compact = false, query, onChange, onSearch, onVoiceResult }: { compact?: boolean; query: string; onChange(value: string): void; onSearch(): void; onVoiceResult(value: string): void }) {
-  return <View style={styles.searchBar}><Ionicons color={colors.muted} name="search-outline" size={20} /><TextInput accessibilityLabel="Search products" onChangeText={onChange} onSubmitEditing={onSearch} placeholder={compact ? "Search products" : "Search products, brands and shops"} placeholderTextColor="#94a3b8" returnKeyType="search" style={styles.searchInput} value={query} /><VoiceSearchButton onResult={onVoiceResult} /><Pressable accessibilityLabel="Search" onPress={onSearch} style={[styles.searchButton, compact && styles.compactSearchButton]}>{compact ? <Ionicons color={colors.surface} name="arrow-forward" size={18} /> : <Text style={styles.searchButtonText}>Search</Text>}</Pressable></View>;
+function SearchBox({ compact = false, loading, query, onChange, onSearch, onSelect, onVoiceResult, suggestions }: { compact?: boolean; loading: boolean; query: string; onChange(value: string): void; onSearch(): void; onSelect(value: SearchSuggestion): void; onVoiceResult(value: string): void; suggestions: SearchSuggestion[] }) {
+  const [focused, setFocused] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const open = focused && query.trim().length >= 2;
+  function keyPress(event: NativeSyntheticEvent<TextInputKeyPressEventData>) { if (event.nativeEvent.key === "ArrowDown") setActiveIndex((index) => Math.min(index + 1, suggestions.length - 1)); else if (event.nativeEvent.key === "ArrowUp") setActiveIndex((index) => Math.max(index - 1, -1)); else if (event.nativeEvent.key === "Enter" && activeIndex >= 0 && suggestions[activeIndex]) { onSelect(suggestions[activeIndex]); setFocused(false); } else if (event.nativeEvent.key === "Escape") setFocused(false); }
+  return <View style={styles.searchWrap}><View style={styles.searchBar}><Ionicons color={colors.muted} name="search-outline" size={20} /><TextInput accessibilityLabel="Search products" onBlur={() => setTimeout(() => setFocused(false), 120)} onChangeText={(value) => { onChange(value); setActiveIndex(-1); }} onFocus={() => setFocused(true)} onKeyPress={keyPress} onSubmitEditing={() => { if (activeIndex < 0) onSearch(); }} placeholder={compact ? "Search products" : "Search products, brands and shops"} placeholderTextColor="#94a3b8" returnKeyType="search" style={styles.searchInput} value={query} /><VoiceSearchButton onResult={onVoiceResult} /><Pressable accessibilityLabel="Search" onPress={onSearch} style={[styles.searchButton, compact && styles.compactSearchButton]}>{compact ? <Ionicons color={colors.surface} name="arrow-forward" size={18} /> : <Text style={styles.searchButtonText}>Search</Text>}</Pressable></View>{open ? <View accessibilityLabel="Search suggestions" style={styles.suggestions}>{loading && !suggestions.length ? <View style={styles.suggestionState}><Text style={styles.suggestionMeta}>Finding products...</Text></View> : null}{suggestions.map((suggestion, index) => <Pressable accessibilityRole="link" key={suggestion.id} onPress={() => { onSelect(suggestion); setFocused(false); }} style={[styles.suggestion, activeIndex === index && styles.activeSuggestion]}>{suggestion.image ? <Image source={{ uri: suggestion.image }} style={styles.suggestionImage} /> : <View style={styles.suggestionIcon}><Ionicons color={colors.primary} name={(suggestion.icon || "search-outline") as never} size={18} /></View>}<View style={styles.suggestionCopy}><Text numberOfLines={1} style={styles.suggestionTitle}>{suggestion.title}</Text><Text numberOfLines={1} style={styles.suggestionMeta}>{suggestion.meta}</Text></View><Ionicons color={colors.muted} name="arrow-forward" size={15} /></Pressable>)}{!loading && !suggestions.length ? <Pressable onPress={onSearch} style={styles.suggestionState}><Text style={styles.suggestionTitle}>Search for “{query.trim()}”</Text><Text style={styles.suggestionMeta}>See all matching products</Text></Pressable> : null}<Pressable onPress={onSearch} style={styles.allResults}><Text style={styles.allResultsText}>View all results for “{query.trim()}”</Text><Ionicons color={colors.accent} name="arrow-forward" size={15} /></Pressable></View> : null}</View>;
 }
 
 const menuShadow = Platform.select({ web: { boxShadow: "0 18px 48px rgba(15,23,42,0.18)" }, default: { elevation: 12, shadowColor: "#0f172a", shadowOffset: { width: 0, height: 18 }, shadowOpacity: 0.18, shadowRadius: 24 } });
 const styles = StyleSheet.create({
   shell: { backgroundColor: colors.surface, zIndex: 20 }, openShell: { zIndex: 50 }, utilityStrip: { backgroundColor: colors.navy }, utilityInner: { alignItems: "center", alignSelf: "center", flexDirection: "row", justifyContent: "space-between", minHeight: 32, paddingHorizontal: spacing.sm }, utilityText: { color: "rgba(255,255,255,.82)", fontSize: 11, fontWeight: "600" }, utilityLinks: { flexDirection: "row", gap: spacing.md }, utilityLink: { color: colors.surface, fontSize: 11, fontWeight: "700" }, topRow: { alignItems: "center", alignSelf: "center", flexDirection: "row", justifyContent: "space-between", maxWidth: 1280, minHeight: 64, paddingHorizontal: spacing.sm }, desktopTopRow: { gap: spacing.xl, minHeight: 76 },
-  searchBar: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.accent, borderRadius: radius.md, borderWidth: 2, flex: 1, flexDirection: "row", maxWidth: 720, overflow: "hidden", paddingLeft: 14, ...Platform.select({ web: { boxShadow: "0 8px 20px rgba(245,114,36,.12)" }, default: { elevation: 2 } }) }, mobileSearch: { alignSelf: "center", marginBottom: 10, maxWidth: 1280, paddingHorizontal: spacing.sm }, searchInput: { color: colors.text, flex: 1, fontSize: 14, height: 46, minWidth: 0, outlineStyle: "none" } as never, searchButton: { alignItems: "center", alignSelf: "stretch", backgroundColor: colors.accent, justifyContent: "center", paddingHorizontal: 24 }, compactSearchButton: { paddingHorizontal: 14 }, searchButtonText: { color: colors.surface, fontSize: 13, fontWeight: "700" },
+  searchWrap: { flex: 1, maxWidth: 720, position: "relative", zIndex: 120 }, searchBar: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.accent, borderRadius: radius.md, borderWidth: 2, flexDirection: "row", overflow: "hidden", paddingLeft: 14, ...Platform.select({ web: { boxShadow: "0 8px 20px rgba(245,114,36,.12)" }, default: { elevation: 2 } }) }, mobileSearch: { alignSelf: "center", marginBottom: 10, maxWidth: 1280, paddingHorizontal: spacing.sm, zIndex: 120 }, searchInput: { color: colors.text, flex: 1, fontSize: 14, height: 46, minWidth: 0, outlineStyle: "none" } as never, searchButton: { alignItems: "center", alignSelf: "stretch", backgroundColor: colors.accent, justifyContent: "center", paddingHorizontal: 24 }, compactSearchButton: { paddingHorizontal: 14 }, searchButtonText: { color: colors.surface, fontSize: 13, fontWeight: "700" },
+  suggestions: { backgroundColor: colors.surface, borderBottomLeftRadius: radius.md, borderBottomRightRadius: radius.md, left: 0, overflow: "hidden", position: "absolute", right: 0, top: 50, zIndex: 150, ...Platform.select({ web: { boxShadow: "0 18px 42px rgba(11,31,58,.18)" }, default: { elevation: 16 } }) }, suggestion: { alignItems: "center", borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: "row", gap: spacing.sm, minHeight: 58, paddingHorizontal: spacing.md, paddingVertical: 7 }, activeSuggestion: { backgroundColor: colors.accentSoft }, suggestionImage: { backgroundColor: colors.background, borderRadius: radius.sm, height: 42, width: 42 }, suggestionIcon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.sm, height: 42, justifyContent: "center", width: 42 }, suggestionCopy: { flex: 1 }, suggestionTitle: { color: colors.text, fontSize: 12, fontWeight: "700" }, suggestionMeta: { color: colors.muted, fontSize: 10, marginTop: 3 }, suggestionState: { paddingHorizontal: spacing.md, paddingVertical: spacing.md }, allResults: { alignItems: "center", backgroundColor: colors.background, flexDirection: "row", justifyContent: "space-between", minHeight: 44, paddingHorizontal: spacing.md }, allResultsText: { color: colors.accent, fontSize: 11, fontWeight: "700" },
   actions: { flexDirection: "row", gap: 6 }, iconButton: { alignItems: "center", backgroundColor: colors.background, borderColor: "#edf1f5", borderRadius: radius.pill, borderWidth: 1, height: 42, justifyContent: "center", position: "relative", width: 42 }, cartBadge: { alignItems: "center", backgroundColor: colors.accent, borderColor: colors.surface, borderRadius: radius.pill, borderWidth: 1, height: 18, justifyContent: "center", position: "absolute", right: -2, top: -2, width: 18 }, cartBadgeText: { color: colors.surface, fontSize: 9, fontWeight: "700" },
   navBorder: { borderBottomColor: colors.border, borderBottomWidth: 1, borderTopColor: colors.border, borderTopWidth: 1 }, desktopNav: { alignItems: "center", alignSelf: "center", flexDirection: "row", gap: 26, minHeight: 48, maxWidth: 1280 }, categoryButton: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flexDirection: "row", gap: 7, height: 36, paddingHorizontal: 12 }, activeCategoryButton: { backgroundColor: colors.primary, borderColor: colors.primary }, categoryButtonText: { color: colors.primary, fontSize: 13, fontWeight: "700" }, activeCategoryButtonText: { color: colors.surface }, navText: { color: colors.muted, fontSize: 13, fontWeight: "600" }, activeNav: { color: colors.primary }, sellerButton: { alignItems: "center", flexDirection: "row", gap: 5, marginLeft: "auto" }, sellerLink: { color: colors.accent, fontSize: 13, fontWeight: "700" },
   categoryMenu: { alignSelf: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: "row", height: 500, overflow: "hidden", position: "absolute", top: 126, zIndex: 100, ...menuShadow }, menuSidebar: { backgroundColor: colors.background, borderRightColor: colors.border, borderRightWidth: 1, paddingVertical: 12, width: 270 }, rootScroll: { flex: 1 }, allCategories: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginBottom: 5, marginHorizontal: 12, paddingHorizontal: 12, paddingVertical: 10 }, allCategoriesText: { color: colors.primary, fontSize: 13, fontWeight: "700" }, rootButton: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", minHeight: 43, paddingHorizontal: 20 }, activeRootButton: { backgroundColor: colors.surface }, rootButtonText: { color: colors.text, flex: 1, fontSize: 13, fontWeight: "700" }, activeRootButtonText: { color: colors.primary, fontWeight: "700" },

@@ -35,8 +35,8 @@ export async function getProducts(input: Partial<CatalogQuery> = {}) {
   return productListResponseSchema.parse(await publicRequest(`/api/v2/catalog/products${queryString(input)}`));
 }
 
-export async function searchProducts(query: string) {
-  return productListResponseSchema.parse(await publicRequest(`/api/v2/catalog/search${queryString({ query, limit: 30 })}`));
+export async function searchProducts(query: string, limit = 30) {
+  return productListResponseSchema.parse(await publicRequest(`/api/v2/catalog/search${queryString({ query, limit })}`));
 }
 
 export async function getProduct(identifier: string) {
