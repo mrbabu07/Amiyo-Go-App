@@ -11,7 +11,9 @@ import type { HomeProduct } from "../home.data";
 const money = (value: number) => `৳${value.toLocaleString("en-BD")}`;
 const fallbackImage = "https://images.unsplash.com/photo-1560343090-f0409e92791a?w=700&h=700&fit=crop";
 
-export function ProductCard({ product }: { product: HomeProduct }) {
+function lowDataImage(url: string) { if (!url.includes("images.unsplash.com")) return url; const separator = url.includes("?") ? "&" : "?"; return `${url}${separator}w=360&q=55&auto=format`; }
+
+export function ProductCard({ lowData = false, product }: { lowData?: boolean; product: HomeProduct }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const user = firebaseAuth?.currentUser ?? null;
@@ -36,7 +38,7 @@ export function ProductCard({ product }: { product: HomeProduct }) {
     <View style={styles.card}>
       <Pressable accessibilityRole="link" onPress={() => router.push(`/product/${product.slug || product.id}` as never)} style={({ pressed }) => [styles.openArea, pressed && styles.pressed]}>
         <View style={styles.imageWrap}>
-          <Image accessibilityLabel={product.title} resizeMode="cover" source={{ uri: product.image || fallbackImage }} style={styles.image} />
+          <Image accessibilityLabel={product.title} resizeMode="cover" source={{ uri: lowData ? lowDataImage(product.image || fallbackImage) : product.image || fallbackImage }} style={styles.image} />
           <View style={styles.topBadge}>{discount ? <Text style={styles.discountText}>-{discount}%</Text> : <Text style={styles.verifiedText}>VERIFIED</Text>}</View>
         </View>
         <View style={styles.body}>

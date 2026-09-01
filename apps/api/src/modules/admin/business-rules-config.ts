@@ -66,6 +66,7 @@ export function businessRulesCreateData(rules: BusinessRules, updatedBy?: string
     tax: {} as Prisma.InputJsonValue,
     seo: {} as Prisma.InputJsonValue,
     notificationControls: {} as Prisma.InputJsonValue,
+    villageOperations: {} as Prisma.InputJsonValue,
     ...(updatedBy ? { updatedBy } : {})
   };
 }

@@ -16,3 +16,8 @@ test("checkout rejects writes during platform maintenance", async () => {
   const client = { platformConfiguration: { findUnique: async () => ({ maintenanceMode: { enabled: true, message: "Scheduled maintenance is active" }, paymentMethods: { sslcommerz: { enabled: true } } }) } } as unknown as PrismaClient;
   await assert.rejects(() => new CommerceService(client).checkout(session, checkout, "checkout-key"), /Scheduled maintenance is active/);
 });
+
+test("checkout requires active-phone confirmation when village COD policy is enabled", async () => {
+  const client = { platformConfiguration: { findUnique: async () => ({ maintenanceMode: { enabled: false }, paymentMethods: { cod: { enabled: true } }, villageOperations: { enabled: true, requireCodPhoneConfirmation: true } }) } } as unknown as PrismaClient;
+  await assert.rejects(() => new CommerceService(client).checkout(session, { addressId: checkout.addressId, paymentMethod: "COD" }, "checkout-key"), /Confirm that the delivery phone number is active/);
+});

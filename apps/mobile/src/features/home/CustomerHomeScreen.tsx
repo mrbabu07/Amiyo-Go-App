@@ -1,7 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
-import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Linking, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
 import type { HomeCategory, HomeProduct } from "./home.data";
 import { BottomNav } from "./components/BottomNav";
@@ -20,12 +22,13 @@ import { getCategoryNavigation, getProducts, getShops } from "../catalog/catalog
 import { getCategoryVisual } from "../catalog/category-visuals";
 import { toHomeProduct } from "../catalog/catalog.view-model";
 import { getGrowthFeed } from "../engagement/engagement.api";
+import { getPublicPlatformSettings } from "../platform/platform.api";
 
-function ProductGrid({ columns, products }: { columns: number; products: HomeProduct[] }) {
+function ProductGrid({ columns, lowData, products }: { columns: number; lowData: boolean; products: HomeProduct[] }) {
   const cardWidth = `${100 / columns}%` as `${number}%`;
   return (
     <View style={styles.grid}>
-      {products.map((product) => <View key={product.id} style={[styles.cardSlot, { width: cardWidth }]}><ProductCard product={product} /></View>)}
+      {products.map((product) => <View key={product.id} style={[styles.cardSlot, { width: cardWidth }]}><ProductCard lowData={lowData} product={product} /></View>)}
     </View>
   );
 }
@@ -49,8 +52,14 @@ export function CustomerHomeScreen() {
   const desktop = width >= 900;
   const columns = width >= 1180 ? 5 : width >= 820 ? 4 : width < 360 ? 1 : 2;
   const contentWidth = Math.min(width, 1208);
+  const platformQuery = useQuery({ queryKey: ["platform", "public-settings"], queryFn: getPublicPlatformSettings, staleTime: 5 * 60_000 });
+  const village = platformQuery.data?.villageOperations;
+  const [lowDataOverride, setLowDataOverride] = useState<boolean | null>(null);
+  useEffect(() => { void AsyncStorage.getItem("amiyo:low-data-mode").then((value) => { if (value !== null) setLowDataOverride(value === "true"); }); }, []);
+  const lowData = village?.enabled ? lowDataOverride ?? village.lowDataModeDefault : false;
+  async function toggleLowData() { if (!village?.allowCustomerLowDataOverride) return; const next = !lowData; setLowDataOverride(next); await AsyncStorage.setItem("amiyo:low-data-mode", String(next)); }
   const categoryQuery = useQuery({ queryKey: ["catalog", "category-navigation"], queryFn: getCategoryNavigation, staleTime: 5 * 60_000 });
-  const productQuery = useQuery({ queryKey: ["catalog", "home-products"], queryFn: () => getProducts({ limit: 20 }) });
+  const productQuery = useQuery({ queryKey: ["catalog", "home-products", lowData], queryFn: () => getProducts({ limit: lowData ? 12 : 20 }) });
   const shopQuery = useQuery({ queryKey: ["catalog", "home-shops"], queryFn: getShops });
   const growthQuery = useQuery({ queryKey: ["growth", "feed"], queryFn: getGrowthFeed });
   const liveCategories: HomeCategory[] = (categoryQuery.data || []).filter((category) => category.parentId === null).map((category, index) => { const visual = getCategoryVisual(category, index); return { id: category.slug, name: category.name, icon: visual.icon, color: visual.background, foreground: visual.foreground }; });
@@ -66,7 +75,8 @@ export function CustomerHomeScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <StoreHeader desktop={desktop} viewportWidth={width} />
           <View style={[styles.content, { width: contentWidth }]}>
-            <View style={styles.heroShowcase}><View style={styles.heroMain}><HeroBanner banner={heroBanner} desktop={desktop} /></View>{desktop ? <PromoTiles campaigns={growthQuery.data?.campaigns || []} couponCode={growthQuery.data?.coupons[0]?.code} /> : null}</View>
+            {village?.enabled ? <View style={styles.villageBar}><View style={styles.villageCopy}><Text style={styles.villageTitle}>{village.defaultLocale === "bn" ? "গ্রাম থেকেও সহজে কেনাকাটা" : "Easy shopping from your village"}</Text><Text style={styles.villageText}>{lowData ? "Low-data mode is saving images and bandwidth." : "Full shopping experience is active."}</Text></View>{village.allowCustomerLowDataOverride ? <Pressable onPress={() => void toggleLowData()} style={styles.dataButton}><Ionicons color={colors.surface} name={lowData ? "speedometer-outline" : "images-outline"} size={16} /><Text style={styles.dataButtonText}>{lowData ? "Use full mode" : "Save data"}</Text></Pressable> : null}{village.assistedOrderingEnabled && village.supportPhone ? <Pressable onPress={() => void Linking.openURL(`tel:${village.supportPhone}`)} style={styles.helpButton}><Ionicons color={colors.primary} name="call-outline" size={16} /><Text style={styles.helpButtonText}>Call to order</Text></Pressable> : null}</View> : null}
+            {lowData ? <View style={styles.lowDataHero}><Ionicons color={colors.accent} name="leaf-outline" size={28} /><View style={styles.villageCopy}><Text style={styles.lowDataTitle}>Fast village marketplace</Text><Text style={styles.villageText}>Products, prices and orders stay available with fewer image downloads.</Text></View></View> : <View style={styles.heroShowcase}><View style={styles.heroMain}><HeroBanner banner={heroBanner} desktop={desktop} /></View>{desktop ? <PromoTiles campaigns={growthQuery.data?.campaigns || []} couponCode={growthQuery.data?.coupons[0]?.code} /> : null}</View>}
             <View style={styles.quickDeals}>{quickDeals.map((deal) => <Pressable key={deal.title} onPress={() => router.push(deal.href as never)} style={styles.quickDeal}><View style={styles.quickIcon}><Ionicons color={colors.accent} name={deal.icon as never} size={22} /></View><Text style={styles.quickText}>{deal.title}</Text></Pressable>)}</View>
             <View style={styles.section}><HomeSectionTitle eyebrow="EXPLORE DEPARTMENTS" href="/categories" title="Shop by category" />{categoryQuery.isLoading ? <ActivityIndicator color={colors.primary} /> : <CategoryRail data={liveCategories} />}{categoryQuery.error ? <RetryState label="Categories unavailable. Start the API and run npm run demo:setup." onRetry={() => categoryQuery.refetch()} /> : null}</View>
 
@@ -75,7 +85,7 @@ export function CustomerHomeScreen() {
                 <View><View style={styles.flashEyebrowRow}><Ionicons color={colors.accent} name="flash" size={17} /><Text style={styles.flashEyebrow}>FLASH SALE</Text></View><Text style={styles.flashTitle}>{activeFlashSale.name}</Text></View>
                 <FlashSaleCountdown endAt={activeFlashSale.endsAt} />
               </View>
-              {productQuery.isLoading ? <ActivityIndicator color={colors.surface} /> : <ProductGrid columns={columns} products={flashProducts} />}
+              {productQuery.isLoading ? <ActivityIndicator color={colors.surface} /> : <ProductGrid columns={columns} lowData={lowData} products={flashProducts} />}
             </View> : null}
 
             <View style={styles.promo}>
@@ -84,11 +94,11 @@ export function CustomerHomeScreen() {
               <View style={styles.promoCode}><Text style={styles.promoCodeText}>{growthQuery.data?.coupons[0]?.code || `${growthQuery.data?.campaigns.length || 0} LIVE`}</Text></View>
             </View>
 
-            <View style={styles.section}><HomeSectionTitle eyebrow="MARKETPLACE FEED" href="/search" title="Trending now" />{productQuery.error ? <RetryState label="Could not load live products" onRetry={() => productQuery.refetch()} /> : <ProductGrid columns={columns} products={liveProducts.slice(0, 10)} />}{!productQuery.isLoading && !productQuery.error && liveProducts.length === 0 ? <Text style={styles.empty}>No approved products yet. Run the catalog seed or publish a vendor product.</Text> : null}</View>
+            <View style={styles.section}><HomeSectionTitle eyebrow="MARKETPLACE FEED" href="/search" title="Trending now" />{productQuery.error ? <RetryState label="Could not load live products" onRetry={() => productQuery.refetch()} /> : <ProductGrid columns={columns} lowData={lowData} products={liveProducts.slice(0, 10)} />}{!productQuery.isLoading && !productQuery.error && liveProducts.length === 0 ? <Text style={styles.empty}>No approved products yet. Run the catalog seed or publish a vendor product.</Text> : null}</View>
 
             {shopQuery.data?.data.length ? <View style={styles.section}><HomeSectionTitle eyebrow="FEATURED BRANDS" href="/shops" title="Shop trusted sellers" /><ShopRail shops={shopQuery.data.data} /></View> : null}
 
-            {liveProducts.length > 5 ? <View style={styles.section}><HomeSectionTitle eyebrow="CURATED FOR YOU" href="/search" title="Recommended for you" /><ProductGrid columns={columns} products={liveProducts.slice(5)} /></View> : null}
+            {!lowData && liveProducts.length > 5 ? <View style={styles.section}><HomeSectionTitle eyebrow="CURATED FOR YOU" href="/search" title="Recommended for you" /><ProductGrid columns={columns} lowData={lowData} products={liveProducts.slice(5)} /></View> : null}
 
             <View style={styles.benefits}>
               {benefits.map((benefit) => (
@@ -133,6 +143,11 @@ const styles = StyleSheet.create({
   flashTitle: { color: colors.surface, fontSize: 22, fontWeight: "700", marginTop: 2 },
   grid: { flexDirection: "row", flexWrap: "wrap", marginHorizontal: -6, rowGap: 12 },
   cardSlot: { paddingHorizontal: 6 },
+  villageBar: { alignItems: "center", backgroundColor: colors.accentSoft, borderColor: colors.accent, borderRadius: radius.md, borderWidth: 1, flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, padding: spacing.md },
+  villageCopy: { flex: 1, minWidth: 190 }, villageTitle: { color: colors.text, fontSize: 15, fontWeight: "700" }, villageText: { color: colors.muted, fontSize: 11, marginTop: 3 },
+  dataButton: { alignItems: "center", backgroundColor: colors.accent, borderRadius: radius.pill, flexDirection: "row", gap: 5, minHeight: 40, paddingHorizontal: 13 }, dataButtonText: { color: colors.surface, fontSize: 10, fontWeight: "700" },
+  helpButton: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.primary, borderRadius: radius.pill, borderWidth: 1, flexDirection: "row", gap: 5, minHeight: 40, paddingHorizontal: 13 }, helpButtonText: { color: colors.primary, fontSize: 10, fontWeight: "700" },
+  lowDataHero: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: "row", gap: spacing.md, minHeight: 96, padding: spacing.lg }, lowDataTitle: { color: colors.text, fontSize: 20, fontWeight: "700" },
   promo: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.lg, flexDirection: "row", flexWrap: "wrap", gap: 14, padding: 20 },
   promoIcon: { alignItems: "center", backgroundColor: "rgba(255,255,255,0.15)", borderRadius: radius.pill, height: 58, justifyContent: "center", width: 58 },
   promoCopy: { flex: 1, minWidth: 200 },

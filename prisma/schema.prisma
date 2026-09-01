@@ -1938,6 +1938,7 @@ model PlatformConfiguration {
   tax                  Json
   seo                  Json
   notificationControls Json     @map("notification_controls")
+  villageOperations    Json     @default("{}") @map("village_operations")
   version              Int      @default(1)
   updatedBy            String?  @map("updated_by") @db.Uuid
   updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)

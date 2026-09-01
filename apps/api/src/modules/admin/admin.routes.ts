@@ -22,6 +22,7 @@ export function createAdminRouter() {
   const commissions = new CommissionService(prisma);
   const authenticate = createAuthenticationMiddleware(new FirebaseTokenVerifier(), new IdentityService(prisma));
   const writes = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: "draft-7", legacyHeaders: false, message: { title: "Too many admin requests", status: 429, code: "ADMIN_RATE_LIMITED" } });
+  router.get("/api/v2/platform/settings", async (_req, res, next) => { try { res.json(await service.publicSettings()); } catch (error) { next(error); } });
   router.use("/api/v2/admin/workspace", authenticate);
   router.get("/api/v2/admin/workspace/search", async (req, res, next) => { try {
     const query = z.string().trim().max(200).catch("").parse(req.query.q);

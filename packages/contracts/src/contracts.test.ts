@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { addCartItemSchema, addressInputSchema, adminOrderDetailSchema, catalogQuerySchema, checkoutInputSchema, commissionRuleInputSchema, createOpenApiDocument, createProductSchema, createReturnSchema, deviceInputSchema, minorUnitSchema, moneySchema, productReportInputSchema, vendorOrderStatusSchema, vendorRegistrationSchema } from "./index.js";
+import { addCartItemSchema, addressInputSchema, adminOrderDetailSchema, catalogQuerySchema, checkoutInputSchema, commissionRuleInputSchema, createOpenApiDocument, createProductSchema, createReturnSchema, deviceInputSchema, minorUnitSchema, moneySchema, productReportInputSchema, publicPlatformSettingsSchema, vendorOrderStatusSchema, vendorRegistrationSchema } from "./index.js";
 
 test("money contracts preserve bigint-safe minor units", () => {
   assert.deepEqual(moneySchema.parse({ amountMinor: "249000", currency: "bdt" }), { amountMinor: "249000", currency: "BDT" });
@@ -73,6 +73,12 @@ test("commerce contracts enforce quantities and supported payments", () => {
   assert.equal(addCartItemSchema.safeParse({ variantId: crypto.randomUUID(), quantity: 0 }).success, false);
   assert.equal(checkoutInputSchema.safeParse({ addressId: crypto.randomUUID(), paymentMethod: "BKASH" }).success, true);
   assert.equal(checkoutInputSchema.safeParse({ addressId: crypto.randomUUID(), paymentMethod: "BITCOIN" }).success, false);
+});
+
+test("public settings validate admin-controlled village operations", () => {
+  const settings = publicPlatformSettingsSchema.parse({ featureFlags: { sellerRegistration: true, reviews: true, questions: true, flashSales: true, loyalty: true, voiceSearch: true, googleLogin: true }, paymentMethods: { cod: { enabled: true }, sslcommerz: { enabled: true }, bkashManual: { enabled: true } }, maintenanceMode: { enabled: false, message: "Marketplace is available" }, villageOperations: { enabled: true, defaultLocale: "bn", lowDataModeDefault: true, allowCustomerLowDataOverride: true, requireCodPhoneConfirmation: true, requireUnionForDelivery: true, ruralDeliveryEnabled: true, assistedOrderingEnabled: true, smsOrderUpdatesEnabled: false, pickupPointsEnabled: false, supportPhone: "01700000000", supportWhatsapp: "8801700000000" }, version: 1 });
+  assert.equal(settings.villageOperations.defaultLocale, "bn");
+  assert.equal(settings.villageOperations.requireCodPhoneConfirmation, true);
 });
 
 test("identity mutation contracts reject incomplete data", () => {
