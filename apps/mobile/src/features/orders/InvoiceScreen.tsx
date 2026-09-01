@@ -28,7 +28,7 @@ export function InvoiceScreen() {
 
   return <Screen eyebrow="RECEIPT" title={invoice.data.number} description={`Issued ${new Date(invoice.data.issuedAt).toLocaleDateString("en-BD")} with ${invoice.data.order.vendorOrders.length} seller package split.`}>
     <View style={styles.actions}><Pressable onPress={printInvoice} style={styles.print}><Ionicons color="#fff" name="print-outline" size={18} /><Text style={styles.printText}>{Platform.OS === "web" ? "Print / Save PDF" : invoice.data.storageUrl ? "Open PDF invoice" : "Share invoice"}</Text></Pressable></View>
-    <OrderInvoiceDocument invoiceNumber={invoice.data.number} issuedAt={invoice.data.issuedAt} nativeID={printId} order={invoice.data.order} />
+    <OrderInvoiceDocument invoiceNumber={invoice.data.number} issuedAt={invoice.data.issuedAt} nativeID={printId} order={invoice.data.order} qrExpiresAt={invoice.data.qrExpiresAt} qrPayload={invoice.data.qrPayload} />
   </Screen>;
 }
 

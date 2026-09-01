@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Linking, Platform, Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { firebaseAuth } from "../auth/firebase";
@@ -20,6 +20,7 @@ export function AdminOrderInvoiceScreen() {
     if (!query.data) return;
     if (Platform.OS === "web") { window.print(); return; }
     if (query.data.invoice?.storageUrl) await Linking.openURL(query.data.invoice.storageUrl);
+    else await Share.share({ title: query.data.invoice?.number ?? `INV-${query.data.orderNumber}`, message: `Invoice ${query.data.invoice?.number ?? `INV-${query.data.orderNumber}`}\nOrder ${query.data.orderNumber}\nTotal ${query.data.total.currency} ${Number(query.data.total.amountMinor) / 100}` });
   }
 
   if (query.isLoading) return <Screen title="Invoice"><ActivityIndicator color={colors.primary} /></Screen>;
@@ -28,7 +29,7 @@ export function AdminOrderInvoiceScreen() {
   const order = query.data;
   return <Screen eyebrow="FINANCE DOCUMENT" title={order.invoice?.number ?? `INV-${order.orderNumber}`} description="Admin invoice includes customer totals, seller package splits, shipment references and commission reconciliation.">
     <View style={styles.actions}><Pressable onPress={printInvoice} style={styles.print}><Ionicons color="#fff" name="print-outline" size={18} /><Text style={styles.printText}>{Platform.OS === "web" ? "Print / Save PDF" : "Open PDF"}</Text></Pressable></View>
-    <OrderInvoiceDocument audience="admin" invoiceNumber={order.invoice?.number ?? `INV-${order.orderNumber}`} issuedAt={order.invoice?.issuedAt ?? order.createdAt} nativeID={printId} order={order} />
+    <OrderInvoiceDocument audience="admin" invoiceNumber={order.invoice?.number ?? `INV-${order.orderNumber}`} issuedAt={order.invoice?.issuedAt ?? order.createdAt} nativeID={printId} order={order} qrExpiresAt={order.invoice?.qrExpiresAt} qrPayload={order.invoice?.qrPayload} />
   </Screen>;
 }
 

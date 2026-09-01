@@ -4,6 +4,7 @@ import type { AdminAnalyticsQuery, AdminAuditQuery, AdminBannerInput, AdminCampa
 import { withSerializableTransaction } from "../../infrastructure/database/transaction.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
 import { businessRulesCreateData, defaultBusinessRules, parseBusinessRules, serializeBusinessRules } from "./business-rules-config.js";
+import { buildInvoiceQrPayload, verifyDocumentQrPayload } from "../orders/document-qr.js";
 
 function requireAdmin(session: Session, write = false) {
   const permission = write ? "admin:manage" : "admin:read";
@@ -248,12 +249,14 @@ export class AdminService {
     if (!order) throw new ApiProblem(404, "ORDER_NOT_FOUND", "Order not found");
     const payment = order.payments[0];
     const deliveryAddress = order.addresses.find((address) => address.type === "delivery") ?? null;
+    const invoiceQr = order.invoice ? buildInvoiceQrPayload({ invoiceId: order.invoice.id, invoiceNumber: order.invoice.number, orderId: order.id, orderNumber: order.orderNumber, totalMinor: order.totalMinor.toString(), currency: order.currency, issuedAt: order.invoice.issuedAt.toISOString() }) : null;
+    const invoiceQrVerification = invoiceQr ? verifyDocumentQrPayload(invoiceQr) : null;
     return {
       id: order.id, orderNumber: order.orderNumber, status: order.status, version: order.version, createdAt: order.createdAt.toISOString(), placedAt: order.placedAt?.toISOString() ?? null, returnWindowUntil: order.returnWindowUntil?.toISOString() ?? null,
       customer: { id: order.userId, displayName: order.user?.profile?.displayName ?? order.user?.normalizedEmail ?? "Guest customer", email: order.user?.normalizedEmail ?? null, phone: order.user?.normalizedPhone ?? null },
       deliveryAddress: deliveryAddress ? { recipientName: deliveryAddress.recipientName, phone: deliveryAddress.phone, line1: deliveryAddress.line1, line2: deliveryAddress.line2, division: deliveryAddress.division, district: deliveryAddress.district, upazila: deliveryAddress.upazila, unionName: deliveryAddress.unionName, postalCode: deliveryAddress.postalCode } : null,
       payment: payment ? { id: payment.id, provider: payment.provider, method: payment.method, status: payment.status, amount: money(payment.amountMinor, payment.currency), refunded: money(payment.refundedMinor, payment.currency), transactionId: payment.providerTransactionId, createdAt: payment.createdAt.toISOString() } : null,
-      invoice: order.invoice ? { id: order.invoice.id, number: order.invoice.number, issuedAt: order.invoice.issuedAt.toISOString(), storageUrl: mediaUrl(order.invoice.storageKey) } : null,
+      invoice: order.invoice && invoiceQr && invoiceQrVerification?.valid ? { id: order.invoice.id, number: order.invoice.number, issuedAt: order.invoice.issuedAt.toISOString(), storageUrl: mediaUrl(order.invoice.storageKey), qrPayload: invoiceQr, qrExpiresAt: invoiceQrVerification.claims.expiresAt } : null,
       subtotal: money(order.subtotalMinor, order.currency), discount: money(order.discountMinor, order.currency), delivery: money(order.deliveryMinor, order.currency), tax: money(order.taxMinor, order.currency), total: money(order.totalMinor, order.currency),
       events: order.statusEvents.map((event) => ({ id: event.id, fromStatus: event.fromStatus, toStatus: event.toStatus, actorType: event.actorType, reason: event.reason, createdAt: event.createdAt.toISOString() })),
       vendorOrders: order.vendorOrders.map((vendorOrder) => ({ id: vendorOrder.id, vendorId: vendorOrder.vendorId, vendorName: vendorOrder.vendor.displayName, shopName: vendorOrder.shop.name, status: vendorOrder.status, version: vendorOrder.version, subtotal: money(vendorOrder.subtotalMinor, order.currency), discount: money(vendorOrder.discountMinor, order.currency), delivery: money(vendorOrder.deliveryMinor, order.currency), total: money(vendorOrder.totalMinor, order.currency), commission: money(vendorOrder.commissionMinor, order.currency), shipment: vendorOrder.shipments[0] ? { status: vendorOrder.shipments[0].status, provider: vendorOrder.shipments[0].provider, trackingNumber: vendorOrder.shipments[0].trackingNumber } : null, items: vendorOrder.items.map((item) => ({ id: item.id, productName: item.productNameSnapshot, sku: item.skuSnapshot, quantity: item.quantity, unitPrice: money(item.unitPriceMinor, item.currency), lineTotal: money(item.lineTotalMinor, item.currency) })) }))

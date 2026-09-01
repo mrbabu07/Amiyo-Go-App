@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import { colors, radius, spacing, typography } from "../../../ui/tokens";
+import { DocumentQrCode } from "../../../ui/DocumentQrCode";
 
 type Money = { amountMinor: string; currency: string };
 type Address = { recipientName: string; phone: string; line1: string; line2: string | null; division: string; district: string; upazila: string | null; unionName: string | null; postalCode: string | null };
@@ -21,7 +22,7 @@ export function useInvoicePrintStyles(targetId: string) {
   }, [targetId]);
 }
 
-export function OrderInvoiceDocument({ audience = "customer", invoiceNumber, issuedAt, nativeID, order }: { audience?: Audience; invoiceNumber: string; issuedAt: string; nativeID: string; order: InvoiceOrder }) {
+export function OrderInvoiceDocument({ audience = "customer", invoiceNumber, issuedAt, nativeID, order, qrExpiresAt, qrPayload }: { audience?: Audience; invoiceNumber: string; issuedAt: string; nativeID: string; order: InvoiceOrder; qrExpiresAt?: string; qrPayload?: string }) {
   const address = order.deliveryAddress;
   const itemCount = order.vendorOrders.reduce((sum, vendorOrder) => sum + vendorOrder.items.reduce((items, item) => items + item.quantity, 0), 0);
   const paid = ["CAPTURED", "AUTHORIZED", "PAID"].includes(order.payment?.status ?? "");
@@ -41,7 +42,7 @@ export function OrderInvoiceDocument({ audience = "customer", invoiceNumber, iss
     <View style={styles.parties}>
       <View style={styles.party}><Text style={styles.sectionLabel}>BILL TO</Text><Text style={styles.partyName}>{order.customer?.displayName ?? address?.recipientName ?? "Customer"}</Text><Text style={styles.meta}>{order.customer?.email ?? ""}</Text><Text style={styles.meta}>{address?.phone ?? order.customer?.phone ?? ""}</Text><Text style={styles.meta}>{address ? fullAddress(address) : "Delivery address unavailable"}</Text></View>
       <View style={styles.party}><Text style={styles.sectionLabel}>PAYMENT</Text><Info label="Method" value={order.payment ? `${order.payment.method} - ${order.payment.status}` : "Not recorded"} /><Info label="Provider" value={order.payment?.provider ?? "Marketplace"} /><Info label="Transaction" value={order.payment?.transactionId ?? "Pending"} /><Info label="Placed" value={date(order.createdAt)} /></View>
-      <View style={styles.qrBox}><Text style={styles.qrCode}>AG</Text><Text style={styles.qrText}>Scan-ready reference</Text><Text style={styles.qrNumber}>{order.orderNumber}</Text></View>
+      <View style={styles.qrBox}>{qrPayload ? <DocumentQrCode label="Signed invoice verification" reference={invoiceNumber} size={104} value={qrPayload} /> : <><Text style={styles.qrUnavailable}>QR pending</Text><Text style={styles.qrText}>Issue the invoice to create a signed verification code.</Text></>} {qrExpiresAt ? <Text style={styles.qrExpiry}>Valid through {date(qrExpiresAt)}</Text> : null}</View>
     </View>
     <Text style={styles.sectionTitle}>Store-wise package breakdown</Text>
     <View style={styles.packages}>{order.vendorOrders.map((vendorOrder, index) => <View key={vendorOrder.id} style={styles.package}>
@@ -91,9 +92,9 @@ const styles = StyleSheet.create({
   parties: { flexDirection: "row", flexWrap: "wrap", gap: spacing.lg, paddingHorizontal: 30 },
   party: { flex: 1, minWidth: 250 },
   qrBox: { alignItems: "center", borderColor: "#cbd5e1", borderRadius: radius.lg, borderStyle: "dashed", borderWidth: 1, gap: 3, justifyContent: "center", minHeight: 112, padding: spacing.md, width: 132 },
-  qrCode: { color: "#0f172a", fontFamily: typography.brandFamily, fontSize: 30 },
+  qrUnavailable: { color: "#0f172a", fontFamily: typography.brandFamily, fontSize: 18 },
   qrText: { color: "#64748b", fontSize: 9, textAlign: "center" },
-  qrNumber: { color: colors.primary, fontSize: 9, fontWeight: "700", textAlign: "center" },
+  qrExpiry: { color: "#64748b", fontSize: 8, textAlign: "center" },
   sectionLabel: { color: colors.primary, fontSize: 9, fontWeight: "700", letterSpacing: 1.2, marginBottom: spacing.sm, textTransform: "uppercase" },
   partyName: { color: "#0f172a", fontSize: 17, fontWeight: "700" },
   info: { flexDirection: "row", gap: spacing.sm, justifyContent: "space-between", marginBottom: 5 },

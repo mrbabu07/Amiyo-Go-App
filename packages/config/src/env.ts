@@ -3,6 +3,7 @@ import { z } from "zod";
 const nodeEnvSchema = z.enum(["development", "test", "staging", "production"]).default("development");
 const optionalUrlSchema = z.preprocess((value) => value === "" ? undefined : value, z.string().url().optional());
 const optionalSecretSchema = z.preprocess((value) => value === "" ? undefined : value, z.string().min(12).optional());
+const optionalSigningSecretSchema = z.preprocess((value) => value === "" ? undefined : value, z.string().min(32).optional());
 const optionalStringSchema = z.preprocess((value) => value === "" ? undefined : value, z.string().optional());
 const optionalEmailSchema = z.preprocess((value) => value === "" ? undefined : value, z.string().email().optional());
 
@@ -24,6 +25,8 @@ const apiEnvObject = z.object({
   SSLCOMMERZ_STORE_ID: optionalStringSchema,
   SSLCOMMERZ_STORE_PASSWORD: optionalSecretSchema,
   SSLCOMMERZ_SANDBOX: z.enum(["true", "false"]).default("true"),
+  PARCEL_QR_SIGNING_SECRET: optionalSigningSecretSchema,
+  PARCEL_QR_TTL_SECONDS: z.coerce.number().int().min(60).max(31_536_000).default(7_776_000),
   LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "fatal"]).default("info")
 });
 
@@ -35,6 +38,7 @@ function validateFirebaseAdmin(env: z.infer<typeof apiEnvObject>, context: z.Ref
   if (["staging", "production"].includes(env.NODE_ENV) && !env.FIREBASE_STORAGE_BUCKET) context.addIssue({ code: z.ZodIssueCode.custom, path: ["FIREBASE_STORAGE_BUCKET"], message: "Firebase Storage bucket is required" });
   if (Boolean(env.SSLCOMMERZ_STORE_ID) !== Boolean(env.SSLCOMMERZ_STORE_PASSWORD)) context.addIssue({ code: z.ZodIssueCode.custom, path: ["SSLCOMMERZ_STORE_ID"], message: "SSLCommerz store ID and password must be configured together" });
   if (env.NODE_ENV === "production" && env.SSLCOMMERZ_STORE_ID && env.SSLCOMMERZ_SANDBOX === "true") context.addIssue({ code: z.ZodIssueCode.custom, path: ["SSLCOMMERZ_SANDBOX"], message: "SSLCommerz sandbox mode is forbidden in production" });
+  if (["staging", "production"].includes(env.NODE_ENV) && !env.PARCEL_QR_SIGNING_SECRET) context.addIssue({ code: z.ZodIssueCode.custom, path: ["PARCEL_QR_SIGNING_SECRET"], message: "A document QR signing secret is required" });
 }
 
 export const apiEnvSchema = apiEnvObject.superRefine(validateFirebaseAdmin);

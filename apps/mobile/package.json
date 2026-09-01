@@ -41,6 +41,8 @@
     "react-dom": "19.2.3",
     "react-hook-form": "^7.52.1",
     "react-native": "0.86.2",
+    "react-native-qrcode-svg": "^6.3.21",
+    "react-native-svg": "15.15.4",
     "react-native-web": "^0.21.2",
     "zod": "^3.23.8",
     "zustand": "^4.5.4"

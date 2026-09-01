@@ -1,4 +1,4 @@
-import { customerOrderSummarySchema, fulfillmentDocumentSchema, invoiceSchema, orderSchema, orderTrackingSchema, vendorOrderDetailSchema, type VendorOrderTransition } from "@amiyo/contracts";
+import { customerOrderSummarySchema, documentQrVerificationSchema, fulfillmentDocumentSchema, invoiceSchema, orderSchema, orderTrackingSchema, vendorOrderDetailSchema, type VendorOrderTransition } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
@@ -11,3 +11,4 @@ export async function getVendorOrder(user: User, id: string) { return vendorOrde
 export async function transitionVendorOrder(user: User, id: string, input: VendorOrderTransition, key: string) { return vendorOrderDetailSchema.parse(await request(user, `/api/v2/vendor/orders/${id}/transitions`, { method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify(input) })); }
 export async function getInvoice(user: User, id: string) { return invoiceSchema.parse(await request(user, `/api/v2/orders/${id}/invoice`)); }
 export async function getFulfillmentDocument(user: User, id: string) { return fulfillmentDocumentSchema.parse(await request(user, `/api/v2/vendor/orders/${id}/documents`)); }
+export async function verifyDocumentQr(user: User, payload: string) { return documentQrVerificationSchema.parse(await request(user, "/api/v2/documents/verify", { method: "POST", body: JSON.stringify({ payload }) })); }

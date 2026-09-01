@@ -6,6 +6,7 @@ import { withSerializableTransaction } from "../../infrastructure/database/trans
 import { ApiProblem } from "../../middleware/api-problem.js";
 import { OutboxRepository } from "../outbox/outbox.repository.js";
 import { synchronizeParentOrderStatus } from "./parent-status.service.js";
+import { buildInvoiceQrPayload, buildParcelQrPayload, verifyDocumentQrPayload } from "./document-qr.js";
 
 const vendorOrderInclude = {
   order: { include: { addresses: true, payments: { orderBy: { createdAt: "desc" as const }, take: 1 }, user: { include: { profile: true } } } },
@@ -63,6 +64,12 @@ function dispatchSnapshot(row: LoadedVendorOrder) {
   };
 }
 
+function verifiedExpiry(payload: string) {
+  const verification = verifyDocumentQrPayload(payload);
+  if (!verification.valid) throw new Error(`Generated document QR could not be verified: ${verification.reason}`);
+  return verification.claims.expiresAt;
+}
+
 export class OrderService {
   private readonly outbox = new OutboxRepository();
   constructor(private readonly client: PrismaClient) {}
@@ -81,7 +88,20 @@ export class OrderService {
     return vendorOrderDto(row);
   }
 
-  async fulfillmentDocument(session: Session, id: string) { const row = await this.client.vendorOrder.findUnique({ where: { id }, include: vendorOrderInclude }); if (!row) throw new ApiProblem(404, "VENDOR_ORDER_NOT_FOUND", "Vendor order not found"); requireVendorAccess(session, row.vendorId, "orders:read"); const deliveryAddress = row.order.addresses.find((address) => address.type === "delivery"); if (!deliveryAddress) throw new ApiProblem(409, "DELIVERY_ADDRESS_MISSING", "Order delivery address is missing"); const pickup = pickupFromSettings(row.shop.settings, row.shop.name); const payment = row.order.payments[0]; const address = (parts: Array<string | null | undefined>) => parts.filter(Boolean).join(", "); return { parcelId: `AG-${row.order.orderNumber}-${row.id.slice(-6).toUpperCase()}`, orderId: row.orderId, orderNumber: row.order.orderNumber, vendorOrderId: row.id, shopName: row.shop.name, status: row.status, createdAt: row.createdAt.toISOString(), customer: { name: deliveryAddress.recipientName, phone: deliveryAddress.phone, address: address([deliveryAddress.line1, deliveryAddress.line2, deliveryAddress.unionName, deliveryAddress.upazila, deliveryAddress.district, deliveryAddress.division, deliveryAddress.postalCode]) }, pickup: { name: pickup.name, phone: pickup.phone, address: address([pickup.address, pickup.union, pickup.upazila, pickup.district, pickup.division]) }, payment: { method: payment?.method ?? "UNKNOWN", collectAmount: money(payment?.method === "COD" ? row.totalMinor : 0n, row.order.currency) }, subtotal: money(row.subtotalMinor, row.order.currency), delivery: money(row.deliveryMinor, row.order.currency), discount: money(row.discountMinor, row.order.currency), total: money(row.totalMinor, row.order.currency), trackingNumber: row.shipments[0]?.trackingNumber ?? null, items: row.items.map((item) => ({ id: item.id, name: item.productNameSnapshot, sku: item.skuSnapshot, quantity: item.quantity, unitPrice: money(item.unitPriceMinor, item.currency), lineTotal: money(item.lineTotalMinor, item.currency) })) }; }
+  async fulfillmentDocument(session: Session, id: string) {
+    const row = await this.client.vendorOrder.findUnique({ where: { id }, include: vendorOrderInclude });
+    if (!row) throw new ApiProblem(404, "VENDOR_ORDER_NOT_FOUND", "Vendor order not found");
+    requireVendorAccess(session, row.vendorId, "orders:read");
+    const deliveryAddress = row.order.addresses.find((address) => address.type === "delivery");
+    if (!deliveryAddress) throw new ApiProblem(409, "DELIVERY_ADDRESS_MISSING", "Order delivery address is missing");
+    const pickup = pickupFromSettings(row.shop.settings, row.shop.name);
+    const payment = row.order.payments[0];
+    const parcelId = `AG-${row.order.orderNumber}-${row.id.slice(-6).toUpperCase()}`;
+    const trackingNumber = row.shipments[0]?.trackingNumber ?? parcelId;
+    const qrPayload = buildParcelQrPayload({ orderId: row.orderId, vendorId: row.vendorId, vendorOrderId: row.id, trackingNumber, paymentMode: payment?.method === "COD" ? "C" : payment ? "P" : "U", paymentStatus: payment?.status ?? "UNKNOWN", orderStatus: row.status, amountMinor: row.totalMinor.toString(), currency: row.order.currency, itemCount: row.items.length, quantity: row.items.reduce((sum, item) => sum + item.quantity, 0) });
+    const address = (parts: Array<string | null | undefined>) => parts.filter(Boolean).join(", ");
+    return { parcelId, orderId: row.orderId, orderNumber: row.order.orderNumber, vendorOrderId: row.id, shopName: row.shop.name, status: row.status, createdAt: row.createdAt.toISOString(), qrPayload, qrExpiresAt: verifiedExpiry(qrPayload), customer: { name: deliveryAddress.recipientName, phone: deliveryAddress.phone, address: address([deliveryAddress.line1, deliveryAddress.line2, deliveryAddress.unionName, deliveryAddress.upazila, deliveryAddress.district, deliveryAddress.division, deliveryAddress.postalCode]) }, pickup: { name: pickup.name, phone: pickup.phone, address: address([pickup.address, pickup.union, pickup.upazila, pickup.district, pickup.division]) }, payment: { method: payment?.method ?? "UNKNOWN", collectAmount: money(payment?.method === "COD" ? row.totalMinor : 0n, row.order.currency) }, subtotal: money(row.subtotalMinor, row.order.currency), delivery: money(row.deliveryMinor, row.order.currency), discount: money(row.discountMinor, row.order.currency), total: money(row.totalMinor, row.order.currency), trackingNumber: row.shipments[0]?.trackingNumber ?? null, items: row.items.map((item) => ({ id: item.id, name: item.productNameSnapshot, sku: item.skuSnapshot, quantity: item.quantity, unitPrice: money(item.unitPriceMinor, item.currency), lineTotal: money(item.lineTotalMinor, item.currency) })) };
+  }
 
   async transitionVendorOrder(session: Session, id: string, input: VendorOrderTransition, idempotencyKey: string, correlationId?: string) {
     const scope = `vendor-order-transition:${session.principal.userId}:${id}`;
@@ -129,7 +149,26 @@ export class OrderService {
     const detail = await this.customerOrder(session, id);
     const invoice = await this.client.invoice.upsert({ where: { orderId: id }, create: { orderId: id, number: `INV-${detail.orderNumber}` }, update: {} });
     const base = process.env.OBJECT_STORAGE_PUBLIC_URL?.replace(/\/$/, ""); const storageUrl = invoice.storageKey && base ? `${base}/${invoice.storageKey.replace(/^\//, "")}` : null;
-    return { id: invoice.id, number: invoice.number, issuedAt: invoice.issuedAt.toISOString(), storageUrl, order: detail };
+    const issuedAt = invoice.issuedAt.toISOString();
+    const qrPayload = buildInvoiceQrPayload({ invoiceId: invoice.id, invoiceNumber: invoice.number, orderId: detail.id, orderNumber: detail.orderNumber, totalMinor: detail.total.amountMinor, currency: detail.total.currency, issuedAt });
+    return { id: invoice.id, number: invoice.number, issuedAt, storageUrl, qrPayload, qrExpiresAt: verifiedExpiry(qrPayload), order: detail };
+  }
+
+  async verifyDocument(session: Session, payload: string) {
+    if (session.status !== "ACTIVE") throw new ApiProblem(403, "SESSION_INACTIVE", "An active account is required to verify documents");
+    const verification = verifyDocumentQrPayload(payload);
+    if (!verification.valid) return verification;
+    const checkedAt = new Date().toISOString();
+    if (verification.claims.type === "parcel") {
+      const row = await this.client.vendorOrder.findUnique({ where: { id: verification.claims.vendorOrderId }, include: { order: true, shipments: { orderBy: { createdAt: "desc" }, take: 1 } } });
+      const matches = Boolean(row && row.orderId === verification.claims.orderId && row.vendorId === verification.claims.vendorId && row.totalMinor.toString() === verification.claims.amountMinor && row.order.currency === verification.claims.currency && (row.shipments[0]?.trackingNumber ?? `AG-${row.order.orderNumber}-${row.id.slice(-6).toUpperCase()}`) === verification.claims.trackingNumber);
+      const { amountMinor, currency, ...claims } = verification.claims;
+      return { valid: true as const, claims: { ...claims, amount: money(BigInt(amountMinor), currency) }, currentRecord: { matches, reference: row?.order.orderNumber ?? verification.claims.trackingNumber, status: row?.status ?? "NOT_FOUND", checkedAt } };
+    }
+    const row = await this.client.invoice.findUnique({ where: { id: verification.claims.invoiceId }, include: { order: true } });
+    const matches = Boolean(row && row.orderId === verification.claims.orderId && row.number === verification.claims.invoiceNumber && row.order.orderNumber === verification.claims.orderNumber && row.order.totalMinor.toString() === verification.claims.totalMinor && row.order.currency === verification.claims.currency);
+    const { totalMinor, currency, ...claims } = verification.claims;
+    return { valid: true as const, claims: { ...claims, total: money(BigInt(totalMinor), currency) }, currentRecord: { matches, reference: row?.number ?? verification.claims.invoiceNumber, status: row?.order.status ?? "NOT_FOUND", checkedAt } };
   }
 
   async tracking(session: Session, id: string) {

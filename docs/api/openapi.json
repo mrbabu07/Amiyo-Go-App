@@ -3480,6 +3480,15 @@
             ],
             "format": "uri"
           },
+          "qrPayload": {
+            "type": "string",
+            "minLength": 40,
+            "maxLength": 2000
+          },
+          "qrExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
           "order": {
             "type": "object",
             "properties": {
@@ -4029,6 +4038,8 @@
           "number",
           "issuedAt",
           "storageUrl",
+          "qrPayload",
+          "qrExpiresAt",
           "order"
         ]
       },
@@ -5340,13 +5351,24 @@
                   "null"
                 ],
                 "format": "uri"
+              },
+              "qrPayload": {
+                "type": "string",
+                "minLength": 40,
+                "maxLength": 2000
+              },
+              "qrExpiresAt": {
+                "type": "string",
+                "format": "date-time"
               }
             },
             "required": [
               "id",
               "number",
               "issuedAt",
-              "storageUrl"
+              "storageUrl",
+              "qrPayload",
+              "qrExpiresAt"
             ]
           },
           "subtotal": {
@@ -5728,6 +5750,218 @@
           "total",
           "events",
           "vendorOrders"
+        ]
+      },
+      "DocumentQrVerification": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "valid": {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "EXPIRED",
+                  "INVALID_FORMAT",
+                  "INVALID_SIGNATURE",
+                  "UNSUPPORTED_VERSION"
+                ]
+              }
+            },
+            "required": [
+              "valid",
+              "reason"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "valid": {
+                "type": "boolean",
+                "enum": [
+                  true
+                ]
+              },
+              "claims": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "parcel"
+                        ]
+                      },
+                      "orderId": {
+                        "type": "string"
+                      },
+                      "vendorId": {
+                        "type": "string"
+                      },
+                      "vendorOrderId": {
+                        "type": "string"
+                      },
+                      "trackingNumber": {
+                        "type": "string"
+                      },
+                      "paymentMode": {
+                        "type": "string",
+                        "enum": [
+                          "C",
+                          "P",
+                          "U"
+                        ]
+                      },
+                      "paymentStatus": {
+                        "type": "string"
+                      },
+                      "orderStatus": {
+                        "type": "string"
+                      },
+                      "amount": {
+                        "type": "object",
+                        "properties": {
+                          "amountMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "currency": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 3,
+                            "default": "BDT"
+                          }
+                        },
+                        "required": [
+                          "amountMinor"
+                        ]
+                      },
+                      "itemCount": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "quantity": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "expiresAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "orderId",
+                      "vendorId",
+                      "vendorOrderId",
+                      "trackingNumber",
+                      "paymentMode",
+                      "paymentStatus",
+                      "orderStatus",
+                      "amount",
+                      "itemCount",
+                      "quantity",
+                      "expiresAt"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "invoice"
+                        ]
+                      },
+                      "invoiceId": {
+                        "type": "string"
+                      },
+                      "invoiceNumber": {
+                        "type": "string"
+                      },
+                      "orderId": {
+                        "type": "string"
+                      },
+                      "orderNumber": {
+                        "type": "string"
+                      },
+                      "total": {
+                        "type": "object",
+                        "properties": {
+                          "amountMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "currency": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 3,
+                            "default": "BDT"
+                          }
+                        },
+                        "required": [
+                          "amountMinor"
+                        ]
+                      },
+                      "issuedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "expiresAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "invoiceId",
+                      "invoiceNumber",
+                      "orderId",
+                      "orderNumber",
+                      "total",
+                      "issuedAt",
+                      "expiresAt"
+                    ]
+                  }
+                ]
+              },
+              "currentRecord": {
+                "type": "object",
+                "properties": {
+                  "matches": {
+                    "type": "boolean"
+                  },
+                  "reference": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "checkedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "matches",
+                  "reference",
+                  "status",
+                  "checkedAt"
+                ]
+              }
+            },
+            "required": [
+              "valid",
+              "claims",
+              "currentRecord"
+            ]
+          }
         ]
       }
     },
@@ -9621,6 +9855,15 @@
                       "type": "string",
                       "format": "date-time"
                     },
+                    "qrPayload": {
+                      "type": "string",
+                      "minLength": 40,
+                      "maxLength": 2000
+                    },
+                    "qrExpiresAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
                     "customer": {
                       "type": "object",
                       "properties": {
@@ -9842,6 +10085,8 @@
                     "shopName",
                     "status",
                     "createdAt",
+                    "qrPayload",
+                    "qrExpiresAt",
                     "customer",
                     "pickup",
                     "payment",
@@ -9852,6 +10097,89 @@
                     "trackingNumber",
                     "items"
                   ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/documents/verify": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "payload": {
+                    "type": "string",
+                    "minLength": 40,
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "payload"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signed invoice or parcel QR verification with current-record match",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentQrVerification"
                 }
               }
             }

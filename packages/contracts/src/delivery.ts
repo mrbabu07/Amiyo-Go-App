@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { moneySchema, timestampSchema, uuidSchema, versionSchema } from "./common.js";
 import { orderItemSchema, parentOrderStatusSchema, vendorOrderStatusSchema } from "./orders.js";
+import { documentQrPayloadSchema } from "./document-qr.js";
 
 export const shipmentStatusSchema = z.enum(["PENDING", "READY_TO_SHIP", "PICKED_UP", "IN_TRANSIT", "DELIVERED", "FAILED", "CANCELLED"]);
 export const dispatchStatusSchema = z.enum(["PENDING", "DISPATCHED", "ACCEPTED", "FAILED", "CANCELLED"]);
@@ -72,7 +73,7 @@ export const orderTrackingSchema = z.object({
   status: parentOrderStatusSchema,
   shipments: z.array(z.object({ vendorOrderId: uuidSchema, shopName: z.string(), shipment: shipmentSchema.nullable() }))
 });
-export const fulfillmentDocumentSchema = z.object({ parcelId: z.string(), orderId: uuidSchema, orderNumber: z.string(), vendorOrderId: uuidSchema, shopName: z.string(), status: vendorOrderStatusSchema, createdAt: timestampSchema, customer: z.object({ name: z.string(), phone: z.string(), address: z.string() }), pickup: z.object({ name: z.string(), phone: z.string(), address: z.string() }), payment: z.object({ method: z.string(), collectAmount: moneySchema }), subtotal: moneySchema, delivery: moneySchema, discount: moneySchema, total: moneySchema, trackingNumber: z.string().nullable(), items: z.array(z.object({ id: uuidSchema, name: z.string(), sku: z.string(), quantity: z.number().int().positive(), unitPrice: moneySchema, lineTotal: moneySchema })) });
+export const fulfillmentDocumentSchema = z.object({ parcelId: z.string(), orderId: uuidSchema, orderNumber: z.string(), vendorOrderId: uuidSchema, shopName: z.string(), status: vendorOrderStatusSchema, createdAt: timestampSchema, qrPayload: documentQrPayloadSchema, qrExpiresAt: timestampSchema, customer: z.object({ name: z.string(), phone: z.string(), address: z.string() }), pickup: z.object({ name: z.string(), phone: z.string(), address: z.string() }), payment: z.object({ method: z.string(), collectAmount: moneySchema }), subtotal: moneySchema, delivery: moneySchema, discount: moneySchema, total: moneySchema, trackingNumber: z.string().nullable(), items: z.array(z.object({ id: uuidSchema, name: z.string(), sku: z.string(), quantity: z.number().int().positive(), unitPrice: moneySchema, lineTotal: moneySchema })) });
 
 export const deliveryDispatchJobSchema = z.object({ dispatchId: uuidSchema, idempotencyKey: z.string().startsWith("delivery-create:") });
 

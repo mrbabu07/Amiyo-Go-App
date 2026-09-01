@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { vendorOrderStatusSchema } from "@amiyo/contracts";
-import { vendorOrderTransitionSchema } from "@amiyo/contracts";
+import { documentQrVerificationInputSchema, vendorOrderTransitionSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
 import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
@@ -26,7 +26,8 @@ export function createOrderRouter() {
     } catch (error) { next(error); }
   });
 
-  router.use(["/api/v2/orders", "/api/v2/vendor/orders"], authenticate);
+  router.use(["/api/v2/orders", "/api/v2/vendor/orders", "/api/v2/documents"], authenticate);
+  router.post("/api/v2/documents/verify", async (req, res, next) => { try { res.json(await service.verifyDocument(requireSession(req), documentQrVerificationInputSchema.parse(req.body).payload)); } catch (error) { next(error); } });
   router.get("/api/v2/orders", async (req, res, next) => { try { res.json(await service.customerOrders(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/orders/:id/tracking", async (req, res, next) => { try { res.json(await service.tracking(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   router.get("/api/v2/orders/:id", async (req, res, next) => { try { res.json(await service.customerOrder(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { moneySchema, timestampSchema, uuidSchema, versionSchema } from "./common.js";
 import { paginatedResponseSchema } from "./pagination.js";
+import { documentQrPayloadSchema } from "./document-qr.js";
 
 export const parentOrderStatusSchema = z.enum([
   "PENDING_PAYMENT", "CONFIRMED", "PROCESSING", "READY_TO_SHIP", "SHIPPED", "DELIVERED", "CANCELLED", "RETURN_REQUESTED", "RETURNED", "REFUNDED"
@@ -79,7 +80,7 @@ export const orderSchema = z.object({
 });
 
 export const orderListResponseSchema = paginatedResponseSchema(orderSchema.omit({ vendorOrders: true }));
-export const invoiceSchema = z.object({ id: uuidSchema, number: z.string(), issuedAt: timestampSchema, storageUrl: z.string().url().nullable(), order: orderSchema });
+export const invoiceSchema = z.object({ id: uuidSchema, number: z.string(), issuedAt: timestampSchema, storageUrl: z.string().url().nullable(), qrPayload: documentQrPayloadSchema, qrExpiresAt: timestampSchema, order: orderSchema });
 
 export type OrderDto = z.infer<typeof orderSchema>;
 export type VendorOrderStatus = z.infer<typeof vendorOrderStatusSchema>;

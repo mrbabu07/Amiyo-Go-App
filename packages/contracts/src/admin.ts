@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { documentQrPayloadSchema } from "./document-qr.js";
 import { timestampSchema, uuidSchema, versionSchema } from "./common.js";
 
 export const adminUserSchema = z.object({ id: uuidSchema, email: z.string().nullable(), phone: z.string().nullable(), displayName: z.string().nullable(), status: z.enum(["ACTIVE", "SUSPENDED", "DEACTIVATED", "ANONYMIZED"]), roles: z.array(z.string()), createdAt: timestampSchema });
@@ -24,7 +25,7 @@ export const adminOrderDetailSchema = z.object({
   customer: z.object({ id: uuidSchema.nullable(), displayName: z.string(), email: z.string().nullable(), phone: z.string().nullable() }),
   deliveryAddress: z.object({ recipientName: z.string(), phone: z.string(), line1: z.string(), line2: z.string().nullable(), division: z.string(), district: z.string(), upazila: z.string().nullable(), unionName: z.string().nullable(), postalCode: z.string().nullable() }).nullable(),
   payment: z.object({ id: uuidSchema, provider: z.string(), method: z.string(), status: z.string(), amount: adminOrderMoneySchema, refunded: adminOrderMoneySchema, transactionId: z.string().nullable(), createdAt: timestampSchema }).nullable(),
-  invoice: z.object({ id: uuidSchema, number: z.string(), issuedAt: timestampSchema, storageUrl: z.string().url().nullable() }).nullable(),
+  invoice: z.object({ id: uuidSchema, number: z.string(), issuedAt: timestampSchema, storageUrl: z.string().url().nullable(), qrPayload: documentQrPayloadSchema, qrExpiresAt: timestampSchema }).nullable(),
   subtotal: adminOrderMoneySchema,
   discount: adminOrderMoneySchema,
   delivery: adminOrderMoneySchema,

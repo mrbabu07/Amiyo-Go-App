@@ -16,6 +16,7 @@ import { adminAnalyticsQuerySchema, adminAnalyticsSchema, adminAuditQuerySchema,
 import { mediaUploadInputSchema, mediaUploadResultSchema, mediaUploadTicketSchema } from "./media.js";
 import { commissionRuleInputSchema, commissionRuleSchema, endCommissionRuleSchema, updateCommissionRuleSchema } from "./commission.js";
 import { codRemittanceInputSchema, courierPartnerInputSchema, deliveryFeeRuleInputSchema, failedDeliveryReattemptSchema, failedDeliveryReturnSchema, logisticsAssignmentInputSchema, logisticsCodStateInputSchema, logisticsDeliveryAttemptSchema, logisticsManifestPickupSchema, logisticsNoteSchema, logisticsReturnActionSchema, logisticsShipmentTransitionSchema, logisticsTrackingEventSchema, logisticsZoneInputSchema, pickupStaffInputSchema } from "./logistics.js";
+import { documentQrVerificationInputSchema, documentQrVerificationSchema } from "./document-qr.js";
 
 extendZodWithOpenApi(z);
 
@@ -44,6 +45,7 @@ const address = registry.register("Address", addressSchema);
 const device = registry.register("Device", deviceSchema);
 const commissionRule = registry.register("CommissionRule", commissionRuleSchema);
 const adminOrderDetail = registry.register("AdminOrderDetail", adminOrderDetailSchema);
+const documentQrVerification = registry.register("DocumentQrVerification", documentQrVerificationSchema);
 registry.registerComponent("securitySchemes", "firebaseBearer", { type: "http", scheme: "bearer", bearerFormat: "Firebase ID token" });
 const firebaseSecurity = [{ firebaseBearer: [] }];
 
@@ -322,6 +324,7 @@ registry.registerPath({ method: "get", path: "/api/v2/orders/{id}/tracking", tag
 registry.registerPath({ method: "get", path: "/api/v2/vendor/orders", tags: ["Vendor Orders"], security: firebaseSecurity, responses: { 200: { description: "Vendor-scoped fulfillment queue", content: { "application/json": { schema: z.array(vendorOrderDetail) } } }, ...errorResponses } });
 registry.registerPath({ method: "get", path: "/api/v2/vendor/orders/{id}", tags: ["Vendor Orders"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: { description: "Vendor order detail", content: { "application/json": { schema: vendorOrderDetail } } }, ...errorResponses } });
 registry.registerPath({ method: "get", path: "/api/v2/vendor/orders/{id}/documents", tags: ["Vendor Orders"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: { description: "Print-ready packing slip and parcel label data", content: { "application/json": { schema: fulfillmentDocumentSchema } } }, ...errorResponses } });
+registry.registerPath({ method: "post", path: "/api/v2/documents/verify", tags: ["Documents"], security: firebaseSecurity, request: { body: { content: { "application/json": { schema: documentQrVerificationInputSchema } } } }, responses: { 200: { description: "Signed invoice or parcel QR verification with current-record match", content: { "application/json": { schema: documentQrVerification } } }, ...errorResponses } });
 registry.registerPath({ method: "post", path: "/api/v2/vendor/orders/{id}/transitions", tags: ["Vendor Orders"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }), headers: z.object({ "idempotency-key": z.string().uuid() }), body: { content: { "application/json": { schema: vendorOrderTransitionSchema } } } }, responses: { 200: { description: "Transitioned vendor order", content: { "application/json": { schema: vendorOrderDetail } } }, ...errorResponses } });
 registry.registerPath({ method: "post", path: "/api/v2/orders/{id}/cancel", tags: ["Returns & Finance"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }), headers: z.object({ "idempotency-key": z.string().uuid() }), body: { content: { "application/json": { schema: cancelOrderSchema } } } }, responses: { 200: { description: "Cancelled order and released active reservations" }, ...errorResponses } });
 registry.registerPath({ method: "get", path: "/api/v2/returns", tags: ["Returns & Finance"], security: firebaseSecurity, responses: { 200: { description: "Customer returns", content: { "application/json": { schema: z.array(returnSchema) } } }, ...errorResponses } });
