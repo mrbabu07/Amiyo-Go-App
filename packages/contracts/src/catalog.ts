@@ -73,6 +73,8 @@ export const productDetailSchema = productSummarySchema.extend({
 });
 
 export const productListResponseSchema = paginatedResponseSchema(productSummarySchema);
+export const discoveryEventInputSchema = z.object({ sessionId: z.string().uuid(), eventType: z.enum(["SEARCH", "PRODUCT_VIEW", "ADD_TO_CART", "WISHLIST"]), productId: uuidSchema.nullable().optional(), query: z.string().trim().min(2).max(120).nullable().optional() }).refine((value) => value.eventType !== "SEARCH" || Boolean(value.query), "Search events require a query");
+export const trendingSearchSchema = z.object({ query: z.string(), count: z.number().int().positive() });
 
 export const catalogQuerySchema = z.object({
   cursor: uuidSchema.optional(),
@@ -193,6 +195,7 @@ export const moderationInputSchema = z.object({
 
 export type CategoryDto = z.infer<typeof categorySchema>;
 export type ProductSummaryDto = z.infer<typeof productSummarySchema>;
+export type DiscoveryEventInput = z.infer<typeof discoveryEventInputSchema>;
 export type ProductDetailDto = z.infer<typeof productDetailSchema>;
 export type CatalogQuery = z.infer<typeof catalogQuerySchema>;
 export type ShopSummaryDto = z.infer<typeof shopSummarySchema>;

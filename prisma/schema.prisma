@@ -1679,6 +1679,7 @@ model RecommendationEvent {
   product    Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
 
   @@index([userId, occurredAt])
+  @@index([sessionId, occurredAt])
   @@map("recommendation_events")
 }
 

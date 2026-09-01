@@ -15,6 +15,7 @@ import { StoreHeader } from "../home/components/StoreHeader";
 import { getProduct, getProducts } from "./catalog.api";
 import { fallbackProductImage, toHomeProduct } from "./catalog.view-model";
 import { useComparisonStore } from "./comparison.store";
+import { getDiscoverySessionId, safelyRecordDiscoveryEvent } from "./discovery.api";
 
 const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
 
@@ -30,6 +31,7 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
   const user = firebaseAuth?.currentUser ?? null;
   const [selectedVariantId, setSelectedVariantId] = useState("");
   const [selectedMediaId, setSelectedMediaId] = useState("");
+  const [discoverySessionId, setDiscoverySessionId] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [cartBusy, setCartBusy] = useState(false);
   const [cartError, setCartError] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
   const ask = useMutation({ mutationFn: async () => { const currentUser = firebaseAuth?.currentUser; if (!currentUser || !productId) throw new Error("Sign in to ask a question"); return createProductQuestion(currentUser, productId, questionBody.trim()); }, onSuccess: async () => { setQuestionBody(""); await queryClient.invalidateQueries({ queryKey: ["catalog", "questions", productId] }); } });
   const saved = Boolean(productId && wishlist.data?.items.some((entry) => entry.productId === productId));
   const alerted = Boolean(productId && alerts.data?.some((entry) => entry.productId === productId));
-  const saveProduct = useMutation({ mutationFn: () => saved ? removeWishlistItem(user!, productId!) : addWishlistItem(user!, productId!), onSuccess: (data) => queryClient.setQueryData(["wishlist"], data) });
+  const saveProduct = useMutation({ mutationFn: () => saved ? removeWishlistItem(user!, productId!) : addWishlistItem(user!, productId!), onSuccess: (data) => { queryClient.setQueryData(["wishlist"], data); if (!saved && discoverySessionId && productId) safelyRecordDiscoveryEvent({ sessionId: discoverySessionId, eventType: "WISHLIST", productId }); } });
   const toggleAlert = useMutation({ mutationFn: () => alerted ? removeAlert(user!, productId!) : saveAlert(user!, productId!), onSuccess: (data) => queryClient.setQueryData(["alerts"], data) });
   const report = useMutation({ mutationFn: () => reportProduct(user!, productId!, { reason: reportReason, details: reportDetails }), onSuccess: () => { setShowReport(false); setReportDetails(""); } });
 
@@ -64,6 +66,11 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
     const variantImage = item?.media.find((media) => media.variantId === selected?.id);
     if (variantImage) setSelectedMediaId(variantImage.id);
   }, [item, selected?.id]);
+
+  useEffect(() => { void getDiscoverySessionId().then(setDiscoverySessionId); }, []);
+  useEffect(() => {
+    if (discoverySessionId && productId) safelyRecordDiscoveryEvent({ sessionId: discoverySessionId, eventType: "PRODUCT_VIEW", productId });
+  }, [discoverySessionId, productId]);
 
   if (product.isLoading) return <SafeAreaView style={styles.center}><ActivityIndicator color={colors.primary} size="large" /></SafeAreaView>;
   if (!item) return <SafeAreaView style={styles.center}><Ionicons color={colors.danger} name="alert-circle-outline" size={52} /><Text style={styles.errorTitle}>Product unavailable</Text><Text style={styles.error}>{product.error instanceof Error ? product.error.message : "Product not found"}</Text><Pressable onPress={() => router.back()} style={styles.backButton}><Text style={styles.backButtonText}>Go back</Text></Pressable></SafeAreaView>;
@@ -88,6 +95,7 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
       const currentUser = firebaseAuth?.currentUser || await ensureGuestUser();
       const cart = await addCartItem(currentUser, selected.id, quantity);
       queryClient.setQueryData(["cart"], cart);
+      if (discoverySessionId) safelyRecordDiscoveryEvent({ sessionId: discoverySessionId, eventType: "ADD_TO_CART", productId: item.id });
       router.push(destination);
     } catch (caught) {
       setCartError(caught instanceof Error ? caught.message : "Could not add item");

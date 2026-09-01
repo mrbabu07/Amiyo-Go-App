@@ -21,6 +21,7 @@ import { StoreFooter } from "./components/StoreFooter";
 import { getCategoryNavigation, getProducts, getShops } from "../catalog/catalog.api";
 import { getCategoryVisual } from "../catalog/category-visuals";
 import { toHomeProduct } from "../catalog/catalog.view-model";
+import { getDiscoverySessionId, getRecommendations } from "../catalog/discovery.api";
 import { getGrowthFeed } from "../engagement/engagement.api";
 import { getPublicPlatformSettings } from "../platform/platform.api";
 
@@ -55,15 +56,19 @@ export function CustomerHomeScreen() {
   const platformQuery = useQuery({ queryKey: ["platform", "public-settings"], queryFn: getPublicPlatformSettings, staleTime: 5 * 60_000 });
   const village = platformQuery.data?.villageOperations;
   const [lowDataOverride, setLowDataOverride] = useState<boolean | null>(null);
+  const [discoverySessionId, setDiscoverySessionId] = useState("");
   useEffect(() => { void AsyncStorage.getItem("amiyo:low-data-mode").then((value) => { if (value !== null) setLowDataOverride(value === "true"); }); }, []);
+  useEffect(() => { void getDiscoverySessionId().then(setDiscoverySessionId); }, []);
   const lowData = village?.enabled ? lowDataOverride ?? village.lowDataModeDefault : false;
   async function toggleLowData() { if (!village?.allowCustomerLowDataOverride) return; const next = !lowData; setLowDataOverride(next); await AsyncStorage.setItem("amiyo:low-data-mode", String(next)); }
   const categoryQuery = useQuery({ queryKey: ["catalog", "category-navigation"], queryFn: getCategoryNavigation, staleTime: 5 * 60_000 });
   const productQuery = useQuery({ queryKey: ["catalog", "home-products", lowData], queryFn: () => getProducts({ limit: lowData ? 12 : 20 }) });
   const shopQuery = useQuery({ queryKey: ["catalog", "home-shops"], queryFn: getShops });
   const growthQuery = useQuery({ queryKey: ["growth", "feed"], queryFn: getGrowthFeed });
+  const recommendationQuery = useQuery({ queryKey: ["catalog", "recommendations", discoverySessionId], queryFn: () => getRecommendations(discoverySessionId), enabled: Boolean(discoverySessionId), staleTime: 30_000, retry: 1 });
   const liveCategories: HomeCategory[] = (categoryQuery.data || []).filter((category) => category.parentId === null).map((category, index) => { const visual = getCategoryVisual(category, index); return { id: category.slug, name: category.name, icon: visual.icon, color: visual.background, foreground: visual.foreground }; });
   const liveProducts = (productQuery.data?.data || []).map(toHomeProduct);
+  const recommendedProducts = (recommendationQuery.data?.data || []).map(toHomeProduct);
   const activeFlashSale = growthQuery.data?.flashSales[0];
   const heroBanner = growthQuery.data?.banners.find((banner) => banner.placement === "home_hero");
   const flashPriceByProduct = new Map(activeFlashSale?.products.map((product) => [product.productId, Number(product.price.amountMinor) / 100]) || []);
@@ -98,7 +103,7 @@ export function CustomerHomeScreen() {
 
             {shopQuery.data?.data.length ? <View style={styles.section}><HomeSectionTitle eyebrow="FEATURED BRANDS" href="/shops" title="Shop trusted sellers" /><ShopRail shops={shopQuery.data.data} /></View> : null}
 
-            {!lowData && liveProducts.length > 5 ? <View style={styles.section}><HomeSectionTitle eyebrow="CURATED FOR YOU" href="/search" title="Recommended for you" /><ProductGrid columns={columns} lowData={lowData} products={liveProducts.slice(5)} /></View> : null}
+            {!lowData && (recommendedProducts.length || liveProducts.length > 5) ? <View style={styles.section}><HomeSectionTitle eyebrow="CURATED FOR YOU" href="/search" title="Recommended for you" />{recommendationQuery.isFetching && !recommendedProducts.length ? <ActivityIndicator color={colors.primary} /> : <ProductGrid columns={columns} lowData={lowData} products={recommendedProducts.length ? recommendedProducts : liveProducts.slice(5)} />}</View> : null}
 
             <View style={styles.benefits}>
               {benefits.map((benefit) => (

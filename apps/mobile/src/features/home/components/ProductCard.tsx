@@ -6,6 +6,7 @@ import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native
 import { colors, radius, spacing } from "../../../ui/tokens";
 import { firebaseAuth } from "../../auth/firebase";
 import { addWishlistItem, getWishlist, removeWishlistItem } from "../../engagement/engagement.api";
+import { getDiscoverySessionId, safelyRecordDiscoveryEvent } from "../../catalog/discovery.api";
 import type { HomeProduct } from "../home.data";
 
 const money = (value: number) => `৳${value.toLocaleString("en-BD")}`;
@@ -22,7 +23,10 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
   const saved = Boolean(wishlist.data?.items.some((item) => item.productId === product.id));
   const toggleWishlist = useMutation({
     mutationFn: () => saved ? removeWishlistItem(user!, product.id) : addWishlistItem(user!, product.id),
-    onSuccess: (data) => queryClient.setQueryData(["wishlist"], data)
+    onSuccess: (data) => {
+      queryClient.setQueryData(["wishlist"], data);
+      if (!saved) void getDiscoverySessionId().then((sessionId) => safelyRecordDiscoveryEvent({ sessionId, eventType: "WISHLIST", productId: product.id }));
+    }
   });
 
   function onWishlist(event: GestureResponderEvent) {

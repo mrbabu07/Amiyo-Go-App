@@ -19,6 +19,8 @@ Status: reference-parity business-rule code is implemented; production launch re
 - Referral program: each customer receives a shareable code; a valid first referral awards both accounts through an idempotent loyalty ledger entry.
 - Customer operations: admin customer 360 includes referral history, loyalty balance, recent ledger entries, and audited manual award/deduct controls.
 - Cart recovery: the worker creates deduplicated in-app/push reminders for signed-in customers whose active carts remain untouched for one hour.
+- Intelligent marketplace discovery: 250ms live suggestions, product/shop/category results, typo-tolerant matching, recent searches, and 14-day trending terms are available from the shared search header.
+- Personalized ranking: anonymous discovery sessions feed product-view, wishlist, and add-to-cart signals into category affinity, marketplace engagement, review, freshness, and active-campaign ranking.
 
 ## Production Work Still Pending
 

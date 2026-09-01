@@ -1,6 +1,7 @@
 import { Router } from "express";
+import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
-import { archiveProductSchema, bulkProductCsvInputSchema, catalogQuerySchema, createProductSchema, cursorPaginationQuerySchema, inventoryAdjustmentSchema, moderationInputSchema, replaceProductMediaSchema, replaceProductVariantsSchema, updateProductSchema } from "@amiyo/contracts";
+import { archiveProductSchema, bulkProductCsvInputSchema, catalogQuerySchema, createProductSchema, cursorPaginationQuerySchema, discoveryEventInputSchema, inventoryAdjustmentSchema, moderationInputSchema, replaceProductMediaSchema, replaceProductVariantsSchema, updateProductSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "../identity/identity.middleware.js";
@@ -20,6 +21,7 @@ export function createCatalogRouter() {
   const router = Router();
   const service = new CatalogService(prisma);
   const authenticate = createAuthenticationMiddleware(new FirebaseTokenVerifier(), new IdentityService(prisma));
+  const discoveryWrites = rateLimit({ windowMs: 60_000, limit: 60, standardHeaders: "draft-7", legacyHeaders: false });
 
   router.get("/api/v2/catalog/categories", async (_req, res, next) => {
     try { res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300").json(await service.categories()); } catch (error) { next(error); }
@@ -36,6 +38,10 @@ export function createCatalogRouter() {
   router.get("/api/v2/catalog/search", async (req, res, next) => {
     try { res.json(await service.products(catalogQuerySchema.parse(req.query))); } catch (error) { next(error); }
   });
+
+  router.get("/api/v2/catalog/trending-searches", async (_req, res, next) => { try { res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300").json(await service.trendingSearches()); } catch (error) { next(error); } });
+  router.get("/api/v2/catalog/recommendations", async (req, res, next) => { try { const sessionId = z.string().uuid().optional().parse(req.query.sessionId); res.set("Cache-Control", "private, max-age=30").json(await service.recommendations(sessionId)); } catch (error) { next(error); } });
+  router.post("/api/v2/catalog/discovery-events", discoveryWrites, async (req, res, next) => { try { res.status(202).json(await service.recordDiscoveryEvent(discoveryEventInputSchema.parse(req.body))); } catch (error) { next(error); } });
 
   router.get("/api/v2/catalog/products/:id", async (req, res, next) => {
     try { res.json(await service.product(identifierSchema.parse(req.params).id)); } catch (error) { next(error); }

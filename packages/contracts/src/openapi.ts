@@ -1,6 +1,6 @@
 import { OpenAPIRegistry, OpenApiGeneratorV31, extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
 import { z } from "zod";
-import { archiveProductSchema, bulkProductCsvInputSchema, bulkProductImportResultSchema, catalogQuerySchema, categorySchema, createProductSchema, inventoryAdjustmentSchema, moderationInputSchema, productDetailSchema, productListResponseSchema, replaceProductMediaSchema, replaceProductVariantsSchema, shopDetailSchema, shopListResponseSchema, updateProductSchema, vendorInventorySchema } from "./catalog.js";
+import { archiveProductSchema, bulkProductCsvInputSchema, bulkProductImportResultSchema, catalogQuerySchema, categorySchema, createProductSchema, discoveryEventInputSchema, inventoryAdjustmentSchema, moderationInputSchema, productDetailSchema, productListResponseSchema, replaceProductMediaSchema, replaceProductVariantsSchema, shopDetailSchema, shopListResponseSchema, trendingSearchSchema, updateProductSchema, vendorInventorySchema } from "./catalog.js";
 import { addCartItemSchema, cartSchema, checkoutInputSchema, checkoutQuoteInputSchema, checkoutQuoteSchema, checkoutResultSchema, updateCartItemSchema } from "./commerce.js";
 import { customerOrderSummarySchema, deliveryQueueItemSchema, deliveryRetryInputSchema, deliveryRetryResultSchema, deliverySettingsInputSchema, deliverySettingsSchema, fulfillmentDocumentSchema, orderTrackingSchema, serviceabilityInputSchema, serviceabilitySchema, vendorOrderDetailSchema, vendorOrderTransitionSchema } from "./delivery.js";
 import { healthResponseSchema } from "./health.js";
@@ -212,6 +212,29 @@ registry.registerPath({
   tags: ["Catalog"],
   request: { query: catalogQuerySchema },
   responses: { 200: { description: "Search results", content: { "application/json": { schema: productList } } } }
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/v2/catalog/trending-searches",
+  tags: ["Catalog"],
+  responses: { 200: { description: "Trending marketplace search terms", content: { "application/json": { schema: z.array(trendingSearchSchema) } } } }
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/v2/catalog/recommendations",
+  tags: ["Catalog"],
+  request: { query: z.object({ sessionId: z.string().uuid().optional() }) },
+  responses: { 200: { description: "Session-personalized marketplace products", content: { "application/json": { schema: productList } } } }
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/v2/catalog/discovery-events",
+  tags: ["Catalog"],
+  request: { body: { content: { "application/json": { schema: discoveryEventInputSchema } } } },
+  responses: { 202: { description: "Discovery signal accepted", content: { "application/json": { schema: z.object({ accepted: z.literal(true), id: z.string().uuid() }) } } }, ...errorResponses }
 });
 
 registry.registerPath({

@@ -1,10 +1,11 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { authorize, type Permission, type Role } from "@amiyo/domain";
-import type { ArchiveProduct, BulkProductCsvInput, CatalogQuery, CreateProductInput, InventoryAdjustmentInput, ModerationInput, ReplaceProductMedia, ReplaceProductVariants, Session, UpdateProductInput } from "@amiyo/contracts";
+import type { ArchiveProduct, BulkProductCsvInput, CatalogQuery, CreateProductInput, DiscoveryEventInput, InventoryAdjustmentInput, ModerationInput, ReplaceProductMedia, ReplaceProductVariants, Session, UpdateProductInput } from "@amiyo/contracts";
 import { withSerializableTransaction, type TransactionClient } from "../../infrastructure/database/transaction.js";
 import { TtlCache } from "../../infrastructure/cache/ttl-cache.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
-import { CatalogRepository, publicProductInclude, type PublicProduct, type PublicProductSummary } from "./catalog.repository.js";
+import { CatalogRepository, publicProductInclude, publicProductSummaryInclude, type PublicProduct, type PublicProductSummary } from "./catalog.repository.js";
+import { fuzzySearchScore, fuzzySearchThreshold, normalizeSearchValue } from "./catalog-ranking.js";
 import { parseProductCsv, serializeProductCsv } from "./product-csv.js";
 
 const catalogPublicCache = new TtlCache();
@@ -143,8 +144,99 @@ export class CatalogService {
   async products(input: CatalogQuery) {
     return this.publicCache.getOrCreate(`products:${JSON.stringify(input)}`, 30_000, async () => {
       const result = await this.repository.listPublishedProducts(input);
+      if (input.query && !result.data.length) {
+        const candidates = await this.client.product.findMany({
+          where: { status: "APPROVED", shop: { status: "ACTIVE" }, vendor: { status: "APPROVED" } },
+          include: publicProductSummaryInclude,
+          orderBy: { publishedAt: "desc" },
+          take: 250
+        });
+        const threshold = fuzzySearchThreshold(input.query);
+        const matches = candidates
+          .map((product) => ({ product, score: fuzzySearchScore(input.query!, `${product.name} ${product.brand || ""} ${product.shop.name}`) }))
+          .filter((item) => item.score <= threshold)
+          .sort((left, right) => left.score - right.score || right.product._count.reviews - left.product._count.reviews)
+          .slice(0, input.limit);
+        if (matches.length) return { data: matches.map((item) => productSummary(item.product)), pageInfo: { nextCursor: null, hasNextPage: false } };
+      }
       return { data: result.data.map(productSummary), pageInfo: result.pageInfo };
     }, 5 * 60_000);
+  }
+
+  async recordDiscoveryEvent(input: DiscoveryEventInput) {
+    const productId = input.productId && await this.client.product.count({ where: { id: input.productId, status: "APPROVED" } }) ? input.productId : null;
+    const row = await this.client.recommendationEvent.create({
+      data: { sessionId: input.sessionId, productId, eventType: input.eventType, context: input.query ? json({ query: input.query }) : Prisma.JsonNull }
+    });
+    return { accepted: true, id: row.id };
+  }
+
+  async trendingSearches() {
+    const since = new Date(Date.now() - 14 * 24 * 60 * 60_000);
+    const rows = await this.client.recommendationEvent.findMany({ where: { eventType: "SEARCH", occurredAt: { gte: since } }, select: { context: true }, orderBy: { occurredAt: "desc" }, take: 2000 });
+    const counts = new Map<string, number>();
+    for (const row of rows) {
+      const query = row.context && typeof row.context === "object" && !Array.isArray(row.context) && typeof (row.context as { query?: unknown }).query === "string" ? normalizeSearchValue((row.context as { query: string }).query) : "";
+      if (query.length >= 2) counts.set(query, (counts.get(query) ?? 0) + 1);
+    }
+    return [...counts]
+      .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+      .slice(0, 10)
+      .map(([query, count]) => ({ query, count }));
+  }
+
+  async recommendations(sessionId?: string) {
+    return this.publicCache.getOrCreate(`recommendations:${sessionId ?? "popular"}`, 30_000, async () => {
+      const since = new Date(Date.now() - 90 * 24 * 60 * 60_000);
+      const personalEvents = sessionId ? await this.client.recommendationEvent.findMany({
+        where: { sessionId, productId: { not: null }, occurredAt: { gte: since } },
+        select: { productId: true, eventType: true, product: { select: { categoryId: true } } },
+        orderBy: { occurredAt: "desc" },
+        take: 100
+      }) : [];
+      const categoryWeights = new Map<string, number>();
+      const seen = new Set<string>();
+      for (const event of personalEvents) {
+        if (event.productId) seen.add(event.productId);
+        if (event.product?.categoryId) {
+          const weight = event.eventType === "ADD_TO_CART" ? 6 : event.eventType === "WISHLIST" ? 4 : 2;
+          categoryWeights.set(event.product.categoryId, (categoryWeights.get(event.product.categoryId) ?? 0) + weight);
+        }
+      }
+
+      const candidates = await this.client.product.findMany({
+        where: {
+          status: "APPROVED",
+          shop: { status: "ACTIVE" },
+          vendor: { status: "APPROVED" },
+          ...(categoryWeights.size ? { categoryId: { in: [...categoryWeights.keys()] } } : {})
+        },
+        include: publicProductSummaryInclude,
+        orderBy: { publishedAt: "desc" },
+        take: 80
+      });
+      const candidateIds = candidates.map((product) => product.id);
+      const now = new Date();
+      const [globalEvents, campaignProducts] = await Promise.all([
+        this.client.recommendationEvent.groupBy({ by: ["productId", "eventType"], where: { productId: { in: candidateIds }, occurredAt: { gte: since } }, _count: { _all: true } }),
+        this.client.campaignProduct.findMany({ where: { productId: { in: candidateIds }, campaign: { status: "active", startsAt: { lte: now }, endsAt: { gt: now } } }, select: { productId: true } })
+      ]);
+      const globalScore = new Map<string, number>();
+      for (const event of globalEvents) {
+        if (!event.productId) continue;
+        const weight = event.eventType === "ADD_TO_CART" ? 5 : event.eventType === "WISHLIST" ? 3 : 1;
+        globalScore.set(event.productId, (globalScore.get(event.productId) ?? 0) + event._count._all * weight);
+      }
+      const sponsored = new Set(campaignProducts.map((item) => item.productId));
+      const ranked = candidates
+        .map((product) => ({
+          product,
+          score: (categoryWeights.get(product.categoryId) ?? 0) * 10 + (globalScore.get(product.id) ?? 0) + Math.min(product._count.reviews, 20) + (sponsored.has(product.id) ? 15 : 0) - (seen.has(product.id) ? 8 : 0)
+        }))
+        .sort((left, right) => right.score - left.score || (right.product.publishedAt?.getTime() ?? 0) - (left.product.publishedAt?.getTime() ?? 0))
+        .slice(0, 12);
+      return { data: ranked.map((item) => productSummary(item.product)), pageInfo: { nextCursor: null, hasNextPage: false } };
+    }, 2 * 60_000);
   }
 
   async product(identifier: string) {

@@ -6191,6 +6191,9 @@
                   "loyaltyPoints": {
                     "type": "string",
                     "pattern": "^\\d+$"
+                  },
+                  "codPhoneConfirmed": {
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -7967,6 +7970,189 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProductList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/catalog/trending-searches": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "responses": {
+          "200": {
+            "description": "Trending marketplace search terms",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "query": {
+                        "type": "string"
+                      },
+                      "count": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      }
+                    },
+                    "required": [
+                      "query",
+                      "count"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/catalog/recommendations": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "sessionId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session-personalized marketplace products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/catalog/discovery-events": {
+      "post": {
+        "tags": [
+          "Catalog"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sessionId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "eventType": {
+                    "type": "string",
+                    "enum": [
+                      "SEARCH",
+                      "PRODUCT_VIEW",
+                      "ADD_TO_CART",
+                      "WISHLIST"
+                    ]
+                  },
+                  "productId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid"
+                  },
+                  "query": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "minLength": 2,
+                    "maxLength": 120
+                  }
+                },
+                "required": [
+                  "sessionId",
+                  "eventType"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Discovery signal accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accepted": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "accepted",
+                    "id"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -30822,6 +31008,89 @@
                         "adminAlerts"
                       ]
                     },
+                    "villageOperations": {
+                      "type": "object",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "defaultLocale": {
+                          "type": "string",
+                          "enum": [
+                            "bn",
+                            "en"
+                          ]
+                        },
+                        "lowDataModeDefault": {
+                          "type": "boolean"
+                        },
+                        "allowCustomerLowDataOverride": {
+                          "type": "boolean"
+                        },
+                        "requireCodPhoneConfirmation": {
+                          "type": "boolean"
+                        },
+                        "requireUnionForDelivery": {
+                          "type": "boolean"
+                        },
+                        "ruralDeliveryEnabled": {
+                          "type": "boolean"
+                        },
+                        "assistedOrderingEnabled": {
+                          "type": "boolean"
+                        },
+                        "smsOrderUpdatesEnabled": {
+                          "type": "boolean"
+                        },
+                        "pickupPointsEnabled": {
+                          "type": "boolean"
+                        },
+                        "supportPhone": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "minLength": 8,
+                          "maxLength": 20
+                        },
+                        "supportWhatsapp": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "minLength": 8,
+                          "maxLength": 20
+                        }
+                      },
+                      "default": {
+                        "enabled": true,
+                        "defaultLocale": "bn",
+                        "lowDataModeDefault": true,
+                        "allowCustomerLowDataOverride": true,
+                        "requireCodPhoneConfirmation": true,
+                        "requireUnionForDelivery": true,
+                        "ruralDeliveryEnabled": true,
+                        "assistedOrderingEnabled": true,
+                        "smsOrderUpdatesEnabled": false,
+                        "pickupPointsEnabled": false,
+                        "supportPhone": "01700000000",
+                        "supportWhatsapp": "8801700000000"
+                      },
+                      "required": [
+                        "enabled",
+                        "defaultLocale",
+                        "lowDataModeDefault",
+                        "allowCustomerLowDataOverride",
+                        "requireCodPhoneConfirmation",
+                        "requireUnionForDelivery",
+                        "ruralDeliveryEnabled",
+                        "assistedOrderingEnabled",
+                        "smsOrderUpdatesEnabled",
+                        "pickupPointsEnabled",
+                        "supportPhone",
+                        "supportWhatsapp"
+                      ]
+                    },
                     "businessRules": {
                       "type": "object",
                       "properties": {
@@ -31310,6 +31579,89 @@
                       "adminAlerts"
                     ]
                   },
+                  "villageOperations": {
+                    "type": "object",
+                    "properties": {
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "defaultLocale": {
+                        "type": "string",
+                        "enum": [
+                          "bn",
+                          "en"
+                        ]
+                      },
+                      "lowDataModeDefault": {
+                        "type": "boolean"
+                      },
+                      "allowCustomerLowDataOverride": {
+                        "type": "boolean"
+                      },
+                      "requireCodPhoneConfirmation": {
+                        "type": "boolean"
+                      },
+                      "requireUnionForDelivery": {
+                        "type": "boolean"
+                      },
+                      "ruralDeliveryEnabled": {
+                        "type": "boolean"
+                      },
+                      "assistedOrderingEnabled": {
+                        "type": "boolean"
+                      },
+                      "smsOrderUpdatesEnabled": {
+                        "type": "boolean"
+                      },
+                      "pickupPointsEnabled": {
+                        "type": "boolean"
+                      },
+                      "supportPhone": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "minLength": 8,
+                        "maxLength": 20
+                      },
+                      "supportWhatsapp": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "minLength": 8,
+                        "maxLength": 20
+                      }
+                    },
+                    "default": {
+                      "enabled": true,
+                      "defaultLocale": "bn",
+                      "lowDataModeDefault": true,
+                      "allowCustomerLowDataOverride": true,
+                      "requireCodPhoneConfirmation": true,
+                      "requireUnionForDelivery": true,
+                      "ruralDeliveryEnabled": true,
+                      "assistedOrderingEnabled": true,
+                      "smsOrderUpdatesEnabled": false,
+                      "pickupPointsEnabled": false,
+                      "supportPhone": "01700000000",
+                      "supportWhatsapp": "8801700000000"
+                    },
+                    "required": [
+                      "enabled",
+                      "defaultLocale",
+                      "lowDataModeDefault",
+                      "allowCustomerLowDataOverride",
+                      "requireCodPhoneConfirmation",
+                      "requireUnionForDelivery",
+                      "ruralDeliveryEnabled",
+                      "assistedOrderingEnabled",
+                      "smsOrderUpdatesEnabled",
+                      "pickupPointsEnabled",
+                      "supportPhone",
+                      "supportWhatsapp"
+                    ]
+                  },
                   "businessRules": {
                     "type": "object",
                     "properties": {
@@ -31663,6 +32015,89 @@
                         "promotions",
                         "sellerAlerts",
                         "adminAlerts"
+                      ]
+                    },
+                    "villageOperations": {
+                      "type": "object",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "defaultLocale": {
+                          "type": "string",
+                          "enum": [
+                            "bn",
+                            "en"
+                          ]
+                        },
+                        "lowDataModeDefault": {
+                          "type": "boolean"
+                        },
+                        "allowCustomerLowDataOverride": {
+                          "type": "boolean"
+                        },
+                        "requireCodPhoneConfirmation": {
+                          "type": "boolean"
+                        },
+                        "requireUnionForDelivery": {
+                          "type": "boolean"
+                        },
+                        "ruralDeliveryEnabled": {
+                          "type": "boolean"
+                        },
+                        "assistedOrderingEnabled": {
+                          "type": "boolean"
+                        },
+                        "smsOrderUpdatesEnabled": {
+                          "type": "boolean"
+                        },
+                        "pickupPointsEnabled": {
+                          "type": "boolean"
+                        },
+                        "supportPhone": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "minLength": 8,
+                          "maxLength": 20
+                        },
+                        "supportWhatsapp": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "minLength": 8,
+                          "maxLength": 20
+                        }
+                      },
+                      "default": {
+                        "enabled": true,
+                        "defaultLocale": "bn",
+                        "lowDataModeDefault": true,
+                        "allowCustomerLowDataOverride": true,
+                        "requireCodPhoneConfirmation": true,
+                        "requireUnionForDelivery": true,
+                        "ruralDeliveryEnabled": true,
+                        "assistedOrderingEnabled": true,
+                        "smsOrderUpdatesEnabled": false,
+                        "pickupPointsEnabled": false,
+                        "supportPhone": "01700000000",
+                        "supportWhatsapp": "8801700000000"
+                      },
+                      "required": [
+                        "enabled",
+                        "defaultLocale",
+                        "lowDataModeDefault",
+                        "allowCustomerLowDataOverride",
+                        "requireCodPhoneConfirmation",
+                        "requireUnionForDelivery",
+                        "ruralDeliveryEnabled",
+                        "assistedOrderingEnabled",
+                        "smsOrderUpdatesEnabled",
+                        "pickupPointsEnabled",
+                        "supportPhone",
+                        "supportWhatsapp"
                       ]
                     },
                     "businessRules": {
