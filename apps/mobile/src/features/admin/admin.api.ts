@@ -23,6 +23,7 @@ export async function getAdminCommerce(user: User) { return commerceRequest(user
 export async function getAdminOrderSlaBreaches(user: User) { return adminOrderSlaSchema.parse(await commerceRequest(user, "/orders-analysis/sla-breaches")); }
 export async function getAdminOrderFraudQueue(user: User) { return adminOrderFraudSchema.parse(await commerceRequest(user, "/orders-analysis/fraud-queue")); }
 export async function getAdminOrderDetail(user: User, id: string) { return adminOrderDetailSchema.parse(await commerceRequest(user, `/orders/${id}`)); }
+export async function issueAdminOrderInvoice(user: User, id: string) { return adminOrderDetailSchema.parse(await commerceRequest(user, `/orders/${id}/invoice`, { method: "POST" })); }
 export async function overrideAdminOrderStatus(user: User, id: string, input: AdminOrderStatusOverride) { return adminOrderDetailSchema.parse(await commerceRequest(user, `/orders/${id}/status-override`, { method: "POST", body: JSON.stringify(input) })); }
 export async function correctAdminOrderAddress(user: User, id: string, input: AdminOrderAddressInput) { return adminOrderDetailSchema.parse(await commerceRequest(user, `/orders/${id}/delivery-address`, { method: "PUT", body: JSON.stringify(input) })); }
 export async function reassignAdminOrderCourier(user: User, id: string, input: AdminOrderCourierInput) { return adminOrderDetailSchema.parse(await commerceRequest(user, `/orders/${id}/courier`, { method: "PUT", body: JSON.stringify(input) })); }

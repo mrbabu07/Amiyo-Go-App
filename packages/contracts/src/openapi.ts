@@ -56,6 +56,8 @@ const errorResponses = {
   404: { description: "Resource not found", content: { "application/problem+json": { schema: problem } } }
 };
 
+registry.registerPath({ method: "post", path: "/api/v2/admin/workspace/orders/{id}/invoice", tags: ["Admin Orders"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: { description: "Issue or retrieve the stable invoice identity with an audit record", content: { "application/json": { schema: adminOrderDetail } } }, ...errorResponses } });
+
 registry.registerPath({
   method: "get",
   path: "/api/v2/cart",

@@ -5,6 +5,8 @@ Status: major marketplace workflows are implemented, but complete reference pari
 
 ## Verification Update — 2026-09-16
 
+Order-document follow-up: COD collection is now payment-state aware, customer invoices include shipment references, and admin invoice issuance is permission-checked and audited. See `reference-verification-2026-09-16.md` for exact scope and test limits.
+
 - Invoice authorization no longer displays as captured payment.
 - Customer/admin native invoice export generates a PDF with seller line items and the rendered QR when available; device testing remains required.
 - A document verification route supports native camera scanning and pasted QR payloads. Web uses paste input. It distinguishes signed documents from matching current records and does not claim payment collection.
