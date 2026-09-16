@@ -33,3 +33,10 @@ test("invoice QR verifies invoice identity and exact total", () => {
     assert.equal(result.claims.totalMinor, "10600");
   }
 });
+
+test("invoice QR expires at the exact boundary and rejects duplicate fields", () => {
+  const payload = buildInvoiceQrPayload({ invoiceId: "invoice-1", invoiceNumber: "INV-1", orderId: "order-1", orderNumber: "ORDER-1", totalMinor: "1", currency: "BDT", issuedAt: now.toISOString() }, { now, secret, ttlSeconds: 60 });
+  assert.deepEqual(verifyDocumentQrPayload(payload, { now: new Date(now.getTime() + 60000), secret }), { valid: false, reason: "EXPIRED" });
+  assert.deepEqual(verifyDocumentQrPayload(payload.replace("|N=", "|I=duplicate|N="), { now, secret }), { valid: false, reason: "INVALID_FORMAT" });
+  assert.deepEqual(verifyDocumentQrPayload("x".repeat(2001), { now, secret }), { valid: false, reason: "INVALID_FORMAT" });
+});

@@ -89,6 +89,7 @@ export function buildInvoiceQrPayload(input: Omit<InvoiceQrClaims, "type" | "exp
 }
 
 function parse(payload: string) {
+  if (payload.length > 2000) throw new Error("INVALID_FORMAT");
   const parts = payload.split("|");
   const version = parts.shift();
   const signaturePart = parts.pop();
@@ -97,7 +98,9 @@ function parse(payload: string) {
   for (const part of parts) {
     const separator = part.indexOf("=");
     if (separator < 1) throw new Error("INVALID_FORMAT");
-    values.set(part.slice(0, separator), decode(part.slice(separator + 1)));
+    const key = part.slice(0, separator);
+    if (values.has(key)) throw new Error("INVALID_FORMAT");
+    values.set(key, decode(part.slice(separator + 1)));
   }
   return { version, values, suppliedSignature: signaturePart.slice(2), unsigned: [version, ...parts].join("|") };
 }
@@ -124,7 +127,7 @@ export function verifyDocumentQrPayload(payload: string, options: Pick<BuildOpti
     if (suppliedBuffer.length !== expectedBuffer.length || !timingSafeEqual(suppliedBuffer, expectedBuffer)) return { valid: false, reason: "INVALID_SIGNATURE" };
     const expiry = positiveInteger(parsed.values, "X");
     const now = Math.floor((options.now ?? new Date()).getTime() / 1000);
-    if (expiry < now) return { valid: false, reason: "EXPIRED" };
+    if (expiry <= now) return { valid: false, reason: "EXPIRED" };
     const expires = new Date(expiry * 1000).toISOString();
     if (parsed.version === PARCEL_VERSION) {
       const mode = required(parsed.values, "M");

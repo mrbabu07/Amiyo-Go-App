@@ -22,10 +22,10 @@ export function useInvoicePrintStyles(targetId: string) {
   }, [targetId]);
 }
 
-export function OrderInvoiceDocument({ audience = "customer", invoiceNumber, issuedAt, nativeID, order, qrExpiresAt, qrPayload }: { audience?: Audience; invoiceNumber: string; issuedAt: string; nativeID: string; order: InvoiceOrder; qrExpiresAt?: string; qrPayload?: string }) {
+export function OrderInvoiceDocument({ audience = "customer", invoiceNumber, issuedAt, nativeID, order, qrExpiresAt, qrPayload, getQrRef }: { audience?: Audience; invoiceNumber: string; issuedAt: string; nativeID: string; order: InvoiceOrder; qrExpiresAt?: string; qrPayload?: string; getQrRef?: (ref: { toDataURL: (callback: (data: string) => void) => void }) => void }) {
   const address = order.deliveryAddress;
   const itemCount = order.vendorOrders.reduce((sum, vendorOrder) => sum + vendorOrder.items.reduce((items, item) => items + item.quantity, 0), 0);
-  const paid = ["CAPTURED", "AUTHORIZED", "PAID"].includes(order.payment?.status ?? "");
+  const paid = ["CAPTURED", "PAID"].includes(order.payment?.status ?? "");
   return <View nativeID={nativeID} style={styles.invoice}>
     <Text style={styles.watermark}>AMIYO</Text>
     <View style={styles.hero}>
@@ -42,7 +42,7 @@ export function OrderInvoiceDocument({ audience = "customer", invoiceNumber, iss
     <View style={styles.parties}>
       <View style={styles.party}><Text style={styles.sectionLabel}>BILL TO</Text><Text style={styles.partyName}>{order.customer?.displayName ?? address?.recipientName ?? "Customer"}</Text><Text style={styles.meta}>{order.customer?.email ?? ""}</Text><Text style={styles.meta}>{address?.phone ?? order.customer?.phone ?? ""}</Text><Text style={styles.meta}>{address ? fullAddress(address) : "Delivery address unavailable"}</Text></View>
       <View style={styles.party}><Text style={styles.sectionLabel}>PAYMENT</Text><Info label="Method" value={order.payment ? `${order.payment.method} - ${order.payment.status}` : "Not recorded"} /><Info label="Provider" value={order.payment?.provider ?? "Marketplace"} /><Info label="Transaction" value={order.payment?.transactionId ?? "Pending"} /><Info label="Placed" value={date(order.createdAt)} /></View>
-      <View style={styles.qrBox}>{qrPayload ? <DocumentQrCode label="Signed invoice verification" reference={invoiceNumber} size={104} value={qrPayload} /> : <><Text style={styles.qrUnavailable}>QR pending</Text><Text style={styles.qrText}>Issue the invoice to create a signed verification code.</Text></>} {qrExpiresAt ? <Text style={styles.qrExpiry}>Valid through {date(qrExpiresAt)}</Text> : null}</View>
+      <View style={styles.qrBox}>{qrPayload ? <DocumentQrCode getRef={getQrRef} label="Signed invoice verification" reference={invoiceNumber} size={104} value={qrPayload} /> : <><Text style={styles.qrUnavailable}>QR pending</Text><Text style={styles.qrText}>Issue the invoice to create a signed verification code.</Text></>} {qrExpiresAt ? <Text style={styles.qrExpiry}>Valid through {date(qrExpiresAt)}</Text> : null}</View>
     </View>
     <Text style={styles.sectionTitle}>Store-wise package breakdown</Text>
     <View style={styles.packages}>{order.vendorOrders.map((vendorOrder, index) => <View key={vendorOrder.id} style={styles.package}>

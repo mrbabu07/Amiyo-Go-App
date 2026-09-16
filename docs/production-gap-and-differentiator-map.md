@@ -1,7 +1,24 @@
 # Production Gap and Marketplace Differentiator Map
 
 Date: 2026-09-01
-Status: reference-parity business-rule code is implemented; production launch remains blocked only by external configuration, rehearsal evidence, and named approvals.
+Status: major marketplace workflows are implemented, but complete reference parity and production readiness have not been verified. Source-presence tests are not evidence that an entire customer journey works.
+
+## Verification Update — 2026-09-16
+
+- Invoice authorization no longer displays as captured payment.
+- Customer/admin native invoice export generates a PDF with seller line items and the rendered QR when available; device testing remains required.
+- A document verification route supports native camera scanning and pasted QR payloads. Web uses paste input. It distinguishes signed documents from matching current records and does not claim payment collection.
+- QR verification rejects expired codes at the exact expiry boundary, oversized input and duplicate fields.
+- Release readiness still reports 27 unresolved decisions. This is a documentary gate, not a live service health check.
+
+### Remaining Work and Acceptance Evidence
+
+1. Run customer, vendor and admin journeys against staging: multi-store checkout, stock contention, cancellation, partial refund, return and payout. Keep actual request/results and screen evidence.
+2. Test camera permission denial, scan/retry, native PDF sharing and printed QR readability on Android and iOS. A native rebuild is required for added Expo modules.
+3. Reconcile admin invoice issuance, seller thermal label/PDF workflows and current payment/collection state with the reference; document any missing controls.
+4. Resolve dependency findings with compatible upgrades and regression tests; do not call the release security-approved based only on a successful build.
+5. Provision live providers, workers, monitoring and backups; execute restore, payment reconciliation and operational incident rehearsals.
+6. Measure latency and capacity under realistic concurrent shopping and checkout traffic before setting scaling targets. Marketplace size cannot be inferred from feature count.
 
 ## What Is Now Implemented
 

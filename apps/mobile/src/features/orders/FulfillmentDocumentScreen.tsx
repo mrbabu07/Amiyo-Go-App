@@ -1,6 +1,6 @@
 import type { FulfillmentDocument } from "@amiyo/contracts";
 import { useQuery } from "@tanstack/react-query";
-import { useLocalSearchParams } from "expo-router";
+import { Link, useLocalSearchParams } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, Platform, Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { DocumentQrCode } from "../../ui/DocumentQrCode";
@@ -37,6 +37,7 @@ export function FulfillmentDocumentScreen() {
   const data = document.data;
   return <Screen eyebrow="AMIYO-GO FULFILLMENT" title={data ? `Order ${data.orderNumber}` : "Packing slip"} description="Print the signed thermal parcel label and attach it securely to the matching seller package.">
     {document.error ? <Text style={styles.error}>{document.error.message}</Text> : null}
+    <Link href="/verify-document">Scan or verify a parcel QR</Link>
     {data ? <>
       <View nativeID={printId} style={styles.label}>
         <View style={styles.labelHead}><View><Text style={styles.brand}>Amiyo-Go</Text><Text style={styles.kicker}>SIGNED MARKETPLACE PARCEL</Text></View><Text style={styles.status}>{data.status.replaceAll("_", " ")}</Text></View>
