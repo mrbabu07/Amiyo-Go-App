@@ -8,7 +8,8 @@ Status: major marketplace workflows are implemented, but complete reference pari
 Order-document follow-up: COD collection is now payment-state aware, customer invoices include shipment references, and admin invoice issuance is permission-checked and audited. See `reference-verification-2026-09-16.md` for exact scope and test limits.
 
 - Invoice authorization no longer displays as captured payment.
-- Customer/admin native invoice export generates a PDF with seller line items and the rendered QR when available; device testing remains required.
+- Customer/admin native invoice export generates a PDF with seller line items and requires a rendered QR; device testing remains required.
+- Seller orders now support batches of up to 20 parcel labels or packing slips, with ownership-checked fetches and no partial export on fetch failure. Native PDF/physical printing and authenticated web acceptance remain unverified.
 - A document verification route supports native camera scanning and pasted QR payloads. Web uses paste input. It distinguishes signed documents from matching current records and does not claim payment collection.
 - QR verification rejects expired codes at the exact expiry boundary, oversized input and duplicate fields.
 - Release readiness still reports 27 unresolved decisions. This is a documentary gate, not a live service health check.

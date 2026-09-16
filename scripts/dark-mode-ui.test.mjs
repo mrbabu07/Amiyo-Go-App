@@ -17,6 +17,8 @@ test("dark mode is global, adaptive, and persisted", async () => {
   assert.match(store, /createJSONStorage\(\(\) => AsyncStorage\)/);
   assert.match(store, /name: "amiyo-theme"/);
   assert.match(store, /mode: "system"/);
+  assert.match(store, /state\.mode === "system" && Appearance\.getColorScheme\(\) === "dark"/);
+  assert.match(toggle, /setMode\(dark \? "light" : "dark"\)/);
   assert.match(provider, /Appearance\.setColorScheme/);
   assert.match(provider, /Platform\.OS !== "web".*typeof Appearance\.setColorScheme === "function"/s);
   assert.match(provider, /mode === "system" \? "unspecified" : mode/);
