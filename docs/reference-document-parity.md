@@ -17,7 +17,7 @@ This inventory compares code paths, not every marketplace feature. Implementatio
 
 - `GET /api/v2/vendor/finance/charges` returns own-vendor order-created-month assessments, not a tax invoice or settlement. It has finance permission checks, no-store responses, Dhaka boundaries, a repeatable-read snapshot and explicit overflow/currency errors.
 - Vendor Finance offers web print/save and native PDF sharing beside the wallet statement. Every package is listed; cancelled/rejected packages are excluded from the commission total. HTML escapes dynamic fields and preserves bigint precision.
-- This deliberately does not relabel unverified shipping costs, discount funding or refunds as platform earnings. The reference's final charge/tax-invoice reconciliation is still a gap. Order-to-wallet settlement credit/reversal integration must be verified first.
+- This deliberately does not relabel unverified shipping costs, discount funding or refunds as platform earnings. The reference's final charge/tax-invoice reconciliation is still a gap. Explicit admin-approved order-to-wallet credit is now implemented (see `seller-settlement-approval.md`); refund/return exceptions and reversal integration still need reconciliation and live acceptance.
 - Four new service tests cover authorization, boundaries, exclusions, precision, 101 rows, overflow, mixed currency and empty/missing vendors; the HTML test covers escaping, labeling and exact amounts.
 
 ## Web print correction

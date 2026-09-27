@@ -1,6 +1,6 @@
 import { adminCodWorkspaceSchema, adminOrderRefundResultSchema, deliveryQueueItemSchema, deliveryRetryResultSchema, returnSchema, vendorFinanceSchema, type AdminCodConfirmationInput, type AdminCodDeliveryInput, type AdminOrderRefundInput, type CancelOrder, type CreateReturn, type DeliveryRetryInput, type SellerReturnReceipt, type SellerReturnResponse } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
-import { vendorChargeReportSchema, vendorStatementSchema } from "@amiyo/contracts";
+import { approveOrderSettlementSchema, orderSettlementResultSchema, vendorChargeReportSchema, vendorStatementSchema } from "@amiyo/contracts";
 import * as Crypto from "expo-crypto";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
@@ -11,6 +11,7 @@ export async function createCustomerReturn(user: User, input: CreateReturn, idem
 export async function respondToVendorReturn(user: User, id: string, input: SellerReturnResponse) { return returnSchema.parse(await request(user, `/api/v2/vendor/returns/${id}/response`, { method: "POST", headers: { "Idempotency-Key": Crypto.randomUUID() }, body: JSON.stringify(input) })); }
 export async function confirmVendorReturnReceipt(user: User, id: string, input: SellerReturnReceipt) { return returnSchema.parse(await request(user, `/api/v2/vendor/returns/${id}/receipt`, { method: "POST", headers: { "Idempotency-Key": Crypto.randomUUID() }, body: JSON.stringify(input) })); }
 export async function getVendorFinance(user: User) { return vendorFinanceSchema.parse(await request(user, "/api/v2/vendor/finance")); }
+export async function approveOrderSettlement(user: User, id: string, input: unknown) { return orderSettlementResultSchema.parse(await request(user, `/api/v2/admin/vendor-orders/${encodeURIComponent(id)}/settlement`, { method: "POST", body: JSON.stringify(approveOrderSettlementSchema.parse(input)) })); }
 export async function getVendorStatement(user: User, month: string, vendorId: string) { return vendorStatementSchema.parse(await request(user, `/api/v2/vendor/finance/statement?month=${encodeURIComponent(month)}&vendorId=${encodeURIComponent(vendorId)}`)); }
 export async function getVendorChargeReport(user: User, month: string, vendorId: string) { return vendorChargeReportSchema.parse(await request(user, `/api/v2/vendor/finance/charges?month=${encodeURIComponent(month)}&vendorId=${encodeURIComponent(vendorId)}`)); }
 export type AdminReturnSummary = { id: string; orderId: string; status: string; reasonCode: string; requestedAmount: { amountMinor: string; currency: string }; version: number; createdAt: string; items: Array<{ id: string }> };

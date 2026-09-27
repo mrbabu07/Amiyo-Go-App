@@ -1,5 +1,6 @@
 import { Router, type NextFunction, type Request, type Response } from "express";
 import { VendorChargeReportService } from "./vendor-charge-report.service.js";
+import { OrderSettlementService } from "./order-settlement.service.js";
 import { z } from "zod";
 import { adminCodConfirmationInputSchema, adminCodDeliveryInputSchema, adminOrderRefundInputSchema, cancelOrderSchema, codReconciliationInputSchema, codRemittanceInputSchema, completePayoutSchema, completeRefundSchema, courierPartnerInputSchema, createPayoutRequestSchema, createReturnSchema, createSettlementProposalSchema, deliveryFeeRuleInputSchema, deliveryRetryInputSchema, deliverySettingsInputSchema, failedDeliveryReattemptSchema, failedDeliveryReturnSchema, logisticsAssignmentInputSchema, logisticsCodStateInputSchema, logisticsDeliveryAttemptSchema, logisticsManifestPickupSchema, logisticsNoteSchema, logisticsReturnActionSchema, logisticsShipmentTransitionSchema, logisticsTrackingEventSchema, logisticsZoneInputSchema, pickupStaffInputSchema, providerOrderRefundInputSchema, returnTransitionSchema, reviewPayoutSchema, sellerReturnReceiptSchema, sellerReturnResponseSchema, serviceabilityInputSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
@@ -27,6 +28,7 @@ export function createOperationsRouter() {
   router.get("/api/v2/vendor/finance", async (req, res, next) => { try { res.json(await service.finance(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/vendor/finance/statement", async (req, res, next) => { try { res.set("Cache-Control", "no-store").json(await new VendorStatementService(prisma).statement(requireSession(req), req.query)); } catch (error) { next(error); } });
   router.get("/api/v2/vendor/finance/charges", async (req, res, next) => { try { res.set("Cache-Control", "no-store").json(await new VendorChargeReportService(prisma).report(requireSession(req), req.query)); } catch (error) { next(error); } });
+  router.post("/api/v2/admin/vendor-orders/:id/settlement", async (req, res, next) => { try { res.set("Cache-Control", "no-store").json(await new OrderSettlementService(prisma).approve(requireSession(req), idSchema.parse(req.params).id, req.body)); } catch (error) { next(error); } });
   router.post("/api/v2/vendor/payouts", async (req, res, next) => { try { res.status(201).json(await service.requestPayout(requireSession(req), createPayoutRequestSchema.parse(req.body), key(req.header("idempotency-key")), req.header("x-correlation-id"))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/returns", async (req, res, next) => { try { res.json(await service.returns(requireSession(req), true)); } catch (error) { next(error); } });
   router.get("/api/v2/admin/returns/:id", async (req, res, next) => { try { res.json(await service.returnDetail(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });

@@ -24,3 +24,6 @@ export const vendorChargeReportSchema = z.object({
   })).max(5000)
 });
 export type VendorChargeReport = z.infer<typeof vendorChargeReportSchema>;
+
+export const approveOrderSettlementSchema = z.object({ expectedVersion: z.number().int().positive(), expectedAmountMinor: z.string().regex(/^[1-9]\d*$/), shippingRecipient: z.enum(["VENDOR", "PLATFORM"]), reason: z.string().trim().min(10).max(1000) });
+export const orderSettlementResultSchema = z.object({ id: uuidSchema, amountMinor: z.string().regex(/^\d+$/), currency: z.literal("BDT"), alreadySettled: z.boolean() });

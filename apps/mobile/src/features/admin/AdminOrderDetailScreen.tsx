@@ -14,6 +14,7 @@ import { transitionVendorOrder } from "../orders/orders.api";
 import { getAdminOrderDetail } from "./admin.api";
 import { AdminOrderInterventions } from "./AdminOrderInterventions";
 import { AdminOrderRefund } from "./AdminOrderRefund";
+import { AdminOrderSettlement } from "./AdminOrderSettlement";
 import { AdminOrderReturnWindow } from "./AdminOrderReturnWindow";
 
 const parentSteps = ["PENDING_PAYMENT", "CONFIRMED", "PROCESSING", "READY_TO_SHIP", "SHIPPED", "DELIVERED"];
@@ -70,6 +71,7 @@ export function AdminOrderDetailScreen() {
     <AdminOrderInterventions key={`${data.id}:${data.version}`} order={data} />
     <AdminOrderReturnWindow key={`return:${data.id}:${data.version}`} order={data} />
     <AdminOrderRefund key={`refund:${data.id}:${data.version}:${data.payment?.refunded.amountMinor ?? "0"}`} order={data} />
+    <AdminOrderSettlement key={`settlement:${user?.uid}:${data.id}`} order={data} />
   </Screen>;
 }
 

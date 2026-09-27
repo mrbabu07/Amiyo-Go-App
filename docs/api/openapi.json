@@ -11767,6 +11767,144 @@
         }
       }
     },
+    "/api/v2/admin/vendor-orders/{id}/settlement": {
+      "post": {
+        "tags": [
+          "Returns & Finance"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "expectedAmountMinor": {
+                    "type": "string",
+                    "pattern": "^[1-9]\\d*$"
+                  },
+                  "shippingRecipient": {
+                    "type": "string",
+                    "enum": [
+                      "VENDOR",
+                      "PLATFORM"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "expectedVersion",
+                  "expectedAmountMinor",
+                  "shippingRecipient",
+                  "reason"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Finance-approved seller wallet credit; package-scoped idempotency, not a bank payout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "amountMinor": {
+                      "type": "string",
+                      "pattern": "^\\d+$"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "enum": [
+                        "BDT"
+                      ]
+                    },
+                    "alreadySettled": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "amountMinor",
+                    "currency",
+                    "alreadySettled"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/vendor/payouts": {
       "post": {
         "tags": [
