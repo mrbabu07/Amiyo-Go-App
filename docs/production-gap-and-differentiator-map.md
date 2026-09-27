@@ -1,6 +1,14 @@
 # Production Gap and Marketplace Differentiator Map
 
-Document parity inventory: `reference-document-parity.md` records exact legacy paths, web/native packing-slip corrections and monthly seller ledger statements. Reference platform-charge/tax-invoice export is still missing. Implemented document controls still need signed-in print/device acceptance.
+Document parity inventory: `reference-document-parity.md` records exact legacy paths, web/native packing-slip corrections and monthly seller ledger statements. Monthly order-date commission assessment export is also implemented. This is not the reference settled platform-charge/tax invoice; that reconciliation remains incomplete. Implemented document controls still need signed-in print/device acceptance.
+
+## Finance export follow-up
+
+- Vendor Finance now offers monthly commission assessment PDF export beside the wallet statement, on web and native.
+- The server restricts reads to the signed-in vendor workspace with `finance:read`; Bangladesh month boundaries, repeatable-read snapshots, exact integer arithmetic, explicit 5000-order limits and mixed-currency rejection apply.
+- Cancelled/rejected packages remain visible but are excluded from assessed commission totals. Other order statuses are assessments, not proof of earned or collected fees. Discounts are displayed without claiming seller funding.
+- Refund deductions and payout movements remain in the separate wallet statement, not added to platform earnings. Shipping debits, commission reversals and VAT are not invented.
+- Remaining accounting blocker: the inspected API/worker sources contain refund and payout wallet writes but no verified order-to-wallet settlement credit path. Reconcile delivery/payment eligibility, holds and reversal behavior before enabling final charge invoices or declaring seller balances complete. An empty wallet statement is not evidence that a seller earned nothing.
 
 Latest verification: see `verification-2026-09-28.md`. Account-switch isolation fixes and repeatable read-only smoke checks are implemented. Nine live read-only checks passed after transient database connectivity recovered; authenticated journeys and production acceptance remain pending.
 

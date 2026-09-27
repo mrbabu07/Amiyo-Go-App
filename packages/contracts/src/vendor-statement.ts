@@ -11,3 +11,16 @@ export const vendorStatementSchema = z.object({
   entries: z.array(ledgerEntrySchema).max(5000)
 });
 export type VendorStatement = z.infer<typeof vendorStatementSchema>;
+
+export const vendorChargeReportSchema = z.object({
+  vendorId: uuidSchema, vendorName: z.string(), month: z.string(),
+  generatedAt: timestampSchema, periodStart: timestampSchema, periodEnd: timestampSchema,
+  basis: z.literal("ORDER_CREATED_AT"), currency: z.literal("BDT"),
+  commissionMinor: z.string().regex(/^\d+$/),
+  orders: z.array(z.object({
+    id: uuidSchema, orderNumber: z.string(), status: z.string(), createdAt: timestampSchema,
+    subtotalMinor: z.string().regex(/^\d+$/), discountMinor: z.string().regex(/^\d+$/),
+    commissionMinor: z.string().regex(/^\d+$/), included: z.boolean()
+  })).max(5000)
+});
+export type VendorChargeReport = z.infer<typeof vendorChargeReportSchema>;

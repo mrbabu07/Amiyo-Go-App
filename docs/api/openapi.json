@@ -11583,6 +11583,190 @@
         }
       }
     },
+    "/api/v2/vendor/finance/charges": {
+      "get": {
+        "tags": [
+          "Returns & Finance"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^20\\d{2}-(0[1-9]|1[0-2])$"
+            },
+            "required": true,
+            "name": "month",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "vendorId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order-date commission assessment; not a settlement or tax invoice",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "vendorId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "vendorName": {
+                      "type": "string"
+                    },
+                    "month": {
+                      "type": "string"
+                    },
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "periodStart": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "periodEnd": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "basis": {
+                      "type": "string",
+                      "enum": [
+                        "ORDER_CREATED_AT"
+                      ]
+                    },
+                    "currency": {
+                      "type": "string",
+                      "enum": [
+                        "BDT"
+                      ]
+                    },
+                    "commissionMinor": {
+                      "type": "string",
+                      "pattern": "^\\d+$"
+                    },
+                    "orders": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "orderNumber": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "subtotalMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "discountMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "commissionMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "included": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "orderNumber",
+                          "status",
+                          "createdAt",
+                          "subtotalMinor",
+                          "discountMinor",
+                          "commissionMinor",
+                          "included"
+                        ]
+                      },
+                      "maxItems": 5000
+                    }
+                  },
+                  "required": [
+                    "vendorId",
+                    "vendorName",
+                    "month",
+                    "generatedAt",
+                    "periodStart",
+                    "periodEnd",
+                    "basis",
+                    "currency",
+                    "commissionMinor",
+                    "orders"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/vendor/payouts": {
       "post": {
         "tags": [

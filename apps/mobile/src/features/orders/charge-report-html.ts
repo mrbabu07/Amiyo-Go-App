@@ -1,0 +1,11 @@
+import type { VendorChargeReport } from "@amiyo/contracts";
+import { escapeInvoiceText } from "./invoice-html";
+
+export function chargeReportHtml(report: VendorChargeReport) {
+  const escape = escapeInvoiceText;
+  const money = (amount: string) => {
+    const value = BigInt(amount);
+    return `BDT ${value / 100n}.${String(value % 100n).padStart(2, "0")}`;
+  };
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Seller commission assessment</title><style>@page{size:A4;margin:15mm}body{font:12px Arial;color:#0B1F3A}header{border-bottom:3px solid #7A1F2B}table{width:100%;border-collapse:collapse}td,th{padding:7px;text-align:left;border-bottom:1px solid #ddd;overflow-wrap:anywhere}tr{break-inside:avoid}thead{display:table-header-group}h1{font-size:24px}</style></head><body><header><h1>Amiyo-Go Commission Assessment</h1><p>${escape(report.vendorName)} | ${escape(report.month)} | Asia/Dhaka</p></header><p>Recorded order commission: <strong>${money(report.commissionMinor)}</strong></p><p>Basis: orders created during this month. Cancelled and rejected packages are listed but excluded from the total. Other amounts are checkout snapshots, not collected charges.</p><table><thead><tr><th>Order / Date</th><th>Status</th><th>Subtotal</th><th>Order discount</th><th>Commission</th></tr></thead><tbody>${report.orders.map((order) => `<tr><td>${escape(order.orderNumber)}<br>${escape(new Date(order.createdAt).toLocaleDateString("en-GB", { timeZone: "Asia/Dhaka" }))}</td><td>${escape(order.status)}${order.included ? "" : " (excluded)"}</td><td>${money(order.subtotalMinor)}</td><td>${money(order.discountMinor)}</td><td>${money(order.commissionMinor)}</td></tr>`).join("")}</tbody></table>${report.orders.length ? "" : "<p>No orders in this period.</p>"}<p>Discounts are informational; seller funding is not established by this report. Refund deductions and payout movements appear separately in the monthly wallet statement. Shipping debits, commission reversals and VAT are not calculated here.</p><p>This is not a tax invoice, settlement balance or demand for payment. Commission assessments can change when orders are cancelled. Confirm final charges with finance before settlement.</p><p>Generated: ${escape(report.generatedAt)}</p></body></html>`;
+}

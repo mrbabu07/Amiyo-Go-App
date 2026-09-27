@@ -9,6 +9,14 @@
 
 ## Evidence and limits
 
+### Commission assessment follow-up
+
+- Added vendor-owned monthly commission assessment API and web/native PDF export; reports expose the order-date basis and explicitly do not claim settled charges or tax-invoice parity.
+- Four new service tests and one HTML test pass. Full workspace tests and 89 repository checks pass; mobile type-check, Expo web export, secret scan and nine read-only marketplace smoke checks pass.
+- Final settled-charge invoice remains blocked by unverified order-to-wallet credit/reversal accounting. No provider transactions, production data migrations, manual wallet credits or fabricated VAT were performed.
+
+### Earlier authentication verification
+
 - Mobile tests: 15 passed, including account-change, revoked-credential, late-response and retry idempotency regressions.
 - Mobile type-check, Expo web export and secret scan passed.
 - Full `npm test` passed: workspace suites and all 89 repository checks. The source assertion for token invalidation was updated to require the new matching-account guard; behavioral tests cover replay and sign-out isolation.
