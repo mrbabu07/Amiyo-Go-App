@@ -1,9 +1,12 @@
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
+import { Platform } from "react-native";
+import { captureWebDocumentQr, printWebDocument } from "./web-document";
 
 export type DocumentQrRef = { toDataURL: (callback: (data: string) => void) => void };
 
-export function captureDocumentQr(qr: DocumentQrRef | null): Promise<string> {
+export function captureDocumentQr(qr: DocumentQrRef | null, webElementId?: string): Promise<string> {
+  if (Platform.OS === "web" && webElementId) return captureWebDocumentQr(webElementId);
   if (!qr) return Promise.reject(new Error("The document QR is still loading. Please try again."));
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => reject(new Error("Could not render the document QR. Please try again.")), 5000);
@@ -18,6 +21,7 @@ export function captureDocumentQr(qr: DocumentQrRef | null): Promise<string> {
 }
 
 export async function shareDocumentPdf(html: string, title: string, page: "a4" | "parcel" = "a4") {
+  if (Platform.OS === "web") return printWebDocument(html, title);
   const dimensions = page === "parcel" ? { width: 283.46, height: 425.20 } : { width: 595.28, height: 841.89 };
   if (!await Sharing.isAvailableAsync()) { await Print.printAsync({ html, ...dimensions }); return; }
   const file = await Print.printToFileAsync({ html, ...dimensions });

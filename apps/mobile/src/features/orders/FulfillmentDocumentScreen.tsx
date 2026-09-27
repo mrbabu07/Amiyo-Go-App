@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { DocumentQrCode } from "../../ui/DocumentQrCode";
 import { ModuleCard } from "../../ui/ModuleCard";
@@ -14,31 +14,19 @@ import { fulfillmentHtml } from "./fulfillment-html";
 const printId = "vendor-parcel-label";
 const money = (value: { amountMinor: string; currency: string }) => `${value.currency === "BDT" ? "Tk" : value.currency} ${(Number(value.amountMinor) / 100).toLocaleString("en-BD", { minimumFractionDigits: 2 })}`;
 
-function useParcelPrintStyles() {
-  useEffect(() => {
-    if (Platform.OS !== "web" || typeof document === "undefined") return;
-    const style = document.createElement("style");
-    style.textContent = `@media print{body *{visibility:hidden!important}#${printId},#${printId} *{visibility:visible!important}#${printId}{position:absolute!important;inset:0 auto auto 0!important;width:100mm!important;min-height:150mm!important;border:0!important;border-radius:0!important;box-shadow:none!important}@page{size:100mm 150mm;margin:0}}`;
-    document.head.appendChild(style);
-    return () => style.remove();
-  }, []);
-}
-
 export function FulfillmentDocumentScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const user = firebaseAuth?.currentUser ?? null;
   const document = useQuery({ queryKey: ["vendor", "fulfillment-document", id, user?.uid], queryFn: () => getFulfillmentDocument(user!, id), enabled: Boolean(user && id) });
-  useParcelPrintStyles();
   const qr = useRef<DocumentQrRef | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
   const print = async (kind: "parcel" | "packing" = "parcel") => {
     if (!document.data || exporting) return;
-    if (Platform.OS === "web") { window.print(); return; }
     setExporting(true);
     setExportError("");
     try {
-      const qrImage = await captureDocumentQr(qr.current);
+      const qrImage = await captureDocumentQr(qr.current, printId);
       await shareDocumentPdf(fulfillmentHtml(document.data, qrImage, kind), `${kind} ${document.data.parcelId}`, kind === "parcel" ? "parcel" : "a4");
     } catch (error) { setExportError(error instanceof Error ? error.message : "Could not export document."); }
     finally { setExporting(false); }
@@ -66,7 +54,7 @@ export function FulfillmentDocumentScreen() {
       <ModuleCard title="Order summary"><Row label="Subtotal" value={money(data.subtotal)} /><Row label="Discount" value={`-${money(data.discount)}`} /><Row label="Delivery" value={money(data.delivery)} /><View style={styles.divider} /><Row label="Total" value={money(data.total)} /></ModuleCard>
       <ModuleCard title="Packing checklist"><Text>☐ Items verified   ☐ Condition checked</Text><Text>☐ Packing slip included   ☐ Package sealed</Text><Text>☐ Signed parcel label attached   ☐ Tracking recorded</Text></ModuleCard>
       <Pressable accessibilityRole="button" disabled={exporting} onPress={() => print()} style={styles.button}><Text style={styles.buttonText}>{exporting ? "Preparing PDF…" : Platform.OS === "web" ? "Print 100 × 150 mm parcel label" : "Share parcel label PDF"}</Text></Pressable>
-      {Platform.OS !== "web" ? <Pressable accessibilityRole="button" disabled={exporting} onPress={() => print("packing")} style={styles.button}><Text style={styles.buttonText}>Share packing slip PDF</Text></Pressable> : null}
+      <Pressable accessibilityRole="button" disabled={exporting} onPress={() => print("packing")} style={styles.button}><Text style={styles.buttonText}>{Platform.OS === "web" ? "Print / Save packing slip PDF" : "Share packing slip PDF"}</Text></Pressable>
     </> : null}
   </Screen>;
 }

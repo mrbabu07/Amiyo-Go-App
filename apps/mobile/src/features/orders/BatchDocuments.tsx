@@ -19,13 +19,6 @@ export function BatchDocuments({ ids, user }: { ids: string[]; user: User }) {
   const refs = useRef<Record<string, DocumentQrRef>>({});
   const selection = ids.join(",");
   useEffect(() => { setDocuments([]); refs.current = {}; }, [selection]);
-  useEffect(() => {
-    if (Platform.OS !== "web" || !documents.length) return;
-    const style = document.createElement("style");
-    style.textContent = `@media print{body *{visibility:hidden!important}#${printId},#${printId} *{visibility:visible!important}#${printId}{position:absolute!important;left:0!important;top:0!important;display:block!important;width:100%!important}#${printId}>div{display:block!important;margin:0!important;padding:0!important;box-shadow:none!important}#${printId}>div+div{break-before:page;page-break-before:always}@page{size:${kind === "parcel" ? "100mm 150mm" : "A4"};margin:6mm}}`;
-    document.head.appendChild(style);
-    return () => style.remove();
-  }, [documents.length, kind]);
   const prepare = async (nextKind: "parcel" | "packing") => {
     setBusy(true); setError(""); setDocuments([]); refs.current = {};
     try { const loaded = await loadBatchDocuments(ids, (id) => getFulfillmentDocument(user, id)); setKind(nextKind); setDocuments(loaded); }
@@ -33,10 +26,9 @@ export function BatchDocuments({ ids, user }: { ids: string[]; user: User }) {
     finally { setBusy(false); }
   };
   const print = async () => {
-    if (Platform.OS === "web") { window.print(); return; }
     setBusy(true); setError("");
     try {
-      const images = await Promise.all(documents.map((document) => captureDocumentQr(refs.current[document.vendorOrderId] ?? null)));
+      const images = await Promise.all(documents.map((document) => captureDocumentQr(refs.current[document.vendorOrderId] ?? null, `${printId}-${document.vendorOrderId}`)));
       await shareDocumentPdf(batchFulfillmentHtml(documents, images, kind), "Amiyo-Go package batch", kind === "parcel" ? "parcel" : "a4");
     } catch (failure) { setError(failure instanceof Error ? failure.message : "Could not export batch."); }
     finally { setBusy(false); }
@@ -48,7 +40,7 @@ export function BatchDocuments({ ids, user }: { ids: string[]; user: User }) {
     {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
     {documents.length ? <>
       <Pressable accessibilityRole="button" disabled={busy} onPress={print} style={styles.button}><Text style={styles.buttonText}>{Platform.OS === "web" ? "Print / Save PDF" : "Share batch PDF"} ({documents.length})</Text></Pressable>
-      <View nativeID={printId}>{documents.map((document) => <View key={document.vendorOrderId} style={styles.page}>
+      <View nativeID={printId}>{documents.map((document) => <View key={document.vendorOrderId} nativeID={`${printId}-${document.vendorOrderId}`} style={styles.page}>
         <Text style={styles.heading}>Amiyo-Go {kind === "parcel" ? "Parcel" : "Packing Slip"}</Text>
         <Text style={styles.ink}>{document.orderNumber} / {document.shopName}</Text>
         <DocumentQrCode value={document.qrPayload} reference={document.parcelId} label="Signed parcel QR" getRef={(ref) => { refs.current[document.vendorOrderId] = ref; }} />
