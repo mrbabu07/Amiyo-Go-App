@@ -35,6 +35,7 @@
     "release:check": "node scripts/release-readiness.mjs",
     "smoke:load": "node scripts/load-smoke.mjs",
     "smoke:marketplace": "node scripts/marketplace-smoke.mjs",
+    "smoke:authenticated": "node scripts/authenticated-marketplace-smoke.mjs",
     "dev:firebase": "node scripts/firebase-dev.mjs",
     "test:firebase-emulator": "firebase emulators:exec --only auth --project amiyo-app \"node scripts/firebase-emulator-smoke.mjs\"",
     "test:firebase-auth-e2e": "npm run build --workspace @amiyo/api && firebase emulators:exec --only auth --project amiyo-app \"node scripts/firebase-auth-e2e.mjs\"",

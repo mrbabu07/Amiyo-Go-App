@@ -16,6 +16,8 @@ Document parity inventory: `reference-document-parity.md` records legacy paths a
 
 Latest verification: see `verification-2026-09-28.md`. Account-switch isolation fixes and repeatable read-only smoke checks are implemented. Nine live read-only checks passed after transient database connectivity recovered; authenticated journeys and production acceptance remain pending.
 
+Authenticated API follow-up (2026-09-28): `npm run smoke:authenticated` now checks existing demo customer/vendor/admin logins, role boundaries, finance/order reads, tracking and vendor package documents against the local API. All 24 checks passed without skips; workspace suites and 91 repository tests also passed. See `authenticated-marketplace-verification.md`; this does not close checkout/provider/device E2E gates. `GET /api/v2/me` no longer repeats the session database lookup already performed by authentication. Observed API latency still needs profiling before launch.
+
 Date: 2026-09-01
 Status: major marketplace workflows are implemented, but complete reference parity and production readiness have not been verified. Source-presence tests are not evidence that an entire customer journey works.
 

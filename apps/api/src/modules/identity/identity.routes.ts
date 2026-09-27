@@ -32,12 +32,12 @@ export function createIdentityRouter(options?: { service?: IdentityService; veri
   router.use(["/api/v2/auth/session", "/api/v2/me", "/api/v2/devices"], authenticate);
 
   router.post("/api/v2/auth/session", (req, res) => {
-    res.json(requireSession(req));
+    res.set("Cache-Control", "no-store").json(requireSession(req));
   });
 
   router.get("/api/v2/me", async (req, res, next) => {
     try {
-      res.json(await service.getSession(requireSession(req).principal.userId));
+      res.set("Cache-Control", "no-store").json(requireSession(req));
     } catch (error) {
       next(error);
     }
