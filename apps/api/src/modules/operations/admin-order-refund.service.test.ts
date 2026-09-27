@@ -10,21 +10,21 @@ const refundId = "33333333-3333-4333-8333-333333333333";
 const key = "44444444-4444-4444-8444-444444444444";
 const input = { expectedVersion: 3, amountMinor: "100000", reason: "Approved customer settlement", providerRefundId: "SSL-REFUND-101" };
 
-function fixture(amountMinor = 100000n) {
+function fixture(amountMinor = 100000n, settled = true) {
   const vendorDebits: Array<{ amountMinor: bigint; referenceId: string }> = [];
-  const financialEntries: Array<{ amountMinor: bigint }> = [];
+  const financialEntries: Array<{ amountMinor: bigint; accountType: string }> = [];
   const audits: Array<{ action: string }> = [];
   const idempotency: Array<{ scope: string; key: string }> = [];
   let orderUpdates = 0;
   const transaction = {
     platformConfiguration: { findUnique: async () => null },
     idempotencyRecord: { findUnique: async () => null, create: async ({ data }: { data: { scope: string; key: string } }) => { idempotency.push(data); return data; } },
-    order: { findUnique: async () => ({ id: orderId, userId: "55555555-5555-4555-8555-555555555555", status: "DELIVERED", version: 3, payments: [{ id: "payment-1", provider: "sslcommerz", method: "SSLCOMMERZ", amountMinor, refundedMinor: 0n, currency: "BDT", status: "CAPTURED", version: 1 }], vendorOrders: [{ vendorId: "vendor-1", totalMinor: 60000n }, { vendorId: "vendor-2", totalMinor: 40000n }] }), updateMany: async () => { orderUpdates += 1; return { count: 1 }; } },
+    order: { findUnique: async () => ({ id: orderId, userId: "55555555-5555-4555-8555-555555555555", status: "DELIVERED", version: 3, payments: [{ id: "payment-1", provider: "sslcommerz", method: "SSLCOMMERZ", amountMinor, refundedMinor: 0n, currency: "BDT", status: "CAPTURED", version: 1 }], vendorOrders: [{ id: "package-1", vendorId: "vendor-1", totalMinor: 60000n }, { id: "package-2", vendorId: "vendor-2", totalMinor: 40000n }] }), updateMany: async () => { orderUpdates += 1; return { count: 1 }; } },
     payment: { updateMany: async () => ({ count: 1 }) },
-    refund: { create: async () => ({ id: refundId }) },
+    refund: { findMany: async () => [], create: async () => ({ id: refundId }) },
     vendorWallet: { upsert: async ({ where }: { where: { vendorId: string } }) => ({ id: `wallet-${where.vendorId}`, entries: [] }) },
-    vendorLedgerEntry: { create: async ({ data }: { data: { amountMinor: bigint; referenceId: string } }) => { vendorDebits.push(data); return data; } },
-    financialLedgerEntry: { create: async ({ data }: { data: { amountMinor: bigint } }) => { financialEntries.push(data); return data; } },
+    vendorLedgerEntry: { findFirst: async () => null, findUnique: async ({ where }: { where: { idempotencyKey: string } }) => settled ? { id: "settlement", walletId: "wallet", direction: "CREDIT", currency: "BDT", amountMinor: where.idempotencyKey.endsWith("package-1") ? 54000n : 36000n, metadata: { vendorId: "vendor", commissionMinor: where.idempotencyKey.endsWith("package-1") ? "6000" : "4000" } } : null, create: async ({ data }: { data: { amountMinor: bigint; referenceId: string } }) => { vendorDebits.push(data); return data; } },
+    financialLedgerEntry: { findUnique: async () => null, aggregate: async () => ({ _sum: { amountMinor: 0n } }), create: async ({ data }: { data: { amountMinor: bigint; accountType: string } }) => { financialEntries.push(data); return data; } },
     loyaltyAccount: { findUnique: async () => null },
     orderStatusEvent: { create: async ({ data }: { data: unknown }) => data },
     outboxEvent: { create: async ({ data }: { data: unknown }) => data },
@@ -38,9 +38,10 @@ test("forced admin refund balances seller and finance ledgers", async () => {
   const state = fixture();
   const result = await state.service.forceOrderRefund(admin, orderId, input, key) as unknown as { status: string };
   assert.equal(result.status, "REFUNDED");
-  assert.deepEqual(state.vendorDebits.map((entry) => entry.amountMinor), [60000n, 40000n]);
-  assert.equal(state.vendorDebits.reduce((sum, entry) => sum + entry.amountMinor, 0n), 100000n);
-  assert.equal(state.financialEntries[0]?.amountMinor, 100000n);
+  assert.deepEqual(state.vendorDebits.map((entry) => entry.amountMinor), [54000n, 36000n]);
+  assert.equal(state.vendorDebits.reduce((sum, entry) => sum + entry.amountMinor, 0n), 90000n);
+  assert.equal(state.financialEntries.find((entry) => entry.accountType === "customer_refund")?.amountMinor, 100000n);
+  assert.equal(state.financialEntries.filter((entry) => entry.accountType === "platform_commission").reduce((total, entry) => total + entry.amountMinor, 0n), 10000n);
   assert.equal(state.audits[0]?.action, "order.refund_forced");
   assert.equal(state.idempotency[0]?.scope, `order-refund:${orderId}`);
   assert.equal(state.idempotency[0]?.key, key);
@@ -51,4 +52,11 @@ test("forced admin refund rejects amounts above captured payment before mutation
   await assert.rejects(() => state.service.forceOrderRefund(admin, orderId, input, key), /refund exceeds captured payment/i);
   assert.equal(state.orderUpdates, 0);
   assert.equal(state.vendorDebits.length, 0);
+});
+
+test("refund before settlement records allocation without creating seller wallet debt", async () => {
+  const state = fixture(100000n, false);
+  await state.service.forceOrderRefund(admin, orderId, input, key);
+  assert.equal(state.vendorDebits.length, 0);
+  assert.equal(state.financialEntries.filter((entry) => entry.accountType === "vendor_refund_allocation").length, 2);
 });

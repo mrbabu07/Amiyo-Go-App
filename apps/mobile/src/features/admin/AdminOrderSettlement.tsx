@@ -31,7 +31,7 @@ export function AdminOrderSettlement({ order }: { order: AdminOrderDetail }) {
   };
   return <View style={styles.panel}>
     <Text style={styles.title}>Finance approval: seller settlement</Text>
-    <Text style={styles.text}>Finance admins only. Select a delivered package and confirm the reconciled net amount: subtotal minus discount and commission, plus shipping only if payable to the seller. Payment, return-window and hold checks run on the server. Refund/return orders require separate reconciliation.</Text>
+    <Text style={styles.text}>Finance admins only. Select a delivered package and confirm the reconciled net amount: subtotal minus discount and commission, plus shipping only if payable to the seller, reduced proportionally for completed refunds. Payment, return-window and hold checks run on the server. Pending disputes or unreconciled refunds block approval.</Text>
     {order.vendorOrders.filter((item) => item.status === "DELIVERED").map((item, index) => <Pressable key={item.id} accessibilityRole="radio" accessibilityState={{ checked: selected === item.id }} disabled={busy} onPress={() => { setSelected(item.id); setAmount(""); setMessage(""); }} style={styles.option}><Text style={styles.text}>{selected === item.id ? "Selected: " : "Select: "}Package {index + 1} — {item.id}</Text></Pressable>)}
     <Text style={styles.text}>Who receives the delivery fee?</Text>
     {(["VENDOR", "PLATFORM"] as const).map((recipient) => <Pressable key={recipient} accessibilityRole="radio" accessibilityState={{ checked: shipping === recipient }} disabled={busy} onPress={() => setShipping(recipient)} style={styles.option}><Text style={styles.text}>{shipping === recipient ? "Selected: " : ""}{recipient}</Text></Pressable>)}

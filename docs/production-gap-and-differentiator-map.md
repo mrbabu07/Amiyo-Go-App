@@ -1,6 +1,6 @@
 # Production Gap and Marketplace Differentiator Map
 
-Document parity inventory: `reference-document-parity.md` records exact legacy paths, web/native packing-slip corrections and monthly seller ledger statements. Monthly order-date commission assessment export is also implemented. This is not the reference settled platform-charge/tax invoice; that reconciliation remains incomplete. Implemented document controls still need signed-in print/device acceptance.
+Document parity inventory: `reference-document-parity.md` records legacy paths and document behavior. Wallet statements, order-date assessments and posted commission invoice exports are implemented. See `marketplace-launch-checklist.md` for finance changes and launch gates. Statutory tax documents, legacy reconciliation and signed-in print/device acceptance remain separate requirements.
 
 ## Finance export follow-up
 
@@ -9,7 +9,8 @@ Document parity inventory: `reference-document-parity.md` records exact legacy p
 - Cancelled/rejected packages remain visible but are excluded from assessed commission totals. Other order statuses are assessments, not proof of earned or collected fees. Discounts are displayed without claiming seller funding.
 - Refund deductions and payout movements remain in the separate wallet statement, not added to platform earnings. Shipping debits, commission reversals and VAT are not invented.
 - Added an explicit finance-admin order-to-wallet credit path. In Admin Order Details, select a delivered package, choose the shipping recipient, enter the reconciled net BDT amount and an approval reason. The server requires full captured payment, exact reconciled COD collection, elapsed delivery hold and return window, matching package version/amount, and no refund or non-rejected return. A serializable transaction writes one package-keyed credit and audit record. This is not an automatic backfill or bank transfer.
-- Remaining accounting blocker: refunded/returned orders, commission reversal, platform-funded discount attribution and legacy settlement migration still need reconciliation before final charge invoices or complete seller balances can be certified. The new conservative approval path rejects exception orders instead of guessing their payable amount. An empty wallet statement is not evidence that a seller earned nothing.
+- Refund follow-up: per-package allocation now reduces subsequent settlement and reverses already credited seller net/commission with cumulative rounding. No wallet debit occurs before settlement. Completed, fully allocated partial refunds can settle; pending disputes, missing allocations and legacy gross debits still block approval. Posted commission invoices include reversals by posting month.
+- Remaining accounting acceptance: finance must approve proportional refund allocation, platform-funded discount attribution, legacy opening balances and provider pending/completed reconciliation. Statutory VAT invoicing is not implemented by relabeling an ordinary report. An empty wallet statement is not evidence that a seller earned nothing.
 
 Latest verification: see `verification-2026-09-28.md`. Account-switch isolation fixes and repeatable read-only smoke checks are implemented. Nine live read-only checks passed after transient database connectivity recovered; authenticated journeys and production acceptance remain pending.
 

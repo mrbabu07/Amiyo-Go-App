@@ -27,3 +27,10 @@ export type VendorChargeReport = z.infer<typeof vendorChargeReportSchema>;
 
 export const approveOrderSettlementSchema = z.object({ expectedVersion: z.number().int().positive(), expectedAmountMinor: z.string().regex(/^[1-9]\d*$/), shippingRecipient: z.enum(["VENDOR", "PLATFORM"]), reason: z.string().trim().min(10).max(1000) });
 export const orderSettlementResultSchema = z.object({ id: uuidSchema, amountMinor: z.string().regex(/^\d+$/), currency: z.literal("BDT"), alreadySettled: z.boolean() });
+
+export const vendorCommissionInvoiceSchema = z.object({
+  vendorId: uuidSchema, vendorName: z.string(), month: z.string(), reference: z.string(), generatedAt: timestampSchema,
+  earned: signedMoney, reversed: signedMoney, net: signedMoney,
+  entries: z.array(z.object({ id: uuidSchema, createdAt: timestampSchema, referenceId: z.string(), kind: z.enum(["COMMISSION", "COMMISSION_REVERSAL"]), amount: signedMoney })).max(5000)
+});
+export type VendorCommissionInvoice = z.infer<typeof vendorCommissionInvoiceSchema>;

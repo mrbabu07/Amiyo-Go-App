@@ -3,6 +3,7 @@ import { approveOrderSettlementSchema, type Session } from "@amiyo/contracts";
 import { withSerializableTransaction } from "../../infrastructure/database/transaction.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
 import { loadBusinessRules } from "../admin/business-rules-config.js";
+import { assertRefundAccountingHistory, refundedPackageMinor } from "./refund-allocation.js";
 
 export class OrderSettlementService {
   constructor(private readonly client: PrismaClient) {}
@@ -18,8 +19,8 @@ export class OrderSettlementService {
       if (!current) throw new ApiProblem(404, "VENDOR_ORDER_NOT_FOUND", "Seller package not found");
       if (current.version !== approval.expectedVersion) throw new ApiProblem(409, "SETTLEMENT_VERSION_CONFLICT", "Package changed; refresh before approving");
       if (current.status !== "DELIVERED" || ["CANCELLED", "REFUNDED", "RETURNED"].includes(current.order.status)) throw new ApiProblem(409, "SETTLEMENT_NOT_DELIVERED", "Only delivered packages can be settled");
-      if (current.order.refunds.length || current.order.returns.some((request) => request.status !== "REJECTED")) throw new ApiProblem(409, "SETTLEMENT_RECONCILIATION_REQUIRED", "Refund/return orders require finance reconciliation before settlement");
-      const payment = current.order.payments.find((candidate) => candidate.status === "CAPTURED" && candidate.refundedMinor === 0n && candidate.currency === current.order.currency && candidate.amountMinor === current.order.totalMinor);
+      if (current.order.refunds.some((refund) => refund.status !== "completed") || current.order.returns.some((request) => !["REJECTED", "REFUNDED"].includes(request.status))) throw new ApiProblem(409, "SETTLEMENT_RECONCILIATION_REQUIRED", "Pending refund/return orders require finance reconciliation before settlement");
+      const payment = current.order.payments.find((candidate) => ["CAPTURED", "PARTIALLY_REFUNDED"].includes(candidate.status) && candidate.currency === current.order.currency && candidate.amountMinor === current.order.totalMinor);
       if (!payment || (payment.method.toUpperCase() === "COD" && payment.codCollection?.collectedMinor !== payment.amountMinor)) throw new ApiProblem(409, "SETTLEMENT_PAYMENT_UNCONFIRMED", "Full captured payment and exact COD collection are required");
       if (payment.method.toUpperCase() === "COD" && !payment.codCollection?.reconciliationItems.some((item) => item.varianceMinor === 0n && item.reconciliation.status === "reconciled")) throw new ApiProblem(409, "SETTLEMENT_COD_NOT_REMITTED", "COD cash must be reconciled without variance before seller settlement");
       const { rules } = await loadBusinessRules(transaction);
@@ -28,13 +29,23 @@ export class OrderSettlementService {
       const eligibleAt = Math.max(deliveredAt.getTime() + rules.settlement.holdDays * 86400000, current.order.returnWindowUntil.getTime());
       if (Date.now() < eligibleAt) throw new ApiProblem(409, "SETTLEMENT_HOLD_ACTIVE", `Settlement is held until ${new Date(eligibleAt).toISOString()}`);
       const shippingMinor = approval.shippingRecipient === "VENDOR" ? current.deliveryMinor : 0n;
-      const amountMinor = current.subtotalMinor - current.discountMinor - current.commissionMinor + shippingMinor;
+      let refundedMinor = 0n;
+      if (payment.refundedMinor > 0n || current.order.refunds.length) {
+        await assertRefundAccountingHistory(transaction, current.orderId);
+        const allocated = await transaction.financialLedgerEntry.aggregate({ where: { accountType: { in: ["vendor_refund_allocation", "platform_refund_allocation"] }, entryType: "REFUND_ALLOCATION", currency: payment.currency, referenceType: "refund", referenceId: { in: current.order.refunds.map((refund) => refund.id) } }, _sum: { amountMinor: true } });
+        if ((allocated._sum.amountMinor ?? 0n) !== payment.refundedMinor) throw new ApiProblem(409, "SETTLEMENT_RECONCILIATION_REQUIRED", "Refund allocations do not match the payment; reconcile before settlement");
+        refundedMinor = await refundedPackageMinor(transaction, current.id, payment.currency);
+      }
+      if (current.totalMinor <= 0n || refundedMinor > current.totalMinor) throw new ApiProblem(409, "SETTLEMENT_RECONCILIATION_REQUIRED", "Refund allocation exceeds package value");
+      const netBaseMinor = current.subtotalMinor - current.discountMinor - current.commissionMinor + shippingMinor;
+      const amountMinor = netBaseMinor - netBaseMinor * refundedMinor / current.totalMinor;
+      const earnedCommissionMinor = current.commissionMinor - current.commissionMinor * refundedMinor / current.totalMinor;
       if (current.subtotalMinor < current.discountMinor + current.commissionMinor) throw new ApiProblem(409, "SETTLEMENT_COMPONENTS_INVALID", "Discount and commission exceed merchandise proceeds; manual reconciliation is required");
       if (amountMinor <= 0n || current.order.currency !== "BDT") throw new ApiProblem(409, "SETTLEMENT_AMOUNT_INVALID", "A positive reconciled BDT seller amount is required");
       if (amountMinor !== BigInt(approval.expectedAmountMinor)) throw new ApiProblem(409, "SETTLEMENT_AMOUNT_CHANGED", "The approved amount does not match subtotal minus discount and commission plus approved shipping. Reconcile before approving.");
       const wallet = await transaction.vendorWallet.upsert({ where: { vendorId: current.vendorId }, create: { vendorId: current.vendorId, currency: "BDT" }, update: {} });
       if (wallet.currency !== "BDT") throw new ApiProblem(409, "SETTLEMENT_CURRENCY_MISMATCH", "Wallet currency does not match the order");
-      const metadata = { orderId: current.orderId, vendorId: current.vendorId, approvedBy: session.principal.userId, reason: approval.reason, shippingRecipient: approval.shippingRecipient, shippingMinor: shippingMinor.toString(), commissionMinor: current.commissionMinor.toString(), discountMinor: current.discountMinor.toString(), subtotalMinor: current.subtotalMinor.toString(), holdDays: rules.settlement.holdDays };
+      const metadata = { orderId: current.orderId, vendorId: current.vendorId, approvedBy: session.principal.userId, reason: approval.reason, shippingRecipient: approval.shippingRecipient, shippingMinor: shippingMinor.toString(), commissionMinor: earnedCommissionMinor.toString(), commissionBaseMinor: current.commissionMinor.toString(), netBaseMinor: netBaseMinor.toString(), refundedMinorAtSettlement: refundedMinor.toString(), discountMinor: current.discountMinor.toString(), subtotalMinor: current.subtotalMinor.toString(), holdDays: rules.settlement.holdDays };
       const entry = await transaction.vendorLedgerEntry.create({ data: { walletId: wallet.id, direction: "CREDIT", amountMinor, currency: "BDT", entryType: "ORDER_SETTLEMENT", referenceType: "vendor_order", referenceId: current.id, idempotencyKey: key, metadata } });
       await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "admin", action: "vendor_order.settlement_approved", resourceType: "vendor_order", resourceId: current.id, after: { ...metadata, ledgerEntryId: entry.id, amountMinor: amountMinor.toString() } } });
       return { id: entry.id, amountMinor: amountMinor.toString(), currency: "BDT", alreadySettled: false };

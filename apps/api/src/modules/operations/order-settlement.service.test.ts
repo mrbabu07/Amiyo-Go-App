@@ -9,7 +9,7 @@ const approval = { expectedVersion: 1, expectedAmountMinor: "8400", shippingReci
 function fixture() {
   const current = {
     id: "package", vendorId: "vendor", orderId: "order", version: 1, status: "DELIVERED",
-    subtotalMinor: 10000n, discountMinor: 1000n, commissionMinor: 600n, deliveryMinor: 500n,
+    subtotalMinor: 10000n, discountMinor: 1000n, commissionMinor: 600n, deliveryMinor: 500n, totalMinor: 9500n,
     shipments: [{ status: "DELIVERED", deliveredAt: new Date("2025-01-01") }],
     order: { status: "DELIVERED", currency: "BDT", totalMinor: 9500n, returnWindowUntil: new Date("2025-01-08"), refunds: [] as unknown[], returns: [] as { status: string }[], payments: [{ status: "CAPTURED", refundedMinor: 0n, currency: "BDT", amountMinor: 9500n, method: "COD", codCollection: { collectedMinor: 9500n, reconciliationItems: [{ varianceMinor: 0n, reconciliation: { status: "reconciled" } }] } }] }
   };
@@ -19,6 +19,8 @@ function fixture() {
   const transaction = {
     vendorOrder: { findUnique: async () => current },
     platformConfiguration: { findUnique: async () => null },
+    refund: { findMany: async () => [] },
+    financialLedgerEntry: { aggregate: async () => ({ _sum: { amountMinor: current.order.payments[0]!.refundedMinor } }) },
     vendorWallet: { upsert: async () => ({ id: "wallet", currency: "BDT" }) },
     vendorLedgerEntry: {
       findUnique: async () => entry,
@@ -86,6 +88,7 @@ test("settlement preserves bigint precision and refuses missing delivery evidenc
   context.current.subtotalMinor = 90071992547409930n;
   const expected = context.current.subtotalMinor - context.current.discountMinor - context.current.commissionMinor;
   context.current.order.totalMinor = context.current.subtotalMinor - context.current.discountMinor + context.current.deliveryMinor;
+  context.current.totalMinor = context.current.order.totalMinor;
   context.current.order.payments[0]!.amountMinor = context.current.order.totalMinor;
   context.current.order.payments[0]!.codCollection.collectedMinor = context.current.order.totalMinor;
   assert.equal((await context.service.approve(session, "package", { ...approval, expectedAmountMinor: expected.toString() })).amountMinor, expected.toString());
@@ -93,4 +96,14 @@ test("settlement preserves bigint precision and refuses missing delivery evidenc
   missing.current.shipments = [];
   await assert.rejects(missing.service.approve(session, "package", approval), /dates are required/);
   assert.deepEqual(missing.counts(), { writes: 0, audits: 0 });
+});
+
+test("completed allocated refunds reduce seller credit before settlement", async () => {
+  const context = fixture();
+  context.current.order.refunds.push({ id: "refund", status: "completed" });
+  context.current.order.payments[0]!.status = "PARTIALLY_REFUNDED";
+  context.current.order.payments[0]!.refundedMinor = 950n;
+  const result = await context.service.approve(session, "package", { ...approval, expectedAmountMinor: "7560" });
+  assert.equal(result.amountMinor, "7560");
+  assert.deepEqual(context.counts(), { writes: 1, audits: 1 });
 });

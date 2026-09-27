@@ -2,7 +2,8 @@ import type { User } from "firebase/auth";
 import { useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { vendorStatementQuerySchema } from "@amiyo/contracts";
-import { getVendorChargeReport, getVendorStatement } from "./operations.api";
+import { getVendorChargeReport, getVendorCommissionInvoice, getVendorStatement } from "./operations.api";
+import { commissionInvoiceHtml } from "../orders/commission-invoice-html";
 import { chargeReportHtml } from "../orders/charge-report-html";
 import { shareDocumentPdf } from "../orders/document-export";
 import { statementHtml } from "../orders/statement-html";
@@ -12,12 +13,12 @@ export function VendorStatementExport({ user, vendorId }: { user: User; vendorId
   const [month, setMonth] = useState(() => new Date(Date.now() + 6 * 3600000).toISOString().slice(0, 7));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const exportStatement = async (kind: "statement" | "charges" = "statement") => {
+  const exportStatement = async (kind: "statement" | "charges" | "commission-invoice" = "statement") => {
     if (busy) return;
     if (!vendorStatementQuerySchema.safeParse({ month }).success) { setError("Enter a valid month as YYYY-MM, for example 2026-09."); return; }
     setBusy(true); setError("");
     try {
-      const html = kind === "charges" ? chargeReportHtml(await getVendorChargeReport(user, month, vendorId)) : statementHtml(await getVendorStatement(user, month, vendorId));
+      const html = kind === "commission-invoice" ? commissionInvoiceHtml(await getVendorCommissionInvoice(user, month, vendorId)) : kind === "charges" ? chargeReportHtml(await getVendorChargeReport(user, month, vendorId)) : statementHtml(await getVendorStatement(user, month, vendorId));
       await shareDocumentPdf(html, `Amiyo ${kind} ${month}`);
     }
     catch (failure) { setError(failure instanceof Error ? failure.message : "Statement export failed."); }
@@ -30,6 +31,8 @@ export function VendorStatementExport({ user, vendorId }: { user: User; vendorId
     <Text style={styles.text}>Opening balance, period credits/debits and closing balance. This is not a tax invoice.</Text>
     <Pressable accessibilityRole="button" disabled={busy} onPress={() => exportStatement()} style={styles.button}><Text style={styles.buttonText}>{busy ? "Preparing statement…" : Platform.OS === "web" ? "Print / Save statement PDF" : "Share statement PDF"}</Text></Pressable>
     {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+    <Text style={styles.text}>Posted commission and refund reversals, by settlement month. Excludes shipping and VAT.</Text>
+    <Pressable accessibilityRole="button" disabled={busy} onPress={() => exportStatement("commission-invoice")} style={styles.button}><Text style={styles.buttonText}>{busy ? "Preparing export..." : "Export settled commission invoice"}</Text></Pressable>
     <Text style={styles.text}>Commission assessment by order month, excluding cancelled/rejected packages. Not a settled-charge or tax invoice.</Text>
     <Pressable accessibilityRole="button" disabled={busy} onPress={() => exportStatement("charges")} style={styles.button}><Text style={styles.buttonText}>{busy ? "Preparing export..." : Platform.OS === "web" ? "Print / Save commission report" : "Share commission report"}</Text></Pressable>
   </View>;
