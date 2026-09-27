@@ -4,6 +4,8 @@ Document parity inventory: `reference-document-parity.md` records legacy paths a
 
 ## Finance export follow-up
 
+- SSLCommerz completion now requires a separate provider status check (`refunded`) bound to the stored bank transaction and supplied refund reference. Initiation success/processing no longer posts completed refund ledgers. Durable order/version reservations reuse the provider reference and block ambiguous duplicate initiation; see `runbooks/payment-operations.md` for operator recovery requirements.
+
 - Vendor Finance now offers monthly commission assessment PDF export beside the wallet statement, on web and native.
 - The server restricts reads to the signed-in vendor workspace with `finance:read`; Bangladesh month boundaries, repeatable-read snapshots, exact integer arithmetic, explicit 5000-order limits and mixed-currency rejection apply.
 - Cancelled/rejected packages remain visible but are excluded from assessed commission totals. Other order statuses are assessments, not proof of earned or collected fees. Discounts are displayed without claiming seller funding.

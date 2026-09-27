@@ -6,6 +6,11 @@ const validationSchema = z.object({ status: z.string(), tran_id: z.string(), val
 const refundSchema = z.object({ APIConnect: z.string(), status: z.string().optional(), refund_ref_id: z.string().optional(), bank_tran_id: z.string().optional(), trans_id: z.string().optional(), errorReason: z.string().optional() }).passthrough();
 const refundStatusSchema = z.object({ APIConnect: z.string(), status: z.string().optional(), refund_ref_id: z.string().optional(), bank_tran_id: z.string().optional(), tran_id: z.string().optional(), initiated_on: z.string().optional(), refunded_on: z.string().optional(), errorReason: z.string().optional() }).passthrough();
 
+function decimalAmount(amount: bigint) {
+  if (amount <= 0n) throw new ApiProblem(400, "SSLCOMMERZ_AMOUNT_INVALID", "A positive amount is required");
+  return `${amount / 100n}.${String(amount % 100n).padStart(2, "0")}`;
+}
+
 type GatewayInput = {
   paymentId: string;
   orderId: string;
@@ -46,7 +51,7 @@ export class SslCommerzGateway {
     const body = new URLSearchParams({
       store_id: this.storeId,
       store_passwd: this.storePassword,
-      total_amount: (Number(input.amountMinor) / 100).toFixed(2),
+      total_amount: decimalAmount(input.amountMinor),
       currency: input.currency,
       tran_id: this.transactionId(input.paymentId),
       success_url: `${callback}/success`,
@@ -82,7 +87,7 @@ export class SslCommerzGateway {
     const result = sessionSchema.parse(await response.json());
     if (result.status !== "SUCCESS" || !result.GatewayPageURL || !result.sessionkey) throw new ApiProblem(502, "SSLCOMMERZ_SESSION_FAILED", result.failedreason || "SSLCommerz did not create a payment session");
     const redirect = new URL(result.GatewayPageURL);
-    if (redirect.protocol !== "https:" || !redirect.hostname.endsWith("sslcommerz.com")) throw new ApiProblem(502, "SSLCOMMERZ_INVALID_REDIRECT", "SSLCommerz returned an invalid payment URL");
+    if (redirect.protocol !== "https:" || !(redirect.hostname === "sslcommerz.com" || redirect.hostname.endsWith(".sslcommerz.com")) || redirect.username || redirect.password) throw new ApiProblem(502, "SSLCOMMERZ_INVALID_REDIRECT", "SSLCommerz returned an invalid payment URL");
     return { actionUrl: redirect.toString(), sessionKey: result.sessionkey, transactionId: this.transactionId(input.paymentId) };
   }
 
@@ -95,7 +100,7 @@ export class SslCommerzGateway {
   }
 
   async initiateRefund(input: { bankTransactionId: string; refundTransactionId: string; amountMinor: bigint; reason: string; referenceId?: string }) {
-    this.requireCredentials(); const query = new URLSearchParams({ bank_tran_id: input.bankTransactionId, refund_trans_id: input.refundTransactionId.slice(0, 30), refund_amount: (Number(input.amountMinor) / 100).toFixed(2), refund_remarks: input.reason.slice(0, 255), store_id: this.storeId, store_passwd: this.storePassword, v: "1", format: "json", ...(input.referenceId ? { refe_id: input.referenceId.slice(0, 50) } : {}) }); const response = await this.fetcher(`${this.baseUrl()}/validator/api/merchantTransIDvalidationAPI.php?${query}`, { signal: AbortSignal.timeout(30_000) }); if (!response.ok) throw new ApiProblem(502, "SSLCOMMERZ_REFUND_UNAVAILABLE", `SSLCommerz refund request failed (${response.status})`); const result = refundSchema.parse(await response.json()); if (result.APIConnect !== "DONE" || !["success", "processing"].includes(result.status || "") || !result.refund_ref_id) throw new ApiProblem(502, "SSLCOMMERZ_REFUND_FAILED", result.errorReason || "SSLCommerz did not initiate the refund"); return { refundRefId: result.refund_ref_id, status: result.status, bankTransactionId: result.bank_tran_id || input.bankTransactionId, transactionId: result.trans_id || null };
+    this.requireCredentials(); const query = new URLSearchParams({ bank_tran_id: input.bankTransactionId, refund_trans_id: input.refundTransactionId.slice(0, 30), refund_amount: decimalAmount(input.amountMinor), refund_remarks: input.reason.slice(0, 255), store_id: this.storeId, store_passwd: this.storePassword, v: "1", format: "json", ...(input.referenceId ? { refe_id: input.referenceId.slice(0, 50) } : {}) }); const response = await this.fetcher(`${this.baseUrl()}/validator/api/merchantTransIDvalidationAPI.php?${query}`, { signal: AbortSignal.timeout(30_000) }); if (!response.ok) throw new ApiProblem(502, "SSLCOMMERZ_REFUND_UNAVAILABLE", `SSLCommerz refund request failed (${response.status})`); const result = refundSchema.parse(await response.json()); if (result.APIConnect !== "DONE" || !["success", "processing"].includes(result.status || "") || !result.refund_ref_id) throw new ApiProblem(502, "SSLCOMMERZ_REFUND_FAILED", result.errorReason || "SSLCommerz did not initiate the refund"); return { refundRefId: result.refund_ref_id, status: result.status, bankTransactionId: result.bank_tran_id || input.bankTransactionId, transactionId: result.trans_id || null };
   }
 
   async refundStatus(refundRefId: string) {
@@ -103,6 +108,11 @@ export class SslCommerzGateway {
   }
 
   private baseUrl() { return this.sandbox ? "https://sandbox.sslcommerz.com" : "https://securepay.sslcommerz.com"; }
+  async assertRefundCompleted(refundRefId: string, bankTransactionId: string) {
+    const result = await this.refundStatus(refundRefId);
+    if (result.refund_ref_id !== refundRefId || result.bank_tran_id !== bankTransactionId) throw new ApiProblem(502, "SSLCOMMERZ_REFUND_IDENTITY_MISMATCH", "Refund evidence does not match this payment");
+    if (result.status !== "refunded") throw new ApiProblem(409, "SSLCOMMERZ_REFUND_NOT_COMPLETED", `Refund ${refundRefId} is not confirmed refunded; no refund ledger was posted. Recheck this reference instead of initiating another refund.`);
+  }
   private requireCredentials() { if (!this.storeId || !this.storePassword) throw new ApiProblem(503, "SSLCOMMERZ_NOT_CONFIGURED", "SSLCommerz credentials are required"); }
   private requireConfiguration() { this.requireCredentials(); if (!this.apiPublicUrl) throw new ApiProblem(503, "SSLCOMMERZ_NOT_CONFIGURED", "SSLCommerz credentials and API public URL are required"); }
 }

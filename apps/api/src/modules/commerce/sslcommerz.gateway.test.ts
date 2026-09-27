@@ -40,3 +40,21 @@ test("SSLCommerz refund status requires a successful API connection", async () =
   const fetcher = async () => new Response(JSON.stringify({ APIConnect: "FAILED", errorReason: "Invalid credentials" }), { status: 200 });
   await assert.rejects(() => new SslCommerzGateway(fetcher as typeof fetch, env).refundStatus("refund-123"), /Invalid credentials/);
 });
+
+test("refund completion requires refunded status and matching bank/reference identities", async () => {
+  for (const status of ["success", "processing", "cancelled", "failed"]) {
+    const gateway = new SslCommerzGateway(async () => new Response(JSON.stringify({ APIConnect: "DONE", status, bank_tran_id: "bank", refund_ref_id: "refund" })), env);
+    await assert.rejects(gateway.assertRefundCompleted("refund", "bank"), /not confirmed refunded/);
+  }
+  const gateway = new SslCommerzGateway(async () => new Response(JSON.stringify({ APIConnect: "DONE", status: "refunded", bank_tran_id: "bank", refund_ref_id: "refund" })), env);
+  await gateway.assertRefundCompleted("refund", "bank");
+  await assert.rejects(gateway.assertRefundCompleted("other", "bank"), /does not match/);
+  await assert.rejects(gateway.assertRefundCompleted("refund", "other-bank"), /does not match/);
+});
+
+test("gateway preserves integer money and rejects lookalike payment hosts", async () => {
+  let body = "";
+  const gateway = new SslCommerzGateway(async (_url, init) => { body = String(init?.body); return new Response(JSON.stringify({ status: "SUCCESS", sessionkey: "session", GatewayPageURL: "https://evilsslcommerz.com/pay" })); }, env);
+  await assert.rejects(gateway.initiate({ ...input, amountMinor: 9007199254740993n }), /invalid payment URL/);
+  assert.equal(new URLSearchParams(body).get("total_amount"), "90071992547409.93");
+});
