@@ -12,6 +12,7 @@ export * from "./openapi.js";
 export * from "./commerce.js";
 export * from "./delivery.js";
 export * from "./finance.js";
+export * from "./vendor-statement.js";
 export * from "./engagement.js";
 export * from "./support.js";
 export * from "./vendor.js";

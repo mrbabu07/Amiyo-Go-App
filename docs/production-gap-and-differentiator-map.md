@@ -1,6 +1,6 @@
 # Production Gap and Marketplace Differentiator Map
 
-Document parity inventory: `reference-document-parity.md` records exact legacy paths, web/native packing-slip corrections, and the still-missing monthly seller statement/tax-invoice export. Implemented document controls still need signed-in print/device acceptance.
+Document parity inventory: `reference-document-parity.md` records exact legacy paths, web/native packing-slip corrections and monthly seller ledger statements. Reference platform-charge/tax-invoice export is still missing. Implemented document controls still need signed-in print/device acceptance.
 
 Latest verification: see `verification-2026-09-28.md`. Account-switch isolation fixes and repeatable read-only smoke checks are implemented. Nine live read-only checks passed after transient database connectivity recovered; authenticated journeys and production acceptance remain pending.
 

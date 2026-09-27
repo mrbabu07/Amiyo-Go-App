@@ -16,7 +16,7 @@ export const ledgerEntrySchema = z.object({
 
 export const vendorFinanceSchema = z.object({
   vendorId: uuidSchema,
-  balance: moneySchema,
+  balance: moneySchema.extend({ amountMinor: z.string().regex(/^-?\d+$/) }),
   entries: z.array(ledgerEntrySchema),
   payoutRequests: z.array(z.object({ id: uuidSchema, bankAccountId: uuidSchema, amount: moneySchema, status: payoutStatusSchema, requestedAt: timestampSchema }))
 });

@@ -11,7 +11,7 @@ This inventory compares code paths, not every marketplace feature. Implementatio
 | Batch labels/slips | `Client/src/pages/vendor/VendorOrders.jsx` | Up to 20 packages; one document per page; failed requests prevent partial export. | Signed-in multi-package print run. |
 | Current invoice values | `Server/controllers/orderController.js:1461` | `OrderService.invoice` reads current authorized order data, retains invoice identity and signs a fresh QR. | Address/payment-edit-to-export journey. |
 | Admin invoice regeneration | `Server/controllers/orderController.js:2151` | Admin can issue an invoice with permission and audit checks; exports render current data rather than replacing a stored PDF. | Confirm whether persistent PDF version history is required. |
-| Monthly seller statement/tax invoice | `Server/controllers/vendor/vendorFinanceController.js:479`, `Client/src/pages/vendor/VendorFinance.jsx` | Dedicated period-based statement/tax-invoice export remains a gap. A packing slip is not a tax invoice. | Implement period contracts, vendor-owned ledger aggregation, export and reconciliation tests. |
+| Monthly seller statement/tax invoice | `Server/controllers/vendor/vendorFinanceController.js:479`, `Client/src/pages/vendor/VendorFinance.jsx` | Monthly wallet statement is implemented with Bangladesh-time boundaries, opening/closing balance, complete period entries up to 5000 and web/native PDF. Reference-style platform-charge/tax-invoice export remains a gap; a wallet statement is not a tax invoice. | Signed-in statement print/share acceptance; separate commission/charge reconciliation for tax-invoice export. |
 
 ## Web print correction
 
@@ -22,7 +22,9 @@ This inventory compares code paths, not every marketplace feature. Implementatio
 
 ## Automated verification
 
-- Mobile suite: 18 passing tests, including missing QR, frame isolation, decode-before-print and image failure cleanup. DOM tests use controlled mocks; they are not real-browser print acceptance.
+- Monthly statements: four service tests cover month boundaries, authorization, more than 100 entries, integer precision, overflow rejection and empty wallets; HTML test covers escaping, negative balances and document labeling. Ledger reads share a repeatable-read snapshot. Exports above 5000 rows fail explicitly instead of silently truncating.
+
+- Mobile suite: 19 passing tests, including statement HTML, missing QR, frame isolation, decode-before-print and image failure cleanup. DOM tests use controlled mocks; they are not real-browser print acceptance.
 - Full workspace/repository suite passed, including all 89 repository checks.
 - Mobile type-check, Expo web export and secret scan passed.
 

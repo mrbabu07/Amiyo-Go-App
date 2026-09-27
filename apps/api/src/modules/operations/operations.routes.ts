@@ -8,6 +8,7 @@ import { createAuthenticationMiddleware, requireSession } from "../identity/iden
 import { IdentityService } from "../identity/identity.service.js";
 import { OperationsService } from "./operations.service.js";
 import { LogisticsService } from "./logistics.service.js";
+import { VendorStatementService } from "./vendor-statement.service.js";
 
 const idSchema = z.object({ id: z.string().uuid() });
 function key(value: string | undefined) { if (!value || !z.string().uuid().safeParse(value).success) throw new ApiProblem(400, "IDEMPOTENCY_KEY_REQUIRED", "A UUID Idempotency-Key header is required"); return value; }
@@ -23,6 +24,7 @@ export function createOperationsRouter() {
   router.post("/api/v2/vendor/returns/:id/response", async (req, res, next) => { try { res.json(await service.respondToVendorReturn(requireSession(req), idSchema.parse(req.params).id, sellerReturnResponseSchema.parse(req.body), key(req.header("idempotency-key")), req.header("x-correlation-id"))); } catch (error) { next(error); } });
   router.post("/api/v2/vendor/returns/:id/receipt", async (req, res, next) => { try { res.json(await service.confirmVendorReturnReceipt(requireSession(req), idSchema.parse(req.params).id, sellerReturnReceiptSchema.parse(req.body), key(req.header("idempotency-key")), req.header("x-correlation-id"))); } catch (error) { next(error); } });
   router.get("/api/v2/vendor/finance", async (req, res, next) => { try { res.json(await service.finance(requireSession(req))); } catch (error) { next(error); } });
+  router.get("/api/v2/vendor/finance/statement", async (req, res, next) => { try { res.set("Cache-Control", "no-store").json(await new VendorStatementService(prisma).statement(requireSession(req), req.query)); } catch (error) { next(error); } });
   router.post("/api/v2/vendor/payouts", async (req, res, next) => { try { res.status(201).json(await service.requestPayout(requireSession(req), createPayoutRequestSchema.parse(req.body), key(req.header("idempotency-key")), req.header("x-correlation-id"))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/returns", async (req, res, next) => { try { res.json(await service.returns(requireSession(req), true)); } catch (error) { next(error); } });
   router.get("/api/v2/admin/returns/:id", async (req, res, next) => { try { res.json(await service.returnDetail(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
