@@ -27,7 +27,7 @@ function useParcelPrintStyles() {
 export function FulfillmentDocumentScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const user = firebaseAuth?.currentUser ?? null;
-  const document = useQuery({ queryKey: ["vendor", "fulfillment-document", id], queryFn: () => getFulfillmentDocument(user!, id), enabled: Boolean(user && id) });
+  const document = useQuery({ queryKey: ["vendor", "fulfillment-document", id, user?.uid], queryFn: () => getFulfillmentDocument(user!, id), enabled: Boolean(user && id) });
   useParcelPrintStyles();
   const qr = useRef<DocumentQrRef | null>(null);
   const [exporting, setExporting] = useState(false);

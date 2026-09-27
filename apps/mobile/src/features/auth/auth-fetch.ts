@@ -23,25 +23,32 @@ async function invalidAccessToken(response: Response) {
 export function installAuthenticatedFetchRetry(auth: Auth, apiUrl = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000") {
   if (installed || typeof globalThis.fetch !== "function") return;
   installed = true;
-  const apiOrigin = new URL(apiUrl).origin;
   const originalFetch = globalThis.fetch.bind(globalThis);
+  globalThis.fetch = authenticatedFetchRetry(auth, apiUrl, originalFetch);
+}
 
-  globalThis.fetch = async (input, init) => {
+export function authenticatedFetchRetry(auth: Auth, apiUrl: string, originalFetch: typeof fetch, invalidate = () => signOut(auth)): typeof fetch {
+  const apiOrigin = new URL(apiUrl).origin;
+  return async (input, init) => {
+    const user = auth.currentUser;
     const retryInput = typeof Request !== "undefined" && input instanceof Request ? input.clone() : input;
     const response = await originalFetch(input, init);
     const headers = requestHeaders(retryInput, init);
     if (new URL(requestUrl(retryInput), apiOrigin).origin !== apiOrigin || !headers.has("authorization") || !(await invalidAccessToken(response))) return response;
 
-    const user = auth.currentUser;
-    if (!user) return response;
+    if (!user || auth.currentUser?.uid !== user.uid) return response;
+    let token: string;
     try {
-      headers.set("authorization", `Bearer ${await user.getIdToken(true)}`);
-      const retried = await originalFetch(retryInput, { ...init, headers });
-      if (await invalidAccessToken(retried)) await signOut(auth);
-      return retried;
-    } catch {
-      await signOut(auth);
+      token = await user.getIdToken(true);
+    } catch (error) {
+      const code = (error as { code?: string })?.code;
+      if (auth.currentUser?.uid === user.uid && (code === "auth/user-disabled" || code === "auth/user-token-expired" || code === "auth/invalid-user-token")) await invalidate();
       return response;
     }
+    if (auth.currentUser?.uid !== user.uid) return response;
+    headers.set("authorization", `Bearer ${token}`);
+    const retried = await originalFetch(retryInput, { ...init, headers });
+    if (await invalidAccessToken(retried) && auth.currentUser?.uid === user.uid) await invalidate();
+    return retried;
   };
 }

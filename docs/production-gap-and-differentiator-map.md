@@ -1,5 +1,7 @@
 # Production Gap and Marketplace Differentiator Map
 
+Latest verification: see `verification-2026-09-28.md`. Account-switch isolation fixes and repeatable read-only smoke checks are implemented. Nine live read-only checks passed after transient database connectivity recovered; authenticated journeys and production acceptance remain pending.
+
 Date: 2026-09-01
 Status: major marketplace workflows are implemented, but complete reference parity and production readiness have not been verified. Source-presence tests are not evidence that an entire customer journey works.
 

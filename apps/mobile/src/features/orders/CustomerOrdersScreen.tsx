@@ -34,7 +34,7 @@ export function CustomerOrdersScreen() {
   const { width } = useWindowDimensions();
   const compact = width < 520;
   const [filter, setFilter] = useState<Filter>("ALL");
-  const orders = useQuery({ queryKey: ["orders", "customer"], queryFn: () => getCustomerOrders(user!), enabled: Boolean(user), refetchInterval: 30_000 });
+  const orders = useQuery({ queryKey: ["orders", "customer", user?.uid], queryFn: () => getCustomerOrders(user!), enabled: Boolean(user), refetchInterval: 30_000 });
   const visibleOrders = useMemo(() => orders.data?.filter((order) => matchesFilter(order, filter)) ?? [], [filter, orders.data]);
   const activeCount = orders.data?.filter((order) => matchesFilter(order, "ACTIVE")).length ?? 0;
   const deliveredCount = orders.data?.filter((order) => order.status === "DELIVERED").length ?? 0;

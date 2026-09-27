@@ -19,7 +19,8 @@ test("invalid API access tokens refresh once before clean sign-out", async () =>
   assert.match(retry, /problem\?\.code === "INVALID_ACCESS_TOKEN"/);
   assert.match(retry, /user\.getIdToken\(true\)/);
   assert.match(retry, /const retried = await originalFetch/);
-  assert.match(retry, /if \(await invalidAccessToken\(retried\)\) await signOut\(auth\)/);
+  assert.match(retry, /if \(await invalidAccessToken\(retried\) && auth\.currentUser\?\.uid === user\.uid\) await invalidate\(\)/);
+  assert.match(retry, /invalidate = \(\) => signOut\(auth\)/);
   assert.match(bootstrap, /installAuthenticatedFetchRetry\(auth\)/);
   assert.match(bootstrap, /ensureSessionMarker\(user\.uid\)/);
 });

@@ -29,7 +29,7 @@ export function CustomerOrderDetailScreen({ id }: { id: string }) {
   const [returnReasons, setReturnReasons] = useState<Record<string, string>>({});
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const handle = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(handle); }, []);
-  const order = useQuery({ queryKey: ["orders", "customer", id], queryFn: () => getCustomerOrder(user!, id), enabled: Boolean(user), refetchInterval: 30_000 });
+  const order = useQuery({ queryKey: ["orders", "customer", id, user?.uid], queryFn: () => getCustomerOrder(user!, id), enabled: Boolean(user), refetchInterval: 30_000 });
   const refresh = async () => { await cache.invalidateQueries({ queryKey: ["orders"] }); await order.refetch(); };
   const cancel = useMutation({ mutationFn: () => cancelCustomerOrder(user!, id, { reason: "Customer requested cancellation", expectedVersion: order.data!.version }, randomUUID()), onSuccess: refresh });
   const createReturn = useMutation({ mutationFn: (vendorOrderId: string) => { const vendorOrder = order.data!.vendorOrders.find((entry) => entry.id === vendorOrderId)!; return createCustomerReturn(user!, { vendorOrderId, reasonCode: "CUSTOMER_RETURN", reasonDetail: returnReasons[vendorOrderId]?.trim() || null, refundMethod: "ORIGINAL_PAYMENT", items: vendorOrder.items.map((item) => ({ orderItemId: item.id, quantity: item.quantity })) }, randomUUID()); }, onSuccess: async () => { await cache.invalidateQueries({ queryKey: ["returns"] }); router.push("/returns"); } });

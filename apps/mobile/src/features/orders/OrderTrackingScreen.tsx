@@ -12,7 +12,7 @@ const formatStatus = (status: string) => status.replaceAll("_", " ").toLowerCase
 export function OrderTrackingScreen({ id }: { id: string }) {
   const router = useRouter();
   const user = firebaseAuth?.currentUser ?? null;
-  const tracking = useQuery({ queryKey: ["orders", id, "tracking"], queryFn: () => getOrderTracking(user!, id), enabled: Boolean(user), refetchInterval: 30_000 });
+  const tracking = useQuery({ queryKey: ["orders", id, "tracking", user?.uid], queryFn: () => getOrderTracking(user!, id), enabled: Boolean(user), refetchInterval: 30_000 });
 
   if (!user) return <TrackingState title="Sign in to track this order" copy="Delivery information is available securely from your account." action="Sign in" onPress={() => router.replace("/auth")} />;
   if (tracking.isLoading) return <TrackingState loading title="Loading tracking" copy="Checking the latest seller and courier updates." />;

@@ -13,7 +13,7 @@ import { batchDocumentLimit } from "./batch-documents";
 export function VendorOrdersScreen() {
   const [selected, setSelected] = useState<string[]>([]);
   const router = useRouter(); const user = firebaseAuth?.currentUser ?? null; const session = useAuthStore((state) => state.session); const allowed = Boolean(session?.permissions.includes("orders:read") && session.principal.vendorIds.length);
-  const orders = useQuery({ queryKey: ["orders", "vendor"], queryFn: () => getVendorOrders(user!), enabled: Boolean(user && allowed) });
+  const orders = useQuery({ queryKey: ["orders", "vendor", user?.uid], queryFn: () => getVendorOrders(user!), enabled: Boolean(user && allowed) });
   if (!user || !allowed) return <View style={styles.center}><Ionicons name="lock-closed-outline" size={48} color={colors.primary} /><Text style={styles.title}>Vendor order access required</Text></View>;
   if (orders.isLoading) return <View style={styles.center}><ActivityIndicator color={colors.primary} /></View>;
   const selectedIds = selected.filter((id) => orders.data?.some((order) => order.id === id));
@@ -21,7 +21,7 @@ export function VendorOrdersScreen() {
     <Text accessibilityRole="header" style={styles.title}>Vendor orders</Text>
     {orders.error ? <Text accessibilityRole="alert" style={styles.muted}>{orders.error.message}</Text> : null}
     {!orders.error && !orders.data?.length ? <Text style={styles.muted}>No orders yet.</Text> : null}
-    <BatchDocuments key={selectedIds.join(",")} ids={selectedIds} user={user} />
+    <BatchDocuments key={`${user.uid}:${selectedIds.join(",")}`} ids={selectedIds} user={user} />
     {selectedIds.length ? <Pressable accessibilityRole="button" onPress={() => setSelected([])} style={{ minHeight: 44, justifyContent: "center" }}><Text style={styles.documentText}>Clear selection</Text></Pressable> : null}
     {orders.data?.map((order) => <View key={order.id} style={styles.card}>
       <Pressable accessibilityRole="checkbox" accessibilityLabel={`Select package ${order.orderNumber} from ${order.shopName}`} accessibilityState={{ checked: selectedIds.includes(order.id), disabled: !selectedIds.includes(order.id) && selectedIds.length >= batchDocumentLimit }} disabled={!selectedIds.includes(order.id) && selectedIds.length >= batchDocumentLimit} onPress={() => setSelected(selectedIds.includes(order.id) ? selectedIds.filter((id) => id !== order.id) : [...selectedIds, order.id])} style={{ minHeight: 44, justifyContent: "center" }}><Text style={styles.documentText}>{selectedIds.includes(order.id) ? "☑ Selected" : "☐ Select for batch print"}</Text></Pressable>

@@ -26,7 +26,7 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
   const compact = width < 640;
   const [busy, setBusy] = useState<VendorOrderStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const order = useQuery({ queryKey: ["orders", "vendor", id], queryFn: () => getVendorOrder(user!, id), enabled: Boolean(user) });
+  const order = useQuery({ queryKey: ["orders", "vendor", id, user?.uid], queryFn: () => getVendorOrder(user!, id), enabled: Boolean(user) });
 
   async function transition(status: VendorOrderStatus) {
     if (!user || !order.data) return;
@@ -34,7 +34,7 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
     setError(null);
     try {
       const updated = await transitionVendorOrder(user, id, { status, expectedVersion: order.data.version }, Crypto.randomUUID());
-      queryClient.setQueryData(["orders", "vendor", id], updated);
+      queryClient.setQueryData(["orders", "vendor", id, user.uid], updated);
       await queryClient.invalidateQueries({ queryKey: ["orders", "vendor"] });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Order update failed");

@@ -16,7 +16,7 @@ const printId = "customer-print-invoice";
 export function InvoiceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const user = firebaseAuth?.currentUser ?? null;
-  const invoice = useQuery({ queryKey: ["invoice", id], queryFn: () => getInvoice(user!, id), enabled: Boolean(user && id) });
+  const invoice = useQuery({ queryKey: ["invoice", id, user?.uid], queryFn: () => getInvoice(user!, id), enabled: Boolean(user && id) });
   useInvoicePrintStyles(printId);
   const qr = useRef<InvoiceQrRef | null>(null);
   const [exportError, setExportError] = useState("");
