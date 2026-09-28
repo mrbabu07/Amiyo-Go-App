@@ -5,6 +5,9 @@ import type { GestureResponderEvent } from "react-native";
 import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, radius, spacing } from "../../../ui/tokens";
 import { firebaseAuth } from "../../auth/firebase";
+import { ensureGuestUser } from "../../auth/guest-auth";
+import { getProduct } from "../../catalog/catalog.api";
+import { addCartItem } from "../../commerce/commerce.api";
 import { addWishlistItem, getWishlist, removeWishlistItem } from "../../engagement/engagement.api";
 import { getDiscoverySessionId, safelyRecordDiscoveryEvent } from "../../catalog/discovery.api";
 import type { HomeProduct } from "../home.data";
@@ -21,6 +24,24 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
   const discount = product.originalPrice ? Math.max(1, Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)) : 0;
   const wishlist = useQuery({ queryKey: ["wishlist"], queryFn: () => getWishlist(user!), enabled: Boolean(user), staleTime: 30_000 });
   const saved = Boolean(wishlist.data?.items.some((item) => item.productId === product.id));
+  const addToCart = useMutation({
+    mutationFn: async () => {
+      const detail = await getProduct(product.slug || product.id);
+      if (detail.variants.length > 1) {
+        router.push(`/product/${product.slug || product.id}` as never);
+        return null;
+      }
+      const variant = detail.variants[0];
+      if (!variant || variant.availableQuantity < 1) throw new Error("Currently out of stock");
+      const currentUser = firebaseAuth?.currentUser || await ensureGuestUser();
+      return addCartItem(currentUser, variant.id, 1);
+    },
+    onSuccess: (cart) => {
+      if (!cart) return;
+      queryClient.setQueryData(["cart"], cart);
+      void getDiscoverySessionId().then((sessionId) => safelyRecordDiscoveryEvent({ sessionId, eventType: "ADD_TO_CART", productId: product.id }));
+    }
+  });
   const toggleWishlist = useMutation({
     mutationFn: () => saved ? removeWishlistItem(user!, product.id) : addWishlistItem(user!, product.id),
     onSuccess: (data) => {
@@ -50,9 +71,15 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
           <Text numberOfLines={2} style={styles.title}>{product.title}</Text>
           <View style={styles.shopRow}><Ionicons color={colors.success} name="checkmark-circle" size={12} /><Text numberOfLines={1} style={styles.shop}>{product.shop}</Text></View>
           <View style={styles.priceRow}><Text style={styles.price}>{money(product.price)}</Text>{product.originalPrice ? <Text style={styles.original}>{money(product.originalPrice)}</Text> : null}</View>
-          <View style={styles.metaRow}><Ionicons color="#f59e0b" name="star" size={13} /><Text style={styles.rating}>{product.rating}</Text><Text style={styles.sold}>{product.sold} sold</Text><View style={styles.cart}><Ionicons color={colors.surface} name="add" size={17} /></View></View>
+          <View style={styles.metaRow}><Ionicons color="#f59e0b" name="star" size={13} /><Text style={styles.rating}>{product.rating}</Text><Text style={styles.sold}>{product.sold} sold</Text></View>
         </View>
       </Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={`Add ${product.title} to cart`} accessibilityState={{ busy: addToCart.isPending }} disabled={addToCart.isPending} onPress={() => addToCart.mutate()} style={({ pressed }) => [styles.cart, (pressed || addToCart.isPending) && styles.heartBusy]}>
+        <Ionicons color="#fff" name="cart-outline" size={17} />
+        <Text style={styles.cartLabel}>{addToCart.isPending ? "Adding…" : "Add to cart"}</Text>
+      </Pressable>
+      {addToCart.isError ? <Text accessibilityRole="alert" style={styles.cartError}>{addToCart.error instanceof Error ? addToCart.error.message : "Could not add item. Try again."}</Text> : null}
+      {addToCart.isSuccess && addToCart.data ? <Text accessibilityLiveRegion="polite" style={styles.cartFeedback}>Added to cart</Text> : null}
       <Pressable accessibilityLabel={`${saved ? "Remove" : "Save"} ${product.title} ${saved ? "from" : "to"} wishlist`} accessibilityRole="button" disabled={toggleWishlist.isPending} onPress={onWishlist} style={[styles.heart, saved && styles.heartActive, toggleWishlist.isPending && styles.heartBusy]}>
         <Ionicons color={saved ? colors.surface : colors.accent} name={saved ? "heart" : "heart-outline"} size={18} />
       </Pressable>
@@ -84,5 +111,8 @@ const styles = StyleSheet.create({
   metaRow: { alignItems: "center", borderTopColor: "#f1f5f9", borderTopWidth: 1, flexDirection: "row", marginTop: 8, paddingTop: 8 },
   rating: { color: colors.text, fontSize: 10, fontWeight: "600", marginLeft: 3 },
   sold: { color: colors.muted, fontSize: 9, marginLeft: 6 },
-  cart: { alignItems: "center", backgroundColor: colors.accent, borderRadius: radius.sm, height: 29, justifyContent: "center", marginLeft: "auto", width: 31 }
+  cart: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.sm, minHeight: 44, justifyContent: "center", flexDirection: "row", gap: 6, marginHorizontal: spacing.sm, marginBottom: spacing.sm, paddingHorizontal: 6, paddingVertical: 10 },
+  cartLabel: { color: "#fff", fontSize: 12, fontWeight: "600", flexShrink: 1 },
+  cartError: { color: colors.danger, fontSize: 11, paddingHorizontal: spacing.sm, paddingBottom: spacing.sm },
+  cartFeedback: { color: colors.success, fontSize: 11, paddingHorizontal: spacing.sm, paddingBottom: spacing.sm }
 });
