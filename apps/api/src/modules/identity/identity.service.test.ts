@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { IdentityService } from "./identity.service.js";
+import { ApiProblem } from "../../middleware/api-problem.js";
 
 const userId = "11111111-1111-4111-8111-111111111111";
 
@@ -63,6 +64,41 @@ test("session synchronization recovers from a concurrent login activity write", 
   const session = await new IdentityService(client).synchronizeSession({ subject: "firebase-customer", email: "customer@example.com" });
   assert.equal(session.status, "ACTIVE");
   assert.equal(reads, 2);
+});
+
+test("login write conflicts cannot resurrect a deleted account", async () => {
+  let reads = 0;
+  const client = { user: {
+    findUnique: async () => ++reads === 1 ? sessionUser(null) : null,
+    update: async () => { throw new Prisma.PrismaClientKnownRequestError("Conflict", { code: "P2034", clientVersion: "5.22.0" }); }
+  } } as unknown as PrismaClient;
+  await assert.rejects(() => new IdentityService(client).synchronizeSession({ subject: "firebase-customer" }),
+    (error: unknown) => error instanceof ApiProblem && error.status === 401);
+  assert.equal(reads, 2);
+});
+
+test("login conflict recovery uses current account status and permissions", async () => {
+  let reads = 0;
+  const previous = { ...sessionUser(null), roles: [{ role: { name: "SUPER_ADMIN", permissions: [{ permission: { key: "admin:manage" } }] } }] };
+  const current = { ...sessionUser(new Date()), status: "SUSPENDED" };
+  const client = { user: {
+    findUnique: async () => ++reads === 1 ? previous : current,
+    update: async () => { throw new Prisma.PrismaClientKnownRequestError("Conflict", { code: "P2034", clientVersion: "5.22.0" }); }
+  } } as unknown as PrismaClient;
+  const result = await new IdentityService(client).synchronizeSession({ subject: "firebase-customer" });
+  assert.equal(result.status, "SUSPENDED");
+  assert.deepEqual(result.principal.roles, []);
+  assert.deepEqual(result.permissions, []);
+});
+
+test("failed login conflict rereads never fall back to stale permissions", async () => {
+  let reads = 0;
+  const failure = new Error("Database unavailable");
+  const client = { user: {
+    findUnique: async () => { if (++reads === 1) return sessionUser(null); throw failure; },
+    update: async () => { throw new Prisma.PrismaClientKnownRequestError("Conflict", { code: "P2034", clientVersion: "5.22.0" }); }
+  } } as unknown as PrismaClient;
+  await assert.rejects(() => new IdentityService(client).synchronizeSession({ subject: "firebase-customer" }), (error: unknown) => error === failure);
 });
 
 test("account deletion can be cancelled inside the recovery window", async () => {

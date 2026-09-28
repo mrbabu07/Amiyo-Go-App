@@ -223,7 +223,9 @@ export class IdentityService {
       });
     } catch (error) {
       if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2034") throw error;
-      return await this.client.user.findUnique({ where: { id: user.id }, include: sessionInclude }) ?? user;
+      const current = await this.client.user.findUnique({ where: { id: user.id }, include: sessionInclude });
+      if (!current) throw new ApiProblem(401, "AUTHENTICATION_REQUIRED", "The account is no longer available");
+      return current;
     }
   }
 

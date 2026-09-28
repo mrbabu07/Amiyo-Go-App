@@ -17,3 +17,9 @@ The expanded live local run on 2026-09-28 passed all 24 checks with no skipped f
 An additional duplicate session lookup was removed from `GET /api/v2/me`: authentication already synchronizes the current request's session. The handler now returns that verified session with `Cache-Control: no-store`. An HTTP regression verifies that every request still authenticates, revoked tokens fail and suspended users are denied. No shared permission/session cache was introduced.
 
 This is authenticated API read coverage, not browser UI acceptance or checkout-to-delivery E2E. Existing seeded orders prove read/authorization behavior only. Live payment/refund/payout, concurrent shopping, device PDF/camera/push, historical finance reconciliation and deployment recovery remain separate launch gates.
+
+## Session conflict hardening follow-up
+
+Removed the stale-session fallback after a login activity write conflict. Recovery now requires a fresh database record: a deleted account receives 401, current suspension and permission removals are preserved, and a failed reread propagates instead of authorizing old data. All nine targeted identity service/route tests passed, including three new conflict regressions. The full `npm test` rerun also passed workspace suites and 91 repository tests; secret scanning passed.
+
+The latest authenticated smoke rerun did not pass: the local API/auth emulator ports (4000/9099) had no listeners, all three demo logins failed and dependent checks were skipped. The earlier 24-check success is historical evidence, not a successful rerun of this patch. No live payment, refund or payout was initiated.
