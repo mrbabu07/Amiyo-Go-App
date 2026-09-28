@@ -22,4 +22,13 @@ This is authenticated API read coverage, not browser UI acceptance or checkout-t
 
 Removed the stale-session fallback after a login activity write conflict. Recovery now requires a fresh database record: a deleted account receives 401, current suspension and permission removals are preserved, and a failed reread propagates instead of authorizing old data. All nine targeted identity service/route tests passed, including three new conflict regressions. The full `npm test` rerun also passed workspace suites and 91 repository tests; secret scanning passed.
 
-The latest authenticated smoke rerun did not pass: the local API/auth emulator ports (4000/9099) had no listeners, all three demo logins failed and dependent checks were skipped. The earlier 24-check success is historical evidence, not a successful rerun of this patch. No live payment, refund or payout was initiated.
+The first authenticated smoke rerun could not run successfully because local API/auth emulator ports (4000/9099) had no listeners. After starting the existing local API and Firebase Auth Emulator, the follow-up passed all 24 checks with zero skips against the session-conflict patch. The standard emulator startup restores/seeds local demo identities; the smoke runner itself does not seed. No live payment, refund or payout was initiated.
+
+## Local follow-up acceptance (2026-09-28)
+
+- `npm run smoke:marketplace`: all nine checks passed, including catalog detail and unauthenticated access denials.
+- `npm run smoke:authenticated`: all 24 checks passed against the running local API/emulator.
+- `npm run smoke:load` with 10 requests, concurrency 2, targeting `/api/v2/catalog/products?limit=2`: zero failures; p50 4ms, p95/max 47ms. This is a tiny warmed-cache read test, not checkout capacity, cold-start or production load evidence.
+- `npm run release:check`: reports `blocked`, 27 unresolved decisions, 16 required files checked. The command's default zero exit code is documentary mode, not release approval; set `REQUIRE_PRODUCTION_READY=true` for a failing gate when blocked.
+
+Still unverified: full browser/native purchase journeys, real provider callbacks/refunds, native camera/PDF/push acceptance, production deployment/restore and approved legacy balance reconciliation. Local smoke success does not remove these gates.
