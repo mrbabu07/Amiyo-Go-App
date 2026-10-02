@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Crypto from "expo-crypto";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { getMyAddresses } from "../auth/auth.api";
@@ -15,6 +15,7 @@ import { getCheckoutQuote, getPendingCheckout, placeOrder } from "./commerce.api
 import { CheckoutRecovery } from "./CheckoutRecovery";
 import { CouponInput } from "./components/CouponInput";
 import { getPublicPlatformSettings } from "../platform/platform.api";
+import { checkoutPolicyError, paymentMethodEnabled } from "./checkout-policy";
 
 const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
 const methods: Array<{ value: PaymentMethod; label: string; detail: string; icon: string }> = [
@@ -25,6 +26,8 @@ const methods: Array<{ value: PaymentMethod; label: string; detail: string; icon
 ];
 
 export function CheckoutScreen() {
+  const { width } = useWindowDimensions();
+  const compact = width < 768;
   const router = useRouter();
   const params = useLocalSearchParams<{ couponCode?: string }>();
   const queryClient = useQueryClient();
@@ -43,14 +46,18 @@ export function CheckoutScreen() {
   const quote = useQuery({ queryKey: ["checkout", user?.uid, "quote", couponCode, loyaltyPoints], queryFn: () => getCheckoutQuote(user!, couponCode, loyaltyPoints), enabled: Boolean(user) });
   const platform = useQuery({ queryKey: ["platform", "public-settings"], queryFn: getPublicPlatformSettings, staleTime: 5 * 60_000 });
   const village = platform.data?.villageOperations;
-  const availableMethods = methods.filter((method) => method.value === "COD" ? platform.data?.paymentMethods.cod.enabled !== false : method.value === "SSLCOMMERZ" ? platform.data?.paymentMethods.sslcommerz.enabled !== false : platform.data?.paymentMethods.bkashManual.enabled !== false);
-  const submitDisabled = busy || !addressId || (paymentMethod === "COD" && Boolean(village?.enabled && village.requireCodPhoneConfirmation) && !codPhoneConfirmed);
+  const availableMethods = methods.filter((method) => paymentMethodEnabled(platform.data, method.value));
+  const selectedAddress = addresses.data?.find((address) => address.id === addressId);
+  const policyError = checkoutPolicyError(platform.error ? undefined : platform.data, paymentMethod, codPhoneConfirmed, selectedAddress);
+  const submitDisabled = busy || !selectedAddress || Boolean(policyError);
 
   useEffect(() => { if (!addressId && addresses.data?.length) setAddressId((addresses.data.find((item) => item.isDefault) || addresses.data[0]!).id); }, [addressId, addresses.data]);
+  useEffect(() => { setCodPhoneConfirmed(false); }, [addressId, user?.uid]);
   async function applyCoupon(code: string) { const next = await getCheckoutQuote(user!, code, loyaltyPoints); if (firebaseAuth?.currentUser?.uid !== user?.uid) return; queryClient.setQueryData(["checkout", user?.uid, "quote", code, loyaltyPoints], next); setCouponCode(code); }
   async function toggleRewards() { const nextPoints = Number(quote.data?.loyalty.redeemedPoints || 0) > 0 ? "0" : quote.data?.loyalty.availablePoints || "0"; setLoyaltyPoints(nextPoints); }
   async function submit() {
     if (!user || !addressId || submitLock.current) return;
+    if (policyError || !selectedAddress) { setError(policyError || "Select your delivery address."); return; }
     submitLock.current = true;
     setBusy(true); setError(null);
     try {
@@ -73,12 +80,13 @@ export function CheckoutScreen() {
   const loadError = addresses.error || quote.error;
   if (loadError || !quote.data) return <Centered title="Checkout unavailable" copy={loadError instanceof Error ? loadError.message : "Please return to your cart."} action="Back to cart" onPress={() => router.replace("/cart")} />;
   return <Screen eyebrow="SECURE CHECKOUT" title="Delivery and payment" description="Confirm your delivery address and preferred payment method.">
-    {error ? <Text style={styles.error}>{error}</Text> : null}
+    {error || policyError ? <Text accessibilityRole="alert" style={styles.error}>{error || policyError}</Text> : null}
+    {platform.error ? <Pressable accessibilityRole="button" onPress={() => void platform.refetch()} style={styles.primary}><Text style={styles.primaryText}>Retry marketplace settings</Text></Pressable> : null}
     <View style={styles.steps}><Step complete icon="cart-outline" label="Cart" /><View style={styles.stepLineActive} /><Step active icon="location-outline" label="Delivery" /><View style={styles.stepLine} /><Step icon="card-outline" label="Payment" /></View>
-    <View style={styles.columns}><View style={styles.main}>
+    <View style={styles.columns}><View style={[styles.main, compact && { flex: 0, width: "100%", minWidth: 0 }]}>
       <Section index="1" title="Delivery address">{addresses.data?.length ? addresses.data.map((address) => <Pressable accessibilityRole="radio" accessibilityState={{ checked: addressId === address.id }} key={address.id} onPress={() => setAddressId(address.id)} style={[styles.option, addressId === address.id && styles.selected]}><Ionicons name={addressId === address.id ? "radio-button-on" : "radio-button-off"} size={22} color={colors.primary} /><View style={styles.optionCopy}><Text style={styles.optionTitle}>{address.label} · {address.recipientName}</Text><Text style={styles.muted}>{[address.line1, address.line2, address.unionName, address.upazila, address.district, address.division].filter(Boolean).join(", ")}</Text><Text style={styles.muted}>{address.phone}</Text></View>{address.isDefault ? <Text style={styles.defaultBadge}>DEFAULT</Text> : null}</Pressable>) : <View style={styles.empty}><Text style={styles.muted}>Add a delivery address before checkout.</Text><Pressable onPress={() => router.push("/addresses")}><Text style={styles.link}>Add address</Text></Pressable></View>}</Section>
       <Section index="2" title="Payment method">{availableMethods.map((method) => <Pressable accessibilityRole="radio" accessibilityState={{ checked: paymentMethod === method.value }} key={method.value} onPress={() => { setPaymentMethod(method.value); if (method.value !== "COD") setCodPhoneConfirmed(false); }} style={[styles.option, paymentMethod === method.value && styles.selected]}><View style={styles.paymentIcon}><Ionicons color={colors.primary} name={method.icon as never} size={21} /></View><View style={styles.optionCopy}><Text style={styles.optionTitle}>{method.label}</Text><Text style={styles.muted}>{method.detail}</Text></View><Ionicons name={paymentMethod === method.value ? "radio-button-on" : "radio-button-off"} size={22} color={colors.primary} /></Pressable>)}{paymentMethod === "COD" && village?.enabled && village.requireCodPhoneConfirmation ? <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: codPhoneConfirmed }} onPress={() => setCodPhoneConfirmed((value) => !value)} style={[styles.option, codPhoneConfirmed && styles.selected]}><Ionicons color={colors.primary} name={codPhoneConfirmed ? "checkbox" : "square-outline"} size={22} /><View style={styles.optionCopy}><Text style={styles.optionTitle}>My delivery phone is active</Text><Text style={styles.muted}>The delivery team may call before dispatch. Confirm this to place a COD order.</Text></View></Pressable> : null}</Section>
-    </View><View style={styles.summary}><Text style={styles.summaryTitle}>Payment summary</Text><CouponInput appliedQuote={quote.data} busy={quote.isFetching} onApply={applyCoupon} onRemove={() => setCouponCode(null)} /><View style={styles.rewardCard}><View style={styles.rewardCopy}><Text style={styles.rewardTitle}>Amiyo rewards</Text><Text style={styles.muted}>{Number(quote.data.loyalty.availablePoints).toLocaleString("en-BD")} points available{Number(quote.data.loyalty.redeemedPoints) ? ` · ${quote.data.loyalty.redeemedPoints} applied` : ""}</Text></View><Pressable disabled={quote.isFetching || Number(quote.data.loyalty.availablePoints) < 100} onPress={() => void toggleRewards()} style={styles.rewardButton}><Text style={styles.rewardButtonText}>{Number(quote.data.loyalty.redeemedPoints) ? "Remove" : "Use points"}</Text></Pressable></View><Row label="Subtotal" value={money(quote.data.subtotal.amountMinor)} /><Row label={quote.data.coupon ? `${quote.data.coupon.sourceType === "voucher" ? "Voucher" : "Coupon"} (${quote.data.coupon.code})` : "Promotion discount"} value={`-${money(String(Number(quote.data.discount.amountMinor) - Number(quote.data.loyalty.discount.amountMinor)))}`} />{Number(quote.data.loyalty.discount.amountMinor) ? <Row label={`Rewards (${quote.data.loyalty.redeemedPoints} points)`} value={`-${money(quote.data.loyalty.discount.amountMinor)}`} /> : null}<Row label="Delivery" value={money(quote.data.delivery.amountMinor)} /><Row label="Tax" value={money(quote.data.tax.amountMinor)} /><View style={styles.divider} /><Row label="Total" value={money(quote.data.total.amountMinor)} strong /><Text style={styles.muted}>{quote.data.vendorCount} seller order{quote.data.vendorCount === 1 ? "" : "s"} will be created.</Text><View style={styles.secure}><Ionicons color={colors.success} name="shield-checkmark-outline" size={20} /><Text style={styles.secureText}>Your checkout is encrypted and protected.</Text></View><Pressable disabled={submitDisabled} onPress={submit} style={[styles.primary, submitDisabled && styles.disabled]}>{busy ? <ActivityIndicator color={colors.surface} /> : <><Ionicons name="lock-closed" size={18} color={colors.surface} /><Text style={styles.primaryText}>Place order</Text></>}</Pressable></View></View>
+    </View><View style={[styles.summary, compact && { flex: 0, width: "100%", minWidth: 0 }]}><Text style={styles.summaryTitle}>Payment summary</Text><CouponInput appliedQuote={quote.data} busy={quote.isFetching} onApply={applyCoupon} onRemove={() => setCouponCode(null)} /><View style={styles.rewardCard}><View style={styles.rewardCopy}><Text style={styles.rewardTitle}>Amiyo rewards</Text><Text style={styles.muted}>{Number(quote.data.loyalty.availablePoints).toLocaleString("en-BD")} points available{Number(quote.data.loyalty.redeemedPoints) ? ` · ${quote.data.loyalty.redeemedPoints} applied` : ""}</Text></View><Pressable disabled={quote.isFetching || Number(quote.data.loyalty.availablePoints) < 100} onPress={() => void toggleRewards()} style={styles.rewardButton}><Text style={styles.rewardButtonText}>{Number(quote.data.loyalty.redeemedPoints) ? "Remove" : "Use points"}</Text></Pressable></View><Row label="Subtotal" value={money(quote.data.subtotal.amountMinor)} /><Row label={quote.data.coupon ? `${quote.data.coupon.sourceType === "voucher" ? "Voucher" : "Coupon"} (${quote.data.coupon.code})` : "Promotion discount"} value={`-${money(String(Number(quote.data.discount.amountMinor) - Number(quote.data.loyalty.discount.amountMinor)))}`} />{Number(quote.data.loyalty.discount.amountMinor) ? <Row label={`Rewards (${quote.data.loyalty.redeemedPoints} points)`} value={`-${money(quote.data.loyalty.discount.amountMinor)}`} /> : null}<Row label="Delivery" value={money(quote.data.delivery.amountMinor)} /><Row label="Tax" value={money(quote.data.tax.amountMinor)} /><View style={styles.divider} /><Row label="Total" value={money(quote.data.total.amountMinor)} strong /><Text style={styles.muted}>{quote.data.vendorCount} seller order{quote.data.vendorCount === 1 ? "" : "s"} will be created.</Text><View style={styles.secure}><Ionicons color={colors.success} name="shield-checkmark-outline" size={20} /><Text style={styles.secureText}>Your checkout is encrypted and protected.</Text></View><Pressable disabled={submitDisabled} onPress={submit} style={[styles.primary, submitDisabled && styles.disabled]}>{busy ? <ActivityIndicator color={colors.surface} /> : <><Ionicons name="lock-closed" size={18} color={colors.surface} /><Text style={styles.primaryText}>Place order</Text></>}</Pressable></View></View>
   </Screen>;
 }
 

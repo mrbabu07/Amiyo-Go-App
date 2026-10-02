@@ -1,5 +1,7 @@
 # Production Gap and Marketplace Differentiator Map
 
+Checkout policy follow-up (2026-10-02): guest/customer payment choices and submission now share admin-controlled payment, maintenance, COD confirmation and rural-address checks. Guest forms and checkout columns stack on small viewports. See `checkout-policy-verification.md`; visual/device and provider acceptance remain open.
+
 Checkout follow-up (2026-10-02): customer/guest submit guards, account-scoped durable recovery records and an original-checkout retry screen are implemented. Persisted requests preserve the original key across reloads, reject changed inputs while uncertain, and stop retrying before server idempotency expiry. See `checkout-retry-verification.md` for evidence and remaining provider/device/multi-tab limitations. This does not certify full reference parity.
 
 Document parity inventory: `reference-document-parity.md` records legacy paths and document behavior. Wallet statements, order-date assessments and posted commission invoice exports are implemented. See `marketplace-launch-checklist.md` for finance changes and launch gates. Statutory tax documents, legacy reconciliation and signed-in print/device acceptance remain separate requirements.
