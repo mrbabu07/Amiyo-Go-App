@@ -33,7 +33,7 @@ export function AuthScreen() {
   }
 
   async function submit() {
-    if (!firebaseAuth) return;
+    if (!firebaseAuth || busy || !email.trim() || password.length < 6) return;
     setBusy(true);
     setError(null);
     try {
@@ -71,7 +71,7 @@ export function AuthScreen() {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.page}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Pressable onPress={() => router.replace("/")}><Text style={styles.back}>‹ Back to shop</Text></Pressable>
+        <Pressable accessibilityRole="link" accessibilityLabel="Back to shop" onPress={() => router.replace("/")}><Text style={styles.back}>‹ Back to shop</Text></Pressable>
         <View style={styles.card}>
           <Text style={styles.brand}>Amiyo-Go</Text>
           <Text style={styles.title}>{mode === "login" ? "Welcome back" : "Create your account"}</Text>
@@ -80,14 +80,14 @@ export function AuthScreen() {
           {Platform.OS === "web" ? <><Pressable accessibilityLabel="Continue with Google" accessibilityRole="button" disabled={busy || !firebaseConfigured} onPress={continueWithGoogle} style={({ pressed }) => [styles.googleButton, (pressed || busy) && styles.pressed]}><View style={styles.googleMark}><Text style={styles.googleMarkText}>G</Text></View><Text style={styles.googleText}>Continue with Google</Text></Pressable><View style={styles.divider}><View style={styles.dividerLine} /><Text style={styles.dividerText}>OR CONTINUE WITH EMAIL</Text><View style={styles.dividerLine} /></View></> : null}
           {Platform.OS !== "web" && nativeGoogleConfigured && !emulatorEnabled ? <><GoogleNativeSignInButton busy={busy} onError={(message) => { setBusy(false); setError(message); }} onStart={() => { setBusy(true); setError(null); }} onSuccess={async (user) => { try { await finishSignIn(user); } catch (caught) { setError(caught instanceof Error ? caught.message : "Could not create your Amiyo-Go session"); } finally { setBusy(false); } }} /><View style={styles.divider}><View style={styles.dividerLine} /><Text style={styles.dividerText}>OR CONTINUE WITH EMAIL</Text><View style={styles.dividerLine} /></View></> : null}
           {mode === "register" ? <Field label="Full name" value={name} onChangeText={setName} placeholder="Your name" /> : null}
-          <Field autoCapitalize="none" keyboardType="email-address" label="Email" value={email} onChangeText={setEmail} placeholder="you@example.com" />
-          <Field autoCapitalize="none" label="Password" value={password} onChangeText={setPassword} placeholder="Minimum 6 characters" secureTextEntry />
-          {emulatorEnabled && mode === "login" ? <View style={styles.demoPanel}><Text style={styles.demoTitle}>Local demo accounts</Text><View style={styles.demoRow}>{[{ label: "Customer", email: "customer@amiyo.test" }, { label: "Vendor", email: "vendor@amiyo.test" }, { label: "Admin", email: "admin@amiyo.test" }].map((account) => <Pressable key={account.label} onPress={() => { setEmail(account.email); setPassword(demoPassword); }} style={styles.demoButton}><Text style={styles.demoButtonText}>{account.label}</Text></Pressable>)}</View><Text style={styles.demoHint}>Password: {demoPassword}</Text></View> : null}
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-          <Pressable disabled={busy || !firebaseConfigured || !email || password.length < 6} onPress={submit} style={({ pressed }) => [styles.primary, (pressed || busy) && styles.pressed]}>
+          <Field autoCapitalize="none" autoComplete="email" keyboardType="email-address" label="Email" value={email} onChangeText={setEmail} placeholder="you@example.com" />
+          <Field autoCapitalize="none" autoComplete={mode === "login" ? "current-password" : "new-password"} label="Password" value={password} onChangeText={setPassword} placeholder="Minimum 6 characters" secureTextEntry returnKeyType="go" onSubmitEditing={() => void submit()} />
+          {emulatorEnabled && mode === "login" ? <View style={styles.demoPanel}><Text style={styles.demoTitle}>Local demo accounts</Text><View style={styles.demoRow}>{[{ label: "Customer", email: "customer@amiyo.test" }, { label: "Vendor", email: "vendor@amiyo.test" }, { label: "Admin", email: "admin@amiyo.test" }].map((account) => <Pressable accessibilityRole="button" accessibilityLabel={`Use ${account.label.toLowerCase()} demo account`} disabled={busy} key={account.label} onPress={() => { setEmail(account.email); setPassword(demoPassword); }} style={styles.demoButton}><Text style={styles.demoButtonText}>{account.label}</Text></Pressable>)}</View><Text style={styles.demoHint}>Password: {demoPassword}</Text></View> : null}
+          {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+          <Pressable accessibilityRole="button" accessibilityLabel={mode === "login" ? "Sign in" : "Create account"} accessibilityState={{ busy, disabled: busy || !firebaseConfigured || !email.trim() || password.length < 6 }} disabled={busy || !firebaseConfigured || !email.trim() || password.length < 6} onPress={submit} style={({ pressed }) => [styles.primary, (pressed || busy) && styles.pressed]}>
             {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>{mode === "login" ? "Sign in" : "Create account"}</Text>}
           </Pressable>
-          <Pressable onPress={() => { setMode(mode === "login" ? "register" : "login"); setError(null); }}>
+          <Pressable accessibilityRole="button" disabled={busy} onPress={() => { setMode(mode === "login" ? "register" : "login"); setError(null); }}>
             <Text style={styles.switchText}>{mode === "login" ? "New to Amiyo-Go? Create account" : "Already have an account? Sign in"}</Text>
           </Pressable>
         </View>
@@ -98,7 +98,7 @@ export function AuthScreen() {
 
 function Field(props: React.ComponentProps<typeof TextInput> & { label: string }) {
   const { label, ...inputProps } = props;
-  return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput placeholderTextColor="#94a3b8" style={styles.input} {...inputProps} /></View>;
+  return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput accessibilityLabel={label} placeholderTextColor="#94a3b8" style={styles.input} {...inputProps} /></View>;
 }
 
 const styles = StyleSheet.create({
