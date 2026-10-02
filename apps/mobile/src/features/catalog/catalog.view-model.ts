@@ -12,7 +12,7 @@ export function toHomeProduct(product: ProductSummaryDto): HomeProduct {
     image: product.thumbnailUrl || fallbackProductImage,
     price: Number(product.minimumPrice.amountMinor) / 100,
     rating: product.rating,
-    sold: product.reviewCount,
+    reviewCount: product.reviewCount,
     ...(product.status === "APPROVED" ? { badge: "Verified" } : {})
   };
 }

@@ -7,6 +7,7 @@ import { colors, radius, spacing } from "../../../ui/tokens";
 import { firebaseAuth } from "../../auth/firebase";
 import { ensureGuestUser } from "../../auth/guest-auth";
 import { getProduct } from "../../catalog/catalog.api";
+import { productDiscount, quickCartVariant } from "../../catalog/product-card-policy";
 import { addCartItem } from "../../commerce/commerce.api";
 import { addWishlistItem, getWishlist, removeWishlistItem } from "../../engagement/engagement.api";
 import { getDiscoverySessionId, safelyRecordDiscoveryEvent } from "../../catalog/discovery.api";
@@ -21,20 +22,19 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
   const router = useRouter();
   const queryClient = useQueryClient();
   const user = firebaseAuth?.currentUser ?? null;
-  const discount = product.originalPrice ? Math.max(1, Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)) : 0;
+  const discount = productDiscount(product.price, product.originalPrice);
   const wishlist = useQuery({ queryKey: ["wishlist"], queryFn: () => getWishlist(user!), enabled: Boolean(user), staleTime: 30_000 });
   const saved = Boolean(wishlist.data?.items.some((item) => item.productId === product.id));
   const addToCart = useMutation({
     mutationFn: async () => {
       const detail = await getProduct(product.slug || product.id);
-      if (detail.variants.length > 1) {
+      const variantId = quickCartVariant(detail.variants);
+      if (!variantId) {
         router.push(`/product/${product.slug || product.id}` as never);
         return null;
       }
-      const variant = detail.variants[0];
-      if (!variant || variant.availableQuantity < 1) throw new Error("Currently out of stock");
       const currentUser = firebaseAuth?.currentUser || await ensureGuestUser();
-      return addCartItem(currentUser, variant.id, 1);
+      return addCartItem(currentUser, variantId, 1);
     },
     onSuccess: (cart) => {
       if (!cart) return;
@@ -71,7 +71,7 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
           <Text numberOfLines={2} style={styles.title}>{product.title}</Text>
           <View style={styles.shopRow}><Ionicons color={colors.success} name="checkmark-circle" size={12} /><Text numberOfLines={1} style={styles.shop}>{product.shop}</Text></View>
           <View style={styles.priceRow}><Text style={styles.price}>{money(product.price)}</Text>{product.originalPrice ? <Text style={styles.original}>{money(product.originalPrice)}</Text> : null}</View>
-          <View style={styles.metaRow}><Ionicons color="#f59e0b" name="star" size={13} /><Text style={styles.rating}>{product.rating}</Text><Text style={styles.sold}>{product.sold} sold</Text></View>
+          <View style={styles.metaRow}><Ionicons color="#f59e0b" name="star" size={13} /><Text style={styles.rating}>{product.rating}</Text><Text style={styles.sold}>{product.reviewCount} reviews</Text></View>
         </View>
       </Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={`Add ${product.title} to cart`} accessibilityState={{ busy: addToCart.isPending }} disabled={addToCart.isPending} onPress={() => addToCart.mutate()} style={({ pressed }) => [styles.cart, (pressed || addToCart.isPending) && styles.heartBusy]}>
