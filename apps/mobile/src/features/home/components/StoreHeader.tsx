@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Alert, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type NativeSyntheticEvent, type TextInputKeyPressEventData } from "react-native";
 import { colors, radius, spacing } from "../../../ui/tokens";
 import { useAuthStore } from "../../auth/auth.store";
-import { firebaseAuth } from "../../auth/firebase";
+import { useCurrentUser } from "../../auth/use-current-user";
 import { getCategoryNavigation, searchProducts } from "../../catalog/catalog.api";
 import { buildCategoryTree } from "../../catalog/category-tree";
 import { clearRecentSearches, getDiscoverySessionId, getRecentSearches, getTrendingSearches, rememberSearch, safelyRecordDiscoveryEvent } from "../../catalog/discovery.api";
@@ -20,9 +20,9 @@ type SearchSuggestion = { href: string; icon?: string; id: string; image: string
 export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; viewportWidth: number }) {
   const router = useRouter();
   const hasVendorWorkspace = useAuthStore((state) => Boolean(state.session?.vendorMemberships.length));
-  const user = firebaseAuth?.currentUser ?? null;
-  const cart = useQuery({ queryKey: ["cart"], queryFn: () => getCart(user!), enabled: Boolean(user) });
-  const wishlist = useQuery({ queryKey: ["wishlist"], queryFn: () => getWishlist(user!), enabled: Boolean(user), staleTime: 30_000 });
+  const user = useCurrentUser();
+  const cart = useQuery({ queryKey: ["cart", user?.uid ?? null], queryFn: () => getCart(user!), enabled: Boolean(user) });
+  const wishlist = useQuery({ queryKey: ["wishlist", user?.uid ?? null], queryFn: () => getWishlist(user!), enabled: Boolean(user), staleTime: 30_000 });
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [discoverySessionId, setDiscoverySessionId] = useState("");

@@ -5,6 +5,7 @@ import { ActivityIndicator, Image, Pressable, Share, StyleSheet, Text, View } fr
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getWishlist, removeWishlistItem, shareWishlist, unshareWishlist } from "./engagement.api";
 
 type WishlistItem = Awaited<ReturnType<typeof getWishlist>>["items"][number];
@@ -13,10 +14,10 @@ const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-
 export function WishlistScreen() {
   const router = useRouter();
   const cache = useQueryClient();
-  const user = firebaseAuth?.currentUser ?? null;
-  const query = useQuery({ queryKey: ["wishlist"], queryFn: () => getWishlist(user!), enabled: Boolean(user) });
-  const updateShare = useMutation({ mutationFn: () => query.data?.shareUrl ? unshareWishlist(user!) : shareWishlist(user!), onSuccess: (data) => cache.setQueryData(["wishlist"], data) });
-  const remove = useMutation({ mutationFn: (productId: string) => removeWishlistItem(user!, productId), onSuccess: (data) => cache.setQueryData(["wishlist"], data) });
+  const user = useCurrentUser();
+  const query = useQuery({ queryKey: ["wishlist", user?.uid ?? null], queryFn: () => getWishlist(user!), enabled: Boolean(user) });
+  const updateShare = useMutation({ mutationFn: () => query.data?.shareUrl ? unshareWishlist(user!) : shareWishlist(user!), onMutate: () => user?.uid, onSuccess: (data, _variables, uid) => { if (uid && firebaseAuth?.currentUser?.uid === uid) cache.setQueryData(["wishlist", uid], data); } });
+  const remove = useMutation({ mutationFn: (productId: string) => removeWishlistItem(user!, productId), onMutate: () => user?.uid, onSuccess: (data, _variables, uid) => { if (uid && firebaseAuth?.currentUser?.uid === uid) cache.setQueryData(["wishlist", uid], data); } });
 
   async function openShare() {
     if (!query.data?.shareUrl) return;

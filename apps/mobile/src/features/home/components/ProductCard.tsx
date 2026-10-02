@@ -5,6 +5,7 @@ import type { GestureResponderEvent } from "react-native";
 import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, radius, spacing } from "../../../ui/tokens";
 import { firebaseAuth } from "../../auth/firebase";
+import { useCurrentUser } from "../../auth/use-current-user";
 import { ensureGuestUser } from "../../auth/guest-auth";
 import { getProduct } from "../../catalog/catalog.api";
 import { productDiscount, quickCartVariant } from "../../catalog/product-card-policy";
@@ -21,9 +22,9 @@ function lowDataImage(url: string) { if (!url.includes("images.unsplash.com")) r
 export function ProductCard({ lowData = false, product }: { lowData?: boolean; product: HomeProduct }) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
   const discount = productDiscount(product.price, product.originalPrice);
-  const wishlist = useQuery({ queryKey: ["wishlist"], queryFn: () => getWishlist(user!), enabled: Boolean(user), staleTime: 30_000 });
+  const wishlist = useQuery({ queryKey: ["wishlist", user?.uid ?? null], queryFn: () => getWishlist(user!), enabled: Boolean(user), staleTime: 30_000 });
   const saved = Boolean(wishlist.data?.items.some((item) => item.productId === product.id));
   const addToCart = useMutation({
     mutationFn: async () => {
@@ -34,18 +35,20 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
         return null;
       }
       const currentUser = firebaseAuth?.currentUser || await ensureGuestUser();
-      return addCartItem(currentUser, variantId, 1);
+      return { cart: await addCartItem(currentUser, variantId, 1), uid: currentUser.uid };
     },
-    onSuccess: (cart) => {
-      if (!cart) return;
-      queryClient.setQueryData(["cart"], cart);
+    onSuccess: (result) => {
+      if (!result || firebaseAuth?.currentUser?.uid !== result.uid) return;
+      queryClient.setQueryData(["cart", result.uid], result.cart);
       void getDiscoverySessionId().then((sessionId) => safelyRecordDiscoveryEvent({ sessionId, eventType: "ADD_TO_CART", productId: product.id }));
     }
   });
   const toggleWishlist = useMutation({
     mutationFn: () => saved ? removeWishlistItem(user!, product.id) : addWishlistItem(user!, product.id),
-    onSuccess: (data) => {
-      queryClient.setQueryData(["wishlist"], data);
+    onMutate: () => user?.uid,
+    onSuccess: (data, _variables, uid) => {
+      if (!uid || firebaseAuth?.currentUser?.uid !== uid) return;
+      queryClient.setQueryData(["wishlist", uid], data);
       if (!saved) void getDiscoverySessionId().then((sessionId) => safelyRecordDiscoveryEvent({ sessionId, eventType: "WISHLIST", productId: product.id }));
     }
   });

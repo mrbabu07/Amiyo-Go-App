@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, Platform, Pressable, SafeAreaView, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { ensureGuestUser } from "../auth/guest-auth";
 import { addCartItem } from "../commerce/commerce.api";
 import { addWishlistItem, createProductQuestion, getAlerts, getProductQuestions, getProductReviews, getWishlist, removeAlert, removeWishlistItem, reportProduct, saveAlert } from "../engagement/engagement.api";
@@ -28,7 +29,7 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
   const item = product.data!;
   const related = useQuery({ queryKey: ["catalog", "related", item?.categoryId], queryFn: () => getProducts({ category: item!.categoryId, limit: 8 }), enabled: Boolean(item?.categoryId) });
   const productId = item?.id;
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
   const [selectedVariantId, setSelectedVariantId] = useState("");
   const [selectedMediaId, setSelectedMediaId] = useState("");
   const [discoverySessionId, setDiscoverySessionId] = useState("");
@@ -45,14 +46,14 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
   const compared = useComparisonStore((state) => Boolean(productId && state.productIds.includes(productId)));
   const comparisonCount = useComparisonStore((state) => state.productIds.length);
   const addComparison = useComparisonStore((state) => state.addProduct);
-  const wishlist = useQuery({ queryKey: ["wishlist"], queryFn: () => getWishlist(user!), enabled: Boolean(user) });
+  const wishlist = useQuery({ queryKey: ["wishlist", user?.uid ?? null], queryFn: () => getWishlist(user!), enabled: Boolean(user) });
   const alerts = useQuery({ queryKey: ["alerts"], queryFn: () => getAlerts(user!), enabled: Boolean(user) });
   const reviews = useQuery({ queryKey: ["catalog", "reviews", productId], queryFn: () => getProductReviews(productId!), enabled: Boolean(productId) });
   const questions = useQuery({ queryKey: ["catalog", "questions", productId], queryFn: () => getProductQuestions(productId!), enabled: Boolean(productId) });
   const ask = useMutation({ mutationFn: async () => { const currentUser = firebaseAuth?.currentUser; if (!currentUser || !productId) throw new Error("Sign in to ask a question"); return createProductQuestion(currentUser, productId, questionBody.trim()); }, onSuccess: async () => { setQuestionBody(""); await queryClient.invalidateQueries({ queryKey: ["catalog", "questions", productId] }); } });
   const saved = Boolean(productId && wishlist.data?.items.some((entry) => entry.productId === productId));
   const alerted = Boolean(productId && alerts.data?.some((entry) => entry.productId === productId));
-  const saveProduct = useMutation({ mutationFn: () => saved ? removeWishlistItem(user!, productId!) : addWishlistItem(user!, productId!), onSuccess: (data) => { queryClient.setQueryData(["wishlist"], data); if (!saved && discoverySessionId && productId) safelyRecordDiscoveryEvent({ sessionId: discoverySessionId, eventType: "WISHLIST", productId }); } });
+  const saveProduct = useMutation({ mutationFn: () => saved ? removeWishlistItem(user!, productId!) : addWishlistItem(user!, productId!), onMutate: () => user?.uid, onSuccess: (data, _variables, uid) => { if (!uid || firebaseAuth?.currentUser?.uid !== uid) return; queryClient.setQueryData(["wishlist", uid], data); if (!saved && discoverySessionId && productId) safelyRecordDiscoveryEvent({ sessionId: discoverySessionId, eventType: "WISHLIST", productId }); } });
   const toggleAlert = useMutation({ mutationFn: () => alerted ? removeAlert(user!, productId!) : saveAlert(user!, productId!), onSuccess: (data) => queryClient.setQueryData(["alerts"], data) });
   const report = useMutation({ mutationFn: () => reportProduct(user!, productId!, { reason: reportReason, details: reportDetails }), onSuccess: () => { setShowReport(false); setReportDetails(""); } });
 
@@ -94,7 +95,8 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
     try {
       const currentUser = firebaseAuth?.currentUser || await ensureGuestUser();
       const cart = await addCartItem(currentUser, selected.id, quantity);
-      queryClient.setQueryData(["cart"], cart);
+      if (firebaseAuth?.currentUser?.uid !== currentUser.uid) return;
+      queryClient.setQueryData(["cart", currentUser.uid], cart);
       if (discoverySessionId) safelyRecordDiscoveryEvent({ sessionId: discoverySessionId, eventType: "ADD_TO_CART", productId: item.id });
       router.push(destination);
     } catch (caught) {

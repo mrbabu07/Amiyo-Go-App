@@ -6,7 +6,7 @@ import { useState } from "react";
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { ensureGuestUser } from "../auth/guest-auth";
 import { getCart, getCheckoutQuote, removeCartItem, updateCartItem } from "./commerce.api";
 import { CouponInput } from "./components/CouponInput";
@@ -16,17 +16,17 @@ const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-
 export function CartScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
   const [busyItem, setBusyItem] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [couponQuote, setCouponQuote] = useState<CheckoutQuote | null>(null);
-  const cart = useQuery({ queryKey: ["cart"], queryFn: () => getCart(user!), enabled: Boolean(user) });
+  const cart = useQuery({ queryKey: ["cart", user?.uid ?? null], queryFn: () => getCart(user!), enabled: Boolean(user) });
   const coupon = useMutation({ mutationFn: (code: string) => getCheckoutQuote(user!, code), onSuccess: setCouponQuote });
 
   async function change(itemId: string, quantity: number) {
     if (!user) return;
     setBusyItem(itemId); setError(null); setCouponQuote(null);
-    try { queryClient.setQueryData(["cart"], quantity < 1 ? await removeCartItem(user, itemId) : await updateCartItem(user, itemId, quantity)); }
+    try { queryClient.setQueryData(["cart", user?.uid ?? null], quantity < 1 ? await removeCartItem(user, itemId) : await updateCartItem(user, itemId, quantity)); }
     catch (caught) { setError(caught instanceof Error ? caught.message : "Could not update cart"); }
     finally { setBusyItem(null); }
   }
