@@ -1,5 +1,14 @@
 import { cartSchema, checkoutQuoteSchema, checkoutResultSchema, type CheckoutInput } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
+import { pendingCheckoutStore } from "./checkout-recovery.storage";
+import { mayDiscardRejectedCheckout } from "./pending-checkout";
+
+class CommerceRequestError extends Error {
+  constructor(message: string, readonly status: number, readonly code: string) { super(message); }
+}
+
+const activeCheckouts = new Set<string>();
+export const getPendingCheckout = (user: User) => pendingCheckoutStore.load(user.uid);
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
 
@@ -10,8 +19,8 @@ async function authenticatedRequest(user: User, path: string, init?: RequestInit
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...init?.headers }
   });
   if (!response.ok) {
-    const problem = await response.json().catch(() => null) as { title?: string; detail?: string } | null;
-    throw new Error(problem?.detail || problem?.title || `Request failed (${response.status})`);
+    const problem = await response.json().catch(() => null) as { title?: string; detail?: string; code?: string } | null;
+    throw new CommerceRequestError(problem?.detail || problem?.title || `Request failed (${response.status})`, response.status, problem?.code || "");
   }
   return response.status === 204 ? undefined : response.json() as Promise<unknown>;
 }
@@ -37,9 +46,23 @@ export async function getCheckoutQuote(user: User, couponCode?: string | null, l
 }
 
 export async function placeOrder(user: User, input: CheckoutInput, idempotencyKey: string) {
-  return checkoutResultSchema.parse(await authenticatedRequest(user, "/api/v2/checkout/orders", {
-    method: "POST",
-    headers: { "Idempotency-Key": idempotencyKey },
-    body: JSON.stringify(input)
-  }));
+  if (activeCheckouts.has(user.uid)) throw new Error("A checkout is already in progress");
+  activeCheckouts.add(user.uid);
+  try {
+    const pending = await pendingCheckoutStore.prepare(user.uid, input, idempotencyKey);
+    let raw: unknown;
+    try { raw = await authenticatedRequest(user, "/api/v2/checkout/orders", {
+      method: "POST",
+      headers: { "Idempotency-Key": pending.key },
+      body: JSON.stringify(pending.input)
+    }); } catch (error) {
+      if (error instanceof CommerceRequestError && mayDiscardRejectedCheckout(pending.fresh, error.status, error.code)) await pendingCheckoutStore.complete(user.uid, pending.key);
+      throw error;
+    }
+    const result = checkoutResultSchema.parse(raw);
+    await pendingCheckoutStore.complete(user.uid, pending.key);
+    return result;
+  } finally {
+    activeCheckouts.delete(user.uid);
+  }
 }

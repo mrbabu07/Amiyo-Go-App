@@ -12,7 +12,8 @@ import { firebaseAuth } from "../auth/firebase";
 import { useCurrentUser } from "../auth/use-current-user";
 import { createCheckoutAttempt } from "./checkout-attempt";
 import { ensureGuestUser } from "../auth/guest-auth";
-import { getCheckoutQuote, placeOrder } from "./commerce.api";
+import { getCheckoutQuote, getPendingCheckout, placeOrder } from "./commerce.api";
+import { CheckoutRecovery } from "./CheckoutRecovery";
 import { CouponInput } from "./components/CouponInput";
 
 const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
@@ -23,6 +24,7 @@ export function GuestCheckoutScreen() {
   const params = useLocalSearchParams<{ couponCode?: string }>();
   const queryClient = useQueryClient();
   const user = useCurrentUser();
+  const recovery = useQuery({ queryKey: ["checkout-recovery", user?.uid], queryFn: () => getPendingCheckout(user!), enabled: Boolean(user), staleTime: 0, retry: false });
   const submitLock = useRef(false);
   const attempt = useRef(createCheckoutAttempt<Awaited<ReturnType<typeof placeOrder>>>(() => Crypto.randomUUID()));
   const deliveryAddresses = useRef(new Map<string, string>());
@@ -66,7 +68,9 @@ export function GuestCheckoutScreen() {
     finally { submitLock.current = false; setBusy(false); }
   }
 
-  if (starting || quote.isLoading) return <Screen eyebrow="GUEST CHECKOUT" title="Preparing secure checkout" description="Creating a protected guest session and confirming current prices."><View style={styles.center}><ActivityIndicator color={colors.primary} size="large" /></View></Screen>;
+  if (user && recovery.error) return <Screen eyebrow="CHECKOUT RECOVERY" title="Check your orders first" description={recovery.error.message}><Pressable onPress={() => router.push("/orders")} style={styles.primary}><Text style={styles.primaryText}>View my orders</Text></Pressable></Screen>;
+  if (user && recovery.data) return <CheckoutRecovery user={user} pending={recovery.data} />;
+  if (starting || quote.isLoading || (user && recovery.isPending)) return <Screen eyebrow="GUEST CHECKOUT" title="Preparing secure checkout" description="Creating a protected guest session and confirming current prices."><View style={styles.center}><ActivityIndicator color={colors.primary} size="large" /></View></Screen>;
   if (!user || quote.error || !quote.data) return <Screen eyebrow="GUEST CHECKOUT" title="Checkout unavailable" description={error || (quote.error instanceof Error ? quote.error.message : "Please return to your cart.")}><View style={styles.center}><Pressable onPress={() => router.replace("/cart")} style={styles.primary}><Text style={styles.primaryText}>Back to cart</Text></Pressable></View></Screen>;
 
   return <Screen eyebrow="GUEST CHECKOUT" title="Delivery and payment" description="Complete your order without creating a password. This browser keeps access to your order.">

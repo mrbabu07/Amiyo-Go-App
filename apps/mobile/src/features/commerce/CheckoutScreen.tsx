@@ -11,7 +11,8 @@ import { getMyAddresses } from "../auth/auth.api";
 import { firebaseAuth } from "../auth/firebase";
 import { useCurrentUser } from "../auth/use-current-user";
 import { createCheckoutAttempt } from "./checkout-attempt";
-import { getCheckoutQuote, placeOrder } from "./commerce.api";
+import { getCheckoutQuote, getPendingCheckout, placeOrder } from "./commerce.api";
+import { CheckoutRecovery } from "./CheckoutRecovery";
 import { CouponInput } from "./components/CouponInput";
 import { getPublicPlatformSettings } from "../platform/platform.api";
 
@@ -28,6 +29,7 @@ export function CheckoutScreen() {
   const params = useLocalSearchParams<{ couponCode?: string }>();
   const queryClient = useQueryClient();
   const user = useCurrentUser();
+  const recovery = useQuery({ queryKey: ["checkout-recovery", user?.uid], queryFn: () => getPendingCheckout(user!), enabled: Boolean(user), staleTime: 0, retry: false });
   const submitLock = useRef(false);
   const attempt = useRef(createCheckoutAttempt<Awaited<ReturnType<typeof placeOrder>>>(() => Crypto.randomUUID()));
   const [addressId, setAddressId] = useState<string | null>(null);
@@ -64,6 +66,9 @@ export function CheckoutScreen() {
   }
 
   if (!user) return <Centered title="Sign in to checkout" copy="Checkout is currently available to authenticated customers." action="Sign in" onPress={() => router.replace("/auth")} />;
+  if (recovery.isPending) return <Centered loading title="Checking previous checkout" copy="Looking for an unfinished order request." />;
+  if (recovery.error) return <Centered title="Checkout recovery unavailable" copy={recovery.error.message} action="View my orders" onPress={() => router.replace("/orders")} />;
+  if (recovery.data) return <CheckoutRecovery user={user} pending={recovery.data} />;
   if (addresses.isLoading || quote.isLoading) return <Centered loading title="Preparing checkout" copy="Confirming inventory and current prices." />;
   const loadError = addresses.error || quote.error;
   if (loadError || !quote.data) return <Centered title="Checkout unavailable" copy={loadError instanceof Error ? loadError.message : "Please return to your cart."} action="Back to cart" onPress={() => router.replace("/cart")} />;
