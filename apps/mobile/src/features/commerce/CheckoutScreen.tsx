@@ -3,12 +3,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Crypto from "expo-crypto";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { getMyAddresses } from "../auth/auth.api";
 import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
+import { createCheckoutAttempt } from "./checkout-attempt";
 import { getCheckoutQuote, placeOrder } from "./commerce.api";
 import { CouponInput } from "./components/CouponInput";
 import { getPublicPlatformSettings } from "../platform/platform.api";
@@ -25,7 +27,9 @@ export function CheckoutScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ couponCode?: string }>();
   const queryClient = useQueryClient();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const submitLock = useRef(false);
+  const attempt = useRef(createCheckoutAttempt<Awaited<ReturnType<typeof placeOrder>>>(() => Crypto.randomUUID()));
   const [addressId, setAddressId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
   const [couponCode, setCouponCode] = useState<string | null>(params.couponCode?.toUpperCase() || null);
@@ -33,27 +37,30 @@ export function CheckoutScreen() {
   const [busy, setBusy] = useState(false);
   const [codPhoneConfirmed, setCodPhoneConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const addresses = useQuery({ queryKey: ["me", "addresses"], queryFn: () => getMyAddresses(user!), enabled: Boolean(user) });
-  const quote = useQuery({ queryKey: ["checkout", "quote", couponCode, loyaltyPoints], queryFn: () => getCheckoutQuote(user!, couponCode, loyaltyPoints), enabled: Boolean(user) });
+  const addresses = useQuery({ queryKey: ["me", "addresses", user?.uid], queryFn: () => getMyAddresses(user!), enabled: Boolean(user) });
+  const quote = useQuery({ queryKey: ["checkout", user?.uid, "quote", couponCode, loyaltyPoints], queryFn: () => getCheckoutQuote(user!, couponCode, loyaltyPoints), enabled: Boolean(user) });
   const platform = useQuery({ queryKey: ["platform", "public-settings"], queryFn: getPublicPlatformSettings, staleTime: 5 * 60_000 });
   const village = platform.data?.villageOperations;
   const availableMethods = methods.filter((method) => method.value === "COD" ? platform.data?.paymentMethods.cod.enabled !== false : method.value === "SSLCOMMERZ" ? platform.data?.paymentMethods.sslcommerz.enabled !== false : platform.data?.paymentMethods.bkashManual.enabled !== false);
   const submitDisabled = busy || !addressId || (paymentMethod === "COD" && Boolean(village?.enabled && village.requireCodPhoneConfirmation) && !codPhoneConfirmed);
 
   useEffect(() => { if (!addressId && addresses.data?.length) setAddressId((addresses.data.find((item) => item.isDefault) || addresses.data[0]!).id); }, [addressId, addresses.data]);
-  async function applyCoupon(code: string) { const next = await getCheckoutQuote(user!, code, loyaltyPoints); queryClient.setQueryData(["checkout", "quote", code, loyaltyPoints], next); setCouponCode(code); }
+  async function applyCoupon(code: string) { const next = await getCheckoutQuote(user!, code, loyaltyPoints); if (firebaseAuth?.currentUser?.uid !== user?.uid) return; queryClient.setQueryData(["checkout", user?.uid, "quote", code, loyaltyPoints], next); setCouponCode(code); }
   async function toggleRewards() { const nextPoints = Number(quote.data?.loyalty.redeemedPoints || 0) > 0 ? "0" : quote.data?.loyalty.availablePoints || "0"; setLoyaltyPoints(nextPoints); }
   async function submit() {
-    if (!user || !addressId) return;
+    if (!user || !addressId || submitLock.current) return;
+    submitLock.current = true;
     setBusy(true); setError(null);
     try {
-      const result = await placeOrder(user, { addressId, paymentMethod, couponCode, loyaltyPoints, codPhoneConfirmed }, Crypto.randomUUID());
-      queryClient.removeQueries({ queryKey: ["cart"] });
-      queryClient.removeQueries({ queryKey: ["checkout"] });
+      const input = { addressId, paymentMethod, couponCode, loyaltyPoints, codPhoneConfirmed };
+      const result = await attempt.current(JSON.stringify([user.uid, input]), (key) => placeOrder(user, input, key));
+      if (firebaseAuth?.currentUser?.uid !== user.uid) return;
+      queryClient.removeQueries({ queryKey: ["cart", user.uid] });
+      queryClient.removeQueries({ queryKey: ["checkout", user.uid] });
       router.replace({ pathname: "/order-confirmation", params: { orderId: result.order.id, orderNumber: result.order.orderNumber, totalMinor: result.order.total.amountMinor, payment: result.payment.status, invoice: result.invoiceNumber, actionUrl: result.actionUrl || "", instructions: result.instructions || "" } });
     }
     catch (caught) { setError(caught instanceof Error ? caught.message : "Checkout could not be completed"); }
-    finally { setBusy(false); }
+    finally { submitLock.current = false; setBusy(false); }
   }
 
   if (!user) return <Centered title="Sign in to checkout" copy="Checkout is currently available to authenticated customers." action="Sign in" onPress={() => router.replace("/auth")} />;

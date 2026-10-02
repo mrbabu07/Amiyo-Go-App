@@ -1,5 +1,7 @@
 # Production Gap and Marketplace Differentiator Map
 
+Checkout follow-up (2026-10-02): customer/guest submit guards, stable same-input retry keys within the mounted screen, retained guest delivery addresses, and account-scoped customer quotes are implemented. See `checkout-retry-verification.md` for test evidence and remaining reload/provider/device limitations. This does not certify full reference parity.
+
 Document parity inventory: `reference-document-parity.md` records legacy paths and document behavior. Wallet statements, order-date assessments and posted commission invoice exports are implemented. See `marketplace-launch-checklist.md` for finance changes and launch gates. Statutory tax documents, legacy reconciliation and signed-in print/device acceptance remain separate requirements.
 
 ## Finance export follow-up

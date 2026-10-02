@@ -3,12 +3,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Crypto from "expo-crypto";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { createMyAddress } from "../auth/auth.api";
 import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
+import { createCheckoutAttempt } from "./checkout-attempt";
 import { ensureGuestUser } from "../auth/guest-auth";
 import { getCheckoutQuote, placeOrder } from "./commerce.api";
 import { CouponInput } from "./components/CouponInput";
@@ -20,7 +22,10 @@ export function GuestCheckoutScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ couponCode?: string }>();
   const queryClient = useQueryClient();
-  const [user, setUser] = useState(firebaseAuth?.currentUser ?? null);
+  const user = useCurrentUser();
+  const submitLock = useRef(false);
+  const attempt = useRef(createCheckoutAttempt<Awaited<ReturnType<typeof placeOrder>>>(() => Crypto.randomUUID()));
+  const deliveryAddresses = useRef(new Map<string, string>());
   const [couponCode, setCouponCode] = useState<string | null>(params.couponCode?.toUpperCase() || null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
   const [form, setForm] = useState({ name: "", email: "", phone: "", line1: "", line2: "", division: "Dhaka", district: "", upazila: "", unionName: "", postalCode: "" });
@@ -31,22 +36,34 @@ export function GuestCheckoutScreen() {
 
   useEffect(() => {
     if (user) return;
-    void ensureGuestUser().then(setUser).catch((caught: unknown) => setError(caught instanceof Error ? caught.message : "Guest checkout is unavailable")).finally(() => setStarting(false));
+    void ensureGuestUser().catch((caught: unknown) => setError(caught instanceof Error ? caught.message : "Guest checkout is unavailable")).finally(() => setStarting(false));
   }, [user]);
 
   function update(key: keyof typeof form, value: string) { setForm((current) => ({ ...current, [key]: value })); }
   async function applyCoupon(code: string) { const next = await getCheckoutQuote(user!, code); queryClient.setQueryData(["checkout", "guest-quote", code, user?.uid], next); setCouponCode(code); }
   async function submit() {
+    if (submitLock.current) return;
     if (!user || !form.name.trim() || !form.email.trim() || !form.phone.trim() || !form.line1.trim() || !form.district.trim()) { setError("Complete all required contact and delivery fields"); return; }
+    submitLock.current = true;
     setBusy(true); setError(null);
     try {
-      const address = await createMyAddress(user, { label: "Guest delivery", recipientName: form.name, phone: form.phone, line1: form.line1, line2: form.line2 || null, division: form.division, district: form.district, upazila: form.upazila || null, unionName: form.unionName || null, postalCode: form.postalCode || null, isDefault: true });
-      const result = await placeOrder(user, { addressId: address.id, paymentMethod, couponCode, loyaltyPoints: "0" }, Crypto.randomUUID());
-      queryClient.removeQueries({ queryKey: ["cart"] });
+      const addressIdentity = JSON.stringify([user.uid, form]);
+      const result = await attempt.current(JSON.stringify([addressIdentity, paymentMethod, couponCode]), async (key) => {
+        let addressId = deliveryAddresses.current.get(addressIdentity);
+        if (!addressId) {
+          const address = await createMyAddress(user, { label: "Guest delivery", recipientName: form.name, phone: form.phone, line1: form.line1, line2: form.line2 || null, division: form.division, district: form.district, upazila: form.upazila || null, unionName: form.unionName || null, postalCode: form.postalCode || null, isDefault: true });
+          addressId = address.id;
+          deliveryAddresses.current.set(addressIdentity, addressId);
+        }
+        if (firebaseAuth?.currentUser?.uid !== user.uid) throw new Error("Account changed. Reopen checkout before continuing.");
+        return placeOrder(user, { addressId, paymentMethod, couponCode, loyaltyPoints: "0" }, key);
+      });
+      if (firebaseAuth?.currentUser?.uid !== user.uid) return;
+      queryClient.removeQueries({ queryKey: ["cart", user.uid] });
       queryClient.removeQueries({ queryKey: ["checkout"] });
       router.replace({ pathname: "/order-confirmation", params: { orderId: result.order.id, orderNumber: result.order.orderNumber, totalMinor: result.order.total.amountMinor, payment: result.payment.status, invoice: result.invoiceNumber, actionUrl: result.actionUrl || "", instructions: result.instructions || `Guest receipt for ${form.email}` } });
     } catch (caught) { setError(caught instanceof Error ? caught.message : "Guest checkout could not be completed"); }
-    finally { setBusy(false); }
+    finally { submitLock.current = false; setBusy(false); }
   }
 
   if (starting || quote.isLoading) return <Screen eyebrow="GUEST CHECKOUT" title="Preparing secure checkout" description="Creating a protected guest session and confirming current prices."><View style={styles.center}><ActivityIndicator color={colors.primary} size="large" /></View></Screen>;
