@@ -1,12 +1,12 @@
 import type { CustomerOrderSummary } from "@amiyo/contracts";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getCustomerOrders } from "./orders.api";
 
 type Filter = "ALL" | "ACTIVE" | "DELIVERED" | "CANCELLED";
@@ -30,7 +30,7 @@ function matchesFilter(order: CustomerOrderSummary, filter: Filter) {
 
 export function CustomerOrdersScreen() {
   const router = useRouter();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
   const { width } = useWindowDimensions();
   const compact = width < 520;
   const [filter, setFilter] = useState<Filter>("ALL");
@@ -49,23 +49,27 @@ export function CustomerOrdersScreen() {
       <View style={styles.heroIcon}><Ionicons color="#fff" name="bag-check-outline" size={30} /></View>
     </View>
     <View accessibilityRole="tablist" style={styles.filters}>{filters.map((item) => <Pressable accessibilityRole="tab" accessibilityState={{ selected: filter === item.value }} key={item.value} onPress={() => setFilter(item.value)} style={[styles.filter, filter === item.value && styles.filterActive]}><Text style={[styles.filterText, filter === item.value && styles.filterTextActive]}>{item.label}</Text></Pressable>)}</View>
-    {visibleOrders.length ? <View style={styles.list}>{visibleOrders.map((order) => <OrderCard compact={compact} key={order.id} order={order} onInvoice={() => router.push(`/order/${order.id}/invoice` as never)} onOpen={() => router.push(`/order/${order.id}` as never)} onTrack={() => router.push(`/order/${order.id}/tracking` as never)} />)}</View> : <View style={styles.empty}><Ionicons color={colors.primary} name="receipt-outline" size={48} /><Text accessibilityRole="header" style={styles.emptyTitle}>{filter === "ALL" ? "No orders yet" : `No ${filters.find((item) => item.value === filter)?.label.toLowerCase()} orders`}</Text><Text style={styles.muted}>Your matching orders will appear here.</Text><Pressable onPress={() => router.replace("/")} style={styles.primary}><Text style={styles.primaryText}>Start shopping</Text></Pressable></View>}
+    {visibleOrders.length ? <View style={styles.list}>{visibleOrders.map((order) => <OrderCard compact={compact} key={order.id} order={order} />)}</View> : <View style={styles.empty}><Ionicons color={colors.primary} name="receipt-outline" size={48} /><Text accessibilityRole="header" style={styles.emptyTitle}>{filter === "ALL" ? "No orders yet" : `No ${filters.find((item) => item.value === filter)?.label.toLowerCase()} orders`}</Text><Text style={styles.muted}>Your matching orders will appear here.</Text><Pressable accessibilityRole="button" onPress={() => router.replace("/")} style={styles.primary}><Text style={styles.primaryText}>Start shopping</Text></Pressable></View>}
   </Screen>;
 }
 
-function OrderCard({ compact, onInvoice, onOpen, onTrack, order }: { compact: boolean; onInvoice: () => void; onOpen: () => void; onTrack: () => void; order: CustomerOrderSummary }) {
+function OrderCard({ compact, order }: { compact: boolean; order: CustomerOrderSummary }) {
   const isCancelled = order.status === "CANCELLED";
   const isDelivered = order.status === "DELIVERED";
   const activeStep = isCancelled ? -1 : order.status === "DELIVERED" ? 3 : ["PENDING_PAYMENT", "CONFIRMED"].includes(order.status) ? 0 : ["PROCESSING", "READY_TO_SHIP"].includes(order.status) ? 1 : 2;
   const mainItem = order.previewItems[0];
   return <View style={styles.card}>
     <View style={styles.cardTop}><View><Text style={styles.orderNumber}>{order.orderNumber}</Text><Text style={styles.muted}>{new Date(order.createdAt).toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric" })} - {order.vendorOrderCount} seller package{order.vendorOrderCount === 1 ? "" : "s"}</Text></View><Status status={order.status} /></View>
-    <Pressable accessibilityLabel={`Open order ${order.orderNumber}`} accessibilityRole="link" onPress={onOpen} style={[styles.productArea, compact && styles.productAreaCompact]}>
+    <Link href={`/order/${order.id}` as never} asChild><Pressable accessibilityLabel={`Open order ${order.orderNumber}`} accessibilityRole="link" style={StyleSheet.flatten([styles.productArea, compact && styles.productAreaCompact])}>
       <ProductPreview items={order.previewItems} />
       <View style={styles.productCopy}><Text numberOfLines={2} style={styles.productTitle}>{mainItem?.name ?? "Order items"}</Text><Text style={styles.muted}>{order.itemCount} item{order.itemCount === 1 ? "" : "s"} total{mainItem ? ` - ${mainItem.sku}` : ""}</Text><Progress activeStep={activeStep} cancelled={isCancelled} /></View>
       <View style={styles.totalBox}><Text style={styles.totalLabel}>Total</Text><Text style={styles.total}>{money(order.total.amountMinor)}</Text><Ionicons color={colors.muted} name="chevron-forward" size={18} /></View>
-    </Pressable>
-    <View style={styles.actions}><Pressable onPress={onOpen} style={styles.primarySmall}><Text style={styles.primaryText}>View details</Text></Pressable>{!isCancelled && !isDelivered ? <Pressable onPress={onTrack} style={styles.secondary}><Ionicons color={colors.primary} name="navigate-outline" size={16} /><Text style={styles.secondaryText}>Track order</Text></Pressable> : null}<Pressable onPress={onInvoice} style={styles.secondary}><Ionicons color={colors.primary} name="document-text-outline" size={16} /><Text style={styles.secondaryText}>Invoice</Text></Pressable></View>
+    </Pressable></Link>
+    <View style={styles.actions}>
+      <Link href={`/order/${order.id}` as never} asChild><Pressable accessibilityRole="link" accessibilityLabel={`View details for ${order.orderNumber}`} style={styles.primarySmall}><Text style={styles.primaryText}>View details</Text></Pressable></Link>
+      {!isCancelled && !isDelivered ? <Link href={`/order/${order.id}/tracking` as never} asChild><Pressable accessibilityRole="link" accessibilityLabel={`Track order ${order.orderNumber}`} style={styles.secondary}><Ionicons color={colors.primary} name="navigate-outline" size={16} /><Text style={styles.secondaryText}>Track order</Text></Pressable></Link> : null}
+      <Link href={`/order/${order.id}/invoice` as never} asChild><Pressable accessibilityRole="link" accessibilityLabel={`Invoice for ${order.orderNumber}`} style={styles.secondary}><Ionicons color={colors.primary} name="document-text-outline" size={16} /><Text style={styles.secondaryText}>Invoice</Text></Pressable></Link>
+    </View>
   </View>;
 }
 
@@ -135,9 +139,9 @@ const styles = StyleSheet.create({
   stepTextDanger: { color: colors.danger },
   actions: { backgroundColor: colors.background, borderTopColor: colors.border, borderTopWidth: 1, flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, justifyContent: "flex-end", padding: spacing.md },
   primary: { backgroundColor: colors.primary, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: 13 },
-  primarySmall: { backgroundColor: colors.primary, borderRadius: radius.md, justifyContent: "center", paddingHorizontal: spacing.md, paddingVertical: 10 },
+  primarySmall: { backgroundColor: colors.primary, borderRadius: radius.md, justifyContent: "center", minHeight: 44, paddingHorizontal: spacing.md, paddingVertical: 10 },
   primaryText: { color: colors.surface, fontWeight: "700" },
-  secondary: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flexDirection: "row", gap: 6, paddingHorizontal: spacing.md, paddingVertical: 10 },
+  secondary: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flexDirection: "row", gap: 6, minHeight: 44, paddingHorizontal: spacing.md, paddingVertical: 10 },
   secondaryText: { color: colors.primary, fontWeight: "700" },
   empty: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl, borderStyle: "dashed", borderWidth: 1, gap: spacing.md, padding: 44 },
   emptyTitle: { color: colors.text, fontSize: 22, fontWeight: "700", textAlign: "center" }
