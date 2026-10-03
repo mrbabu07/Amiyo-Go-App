@@ -116,6 +116,15 @@ export class OperationsService {
     const rows = await this.client.return.findMany({ where: admin && elevated(session) ? {} : { userId: session.principal.userId }, include: { items: true }, orderBy: { createdAt: "desc" }, take: 100 }); return rows.map(returnDto);
   }
 
+  async ownReturn(session: Session, id: string, vendor = false) {
+    requirePermission(session, vendor ? "orders:read" : "returns:manage");
+    const vendorId = session.principal.vendorIds[0];
+    if (vendor && !vendorId) throw new ApiProblem(403, "VENDOR_REQUIRED", "Vendor membership is required");
+    const row = await this.client.return.findFirst({ where: { id, ...(vendor ? { vendorOrder: { vendorId: vendorId! } } : { userId: session.principal.userId }) }, include: { items: true } });
+    if (!row) throw new ApiProblem(404, "RETURN_NOT_FOUND", "Return not found");
+    return returnDto(row);
+  }
+
   async returnDetail(session: Session, id: string) {
     requirePermission(session, "returns:manage"); if (!elevated(session)) throw new ApiProblem(403, "ADMIN_REQUIRED", "Operations access is required");
     const row = await this.client.return.findUnique({ where: { id }, include: {

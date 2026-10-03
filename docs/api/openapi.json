@@ -1677,6 +1677,13 @@
                   "phone"
                 ]
               },
+              "placedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
               "deliveryAddress": {
                 "type": [
                   "object",
@@ -1984,6 +1991,17 @@
                           },
                           "productName": {
                             "type": "string"
+                          },
+                          "thumbnailUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "returnableQuantity": {
+                            "type": "integer",
+                            "minimum": 0
                           },
                           "sku": {
                             "type": "string"
@@ -2488,6 +2506,17 @@
                 },
                 "productName": {
                   "type": "string"
+                },
+                "thumbnailUrl": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uri"
+                },
+                "returnableQuantity": {
+                  "type": "integer",
+                  "minimum": 0
                 },
                 "sku": {
                   "type": "string"
@@ -3093,6 +3122,13 @@
               "phone"
             ]
           },
+          "placedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
           "deliveryAddress": {
             "type": [
               "object",
@@ -3401,6 +3437,17 @@
                       "productName": {
                         "type": "string"
                       },
+                      "thumbnailUrl": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "uri"
+                      },
+                      "returnableQuantity": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
                       "sku": {
                         "type": "string"
                       },
@@ -3693,6 +3740,13 @@
                   "email",
                   "phone"
                 ]
+              },
+              "placedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
               },
               "deliveryAddress": {
                 "type": [
@@ -4001,6 +4055,17 @@
                           },
                           "productName": {
                             "type": "string"
+                          },
+                          "thumbnailUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "returnableQuantity": {
+                            "type": "integer",
+                            "minimum": 0
                           },
                           "sku": {
                             "type": "string"
@@ -10876,6 +10941,15 @@
                     ],
                     "default": "ORIGINAL_PAYMENT"
                   },
+                  "evidenceStorageKeys": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 3,
+                      "maxLength": 500
+                    },
+                    "maxItems": 5
+                  },
                   "items": {
                     "type": "array",
                     "items": {
@@ -10910,6 +10984,458 @@
         "responses": {
           "201": {
             "description": "Return requested",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "orderId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "vendorOrderId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "REQUESTED",
+                        "REVIEWING",
+                        "APPROVED",
+                        "REJECTED",
+                        "PICKUP_SCHEDULED",
+                        "RECEIVED",
+                        "INSPECTED",
+                        "REFUND_PENDING",
+                        "REFUNDED",
+                        "CLOSED"
+                      ]
+                    },
+                    "reasonCode": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "reasonDetail": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "requestedAmount": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "approvedAmount": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "orderItemId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "quantity": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          },
+                          "requestedAmount": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "minLength": 3,
+                                "maxLength": 3,
+                                "default": "BDT"
+                              }
+                            },
+                            "required": [
+                              "amountMinor"
+                            ]
+                          },
+                          "inspection": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "additionalProperties": {}
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "orderItemId",
+                          "quantity",
+                          "requestedAmount",
+                          "inspection"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "orderId",
+                    "vendorOrderId",
+                    "status",
+                    "reasonCode",
+                    "reasonDetail",
+                    "requestedAmount",
+                    "approvedAmount",
+                    "version",
+                    "createdAt",
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/returns/{id}": {
+      "get": {
+        "tags": [
+          "Returns & Finance"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ownership-scoped return detail, independent of list pagination",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "orderId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "vendorOrderId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "REQUESTED",
+                        "REVIEWING",
+                        "APPROVED",
+                        "REJECTED",
+                        "PICKUP_SCHEDULED",
+                        "RECEIVED",
+                        "INSPECTED",
+                        "REFUND_PENDING",
+                        "REFUNDED",
+                        "CLOSED"
+                      ]
+                    },
+                    "reasonCode": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "reasonDetail": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "requestedAmount": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "approvedAmount": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "orderItemId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "quantity": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          },
+                          "requestedAmount": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "minLength": 3,
+                                "maxLength": 3,
+                                "default": "BDT"
+                              }
+                            },
+                            "required": [
+                              "amountMinor"
+                            ]
+                          },
+                          "inspection": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "additionalProperties": {}
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "orderItemId",
+                          "quantity",
+                          "requestedAmount",
+                          "inspection"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "orderId",
+                    "vendorOrderId",
+                    "status",
+                    "reasonCode",
+                    "reasonDetail",
+                    "requestedAmount",
+                    "approvedAmount",
+                    "version",
+                    "createdAt",
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/vendor/returns/{id}": {
+      "get": {
+        "tags": [
+          "Returns & Finance"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ownership-scoped return detail, independent of list pagination",
             "content": {
               "application/json": {
                 "schema": {

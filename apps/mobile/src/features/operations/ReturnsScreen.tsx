@@ -4,16 +4,17 @@ import { useRouter } from "expo-router";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getReturns } from "./operations.api";
 
 const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
 const label = (value: string) => value.replaceAll("_", " ").toLowerCase().replace(/^./, (letter) => letter.toUpperCase());
 
 export function ReturnsScreen() {
-  const router = useRouter(); const user = firebaseAuth?.currentUser ?? null;
-  const query = useQuery({ queryKey: ["returns"], queryFn: () => getReturns(user!), enabled: Boolean(user) });
+  const router = useRouter(); const user = useCurrentUser();
+  const query = useQuery({ queryKey: ["returns", user?.uid], queryFn: () => getReturns(user!), enabled: Boolean(user) });
   const open = query.data?.filter((item) => !["REFUNDED", "REJECTED", "CLOSED"].includes(item.status)).length ?? 0;
+  if (!user) return <Screen title="Returns & refunds" description="Sign in to view your return requests."><Pressable accessibilityRole="button" onPress={() => router.push("/auth")} style={styles.primary}><Text style={styles.primaryText}>Sign in</Text></Pressable></Screen>;
   return <Screen eyebrow="AFTER SALES" title="Returns & refunds" description="Track review, pickup, inspection and refund progress."><View style={styles.summary}><View style={styles.summaryIcon}><Ionicons color={colors.surface} name="return-down-back" size={25} /></View><View style={styles.flex}><Text accessibilityRole="header" style={styles.summaryTitle}>{open} open request{open === 1 ? "" : "s"}</Text><Text style={styles.muted}>{query.data?.length ?? 0} total return request{query.data?.length === 1 ? "" : "s"}</Text></View></View>{query.isLoading ? <ActivityIndicator color={colors.primary} /> : null}<View style={styles.list}>{query.data?.map((item) => <Pressable accessibilityLabel={`Open return ${item.id}`} key={item.id} onPress={() => router.push(`/return/${item.id}` as never)} style={styles.card}><View style={styles.cardHeader}><View><Text style={styles.returnNumber}>Return #{item.id.slice(0, 8).toUpperCase()}</Text><Text style={styles.muted}>{new Date(item.createdAt).toLocaleDateString("en-BD")}</Text></View><Text style={styles.status}>{label(item.status)}</Text></View><View style={styles.reason}><Ionicons color={colors.primary} name="information-circle-outline" size={19} /><View style={styles.flex}><Text style={styles.reasonTitle}>{label(item.reasonCode)}</Text>{item.reasonDetail ? <Text style={styles.muted}>{item.reasonDetail}</Text> : null}</View></View><View style={styles.amountRow}><Cell label="Requested" value={money(item.requestedAmount.amountMinor)} /><Cell label="Approved" value={item.approvedAmount ? money(item.approvedAmount.amountMinor) : "Pending"} /><Cell label="Items" value={String(item.items.reduce((sum, row) => sum + row.quantity, 0))} /></View><View style={styles.openLink}><Text style={styles.openText}>Track return</Text><Ionicons color={colors.primary} name="arrow-forward" size={16} /></View></Pressable>)}</View>{!query.isLoading && !query.data?.length ? <View style={styles.empty}><Ionicons color={colors.primary} name="checkmark-circle-outline" size={52} /><Text style={styles.emptyTitle}>No returns</Text><Text style={styles.muted}>Your return requests will appear here.</Text><Pressable onPress={() => router.push("/orders")} style={styles.primary}><Text style={styles.primaryText}>View my orders</Text></Pressable></View> : null}{query.error ? <Text style={styles.error}>{query.error.message}</Text> : null}</Screen>;
 }
 

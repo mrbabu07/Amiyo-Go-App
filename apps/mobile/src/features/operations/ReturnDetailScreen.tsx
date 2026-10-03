@@ -1,30 +1,39 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { firebaseAuth } from "../auth/firebase";
 import { pickAndUploadDocument } from "../media/media.api";
-import { getVendorReturns } from "../vendor/vendor.api";
-import { confirmVendorReturnReceipt, getReturns, respondToVendorReturn } from "./operations.api";
+import { useCurrentUser } from "../auth/use-current-user";
+import { confirmVendorReturnReceipt, getOwnReturn, respondToVendorReturn } from "./operations.api";
 
 const statuses = ["REQUESTED", "REVIEWING", "APPROVED", "PICKUP_SCHEDULED", "RECEIVED", "INSPECTED", "REFUND_PENDING", "REFUNDED", "CLOSED"];
 const actions = [{ id: "APPROVE", label: "Approve return", copy: "Accept the request and allow the refund workflow.", icon: "checkmark-circle-outline" }, { id: "DISPUTE", label: "Dispute with evidence", copy: "Send proof to operations for review before a decision.", icon: "warning-outline" }, { id: "REJECT", label: "Reject request", copy: "Reject an invalid request with a clear reason.", icon: "close-circle-outline" }] as const;
 const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
 
 export function ReturnDetailScreen({ id, vendor = false }: { id: string; vendor?: boolean }) {
-  const router = useRouter(); const user = firebaseAuth?.currentUser ?? null; const cache = useQueryClient();
+  const user = useCurrentUser();
+  return <ScopedReturnDetail key={`${user?.uid ?? "signed-out"}:${vendor}:${id}`} id={id} vendor={vendor} />;
+}
+
+function ScopedReturnDetail({ id, vendor }: { id: string; vendor: boolean }) {
+  const router = useRouter(); const user = useCurrentUser(); const cache = useQueryClient();
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const current = () => mounted.current && Boolean(user) && firebaseAuth?.currentUser?.uid === user?.uid;
   const [action, setAction] = useState<(typeof actions)[number]["id"]>("APPROVE"); const [reason, setReason] = useState(""); const [notes, setNotes] = useState(""); const [evidence, setEvidence] = useState<Array<{ storageKey: string; name: string }>>([]); const [uploading, setUploading] = useState(false);
   const [condition, setCondition] = useState<"received" | "damaged" | "incomplete">("received"); const [receiptQuantity, setReceiptQuantity] = useState(""); const [receiptNotes, setReceiptNotes] = useState("");
-  const query = useQuery({ queryKey: [vendor ? "vendor" : "customer", "return", id], queryFn: () => vendor ? getVendorReturns(user!) : getReturns(user!), enabled: Boolean(user) });
-  const item = query.data?.find((row) => row.id === id);
+  const query = useQuery({ queryKey: [vendor ? "vendor" : "customer", "return", id, user?.uid], queryFn: () => getOwnReturn(user!, id, vendor), enabled: Boolean(user) });
+  const item = query.data;
   const refresh = async () => { await Promise.all([cache.invalidateQueries({ queryKey: ["vendor", "return", id] }), cache.invalidateQueries({ queryKey: ["vendor", "returns"] })]); };
-  const response = useMutation({ mutationFn: () => respondToVendorReturn(user!, id, { expectedVersion: item!.version, action, reason: action === "APPROVE" ? null : reason.trim(), notes: notes.trim() || null, evidenceStorageKeys: evidence.map((file) => file.storageKey) }), onSuccess: async () => { setReason(""); setNotes(""); setEvidence([]); await refresh(); } });
-  const receipt = useMutation({ mutationFn: () => confirmVendorReturnReceipt(user!, id, { expectedVersion: item!.version, condition, receivedQuantity: Number(receiptQuantity), notes: receiptNotes.trim() || null }), onSuccess: async () => { setReceiptQuantity(""); setReceiptNotes(""); await refresh(); } });
-  const addEvidence = async () => { setUploading(true); try { const result = await pickAndUploadDocument(user!, "return_evidence"); if (result) setEvidence((current) => current.length < 5 ? [...current, { storageKey: result.storageKey, name: result.originalName }] : current); } finally { setUploading(false); } };
+  const response = useMutation({ mutationFn: () => { if (!current()) throw new Error("Account changed. Reopen this return."); return respondToVendorReturn(user!, id, { expectedVersion: item!.version, action, reason: action === "APPROVE" ? null : reason.trim(), notes: notes.trim() || null, evidenceStorageKeys: evidence.map((file) => file.storageKey) }); }, onSuccess: async () => { if (!current()) return; setReason(""); setNotes(""); setEvidence([]); await refresh(); } });
+  const receipt = useMutation({ mutationFn: () => { if (!current()) throw new Error("Account changed. Reopen this return."); return confirmVendorReturnReceipt(user!, id, { expectedVersion: item!.version, condition, receivedQuantity: Number(receiptQuantity), notes: receiptNotes.trim() || null }); }, onSuccess: async () => { if (!current()) return; setReceiptQuantity(""); setReceiptNotes(""); await refresh(); } });
+  const addEvidence = async () => { if (!current()) return; setUploading(true); try { const result = await pickAndUploadDocument(user!, "return_evidence"); if (result && current()) setEvidence((files) => files.length < 5 ? [...files, { storageKey: result.storageKey, name: result.originalName }] : files); } finally { if (current()) setUploading(false); } };
+  if (!user) return <Screen title="Return details" description="Sign in to view this return." />;
   if (query.isLoading) return <Screen title="Return details"><ActivityIndicator color={colors.primary} /></Screen>;
   if (!item) return <Screen title="Return unavailable" description="This return could not be found in your account."><Pressable onPress={() => router.replace(vendor ? "/vendor/returns" : "/returns")} style={styles.primary}><Text style={styles.primaryText}>Back to returns</Text></Pressable></Screen>;
   const currentIndex = statuses.indexOf(item.status); const terminal = item.status === "REJECTED"; const totalQuantity = item.items.reduce((sum, row) => sum + row.quantity, 0); const canRespond = vendor && ["REQUESTED", "REVIEWING"].includes(item.status); const canConfirmReceipt = vendor && item.status === "PICKUP_SCHEDULED"; const needsReason = action !== "APPROVE";

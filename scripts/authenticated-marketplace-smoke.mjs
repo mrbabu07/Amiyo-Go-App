@@ -47,6 +47,11 @@ export async function runAuthenticatedSmoke({ apiUrl = "http://127.0.0.1:4000", 
     });
   }
   const customerOrders = await check("customer", "/api/v2/orders", 200, customerOrderSummarySchema.array());
+  const customerReturns = await check("customer", "/api/v2/returns", 200, returnSchema.array());
+  if (customerReturns?.length) {
+    await check("customer", `/api/v2/returns/${customerReturns[0].id}`, 200, returnSchema);
+    await check("customer", `/api/v2/vendor/returns/${customerReturns[0].id}`, 403);
+  } else results.push({ role: "customer", check: "own-return-detail", status: "skipped", reason: "No existing customer return fixture; none was created" });
   const returns = await check("admin", "/api/v2/admin/returns", 200, returnSchema.array());
   const evidenceCaseId = returns?.[0]?.id ?? "00000000-0000-4000-8000-000000000000";
   await check("customer", `/api/v2/admin/returns/${evidenceCaseId}/evidence`, 403);
