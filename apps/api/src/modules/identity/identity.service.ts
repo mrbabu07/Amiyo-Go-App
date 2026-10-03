@@ -168,8 +168,19 @@ async function writeAudit(
 export class IdentityService {
   constructor(private readonly client: PrismaClient) {}
 
+  private async readSessionUser(where: Prisma.UserWhereUniqueInput): Promise<SessionUser | null> {
+    const user = await this.client.user.findUnique({ where });
+    if (!user) return null;
+    const [profile, roles, vendorMemberships] = await Promise.all([
+      this.client.userProfile.findUnique({ where: { userId: user.id } }),
+      this.client.userRole.findMany({ where: { userId: user.id }, include: sessionInclude.roles.include }),
+      this.client.vendorMember.findMany({ where: { userId: user.id, status: "active" }, include: { permissions: true } })
+    ]);
+    return { ...user, profile, roles, vendorMemberships };
+  }
+
   async synchronizeSession(identity: VerifiedIdentity, correlationId?: string): Promise<Session> {
-    const existing = await this.client.user.findUnique({ where: { providerSubject: identity.subject }, include: sessionInclude });
+    const existing = await this.readSessionUser({ providerSubject: identity.subject });
     if (existing) return toSession(await this.refreshSessionUser(existing, identity));
 
     try {
@@ -200,7 +211,7 @@ export class IdentityService {
       return toSession(user);
     } catch (error) {
       if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") throw error;
-      const winner = await this.client.user.findUnique({ where: { providerSubject: identity.subject }, include: sessionInclude });
+      const winner = await this.readSessionUser({ providerSubject: identity.subject });
       if (!winner) throw error;
       return toSession(await this.refreshSessionUser(winner, identity));
     }
@@ -223,14 +234,14 @@ export class IdentityService {
       });
     } catch (error) {
       if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2034") throw error;
-      const current = await this.client.user.findUnique({ where: { id: user.id }, include: sessionInclude });
+      const current = await this.readSessionUser({ id: user.id });
       if (!current) throw new ApiProblem(401, "AUTHENTICATION_REQUIRED", "The account is no longer available");
       return current;
     }
   }
 
   async getSession(userId: string) {
-    const user = await this.client.user.findUnique({ where: { id: userId }, include: sessionInclude });
+    const user = await this.readSessionUser({ id: userId });
     if (!user) throw new ApiProblem(404, "USER_NOT_FOUND", "User not found");
     return toSession(user);
   }

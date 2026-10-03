@@ -23,11 +23,20 @@ function sessionUser(lastLoginAt: Date | null) {
   };
 }
 
+function sessionRelations(user = sessionUser(new Date()), roles: () => unknown[] = () => user.roles) {
+  return {
+    userProfile: { findUnique: async () => user.profile },
+    userRole: { findMany: async () => roles() },
+    vendorMember: { findMany: async () => user.vendorMemberships }
+  };
+}
+
 test("session synchronization avoids repeated writes for active users", async () => {
   let updates = 0;
   let transactions = 0;
   const user = sessionUser(new Date());
   const client = {
+    ...sessionRelations(user),
     user: { findUnique: async () => user, update: async () => { updates += 1; return user; } },
     $transaction: async () => { transactions += 1; }
   } as unknown as PrismaClient;
@@ -41,6 +50,7 @@ test("session synchronization refreshes stale login activity without a serializa
   let updateData: Record<string, unknown> | undefined;
   const user = sessionUser(new Date(Date.now() - 10 * 60_000));
   const client = {
+    ...sessionRelations(user),
     user: {
       findUnique: async () => user,
       update: async ({ data }: { data: Record<string, unknown> }) => { updateData = data; return { ...user, lastLoginAt: data.lastLoginAt as Date }; }
@@ -56,6 +66,7 @@ test("session synchronization recovers from a concurrent login activity write", 
   let reads = 0;
   const conflict = new Prisma.PrismaClientKnownRequestError("Concurrent login update", { code: "P2034", clientVersion: "5.22.0" });
   const client = {
+    ...sessionRelations(user),
     user: {
       findUnique: async () => { reads += 1; return { ...user, lastLoginAt: reads > 1 ? new Date() : user.lastLoginAt }; },
       update: async () => { throw conflict; }
@@ -68,7 +79,7 @@ test("session synchronization recovers from a concurrent login activity write", 
 
 test("login write conflicts cannot resurrect a deleted account", async () => {
   let reads = 0;
-  const client = { user: {
+  const client = { ...sessionRelations(), user: {
     findUnique: async () => ++reads === 1 ? sessionUser(null) : null,
     update: async () => { throw new Prisma.PrismaClientKnownRequestError("Conflict", { code: "P2034", clientVersion: "5.22.0" }); }
   } } as unknown as PrismaClient;
@@ -81,7 +92,7 @@ test("login conflict recovery uses current account status and permissions", asyn
   let reads = 0;
   const previous = { ...sessionUser(null), roles: [{ role: { name: "SUPER_ADMIN", permissions: [{ permission: { key: "admin:manage" } }] } }] };
   const current = { ...sessionUser(new Date()), status: "SUSPENDED" };
-  const client = { user: {
+  const client = { ...sessionRelations(current, () => reads === 1 ? previous.roles : current.roles), user: {
     findUnique: async () => ++reads === 1 ? previous : current,
     update: async () => { throw new Prisma.PrismaClientKnownRequestError("Conflict", { code: "P2034", clientVersion: "5.22.0" }); }
   } } as unknown as PrismaClient;
@@ -94,11 +105,44 @@ test("login conflict recovery uses current account status and permissions", asyn
 test("failed login conflict rereads never fall back to stale permissions", async () => {
   let reads = 0;
   const failure = new Error("Database unavailable");
-  const client = { user: {
+  const client = { ...sessionRelations(), user: {
     findUnique: async () => { if (++reads === 1) return sessionUser(null); throw failure; },
     update: async () => { throw new Prisma.PrismaClientKnownRequestError("Conflict", { code: "P2034", clientVersion: "5.22.0" }); }
   } } as unknown as PrismaClient;
   await assert.rejects(() => new IdentityService(client).synchronizeSession({ subject: "firebase-customer" }), (error: unknown) => error === failure);
+});
+
+test("session relations start concurrently and preserve scoped permissions", async () => {
+  const user = sessionUser(new Date());
+  const started: string[] = [];
+  let release: () => void = () => {};
+  const barrier = new Promise<void>((resolve) => { release = resolve; });
+  const relation = async (name: string) => { started.push(name); if (started.length === 3) release(); await barrier; };
+  const client = {
+    user: { findUnique: async () => user },
+    userProfile: { findUnique: async ({ where }: { where: unknown }) => { assert.deepEqual(where, { userId }); await relation("profile"); return user.profile; } },
+    userRole: { findMany: async ({ where }: { where: unknown }) => { assert.deepEqual(where, { userId }); await relation("roles"); return [{ role: { name: "CUSTOMER", permissions: [{ permission: { key: "orders:read" } }] } }]; } },
+    vendorMember: { findMany: async ({ where }: { where: unknown }) => {
+      assert.deepEqual(where, { userId, status: "active" }); await relation("vendors");
+      return [{ vendorId: "vendor", role: "OWNER", permissions: [{ granted: true, permissionKey: "orders:read" }, { granted: true, permissionKey: "products:manage" }, { granted: false, permissionKey: "payouts:manage" }] }];
+    } }
+  } as unknown as PrismaClient;
+  const result = await new IdentityService(client).getSession(userId);
+  assert.equal(started.length, 3);
+  assert.deepEqual(result.permissions, ["orders:read", "products:manage"]);
+  assert.deepEqual(result.principal.vendorIds, ["vendor"]);
+  assert.equal(result.profile.displayName, "Customer");
+});
+
+test("missing accounts do not trigger relation reads", async () => {
+  const client = { user: { findUnique: async () => null } } as unknown as PrismaClient;
+  await assert.rejects(() => new IdentityService(client).getSession(userId), (error: unknown) => error instanceof ApiProblem && error.code === "USER_NOT_FOUND");
+});
+
+test("relation failures fail closed instead of returning partial permissions", async () => {
+  const failure = new Error("Role query failed");
+  const client = { ...sessionRelations(), user: { findUnique: async () => sessionUser(new Date()) }, userRole: { findMany: async () => { throw failure; } } } as unknown as PrismaClient;
+  await assert.rejects(() => new IdentityService(client).getSession(userId), (error: unknown) => error === failure);
 });
 
 test("account deletion can be cancelled inside the recovery window", async () => {
