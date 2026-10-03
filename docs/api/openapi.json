@@ -10954,6 +10954,26 @@
                               "type": "string",
                               "format": "uuid"
                             },
+                            "productName": {
+                              "type": "string"
+                            },
+                            "sku": {
+                              "type": "string"
+                            },
+                            "attributes": {
+                              "type": [
+                                "object",
+                                "null"
+                              ],
+                              "additionalProperties": {}
+                            },
+                            "thumbnailUrl": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "uri"
+                            },
                             "quantity": {
                               "type": "integer",
                               "exclusiveMinimum": 0
@@ -11310,6 +11330,26 @@
                             "type": "string",
                             "format": "uuid"
                           },
+                          "productName": {
+                            "type": "string"
+                          },
+                          "sku": {
+                            "type": "string"
+                          },
+                          "attributes": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "additionalProperties": {}
+                          },
+                          "thumbnailUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
                           "quantity": {
                             "type": "integer",
                             "exclusiveMinimum": 0
@@ -11597,6 +11637,26 @@
                             "type": "string",
                             "format": "uuid"
                           },
+                          "productName": {
+                            "type": "string"
+                          },
+                          "sku": {
+                            "type": "string"
+                          },
+                          "attributes": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "additionalProperties": {}
+                          },
+                          "thumbnailUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
                           "quantity": {
                             "type": "integer",
                             "exclusiveMinimum": 0
@@ -11883,6 +11943,26 @@
                           "orderItemId": {
                             "type": "string",
                             "format": "uuid"
+                          },
+                          "productName": {
+                            "type": "string"
+                          },
+                          "sku": {
+                            "type": "string"
+                          },
+                          "attributes": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "additionalProperties": {}
+                          },
+                          "thumbnailUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
                           },
                           "quantity": {
                             "type": "integer",
@@ -13328,6 +13408,26 @@
                           "orderItemId": {
                             "type": "string",
                             "format": "uuid"
+                          },
+                          "productName": {
+                            "type": "string"
+                          },
+                          "sku": {
+                            "type": "string"
+                          },
+                          "attributes": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "additionalProperties": {}
+                          },
+                          "thumbnailUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
                           },
                           "quantity": {
                             "type": "integer",
@@ -28688,6 +28788,26 @@
                               "type": "string",
                               "format": "uuid"
                             },
+                            "productName": {
+                              "type": "string"
+                            },
+                            "sku": {
+                              "type": "string"
+                            },
+                            "attributes": {
+                              "type": [
+                                "object",
+                                "null"
+                              ],
+                              "additionalProperties": {}
+                            },
+                            "thumbnailUrl": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "uri"
+                            },
                             "quantity": {
                               "type": "integer",
                               "exclusiveMinimum": 0
@@ -29037,6 +29157,26 @@
                             "type": "string",
                             "format": "uuid"
                           },
+                          "productName": {
+                            "type": "string"
+                          },
+                          "sku": {
+                            "type": "string"
+                          },
+                          "attributes": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "additionalProperties": {}
+                          },
+                          "thumbnailUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
                           "quantity": {
                             "type": "integer",
                             "exclusiveMinimum": 0
@@ -29371,6 +29511,26 @@
                           "orderItemId": {
                             "type": "string",
                             "format": "uuid"
+                          },
+                          "productName": {
+                            "type": "string"
+                          },
+                          "sku": {
+                            "type": "string"
+                          },
+                          "attributes": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "additionalProperties": {}
+                          },
+                          "thumbnailUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
                           },
                           "quantity": {
                             "type": "integer",

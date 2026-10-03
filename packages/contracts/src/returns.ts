@@ -8,6 +8,10 @@ export const returnStatusSchema = z.enum([
 export const returnItemSchema = z.object({
   id: uuidSchema,
   orderItemId: uuidSchema,
+  productName: z.string().optional(),
+  sku: z.string().optional(),
+  attributes: z.record(z.unknown()).nullable().optional(),
+  thumbnailUrl: z.string().url().nullable().optional(),
   quantity: z.number().int().positive(),
   requestedAmount: moneySchema,
   inspection: z.record(z.unknown()).nullable()

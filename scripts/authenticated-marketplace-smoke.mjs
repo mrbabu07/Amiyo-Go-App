@@ -15,6 +15,7 @@ export async function runAuthenticatedSmoke({ apiUrl = "http://127.0.0.1:4000", 
   const auth = loopbackOrigin(authUrl);
   const results = [];
   const identities = {};
+  const productReturn = returnSchema.extend({ items: z.array(returnSchema.shape.items.element.extend({ productName: z.string(), sku: z.string(), thumbnailUrl: z.string().url().nullable() })) });
   for (const [role, expectedRole] of [["customer", "CUSTOMER"], ["vendor", "VENDOR_OWNER"], ["admin", "SUPER_ADMIN"]]) {
     try {
       const response = await fetcher(new URL("/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=local-emulator", auth), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: `${role}@amiyo.test`, password: "AmiyoDemo123!", returnSecureToken: true }), redirect: "error", signal: AbortSignal.timeout(20000) });
@@ -47,9 +48,10 @@ export async function runAuthenticatedSmoke({ apiUrl = "http://127.0.0.1:4000", 
     });
   }
   const customerOrders = await check("customer", "/api/v2/orders", 200, customerOrderSummarySchema.array());
-  const customerReturns = await check("customer", "/api/v2/returns", 200, returnSchema.array());
+  const customerReturns = await check("customer", "/api/v2/returns", 200, productReturn.array());
+  await check("vendor", "/api/v2/vendor/workspace/returns", 200, productReturn.array());
   if (customerReturns?.length) {
-    await check("customer", `/api/v2/returns/${customerReturns[0].id}`, 200, returnSchema.extend({ events: z.array(returnSchema.shape.events.unwrap().element.strict()) }), (detail) => {
+    await check("customer", `/api/v2/returns/${customerReturns[0].id}`, 200, productReturn.extend({ events: z.array(returnSchema.shape.events.unwrap().element.strict()) }), (detail) => {
       for (let index = 1; index < detail.events.length; index += 1) assert.ok(Date.parse(detail.events[index - 1].createdAt) <= Date.parse(detail.events[index].createdAt));
     });
     await check("customer", `/api/v2/vendor/returns/${customerReturns[0].id}`, 403);

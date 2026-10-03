@@ -1,3 +1,4 @@
+import { returnProductDetails, returnProductSelect } from "./return-product.js";
 import { createHash, randomUUID } from "node:crypto";
 import { assertReturnPolicy, loadReturnPolicy } from "./return-policy.js";
 import { Prisma, type DeliverySetting, type PrismaClient, type ReturnStatus } from "@prisma/client";
@@ -115,16 +116,16 @@ export class OperationsService {
 
   async returns(session: Session, admin = false) {
     if (admin && elevated(session) && session.permissions.includes("finance:read")) requirePermission(session, "finance:read"); else requirePermission(session, "returns:manage");
-    const rows = await this.client.return.findMany({ where: admin && elevated(session) ? {} : { userId: session.principal.userId }, include: { items: true }, orderBy: { createdAt: "desc" }, take: 100 }); return rows.map(returnDto);
+    const rows = await this.client.return.findMany({ where: admin && elevated(session) ? {} : { userId: session.principal.userId }, include: { items: { include: { orderItem: { select: returnProductSelect } } } }, orderBy: { createdAt: "desc" }, take: 100 }); return rows.map((row) => ({ ...returnDto(row), items: returnDto(row).items.map((item, index) => ({ ...item, ...returnProductDetails(row.items[index]!.orderItem) })) }));
   }
 
   async ownReturn(session: Session, id: string, vendor = false) {
     requirePermission(session, vendor ? "orders:read" : "returns:manage");
     const vendorId = session.principal.vendorIds[0];
     if (vendor && !vendorId) throw new ApiProblem(403, "VENDOR_REQUIRED", "Vendor membership is required");
-    const row = await this.client.return.findFirst({ where: { id, ...(vendor ? { vendorOrder: { vendorId: vendorId! } } : { userId: session.principal.userId }) }, include: { items: true, events: { select: { id: true, fromStatus: true, toStatus: true, createdAt: true }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] } } });
+    const row = await this.client.return.findFirst({ where: { id, ...(vendor ? { vendorOrder: { vendorId: vendorId! } } : { userId: session.principal.userId }) }, include: { items: { include: { orderItem: { select: returnProductSelect } } }, events: { select: { id: true, fromStatus: true, toStatus: true, createdAt: true }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] } } });
     if (!row) throw new ApiProblem(404, "RETURN_NOT_FOUND", "Return not found");
-    return { ...returnDto(row), refundMethod: row.refundMethod, events: row.events.map((event) => ({ id: event.id, fromStatus: event.fromStatus, toStatus: event.toStatus, createdAt: event.createdAt.toISOString() })) };
+    return { ...returnDto(row), items: returnDto(row).items.map((item, index) => ({ ...item, ...returnProductDetails(row.items[index]!.orderItem) })), refundMethod: row.refundMethod, events: row.events.map((event) => ({ id: event.id, fromStatus: event.fromStatus, toStatus: event.toStatus, createdAt: event.createdAt.toISOString() })) };
   }
 
   async returnDetail(session: Session, id: string) {
