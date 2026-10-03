@@ -2,13 +2,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { randomUUID } from "expo-crypto";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import type { CreateReturn, OrderDto, ParentOrderStatus, VendorOrderStatus } from "@amiyo/contracts";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
+import { firebaseAuth } from "../auth/firebase";
 import { OrderDeliverySummary } from "./OrderDeliverySummary";
 import { OrderItemImage } from "./OrderItemImage";
 import { CustomerReturnForm } from "./CustomerReturnForm";
@@ -25,9 +26,17 @@ function formatRemaining(ms: number) { const totalSeconds = Math.max(0, Math.cei
 function progressIndex<T extends string>(steps: T[], status: string) { const index = steps.indexOf(status as T); return index < 0 ? 0 : index; }
 
 export function CustomerOrderDetailScreen({ id }: { id: string }) {
+  const user = useCurrentUser();
+  return <ScopedOrderDetailScreen key={`${id}:${user?.uid ?? "signed-out"}`} id={id} />;
+}
+
+function ScopedOrderDetailScreen({ id }: { id: string }) {
   const router = useRouter();
   const cache = useQueryClient();
   const user = useCurrentUser();
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const actionIsCurrent = () => mounted.current && Boolean(user) && firebaseAuth?.currentUser?.uid === user?.uid;
   const { width } = useWindowDimensions();
   const compact = width < 620;
   const [confirmCancel, setConfirmCancel] = useState(false);
@@ -36,8 +45,8 @@ export function CustomerOrderDetailScreen({ id }: { id: string }) {
   useEffect(() => { const handle = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(handle); }, []);
   const order = useQuery({ queryKey: ["orders", "customer", id, user?.uid], queryFn: () => getCustomerOrder(user!, id), enabled: Boolean(user), refetchInterval: 30_000 });
   const refresh = async () => { await cache.invalidateQueries({ queryKey: ["orders"] }); await order.refetch(); };
-  const cancel = useMutation({ mutationFn: (reason: string) => { if (!order.data || !cancellationState(order.data, Date.now()).cancellable) throw new Error("Cancellation is no longer available. Refresh the order."); return cancelCustomerOrder(user!, id, { reason, expectedVersion: order.data.version }, randomUUID()); }, onSuccess: async () => { setConfirmCancel(false); await refresh(); } });
-  const createReturn = useMutation({ mutationFn: (input: CreateReturn) => createCustomerReturn(user!, input, randomUUID()), onSuccess: async () => { await cache.invalidateQueries({ queryKey: ["returns"] }); router.push("/returns"); } });
+  const cancel = useMutation({ mutationFn: (reason: string) => { if (!actionIsCurrent()) throw new Error("Your account changed. Reopen this order."); if (!order.data || !cancellationState(order.data, Date.now()).cancellable) throw new Error("Cancellation is no longer available. Refresh the order."); return cancelCustomerOrder(user!, id, { reason, expectedVersion: order.data.version }, randomUUID()); }, onSuccess: async () => { if (!actionIsCurrent()) return; setConfirmCancel(false); await refresh(); } });
+  const createReturn = useMutation({ mutationFn: (input: CreateReturn) => { if (!actionIsCurrent()) throw new Error("Your account changed. Reopen this order."); return createCustomerReturn(user!, input, randomUUID()); }, onSuccess: async () => { if (!actionIsCurrent()) return; await cache.invalidateQueries({ queryKey: ["returns"] }); if (actionIsCurrent()) router.push("/returns"); } });
 
   if (!user) return <OrderState title="Order details" copy="Sign in to view your order, tracking and invoice." action="Sign in" onPress={() => router.replace("/auth")} />;
   if (order.isLoading) return <OrderState loading title="Loading order" copy="Preparing your order timeline." />;
