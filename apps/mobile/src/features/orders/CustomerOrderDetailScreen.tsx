@@ -15,8 +15,10 @@ import { OrderItemImage } from "./OrderItemImage";
 import { CustomerReturnForm } from "./CustomerReturnForm";
 import { CancelOrderConfirmation } from "./CancelOrderConfirmation";
 import { cancellationState } from "./cancellation-policy";
-import { cancelCustomerOrder, createCustomerReturn } from "../operations/operations.api";
+import { cancelCustomerOrder, createCustomerReturn, OperationsRequestError } from "../operations/operations.api";
 import { getCustomerOrder } from "./orders.api";
+import { pendingOrderActions } from "./order-action.storage";
+import { mayDiscardOrderRejection, type OrderCommand, type PendingOrderAction } from "./pending-order-action";
 
 const orderSteps: ParentOrderStatus[] = ["PENDING_PAYMENT", "CONFIRMED", "PROCESSING", "READY_TO_SHIP", "SHIPPED", "DELIVERED"];
 const vendorSteps: VendorOrderStatus[] = ["PLACED", "ACCEPTED", "PROCESSING", "READY_TO_SHIP", "PICKED_UP", "IN_TRANSIT", "DELIVERED"];
@@ -37,6 +39,41 @@ function ScopedOrderDetailScreen({ id }: { id: string }) {
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const actionIsCurrent = () => mounted.current && Boolean(user) && firebaseAuth?.currentUser?.uid === user?.uid;
+  const [pendingAction, setPendingAction] = useState<PendingOrderAction | null>(null);
+  const [recoveryReady, setRecoveryReady] = useState(false);
+  const [recoveryError, setRecoveryError] = useState("");
+  const actionLock = useRef(false);
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    pendingOrderActions.load(user.uid, id).then((saved) => { if (active) { setPendingAction(saved); setRecoveryReady(true); } }).catch((error: Error) => { if (active) setRecoveryError(error.message); });
+    return () => { active = false; };
+  }, [id, user?.uid]);
+  const sendCommand = async (command: OrderCommand) => {
+    if (!actionIsCurrent() || !recoveryReady) throw new Error("Wait for request recovery or reopen this order.");
+    if (actionLock.current) throw new Error("An order request is already being sent.");
+    actionLock.current = true;
+    try {
+      const saved = await pendingOrderActions.prepare(user!.uid, id, command, randomUUID());
+      if (actionIsCurrent()) setPendingAction(saved);
+      if (!actionIsCurrent()) throw new Error("Your account changed. Reopen this order.");
+      let result: unknown;
+      try {
+        result = saved.command.kind === "cancel"
+          ? await cancelCustomerOrder(user!, id, saved.command.input, saved.key)
+          : await createCustomerReturn(user!, saved.command.input, saved.key);
+      } catch (error) {
+        if (error instanceof OperationsRequestError && mayDiscardOrderRejection(saved.fresh, error.status, error.code)) {
+          await pendingOrderActions.complete(user!.uid, id, saved.key);
+          if (actionIsCurrent()) setPendingAction(null);
+        }
+        throw error;
+      }
+      await pendingOrderActions.complete(user!.uid, id, saved.key);
+      if (actionIsCurrent()) setPendingAction(null);
+      return result;
+    } finally { actionLock.current = false; }
+  };
   const { width } = useWindowDimensions();
   const compact = width < 620;
   const [confirmCancel, setConfirmCancel] = useState(false);
@@ -45,8 +82,10 @@ function ScopedOrderDetailScreen({ id }: { id: string }) {
   useEffect(() => { const handle = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(handle); }, []);
   const order = useQuery({ queryKey: ["orders", "customer", id, user?.uid], queryFn: () => getCustomerOrder(user!, id), enabled: Boolean(user), refetchInterval: 30_000 });
   const refresh = async () => { await cache.invalidateQueries({ queryKey: ["orders"] }); await order.refetch(); };
-  const cancel = useMutation({ mutationFn: (reason: string) => { if (!actionIsCurrent()) throw new Error("Your account changed. Reopen this order."); if (!order.data || !cancellationState(order.data, Date.now()).cancellable) throw new Error("Cancellation is no longer available. Refresh the order."); return cancelCustomerOrder(user!, id, { reason, expectedVersion: order.data.version }, randomUUID()); }, onSuccess: async () => { if (!actionIsCurrent()) return; setConfirmCancel(false); await refresh(); } });
-  const createReturn = useMutation({ mutationFn: (input: CreateReturn) => { if (!actionIsCurrent()) throw new Error("Your account changed. Reopen this order."); return createCustomerReturn(user!, input, randomUUID()); }, onSuccess: async () => { if (!actionIsCurrent()) return; await cache.invalidateQueries({ queryKey: ["returns"] }); if (actionIsCurrent()) router.push("/returns"); } });
+  const cancel = useMutation({ mutationFn: (reason: string) => { if (!actionIsCurrent()) throw new Error("Your account changed. Reopen this order."); if (!order.data || !cancellationState(order.data, Date.now()).cancellable) throw new Error("Cancellation is no longer available. Refresh the order."); return sendCommand({ kind: "cancel", input: { reason, expectedVersion: order.data.version } }); }, onSuccess: async () => { if (!actionIsCurrent()) return; setConfirmCancel(false); await refresh(); } });
+  const createReturn = useMutation({ mutationFn: (input: CreateReturn) => { if (!actionIsCurrent()) throw new Error("Your account changed. Reopen this order."); return sendCommand({ kind: "return", input }); }, onSuccess: async () => { if (!actionIsCurrent()) return; await cache.invalidateQueries({ queryKey: ["returns"] }); if (actionIsCurrent()) router.push("/returns"); } });
+  const recover = useMutation({ mutationFn: async () => { if (!pendingAction) throw new Error("No saved request."); await sendCommand(pendingAction.command); return pendingAction.command.kind; }, onSuccess: async (kind) => { if (!actionIsCurrent()) return; setConfirmCancel(false); await refresh(); if (kind === "return" && actionIsCurrent()) router.push("/returns"); } });
+  const actionsBlocked = !recoveryReady || Boolean(pendingAction) || recover.isPending;
 
   if (!user) return <OrderState title="Order details" copy="Sign in to view your order, tracking and invoice." action="Sign in" onPress={() => router.replace("/auth")} />;
   if (order.isLoading) return <OrderState loading title="Loading order" copy="Preparing your order timeline." />;
@@ -63,12 +102,13 @@ function ScopedOrderDetailScreen({ id }: { id: string }) {
       <View style={styles.heroCopy}><View style={styles.statusRow}><StatusPill value={data.status} /><Text style={styles.version}>v{data.version}</Text></View><Text style={styles.total}>{money(data.total.amountMinor)}</Text><Text style={styles.heroText}>{itemCount} unit{itemCount === 1 ? "" : "s"} across {data.vendorOrders.length} seller package{data.vendorOrders.length === 1 ? "" : "s"}.</Text></View>
       <View style={[styles.heroActions, compact && styles.heroActionsCompact]}><ActionButton icon="navigate-outline" label="Track" onPress={() => router.push(`/order/${id}/tracking` as never)} /><ActionButton icon="receipt-outline" label="Invoice" onPress={() => router.push(`/order/${id}/invoice` as never)} primary />{cancellable ? <ActionButton danger busy={cancel.isPending} icon="close-circle-outline" label="Cancel" onPress={() => setConfirmCancel(true)} /> : null}</View>
     </View>
-    {confirmCancel ? <CancelOrderConfirmation key={`${id}:${user.uid}`} busy={cancel.isPending} eligible={cancellable} onClose={() => setConfirmCancel(false)} onConfirm={(reason) => cancel.mutate(reason)} /> : null}
+    {pendingAction || !recoveryReady ? <ModuleCard title="Order request recovery" meta="Do not submit a different request while the previous outcome is uncertain."><Text style={styles.infoValue}>{recoveryError || (pendingAction ? `Saved ${pendingAction.command.kind} request. Retry sends the original details and request key, even if the order status has changed. If recovery expires, contact support.` : "Checking saved requests...")}</Text>{pendingAction ? <ActionButton icon="refresh-outline" label="Retry saved request" busy={recover.isPending} onPress={() => recover.mutate()} /> : null}{recover.error ? <Text accessibilityRole="alert" style={styles.error}>{recover.error.message}</Text> : null}</ModuleCard> : null}
+    {confirmCancel ? <CancelOrderConfirmation key={`${id}:${user.uid}`} busy={cancel.isPending || actionsBlocked} eligible={cancellable} onClose={() => setConfirmCancel(false)} onConfirm={(reason) => cancel.mutate(reason)} /> : null}
     {cancel.error || createReturn.error ? <Text style={styles.error}>{(cancel.error || createReturn.error)?.message}</Text> : null}
     <ModuleCard title="Order progress" meta={cancellationCopy}><Progress steps={orderSteps} activeIndex={stageIndex} finalStatus={data.status} /></ModuleCard>
     <View style={styles.metrics}><Metric icon="storefront-outline" label="Seller packages" value={String(data.vendorOrders.length)} /><Metric icon="cube-outline" label="Units" value={String(itemCount)} /><Metric icon="shield-checkmark-outline" label="Buyer protection" value="Active" /></View>
     <View style={styles.layout}>
-      <View style={[styles.mainColumn, compact && styles.columnCompact]}>{data.vendorOrders.map((vendorOrder, index) => <SellerPackage compact={compact} index={index + 1} key={`${user.uid}:${vendorOrder.id}`} returnBusy={createReturn.isPending} onReturn={(input) => createReturn.mutateAsync(input)} vendorOrder={vendorOrder} />)}</View>
+      <View style={[styles.mainColumn, compact && styles.columnCompact]}>{data.vendorOrders.map((vendorOrder, index) => <SellerPackage compact={compact} index={index + 1} key={`${user.uid}:${vendorOrder.id}`} returnBusy={createReturn.isPending || actionsBlocked} onReturn={(input) => createReturn.mutateAsync(input)} vendorOrder={vendorOrder} />)}</View>
       <View style={[styles.sideColumn, compact && styles.columnCompact]}><OrderDeliverySummary order={data} /><ModuleCard title="Payment summary" meta="Secure Amiyo checkout"><Info label="Subtotal" value={money(data.subtotal.amountMinor)} /><Info label="Discount" value={`- ${money(data.discount.amountMinor)}`} /><Info label="Delivery" value={money(data.delivery.amountMinor)} /><Info label="Tax" value={money(data.tax.amountMinor)} /><View style={styles.totalLine}><Text style={styles.totalLabel}>Grand total</Text><Text style={styles.totalValue}>{money(data.total.amountMinor)}</Text></View></ModuleCard><ModuleCard title="Need help?" meta="Support is available for order issues."><SupportAction icon="chatbubble-ellipses-outline" label="Open support" onPress={() => router.push("/support" as never)} /><SupportAction icon="return-down-back-outline" label="My returns" onPress={() => router.push("/returns" as never)} /><SupportAction icon="refresh-outline" label="Refresh status" onPress={() => order.refetch()} /></ModuleCard></View>
     </View>
   </Screen>;

@@ -52,7 +52,8 @@ test("return form requires delivered package and explicit review of selected ite
   const screen = await readFile(new URL("./CustomerOrderDetailScreen.tsx", import.meta.url), "utf8");
   const form = await readFile(new URL("./CustomerReturnForm.tsx", import.meta.url), "utf8");
   assert.ok(screen.includes('vendorOrder.status === "DELIVERED" ? <CustomerReturnForm'));
-  assert.ok(screen.includes("createCustomerReturn(user!, input, randomUUID())"));
+  assert.ok(screen.includes("createCustomerReturn(user!, saved.command.input, saved.key)"));
+  assert.ok(screen.includes("pendingOrderActions.prepare"));
   assert.ok(screen.includes("key={`${user.uid}:${vendorOrder.id}`}"));
   assert.ok(form.includes("Confirm return request"));
   assert.ok(form.includes("Edit selection"));

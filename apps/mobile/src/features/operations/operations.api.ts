@@ -4,7 +4,10 @@ import { approveOrderSettlementSchema, orderSettlementResultSchema, vendorCharge
 import * as Crypto from "expo-crypto";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
-async function request(user: User, path: string, init?: RequestInit) { const token = await user.getIdToken(); const response = await fetch(`${apiUrl}${path}`, { ...init, headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...init?.headers } }); if (!response.ok) { const problem = await response.json().catch(() => null) as { title?: string; detail?: string } | null; throw new Error(problem?.detail || problem?.title || `Operations request failed (${response.status})`); } return response.json() as Promise<unknown>; }
+export class OperationsRequestError extends Error {
+  constructor(message: string, readonly status: number, readonly code: string) { super(message); }
+}
+async function request(user: User, path: string, init?: RequestInit) { const token = await user.getIdToken(); const response = await fetch(`${apiUrl}${path}`, { ...init, headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...init?.headers } }); if (!response.ok) { const problem = await response.json().catch(() => null) as { title?: string; detail?: string; code?: string } | null; throw new OperationsRequestError(problem?.detail || problem?.title || `Operations request failed (${response.status})`, response.status, problem?.code ?? "UNKNOWN"); } return response.json() as Promise<unknown>; }
 export async function getReturns(user: User) { return returnSchema.array().parse(await request(user, "/api/v2/returns")); }
 export async function cancelCustomerOrder(user: User, orderId: string, input: CancelOrder, idempotencyKey: string) { return request(user, `/api/v2/orders/${orderId}/cancel`, { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: JSON.stringify(input) }); }
 export async function createCustomerReturn(user: User, input: CreateReturn, idempotencyKey: string) { return returnSchema.parse(await request(user, "/api/v2/returns", { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: JSON.stringify(input) })); }

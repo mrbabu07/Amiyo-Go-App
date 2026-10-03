@@ -1,5 +1,7 @@
 # Completion audit — 2026-10-03
 
+Follow-up: durable cancel/return recovery is now implemented; see `order-action-recovery-2026-10-03.md`. Browser/device fault-injection and cross-runtime acceptance remain open. Earlier observations below describe the baseline before that follow-up.
+
 Target: complete legacy Client/Server reference behavior and responsive UI in Amiyo-App, retaining the selected brand theme. Production/native/provider work previously deferred by the owner remains visibly outstanding; it is not silently treated as finished.
 
 ## Evidence and open gates
