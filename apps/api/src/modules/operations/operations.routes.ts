@@ -12,11 +12,14 @@ import { IdentityService } from "../identity/identity.service.js";
 import { OperationsService } from "./operations.service.js";
 import { LogisticsService } from "./logistics.service.js";
 import { VendorStatementService } from "./vendor-statement.service.js";
+import { ReturnEvidenceAccessService } from "./return-evidence-access.service.js";
+import { FirebaseStorageProvider } from "../media/firebase-storage.provider.js";
 
 const idSchema = z.object({ id: z.string().uuid() });
 function key(value: string | undefined) { if (!value || !z.string().uuid().safeParse(value).success) throw new ApiProblem(400, "IDEMPOTENCY_KEY_REQUIRED", "A UUID Idempotency-Key header is required"); return value; }
 
 export function createOperationsRouter() {
+  const evidence = new ReturnEvidenceAccessService(prisma, new FirebaseStorageProvider());
   const router = Router(); const service = new OperationsService(prisma); const logistics = new LogisticsService(prisma); const authenticate = createAuthenticationMiddleware(new FirebaseTokenVerifier(), new IdentityService(prisma));
   router.get("/api/v2/delivery/settings", async (_req, res, next) => { try { res.json(await service.deliverySettings()); } catch (error) { next(error); } });
   router.post("/api/v2/delivery/serviceability", async (req, res, next) => { try { res.json(await service.serviceability(serviceabilityInputSchema.parse(req.body))); } catch (error) { next(error); } });
@@ -33,6 +36,8 @@ export function createOperationsRouter() {
   router.get("/api/v2/vendor/finance/commission-invoice", async (req, res, next) => { try { res.set("Cache-Control", "no-store").json(await new VendorCommissionInvoiceService(prisma).invoice(requireSession(req), req.query)); } catch (error) { next(error); } });
   router.post("/api/v2/vendor/payouts", async (req, res, next) => { try { res.status(201).json(await service.requestPayout(requireSession(req), createPayoutRequestSchema.parse(req.body), key(req.header("idempotency-key")), req.header("x-correlation-id"))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/returns", async (req, res, next) => { try { res.json(await service.returns(requireSession(req), true)); } catch (error) { next(error); } });
+  router.get("/api/v2/admin/returns/:id/evidence", async (req, res, next) => { try { res.set("Cache-Control", "no-store").json(await evidence.list(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
+  router.post("/api/v2/admin/returns/:id/evidence/:uploadId/access", async (req, res, next) => { try { const params = z.object({ id: z.string().uuid(), uploadId: z.string().uuid() }).parse(req.params); const input = z.object({ download: z.boolean().default(false) }).parse(req.body); res.set("Cache-Control", "no-store").json(await evidence.access(requireSession(req), params.id, params.uploadId, input.download)); } catch (error) { next(error); } });
   router.get("/api/v2/admin/returns/:id", async (req, res, next) => { try { res.json(await service.returnDetail(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   router.post("/api/v2/admin/returns/:id/transitions", async (req, res, next) => { try { res.json(await service.transitionReturn(requireSession(req), idSchema.parse(req.params).id, returnTransitionSchema.parse(req.body), key(req.header("idempotency-key")), req.header("x-correlation-id"))); } catch (error) { next(error); } });
   router.post("/api/v2/admin/returns/:id/refund-completion", async (req, res, next) => { try { res.json(await service.completeRefund(requireSession(req), idSchema.parse(req.params).id, completeRefundSchema.parse(req.body), key(req.header("idempotency-key")))); } catch (error) { next(error); } });

@@ -5,7 +5,8 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
+import { ReturnEvidencePanel } from "./ReturnEvidencePanel";
 import { completeAdminRefundCase, getAdminReturnDetail, getAdminReturns, transitionAdminReturnCase, type AdminReturnStatus } from "../operations/operations.api";
 
 const flows = [
@@ -13,7 +14,7 @@ const flows = [
 ] as const;
 
 export function AdminReturnsScreen() {
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
   const params = useLocalSearchParams<{ search?: string }>();
   const cache = useQueryClient();
   const { width } = useWindowDimensions();
@@ -25,8 +26,8 @@ export function AdminReturnsScreen() {
   const [amount, setAmount] = useState("");
   const [providerRef, setProviderRef] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
-  const returns = useQuery({ queryKey: ["admin", "returns"], queryFn: () => getAdminReturns(user!), enabled: Boolean(user) });
-  const detail = useQuery({ queryKey: ["admin", "return", selectedId], queryFn: () => getAdminReturnDetail(user!, selectedId!), enabled: Boolean(user && selectedId) });
+  const returns = useQuery({ queryKey: ["admin", "returns", user?.uid], queryFn: () => getAdminReturns(user!), enabled: Boolean(user) });
+  const detail = useQuery({ queryKey: ["admin", "return", selectedId, user?.uid], queryFn: () => getAdminReturnDetail(user!, selectedId!), enabled: Boolean(user && selectedId) });
   const refresh = async () => { await Promise.all([cache.invalidateQueries({ queryKey: ["admin", "returns"] }), cache.invalidateQueries({ queryKey: ["admin", "return"] }), cache.invalidateQueries({ queryKey: ["admin", "queues"] })]); };
   const transition = useMutation({ mutationFn: async () => {
     if (!detail.data || !nextStatus) return;
@@ -50,6 +51,7 @@ export function AdminReturnsScreen() {
     <View style={[styles.control, width < 720 && styles.stack]}><View style={styles.search}><Ionicons color={colors.muted} name="search-outline" size={18} /><TextInput onChangeText={setSearch} placeholder="Search return, order or reason..." placeholderTextColor="#94a3b8" style={styles.searchInput} value={search} /></View><Pressable onPress={() => returns.refetch()} style={styles.refresh}><Ionicons color={colors.primary} name="refresh" size={17} /><Text style={styles.refreshText}>Refresh</Text></Pressable></View>
     <View style={styles.flowBar}>{flows.map((item) => <Pressable key={item.key} onPress={() => setFlow(item.key)} style={[styles.flow, flow === item.key && styles.flowActive]}><Text style={[styles.flowText, flow === item.key && styles.flowTextActive]}>{item.label}</Text><Text style={[styles.flowCount, flow === item.key && styles.flowCountActive]}>{item.key === "all" ? rows.length : rows.filter((row) => caseFlow(row.status) === item.key).length}</Text></Pressable>)}</View>
     {returns.isLoading ? <ActivityIndicator color={colors.primary} /> : null}{returns.error ? <ErrorBox message={returns.error.message} /> : null}
+    {selectedId && detail.data ? <ReturnEvidencePanel key={`${user?.uid}:${selectedId}`} returnId={selectedId} /> : null}
     {selectedId ? <ReturnDetail amount={amount} data={detail.data} error={detail.error?.message || formError} loading={detail.isLoading} nextStatus={nextStatus} note={note} onAmount={setAmount} onClose={() => setSelectedId(null)} onNote={setNote} onProviderRef={setProviderRef} onSelectStatus={setNextStatus} onSubmit={() => transition.mutate()} onSubmitRefund={() => refund.mutate()} providerRef={providerRef} saving={transition.isPending || refund.isPending} /> : null}
     <View style={styles.list}>{filtered.map((item) => <Pressable key={item.id} onPress={() => select(item.id, item.requestedAmount.amountMinor)} style={[styles.caseCard, selectedId === item.id && styles.caseCardActive]}><View style={styles.caseTop}><View style={styles.caseIcon}><Ionicons color={colors.primary} name="return-down-back-outline" size={20} /></View><View style={styles.flex}><Text style={styles.caseTitle}>RET-{item.id.slice(0, 8).toUpperCase()}</Text><Text style={styles.muted}>Order {item.orderId.slice(0, 8)} · {new Date(item.createdAt).toLocaleDateString("en-BD")}</Text></View><Status value={item.status} /></View><View style={styles.caseGrid}><Cell label="Requested" value={money(Number(item.requestedAmount.amountMinor))} /><Cell label="Items" value={String(item.items.length)} /><Cell label="Reason" value={item.reasonCode.replaceAll("_", " ")} /><Cell label="Queue" value={flowLabel(caseFlow(item.status))} /></View><View style={styles.openRow}><Text style={styles.openText}>Open case workspace</Text><Ionicons color={colors.primary} name="arrow-forward" size={16} /></View></Pressable>)}</View>
     {!returns.isLoading && filtered.length === 0 ? <View style={styles.empty}><Ionicons color="#94a3b8" name="file-tray-outline" size={34} /><Text style={styles.emptyTitle}>No matching return cases</Text><Text style={styles.muted}>Change the queue or search term.</Text></View> : null}

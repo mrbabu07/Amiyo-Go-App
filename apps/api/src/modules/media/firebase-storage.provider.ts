@@ -16,6 +16,10 @@ function bucket() {
 }
 
 export class FirebaseStorageProvider implements MediaStorageProvider {
+  async createReadUrl(storageKey: string, expiresAt: Date, download: boolean) {
+    const [url] = await bucket().file(storageKey).getSignedUrl({ version: "v4", action: "read", expires: expiresAt, responseDisposition: download ? "attachment" : "inline" });
+    return url;
+  }
   async createUploadUrl(storageKey: string, mimeType: string, expiresAt: Date) {
     const [url] = await bucket().file(storageKey).getSignedUrl({ version: "v4", action: "write", expires: expiresAt, contentType: mimeType });
     return url;
