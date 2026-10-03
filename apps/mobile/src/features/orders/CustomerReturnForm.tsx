@@ -2,7 +2,7 @@ import type { CreateReturn, OrderDto } from "@amiyo/contracts";
 import { useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { buildReturnSelection } from "./return-selection";
+import { buildReturnSelection, remainingReturnQuantity } from "./return-selection";
 
 const reasons = [{ code: "DAMAGED", label: "Damaged item" }, { code: "DEFECTIVE", label: "Not working" }, { code: "WRONG_ITEM", label: "Wrong item" }, { code: "OTHER", label: "Other issue" }];
 
@@ -23,7 +23,10 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
   const submit = async () => {
     if (!review || disabled || submitting.current) return;
     submitting.current = true; setSending(true); setError("");
-    try { await onSubmit(review); }
+    try {
+      const checked = buildReturnSelection(vendorOrder.id, vendorOrder.items, Object.fromEntries(review.items.map((item) => [item.orderItemId, item.quantity])), review.reasonCode, review.reasonDetail ?? "", review.refundMethod);
+      await onSubmit(checked);
+    }
     catch (failure) { setError(failure instanceof Error ? failure.message : "Could not submit your return."); }
     finally { submitting.current = false; setSending(false); }
   };
@@ -40,12 +43,13 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
     </> : <>
       {vendorOrder.items.map((item) => {
         const quantity = quantities[item.id] ?? 0;
+        const remaining = remainingReturnQuantity(item);
         return <View key={item.id} style={styles.item}>
-          <Text style={styles.copy}>{item.productName} · {item.sku} · Purchased: {item.quantity}</Text>
+          <Text style={styles.copy}>{item.productName} · {item.sku} · Purchased: {item.quantity} · Remaining to request: {remaining}</Text>
           <View style={styles.row}>
             <Pressable accessibilityRole="button" accessibilityLabel={`Remove one ${item.productName} from return`} disabled={disabled || quantity === 0} onPress={() => setQuantities((current) => ({ ...current, [item.id]: Math.max(0, (current[item.id] ?? 0) - 1) }))} style={styles.step}><Text style={styles.copy}>−</Text></Pressable>
             <Text accessibilityLabel={`Return quantity ${quantity}`} style={styles.copy}>{quantity}</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel={`Add one ${item.productName} to return`} disabled={disabled || quantity >= item.quantity} onPress={() => setQuantities((current) => ({ ...current, [item.id]: Math.min(item.quantity, (current[item.id] ?? 0) + 1) }))} style={styles.step}><Text style={styles.copy}>+</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={`Add one ${item.productName} to return`} disabled={disabled || quantity >= remaining} onPress={() => setQuantities((current) => ({ ...current, [item.id]: Math.min(remaining, (current[item.id] ?? 0) + 1) }))} style={styles.step}><Text style={styles.copy}>+</Text></Pressable>
           </View>
         </View>;
       })}

@@ -17,6 +17,7 @@ export const orderItemSchema = z.object({
   variantId: uuidSchema,
   productName: z.string(),
   thumbnailUrl: z.string().url().nullable().optional(),
+  returnableQuantity: z.number().int().nonnegative().optional(),
   sku: z.string(),
   attributes: z.record(z.unknown()).nullable(),
   quantity: z.number().int().positive(),
