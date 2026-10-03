@@ -47,3 +47,14 @@ test("cancel requires an explicit reason and confirmation rather than one-click 
   assert.ok(confirmation.includes("busy || !eligible || reason.trim().length < 3"));
   assert.ok(confirmation.includes("Keep order"));
 });
+
+test("return form requires delivered package and explicit review of selected items", async () => {
+  const screen = await readFile(new URL("./CustomerOrderDetailScreen.tsx", import.meta.url), "utf8");
+  const form = await readFile(new URL("./CustomerReturnForm.tsx", import.meta.url), "utf8");
+  assert.ok(screen.includes('vendorOrder.status === "DELIVERED" ? <CustomerReturnForm'));
+  assert.ok(screen.includes("createCustomerReturn(user!, input, randomUUID())"));
+  assert.ok(screen.includes("key={`${user.uid}:${vendorOrder.id}`}"));
+  assert.ok(form.includes("Confirm return request"));
+  assert.ok(form.includes("Edit selection"));
+  assert.ok(form.includes("submitting.current"));
+});
