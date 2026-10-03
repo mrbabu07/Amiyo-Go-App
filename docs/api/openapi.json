@@ -10880,6 +10880,67 @@
                         "type": "string",
                         "format": "date-time"
                       },
+                      "refundMethod": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "events": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "fromStatus": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "enum": [
+                                "REQUESTED",
+                                "REVIEWING",
+                                "APPROVED",
+                                "REJECTED",
+                                "PICKUP_SCHEDULED",
+                                "RECEIVED",
+                                "INSPECTED",
+                                "REFUND_PENDING",
+                                "REFUNDED",
+                                "CLOSED"
+                              ]
+                            },
+                            "toStatus": {
+                              "type": "string",
+                              "enum": [
+                                "REQUESTED",
+                                "REVIEWING",
+                                "APPROVED",
+                                "REJECTED",
+                                "PICKUP_SCHEDULED",
+                                "RECEIVED",
+                                "INSPECTED",
+                                "REFUND_PENDING",
+                                "REFUNDED",
+                                "CLOSED"
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "fromStatus",
+                            "toStatus",
+                            "createdAt"
+                          ]
+                        }
+                      },
                       "items": {
                         "type": "array",
                         "items": {
@@ -11175,6 +11236,67 @@
                       "type": "string",
                       "format": "date-time"
                     },
+                    "refundMethod": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "fromStatus": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "enum": [
+                              "REQUESTED",
+                              "REVIEWING",
+                              "APPROVED",
+                              "REJECTED",
+                              "PICKUP_SCHEDULED",
+                              "RECEIVED",
+                              "INSPECTED",
+                              "REFUND_PENDING",
+                              "REFUNDED",
+                              "CLOSED"
+                            ]
+                          },
+                          "toStatus": {
+                            "type": "string",
+                            "enum": [
+                              "REQUESTED",
+                              "REVIEWING",
+                              "APPROVED",
+                              "REJECTED",
+                              "PICKUP_SCHEDULED",
+                              "RECEIVED",
+                              "INSPECTED",
+                              "REFUND_PENDING",
+                              "REFUNDED",
+                              "CLOSED"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "fromStatus",
+                          "toStatus",
+                          "createdAt"
+                        ]
+                      }
+                    },
                     "items": {
                       "type": "array",
                       "items": {
@@ -11401,6 +11523,67 @@
                       "type": "string",
                       "format": "date-time"
                     },
+                    "refundMethod": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "fromStatus": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "enum": [
+                              "REQUESTED",
+                              "REVIEWING",
+                              "APPROVED",
+                              "REJECTED",
+                              "PICKUP_SCHEDULED",
+                              "RECEIVED",
+                              "INSPECTED",
+                              "REFUND_PENDING",
+                              "REFUNDED",
+                              "CLOSED"
+                            ]
+                          },
+                          "toStatus": {
+                            "type": "string",
+                            "enum": [
+                              "REQUESTED",
+                              "REVIEWING",
+                              "APPROVED",
+                              "REJECTED",
+                              "PICKUP_SCHEDULED",
+                              "RECEIVED",
+                              "INSPECTED",
+                              "REFUND_PENDING",
+                              "REFUNDED",
+                              "CLOSED"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "fromStatus",
+                          "toStatus",
+                          "createdAt"
+                        ]
+                      }
+                    },
                     "items": {
                       "type": "array",
                       "items": {
@@ -11626,6 +11809,67 @@
                     "createdAt": {
                       "type": "string",
                       "format": "date-time"
+                    },
+                    "refundMethod": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "fromStatus": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "enum": [
+                              "REQUESTED",
+                              "REVIEWING",
+                              "APPROVED",
+                              "REJECTED",
+                              "PICKUP_SCHEDULED",
+                              "RECEIVED",
+                              "INSPECTED",
+                              "REFUND_PENDING",
+                              "REFUNDED",
+                              "CLOSED"
+                            ]
+                          },
+                          "toStatus": {
+                            "type": "string",
+                            "enum": [
+                              "REQUESTED",
+                              "REVIEWING",
+                              "APPROVED",
+                              "REJECTED",
+                              "PICKUP_SCHEDULED",
+                              "RECEIVED",
+                              "INSPECTED",
+                              "REFUND_PENDING",
+                              "REFUNDED",
+                              "CLOSED"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "fromStatus",
+                          "toStatus",
+                          "createdAt"
+                        ]
+                      }
                     },
                     "items": {
                       "type": "array",
@@ -13010,6 +13254,67 @@
                     "createdAt": {
                       "type": "string",
                       "format": "date-time"
+                    },
+                    "refundMethod": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "fromStatus": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "enum": [
+                              "REQUESTED",
+                              "REVIEWING",
+                              "APPROVED",
+                              "REJECTED",
+                              "PICKUP_SCHEDULED",
+                              "RECEIVED",
+                              "INSPECTED",
+                              "REFUND_PENDING",
+                              "REFUNDED",
+                              "CLOSED"
+                            ]
+                          },
+                          "toStatus": {
+                            "type": "string",
+                            "enum": [
+                              "REQUESTED",
+                              "REVIEWING",
+                              "APPROVED",
+                              "REJECTED",
+                              "PICKUP_SCHEDULED",
+                              "RECEIVED",
+                              "INSPECTED",
+                              "REFUND_PENDING",
+                              "REFUNDED",
+                              "CLOSED"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "fromStatus",
+                          "toStatus",
+                          "createdAt"
+                        ]
+                      }
                     },
                     "items": {
                       "type": "array",
@@ -28309,6 +28614,67 @@
                         "type": "string",
                         "format": "date-time"
                       },
+                      "refundMethod": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "events": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "fromStatus": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "enum": [
+                                "REQUESTED",
+                                "REVIEWING",
+                                "APPROVED",
+                                "REJECTED",
+                                "PICKUP_SCHEDULED",
+                                "RECEIVED",
+                                "INSPECTED",
+                                "REFUND_PENDING",
+                                "REFUNDED",
+                                "CLOSED"
+                              ]
+                            },
+                            "toStatus": {
+                              "type": "string",
+                              "enum": [
+                                "REQUESTED",
+                                "REVIEWING",
+                                "APPROVED",
+                                "REJECTED",
+                                "PICKUP_SCHEDULED",
+                                "RECEIVED",
+                                "INSPECTED",
+                                "REFUND_PENDING",
+                                "REFUNDED",
+                                "CLOSED"
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "fromStatus",
+                            "toStatus",
+                            "createdAt"
+                          ]
+                        }
+                      },
                       "items": {
                         "type": "array",
                         "items": {
@@ -28597,6 +28963,67 @@
                       "type": "string",
                       "format": "date-time"
                     },
+                    "refundMethod": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "fromStatus": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "enum": [
+                              "REQUESTED",
+                              "REVIEWING",
+                              "APPROVED",
+                              "REJECTED",
+                              "PICKUP_SCHEDULED",
+                              "RECEIVED",
+                              "INSPECTED",
+                              "REFUND_PENDING",
+                              "REFUNDED",
+                              "CLOSED"
+                            ]
+                          },
+                          "toStatus": {
+                            "type": "string",
+                            "enum": [
+                              "REQUESTED",
+                              "REVIEWING",
+                              "APPROVED",
+                              "REJECTED",
+                              "PICKUP_SCHEDULED",
+                              "RECEIVED",
+                              "INSPECTED",
+                              "REFUND_PENDING",
+                              "REFUNDED",
+                              "CLOSED"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "fromStatus",
+                          "toStatus",
+                          "createdAt"
+                        ]
+                      }
+                    },
                     "items": {
                       "type": "array",
                       "items": {
@@ -28870,6 +29297,67 @@
                     "createdAt": {
                       "type": "string",
                       "format": "date-time"
+                    },
+                    "refundMethod": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "fromStatus": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "enum": [
+                              "REQUESTED",
+                              "REVIEWING",
+                              "APPROVED",
+                              "REJECTED",
+                              "PICKUP_SCHEDULED",
+                              "RECEIVED",
+                              "INSPECTED",
+                              "REFUND_PENDING",
+                              "REFUNDED",
+                              "CLOSED"
+                            ]
+                          },
+                          "toStatus": {
+                            "type": "string",
+                            "enum": [
+                              "REQUESTED",
+                              "REVIEWING",
+                              "APPROVED",
+                              "REJECTED",
+                              "PICKUP_SCHEDULED",
+                              "RECEIVED",
+                              "INSPECTED",
+                              "REFUND_PENDING",
+                              "REFUNDED",
+                              "CLOSED"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "fromStatus",
+                          "toStatus",
+                          "createdAt"
+                        ]
+                      }
                     },
                     "items": {
                       "type": "array",

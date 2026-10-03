@@ -24,6 +24,13 @@ export const returnSchema = z.object({
   approvedAmount: moneySchema.nullable(),
   version: versionSchema,
   createdAt: timestampSchema,
+  refundMethod: z.string().nullable().optional(),
+  events: z.array(z.object({
+    id: uuidSchema,
+    fromStatus: returnStatusSchema.nullable(),
+    toStatus: returnStatusSchema,
+    createdAt: timestampSchema
+  })).optional(),
   items: z.array(returnItemSchema)
 });
 

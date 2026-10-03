@@ -122,9 +122,9 @@ export class OperationsService {
     requirePermission(session, vendor ? "orders:read" : "returns:manage");
     const vendorId = session.principal.vendorIds[0];
     if (vendor && !vendorId) throw new ApiProblem(403, "VENDOR_REQUIRED", "Vendor membership is required");
-    const row = await this.client.return.findFirst({ where: { id, ...(vendor ? { vendorOrder: { vendorId: vendorId! } } : { userId: session.principal.userId }) }, include: { items: true } });
+    const row = await this.client.return.findFirst({ where: { id, ...(vendor ? { vendorOrder: { vendorId: vendorId! } } : { userId: session.principal.userId }) }, include: { items: true, events: { select: { id: true, fromStatus: true, toStatus: true, createdAt: true }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] } } });
     if (!row) throw new ApiProblem(404, "RETURN_NOT_FOUND", "Return not found");
-    return returnDto(row);
+    return { ...returnDto(row), refundMethod: row.refundMethod, events: row.events.map((event) => ({ id: event.id, fromStatus: event.fromStatus, toStatus: event.toStatus, createdAt: event.createdAt.toISOString() })) };
   }
 
   async returnDetail(session: Session, id: string) {

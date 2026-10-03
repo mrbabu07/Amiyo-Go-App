@@ -49,7 +49,9 @@ export async function runAuthenticatedSmoke({ apiUrl = "http://127.0.0.1:4000", 
   const customerOrders = await check("customer", "/api/v2/orders", 200, customerOrderSummarySchema.array());
   const customerReturns = await check("customer", "/api/v2/returns", 200, returnSchema.array());
   if (customerReturns?.length) {
-    await check("customer", `/api/v2/returns/${customerReturns[0].id}`, 200, returnSchema);
+    await check("customer", `/api/v2/returns/${customerReturns[0].id}`, 200, returnSchema.extend({ events: z.array(returnSchema.shape.events.unwrap().element.strict()) }), (detail) => {
+      for (let index = 1; index < detail.events.length; index += 1) assert.ok(Date.parse(detail.events[index - 1].createdAt) <= Date.parse(detail.events[index].createdAt));
+    });
     await check("customer", `/api/v2/vendor/returns/${customerReturns[0].id}`, 403);
   } else results.push({ role: "customer", check: "own-return-detail", status: "skipped", reason: "No existing customer return fixture; none was created" });
   const returns = await check("admin", "/api/v2/admin/returns", 200, returnSchema.array());
