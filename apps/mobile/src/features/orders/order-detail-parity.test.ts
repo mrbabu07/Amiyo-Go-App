@@ -37,3 +37,13 @@ test("order item image has a local fallback for missing and broken media", async
   assert.ok(source.includes("image unavailable"));
   assert.doesNotMatch(source, /https?:\/\//);
 });
+
+test("cancel requires an explicit reason and confirmation rather than one-click mutation", async () => {
+  const screen = await readFile(new URL("./CustomerOrderDetailScreen.tsx", import.meta.url), "utf8");
+  const confirmation = await readFile(new URL("./CancelOrderConfirmation.tsx", import.meta.url), "utf8");
+  assert.ok(screen.includes('label="Cancel" onPress={() => setConfirmCancel(true)}'));
+  assert.ok(screen.includes("onConfirm={(reason) => cancel.mutate(reason)}"));
+  assert.ok(confirmation.includes('accessibilityLabel="Cancellation reason"'));
+  assert.ok(confirmation.includes("busy || !eligible || reason.trim().length < 3"));
+  assert.ok(confirmation.includes("Keep order"));
+});

@@ -11,10 +11,11 @@ import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
 import { OrderDeliverySummary } from "./OrderDeliverySummary";
 import { OrderItemImage } from "./OrderItemImage";
+import { CancelOrderConfirmation } from "./CancelOrderConfirmation";
+import { cancellationState } from "./cancellation-policy";
 import { cancelCustomerOrder, createCustomerReturn } from "../operations/operations.api";
 import { getCustomerOrder } from "./orders.api";
 
-const cancellationWindowMs = 30 * 60_000;
 const orderSteps: ParentOrderStatus[] = ["PENDING_PAYMENT", "CONFIRMED", "PROCESSING", "READY_TO_SHIP", "SHIPPED", "DELIVERED"];
 const vendorSteps: VendorOrderStatus[] = ["PLACED", "ACCEPTED", "PROCESSING", "READY_TO_SHIP", "PICKED_UP", "IN_TRANSIT", "DELIVERED"];
 const money = (minor: string) => `Tk ${(Number(minor) / 100).toLocaleString("en-BD")}`;
@@ -29,11 +30,13 @@ export function CustomerOrderDetailScreen({ id }: { id: string }) {
   const { width } = useWindowDimensions();
   const compact = width < 620;
   const [returnReasons, setReturnReasons] = useState<Record<string, string>>({});
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  useEffect(() => { setConfirmCancel(false); }, [id, user?.uid]);
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const handle = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(handle); }, []);
   const order = useQuery({ queryKey: ["orders", "customer", id, user?.uid], queryFn: () => getCustomerOrder(user!, id), enabled: Boolean(user), refetchInterval: 30_000 });
   const refresh = async () => { await cache.invalidateQueries({ queryKey: ["orders"] }); await order.refetch(); };
-  const cancel = useMutation({ mutationFn: () => cancelCustomerOrder(user!, id, { reason: "Customer requested cancellation", expectedVersion: order.data!.version }, randomUUID()), onSuccess: refresh });
+  const cancel = useMutation({ mutationFn: (reason: string) => { if (!order.data || !cancellationState(order.data, Date.now()).cancellable) throw new Error("Cancellation is no longer available. Refresh the order."); return cancelCustomerOrder(user!, id, { reason, expectedVersion: order.data.version }, randomUUID()); }, onSuccess: async () => { setConfirmCancel(false); await refresh(); } });
   const createReturn = useMutation({ mutationFn: (vendorOrderId: string) => { const vendorOrder = order.data!.vendorOrders.find((entry) => entry.id === vendorOrderId)!; return createCustomerReturn(user!, { vendorOrderId, reasonCode: "CUSTOMER_RETURN", reasonDetail: returnReasons[vendorOrderId]?.trim() || null, refundMethod: "ORIGINAL_PAYMENT", items: vendorOrder.items.map((item) => ({ orderItemId: item.id, quantity: item.quantity })) }, randomUUID()); }, onSuccess: async () => { await cache.invalidateQueries({ queryKey: ["returns"] }); router.push("/returns"); } });
 
   if (!user) return <OrderState title="Order details" copy="Sign in to view your order, tracking and invoice." action="Sign in" onPress={() => router.replace("/auth")} />;
@@ -41,10 +44,7 @@ export function CustomerOrderDetailScreen({ id }: { id: string }) {
   if (!order.data) return <OrderState title="Order unavailable" copy={order.error?.message || "Order not found"} action="Back to orders" onPress={() => router.replace("/orders")} />;
 
   const data = order.data;
-  const cancellationDeadline = new Date(data.createdAt).getTime() + cancellationWindowMs;
-  const remainingMs = cancellationDeadline - now;
-  const statusAllowsCancel = ["PENDING_PAYMENT", "CONFIRMED", "PROCESSING"].includes(data.status) && data.vendorOrders.every((entry) => ["PLACED", "ACCEPTED", "PROCESSING"].includes(entry.status));
-  const cancellable = statusAllowsCancel && remainingMs > 0;
+  const { remainingMs, statusAllowsCancel, cancellable } = cancellationState(data, now);
   const itemCount = data.vendorOrders.reduce((sum, vendorOrder) => sum + vendorOrder.items.reduce((count, item) => count + item.quantity, 0), 0);
   const cancellationCopy = data.status === "CANCELLED" ? "This order has been cancelled." : statusAllowsCancel ? remainingMs > 0 ? `Cancel available for ${formatRemaining(remainingMs)} more.` : "The 30 minute cancellation window has ended." : "Fulfillment has started, so cancellation is no longer available.";
   const stageIndex = ["CANCELLED", "REFUNDED", "RETURNED"].includes(data.status) ? -1 : progressIndex(orderSteps, data.status);
@@ -52,8 +52,9 @@ export function CustomerOrderDetailScreen({ id }: { id: string }) {
   return <Screen eyebrow="MY ORDER" title={data.orderNumber} description={`Placed ${new Date(data.createdAt).toLocaleString("en-BD")}`}>
     <View style={[styles.hero, compact && styles.heroCompact]}>
       <View style={styles.heroCopy}><View style={styles.statusRow}><StatusPill value={data.status} /><Text style={styles.version}>v{data.version}</Text></View><Text style={styles.total}>{money(data.total.amountMinor)}</Text><Text style={styles.heroText}>{itemCount} unit{itemCount === 1 ? "" : "s"} across {data.vendorOrders.length} seller package{data.vendorOrders.length === 1 ? "" : "s"}.</Text></View>
-      <View style={[styles.heroActions, compact && styles.heroActionsCompact]}><ActionButton icon="navigate-outline" label="Track" onPress={() => router.push(`/order/${id}/tracking` as never)} /><ActionButton icon="receipt-outline" label="Invoice" onPress={() => router.push(`/order/${id}/invoice` as never)} primary />{cancellable ? <ActionButton danger busy={cancel.isPending} icon="close-circle-outline" label="Cancel" onPress={() => cancel.mutate()} /> : null}</View>
+      <View style={[styles.heroActions, compact && styles.heroActionsCompact]}><ActionButton icon="navigate-outline" label="Track" onPress={() => router.push(`/order/${id}/tracking` as never)} /><ActionButton icon="receipt-outline" label="Invoice" onPress={() => router.push(`/order/${id}/invoice` as never)} primary />{cancellable ? <ActionButton danger busy={cancel.isPending} icon="close-circle-outline" label="Cancel" onPress={() => setConfirmCancel(true)} /> : null}</View>
     </View>
+    {confirmCancel ? <CancelOrderConfirmation key={`${id}:${user.uid}`} busy={cancel.isPending} eligible={cancellable} onClose={() => setConfirmCancel(false)} onConfirm={(reason) => cancel.mutate(reason)} /> : null}
     {cancel.error || createReturn.error ? <Text style={styles.error}>{(cancel.error || createReturn.error)?.message}</Text> : null}
     <ModuleCard title="Order progress" meta={cancellationCopy}><Progress steps={orderSteps} activeIndex={stageIndex} finalStatus={data.status} /></ModuleCard>
     <View style={styles.metrics}><Metric icon="storefront-outline" label="Seller packages" value={String(data.vendorOrders.length)} /><Metric icon="cube-outline" label="Units" value={String(itemCount)} /><Metric icon="shield-checkmark-outline" label="Buyer protection" value="Active" /></View>

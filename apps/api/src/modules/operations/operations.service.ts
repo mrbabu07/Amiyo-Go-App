@@ -69,7 +69,7 @@ export class OperationsService {
       if (!order) throw new ApiProblem(404, "ORDER_NOT_FOUND", "Order not found");
       if (order.version !== input.expectedVersion) throw new ApiProblem(409, "ORDER_VERSION_CONFLICT", "Order changed; refresh and try again");
       const placedAt = order.placedAt ?? order.createdAt;
-      if (!adminCancellation && placedAt.getTime() + customerCancellationWindowMs < Date.now()) throw new ApiProblem(409, "ORDER_CANCELLATION_WINDOW_EXPIRED", "Orders can only be cancelled within 30 minutes of placement");
+      if (!adminCancellation && placedAt.getTime() + customerCancellationWindowMs <= Date.now()) throw new ApiProblem(409, "ORDER_CANCELLATION_WINDOW_EXPIRED", "Orders can only be cancelled within 30 minutes of placement");
       if (!["PENDING_PAYMENT", "CONFIRMED", "PROCESSING"].includes(order.status) || order.vendorOrders.some((item) => !["PLACED", "ACCEPTED", "PROCESSING"].includes(item.status))) throw new ApiProblem(409, "ORDER_CANCELLATION_NOT_ALLOWED", "Order can no longer be cancelled");
       for (const reservation of order.reservations) {
         const inventory = await transaction.inventoryItem.findUniqueOrThrow({ where: { variantId: reservation.variantId } });

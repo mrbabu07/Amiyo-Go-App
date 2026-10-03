@@ -76,6 +76,7 @@ export const orderSchema = z.object({
   version: versionSchema,
   createdAt: timestampSchema,
   customer: z.object({ displayName: z.string(), email: z.string().nullable(), phone: z.string().nullable() }).optional(),
+  placedAt: timestampSchema.nullable().optional(),
   deliveryAddress: orderAddressSchema.nullable().optional(),
   payment: orderPaymentSchema.nullable().optional(),
   vendorOrders: z.array(vendorOrderSchema)
