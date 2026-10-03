@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { pathToFileURL } from "node:url";
+import { z } from "zod";
+import { returnSchema } from "@amiyo/contracts";
 import { adminOrderDetailSchema, adminWorkspaceSchema, customerOrderSummarySchema, fulfillmentDocumentSchema, orderSchema, orderTrackingSchema, sessionSchema, vendorCommissionInvoiceSchema, vendorFinanceSchema, vendorOrderDetailSchema, vendorStatementSchema } from "@amiyo/contracts";
 
 export function loopbackOrigin(value) {
@@ -45,6 +47,13 @@ export async function runAuthenticatedSmoke({ apiUrl = "http://127.0.0.1:4000", 
     });
   }
   const customerOrders = await check("customer", "/api/v2/orders", 200, customerOrderSummarySchema.array());
+  const returns = await check("admin", "/api/v2/admin/returns", 200, returnSchema.array());
+  const evidenceCaseId = returns?.[0]?.id ?? "00000000-0000-4000-8000-000000000000";
+  await check("customer", `/api/v2/admin/returns/${evidenceCaseId}/evidence`, 403);
+  await check("vendor", `/api/v2/admin/returns/${evidenceCaseId}/evidence`, 403);
+  if (returns?.length) {
+    await check("admin", `/api/v2/admin/returns/${evidenceCaseId}/evidence`, 200, z.array(z.object({ id: z.string().uuid(), name: z.string(), mimeType: z.string() }).strict()));
+  } else results.push({ role: "admin", check: "return-evidence-list", status: "skipped", reason: "No existing return fixture; none was created" });
   const vendorOrders = await check("vendor", "/api/v2/vendor/orders", 200, vendorOrderDetailSchema.array());
   const finance = await check("vendor", "/api/v2/vendor/finance", 200, vendorFinanceSchema);
   await check("admin", "/api/v2/admin/workspace", 200, adminWorkspaceSchema);
