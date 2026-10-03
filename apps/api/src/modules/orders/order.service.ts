@@ -12,7 +12,6 @@ import { buildInvoiceQrPayload, buildParcelQrPayload, verifyDocumentQrPayload } 
 const vendorOrderInclude = {
   order: { include: { addresses: true, payments: { orderBy: { createdAt: "desc" as const }, take: 1 }, user: { include: { profile: true } } } },
   shop: true,
-  vendor: true,
   items: true,
   shipments: { orderBy: { createdAt: "desc" as const }, take: 1, include: { events: { orderBy: { occurredAt: "asc" as const } } } },
   dispatches: { orderBy: { createdAt: "desc" as const }, take: 1 }
@@ -46,6 +45,11 @@ function requireVendorAccess(session: Session, vendorId: string, permission: "or
   if (session.status !== "ACTIVE" || !session.permissions.includes(permission) || (!session.principal.roles.includes("SUPER_ADMIN") && !session.principal.roles.includes("OPERATIONS_ADMIN") && !session.principal.vendorIds.includes(vendorId))) throw new ApiProblem(403, "VENDOR_ORDER_FORBIDDEN", "You cannot access this vendor order");
 }
 
+function requireVendorReader(session: Session) {
+  const elevated = session.principal.roles.some((role) => role === "SUPER_ADMIN" || role === "OPERATIONS_ADMIN");
+  if (session.status !== "ACTIVE" || !session.permissions.includes("orders:read") || (!elevated && session.principal.vendorIds.length === 0)) throw new ApiProblem(403, "VENDOR_ORDER_FORBIDDEN", "You cannot access this vendor order");
+}
+
 function pickupFromSettings(settings: Prisma.JsonValue | null, fallbackName: string) {
   const value = settings && typeof settings === "object" && !Array.isArray(settings) ? settings as Record<string, unknown> : {};
   const pickup = value.pickupAddress && typeof value.pickupAddress === "object" && !Array.isArray(value.pickupAddress) ? value.pickupAddress as Record<string, unknown> : {};
@@ -76,13 +80,15 @@ export class OrderService {
   constructor(private readonly client: PrismaClient) {}
 
   async vendorOrders(session: Session, status?: VendorOrderStatus) {
-    if (!session.permissions.includes("orders:read")) throw new ApiProblem(403, "ORDERS_FORBIDDEN", "Order access is not allowed");
+    if (session.status !== "ACTIVE" || !session.permissions.includes("orders:read")) throw new ApiProblem(403, "ORDERS_FORBIDDEN", "Order access is not allowed");
     const elevated = session.principal.roles.some((role) => ["SUPER_ADMIN", "OPERATIONS_ADMIN"].includes(role));
+    if (!elevated && session.principal.vendorIds.length === 0) return [];
     const rows = await this.client.vendorOrder.findMany({ where: { ...(elevated ? {} : { vendorId: { in: session.principal.vendorIds } }), ...(status ? { status } : {}) }, include: vendorOrderInclude, orderBy: { createdAt: "desc" }, take: 100 });
     return rows.map(vendorOrderDto);
   }
 
   async vendorOrder(session: Session, id: string) {
+    requireVendorReader(session);
     const row = await this.client.vendorOrder.findUnique({ where: { id }, include: vendorOrderInclude });
     if (!row) throw new ApiProblem(404, "VENDOR_ORDER_NOT_FOUND", "Vendor order not found");
     requireVendorAccess(session, row.vendorId, "orders:read");
@@ -90,6 +96,7 @@ export class OrderService {
   }
 
   async fulfillmentDocument(session: Session, id: string) {
+    requireVendorReader(session);
     const row = await this.client.vendorOrder.findUnique({ where: { id }, include: vendorOrderInclude });
     if (!row) throw new ApiProblem(404, "VENDOR_ORDER_NOT_FOUND", "Vendor order not found");
     requireVendorAccess(session, row.vendorId, "orders:read");
