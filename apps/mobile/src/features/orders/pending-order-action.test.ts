@@ -69,6 +69,8 @@ test("only definite fresh pre-write rejections may clear saved requests", () => 
   assert.equal(mayDiscardOrderRejection(false, 409, "ORDER_VERSION_CONFLICT"), false);
   assert.equal(mayDiscardOrderRejection(true, 500, "ORDER_VERSION_CONFLICT"), false);
   assert.equal(mayDiscardOrderRejection(true, 409, "RESOURCE_CONFLICT"), false);
+  assert.equal(mayDiscardOrderRejection(true, 400, "RETURN_EVIDENCE_INVALID"), true);
+  assert.equal(mayDiscardOrderRejection(false, 400, "RETURN_EVIDENCE_INVALID"), false);
 });
 
 test("concurrent preparation cannot replace an in-flight saved key in one runtime", async () => {

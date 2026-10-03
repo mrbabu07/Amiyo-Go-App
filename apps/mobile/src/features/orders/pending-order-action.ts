@@ -9,7 +9,7 @@ export type OrderCommand = z.infer<typeof orderCommandSchema>;
 const pendingSchema = z.object({ version: z.literal(1), key: z.string().uuid(), createdAt: z.number().int().nonnegative(), command: orderCommandSchema });
 export type PendingOrderAction = z.infer<typeof pendingSchema>;
 export const orderRecoveryWindowMs = 23 * 60 * 60_000;
-const rejectedBeforeWrite = new Set(["VALIDATION_ERROR", "ORDER_NOT_FOUND", "ORDER_VERSION_CONFLICT", "ORDER_CANCELLATION_WINDOW_EXPIRED", "ORDER_CANCELLATION_NOT_ALLOWED", "RETURN_NOT_ELIGIBLE", "RETURN_ITEM_INVALID", "RETURN_QUANTITY_EXCEEDED"]);
+const rejectedBeforeWrite = new Set(["VALIDATION_ERROR", "ORDER_NOT_FOUND", "ORDER_VERSION_CONFLICT", "ORDER_CANCELLATION_WINDOW_EXPIRED", "ORDER_CANCELLATION_NOT_ALLOWED", "RETURN_NOT_ELIGIBLE", "RETURN_ITEM_INVALID", "RETURN_QUANTITY_EXCEEDED", "RETURN_EVIDENCE_INVALID"]);
 export const mayDiscardOrderRejection = (fresh: boolean, status: number, code: string) => fresh && [400, 404, 409].includes(status) && rejectedBeforeWrite.has(code);
 export function assertOrderRecoveryTime(record: PendingOrderAction, now: number) {
   if (now < record.createdAt || now - record.createdAt >= orderRecoveryWindowMs) throw new Error("Request recovery expired. Check orders/returns and contact support before submitting again.");
