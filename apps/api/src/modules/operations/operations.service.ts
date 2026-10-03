@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { assertReturnPolicy, loadReturnPolicy } from "./return-policy.js";
 import { Prisma, type DeliverySetting, type PrismaClient, type ReturnStatus } from "@prisma/client";
 import type { AdminCodConfirmationInput, AdminCodDeliveryInput, AdminOrderRefundInput, CancelOrder, CodReconciliationInput, CompletePayout, CompleteRefund, CreatePayoutRequest, CreateReturn, CreateSettlementProposal, DeliveryRetryInput, DeliverySettingsInput, ProviderOrderRefundInput, ReturnTransition, ReviewPayout, SellerReturnReceipt, SellerReturnResponse, ServiceabilityInput, Session } from "@amiyo/contracts";
 import { assertAvailableBalance, assertRefundLimit, calculateLedgerBalance, canTransitionReturn, providerReferenceValid, refundProviderRule, settlementDecision, settlementProposalDecision } from "@amiyo/domain";
@@ -95,8 +96,9 @@ export class OperationsService {
     const scope = `return-create:${session.principal.userId}:${input.vendorOrderId}`;
     return withSerializableTransaction(this.client, async (transaction) => {
       const prior = await replay(transaction, scope, key, input); if (prior.response) return prior.response;
-      const vendorOrder = await transaction.vendorOrder.findFirst({ where: { id: input.vendorOrderId, status: "DELIVERED", order: { userId: session.principal.userId } }, include: { order: true, items: { include: { returnItems: { where: { returnRequest: { status: { notIn: ["REJECTED", "CLOSED"] } } } } } } } });
+      const vendorOrder = await transaction.vendorOrder.findFirst({ where: { id: input.vendorOrderId, status: "DELIVERED", order: { userId: session.principal.userId } }, include: { order: true, shipments: { select: { deliveredAt: true }, take: 1 }, items: { include: { returnItems: { where: { returnRequest: { status: { notIn: ["REJECTED", "CLOSED"] } } } } } } } });
       if (!vendorOrder) throw new ApiProblem(409, "RETURN_NOT_ELIGIBLE", "Only your delivered order can be returned");
+      assertReturnPolicy({ deadline: vendorOrder.order.returnWindowUntil, deliveredAt: vendorOrder.shipments[0]?.deliveredAt ?? null, evidenceCount: input.evidenceStorageKeys?.length ?? 0, policy: await loadReturnPolicy(transaction), now: Date.now() });
       const evidenceStorageKeys = await validateCustomerReturnEvidence(transaction, session.principal.userId, input.evidenceStorageKeys);
       let requestedMinor = 0n; const items = input.items.map((requested) => {
         const item = vendorOrder.items.find((candidate) => candidate.id === requested.orderItemId); if (!item) throw new ApiProblem(400, "RETURN_ITEM_INVALID", "Return item does not belong to this vendor order");

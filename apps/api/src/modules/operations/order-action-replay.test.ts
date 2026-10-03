@@ -15,6 +15,7 @@ function replayClient(kind: "cancel" | "return", now: number) {
   let completed = false;
   const write = (name: string) => { effects.push(name); };
   const transaction = {
+    platformConfiguration: { findUnique: async () => ({ returnPolicy: { windowDays: 7, requireEvidence: false } }) },
     idempotencyRecord: {
       findUnique: async ({ where }: { where: { scope_key: { scope: string; key: string } } }) => records.get(JSON.stringify(where.scope_key)) ?? null,
       create: async ({ data }: { data: { scope: string; key: string; requestHash: string; response: unknown } }) => {
@@ -31,7 +32,7 @@ function replayClient(kind: "cancel" | "return", now: number) {
       updateMany: async () => { write("packages-cancelled"); },
       findFirst: async ({ where }: { where: { order: { userId: string }; status: string } }) => {
         assert.equal(where.status, "DELIVERED");
-        return completed || where.order.userId !== "customer" ? null : { id: "package", orderId: "order", order: { currency: "BDT" }, items: [{ id: "item", quantity: 3, lineTotalMinor: 900n, returnItems: [{ quantity: 1 }] }] };
+        return completed || where.order.userId !== "customer" ? null : { id: "package", orderId: "order", order: { currency: "BDT", returnWindowUntil: null }, shipments: [{ deliveredAt: new Date(now - 1000) }], items: [{ id: "item", quantity: 3, lineTotalMinor: 900n, returnItems: [{ quantity: 1 }] }] };
       }
     },
     return: { create: async ({ data }: { data: { requestedMinor: bigint; reasonCode: string; reasonDetail?: string; items: { create: Array<{ orderItemId: string; quantity: number; requestedMinor: bigint }> } } }) => {
@@ -67,12 +68,15 @@ test("lost cancellation response replays after eligibility expires without repea
   assert.deepEqual(effects, committed);
 });
 
-test("lost partial-return response replays without duplicating quantities, audit or outbox", async () => {
-  const { service, effects } = replayClient("return", Date.now());
+test("lost partial-return response replays without duplicating quantities, audit or outbox", async (context) => {
+  let now = Date.now();
+  context.mock.method(Date, "now", () => now);
+  const { service, effects } = replayClient("return", now);
   const input = { vendorOrderId: "package", reasonCode: "DAMAGED", refundMethod: "ORIGINAL_PAYMENT" as const, items: [{ orderItemId: "item", quantity: 1 }] };
   await assert.rejects(() => service.createReturn(customer, input, key), /response lost after commit/);
   const committed = [...effects];
   assert.deepEqual(committed, ["return", "order", "outbox", "audit", "idempotency"]);
+  now += 8 * 86400000;
   const replay = await service.createReturn(customer, input, key) as { requestedAmount: { amountMinor: string }; items: Array<{ quantity: number }> };
   assert.equal(replay.requestedAmount.amountMinor, "300");
   assert.equal(replay.items[0]?.quantity, 1);

@@ -49,7 +49,7 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
   };
   return <View style={styles.panel}>
     <Text accessibilityRole="header" style={styles.title}>Request a return</Text>
-    <Text style={styles.copy}>Select only the items and quantities you want to return. Eligibility and previously requested quantities are checked by the server.</Text>
+    <Text style={styles.copy}>Select the items and quantities to return. The delivery-based return window, admin-approved exceptions and evidence policy are checked by the server. Attach evidence when your policy requires it.</Text>
     {review ? <>
       {review.items.map((item) => <Text key={item.orderItemId} style={styles.copy}>{vendorOrder.items.find((entry) => entry.id === item.orderItemId)?.productName} × {item.quantity}</Text>)}
       <Text style={styles.copy}>Reason: {reasons.find((entry) => entry.code === review.reasonCode)?.label}</Text>
@@ -76,7 +76,7 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
       {reasons.map((entry) => <Pressable key={entry.code} accessibilityRole="radio" accessibilityState={{ checked: reason === entry.code }} disabled={disabled} onPress={() => setReason(entry.code)} style={[styles.option, reason === entry.code && styles.selected]}><Text style={styles.copy}>{entry.label}</Text></Pressable>)}
       <Text style={styles.copy}>Additional details (optional)</Text>
       <TextInput accessibilityLabel="Return details" multiline maxLength={1000} editable={!disabled} value={detail} onChangeText={setDetail} style={styles.input} />
-      <Text style={styles.title}>Evidence ({files.length}/5, optional)</Text>
+      <Text style={styles.title}>Evidence ({files.length}/5, required when specified by policy)</Text>
       <Text style={styles.copy}>Attach photos or PDFs. Avoid including unrelated personal or payment information.</Text>
       <Pressable accessibilityRole="button" disabled={disabled || files.length >= 5 || !user} onPress={() => void attach()} style={styles.option}><Text style={styles.copy}>{uploading ? "Uploading evidence..." : "Add image or PDF"}</Text></Pressable>
       {files.map((file) => <View key={file.key} style={styles.item}><Text style={styles.copy}>{file.name}</Text><Pressable accessibilityRole="button" accessibilityLabel={`Remove evidence ${file.name}`} disabled={disabled} onPress={() => setFiles((current) => current.filter((entry) => entry.key !== file.key))} style={styles.option}><Text style={styles.copy}>Remove attachment</Text></Pressable></View>)}
