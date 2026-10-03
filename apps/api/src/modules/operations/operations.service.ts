@@ -11,6 +11,7 @@ import { loadBusinessRules } from "../admin/business-rules-config.js";
 import { SslCommerzGateway } from "../commerce/sslcommerz.gateway.js";
 import { allocateOrderRefund, assertRefundAccountingHistory, reverseSellerSettlement } from "./refund-allocation.js";
 import { initiateRefundOnce } from "./provider-refund-initiation.js";
+import { validateCustomerReturnEvidence } from "./return-evidence.js";
 
 const json = (value: unknown) => JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 const money = (amountMinor: bigint, currency = "BDT") => ({ amountMinor: amountMinor.toString(), currency });
@@ -96,12 +97,13 @@ export class OperationsService {
       const prior = await replay(transaction, scope, key, input); if (prior.response) return prior.response;
       const vendorOrder = await transaction.vendorOrder.findFirst({ where: { id: input.vendorOrderId, status: "DELIVERED", order: { userId: session.principal.userId } }, include: { order: true, items: { include: { returnItems: { where: { returnRequest: { status: { notIn: ["REJECTED", "CLOSED"] } } } } } } } });
       if (!vendorOrder) throw new ApiProblem(409, "RETURN_NOT_ELIGIBLE", "Only your delivered order can be returned");
+      const evidenceStorageKeys = await validateCustomerReturnEvidence(transaction, session.principal.userId, input.evidenceStorageKeys);
       let requestedMinor = 0n; const items = input.items.map((requested) => {
         const item = vendorOrder.items.find((candidate) => candidate.id === requested.orderItemId); if (!item) throw new ApiProblem(400, "RETURN_ITEM_INVALID", "Return item does not belong to this vendor order");
         const alreadyRequested = item.returnItems.reduce((sum, row) => sum + row.quantity, 0); if (requested.quantity + alreadyRequested > item.quantity) throw new ApiProblem(409, "RETURN_QUANTITY_EXCEEDED", "Return quantity exceeds delivered quantity");
         const amount = (item.lineTotalMinor * BigInt(requested.quantity)) / BigInt(item.quantity); requestedMinor += amount; return { orderItemId: item.id, quantity: requested.quantity, requestedMinor: amount };
       });
-      const created = await transaction.return.create({ data: { orderId: vendorOrder.orderId, vendorOrderId: vendorOrder.id, userId: session.principal.userId, reasonCode: input.reasonCode, reasonDetail: input.reasonDetail ?? null, refundMethod: input.refundMethod, requestedMinor, currency: vendorOrder.order.currency, items: { create: items }, events: { create: { toStatus: "REQUESTED", actorType: "customer", actorId: session.principal.userId } } }, include: { items: true } });
+      const created = await transaction.return.create({ data: { orderId: vendorOrder.orderId, vendorOrderId: vendorOrder.id, userId: session.principal.userId, reasonCode: input.reasonCode, reasonDetail: input.reasonDetail ?? null, refundMethod: input.refundMethod, requestedMinor, currency: vendorOrder.order.currency, items: { create: items }, events: { create: { toStatus: "REQUESTED", actorType: "customer", actorId: session.principal.userId, metadata: json({ evidenceStorageKeys }) } } }, include: { items: true } });
       await transaction.order.update({ where: { id: vendorOrder.orderId }, data: { status: "RETURN_REQUESTED", version: { increment: 1 } } });
       await this.outbox.enqueue(transaction, { aggregateType: "return", aggregateId: created.id, eventType: "return.requested", idempotencyKey: `return-requested:${created.id}`, payload: { orderId: created.orderId, vendorOrderId: created.vendorOrderId } });
       await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "customer", action: "return.requested", resourceType: "return", resourceId: created.id, ...(correlationId ? { correlationId } : {}), after: json({ requestedMinor: requestedMinor.toString(), reasonCode: input.reasonCode }) } });

@@ -32,6 +32,7 @@ export const createReturnSchema = z.object({
   reasonCode: z.string().trim().min(2).max(80),
   reasonDetail: z.string().trim().max(1000).nullable().optional(),
   refundMethod: z.enum(["ORIGINAL_PAYMENT", "MANUAL"]).default("ORIGINAL_PAYMENT"),
+  evidenceStorageKeys: z.array(z.string().trim().min(3).max(500)).max(5).refine((keys) => new Set(keys).size === keys.length, "Evidence files must be unique").optional(),
   items: z.array(z.object({ orderItemId: uuidSchema, quantity: z.number().int().positive() })).min(1)
 }).refine((value) => new Set(value.items.map((item) => item.orderItemId)).size === value.items.length, "Return items must be unique");
 

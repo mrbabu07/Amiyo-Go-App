@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { createReturnSchema } from "@amiyo/contracts";
 import { buildReturnSelection, remainingReturnQuantity } from "./return-selection";
 
 const packageId = "00000000-0000-4000-8000-000000000001";
@@ -7,6 +8,14 @@ const first = "00000000-0000-4000-8000-000000000002";
 const second = "00000000-0000-4000-8000-000000000003";
 const available = [{ id: first, quantity: 3 }, { id: second, quantity: 2 }];
 const build = (quantities: Record<string, number>) => buildReturnSelection(packageId, available, quantities, "DAMAGED", "  Broken  ", "MANUAL");
+
+test("return evidence accepts optional keys but rejects duplicates and too many attachments", () => {
+  const input = build({ [first]: 1 });
+  assert.ok(createReturnSchema.safeParse(input).success);
+  assert.deepEqual(createReturnSchema.parse({ ...input, evidenceStorageKeys: ["private/return_evidence/file"] }).evidenceStorageKeys, ["private/return_evidence/file"]);
+  assert.equal(createReturnSchema.safeParse({ ...input, evidenceStorageKeys: ["same", "same"] }).success, false);
+  assert.equal(createReturnSchema.safeParse({ ...input, evidenceStorageKeys: Array.from({ length: 6 }, (_, index) => `file-${index}`) }).success, false);
+});
 
 test("return sends only selected partial quantities and chosen refund preference", () => {
   const result = build({ [first]: 1, [second]: 0 });

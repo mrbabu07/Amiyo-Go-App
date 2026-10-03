@@ -1,8 +1,11 @@
-import type { CreateReturn, OrderDto } from "@amiyo/contracts";
+import { createReturnSchema, type CreateReturn, type OrderDto } from "@amiyo/contracts";
 import { useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { buildReturnSelection, remainingReturnQuantity } from "./return-selection";
+import { useCurrentUser } from "../auth/use-current-user";
+import { firebaseAuth } from "../auth/firebase";
+import { pickAndUploadDocument } from "../media/media.api";
 
 const reasons = [{ code: "DAMAGED", label: "Damaged item" }, { code: "DEFECTIVE", label: "Not working" }, { code: "WRONG_ITEM", label: "Wrong item" }, { code: "OTHER", label: "Other issue" }];
 
@@ -15,9 +18,23 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
   const [error, setError] = useState("");
   const submitting = useRef(false);
   const [sending, setSending] = useState(false);
-  const disabled = busy || sending;
+  const user = useCurrentUser();
+  const [files, setFiles] = useState<Array<{ key: string; name: string }>>([]);
+  const [uploading, setUploading] = useState(false);
+  const uploadLock = useRef(false);
+  const disabled = busy || sending || uploading;
+  const attach = async () => {
+    if (!user || disabled || uploadLock.current || files.length >= 5) return;
+    const accountId = user.uid;
+    uploadLock.current = true; setUploading(true); setError("");
+    try {
+      const uploaded = await pickAndUploadDocument(user, "return_evidence");
+      if (uploaded && firebaseAuth?.currentUser?.uid === accountId) setFiles((current) => current.length < 5 ? [...current, { key: uploaded.storageKey, name: uploaded.originalName }] : current);
+    } catch (failure) { setError(failure instanceof Error ? failure.message : "Could not attach evidence."); }
+    finally { uploadLock.current = false; setUploading(false); }
+  };
   const prepare = () => {
-    try { setReview(buildReturnSelection(vendorOrder.id, vendorOrder.items, quantities, reason, detail, method)); setError(""); }
+    try { setReview(createReturnSchema.parse({ ...buildReturnSelection(vendorOrder.id, vendorOrder.items, quantities, reason, detail, method), evidenceStorageKeys: files.map((file) => file.key) })); setError(""); }
     catch (failure) { setError(reason ? (failure instanceof Error ? failure.message : "Check your selection.") : "Choose a return reason."); }
   };
   const submit = async () => {
@@ -25,7 +42,7 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
     submitting.current = true; setSending(true); setError("");
     try {
       const checked = buildReturnSelection(vendorOrder.id, vendorOrder.items, Object.fromEntries(review.items.map((item) => [item.orderItemId, item.quantity])), review.reasonCode, review.reasonDetail ?? "", review.refundMethod);
-      await onSubmit(checked);
+      await onSubmit({ ...checked, evidenceStorageKeys: review.evidenceStorageKeys });
     }
     catch (failure) { setError(failure instanceof Error ? failure.message : "Could not submit your return."); }
     finally { submitting.current = false; setSending(false); }
@@ -37,6 +54,8 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
       {review.items.map((item) => <Text key={item.orderItemId} style={styles.copy}>{vendorOrder.items.find((entry) => entry.id === item.orderItemId)?.productName} × {item.quantity}</Text>)}
       <Text style={styles.copy}>Reason: {reasons.find((entry) => entry.code === review.reasonCode)?.label}</Text>
       {review.reasonDetail ? <Text style={styles.copy}>{review.reasonDetail}</Text> : null}
+      <Text style={styles.copy}>Evidence: {files.length} file(s)</Text>
+      {files.map((file) => <Text key={file.key} style={styles.copy}>{file.name}</Text>)}
       <Text style={styles.copy}>Refund: {review.refundMethod === "MANUAL" ? "Manual arrangement after approval" : "Original payment method"}. Submitting is not a refund approval.</Text>
       <Pressable accessibilityRole="button" disabled={disabled} onPress={() => void submit()} style={[styles.primary, disabled && styles.disabled]}><Text style={styles.light}>{disabled ? "Submitting..." : "Confirm return request"}</Text></Pressable>
       <Pressable accessibilityRole="button" disabled={disabled} onPress={() => setReview(null)} style={styles.option}><Text style={styles.copy}>Edit selection</Text></Pressable>
@@ -57,6 +76,10 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
       {reasons.map((entry) => <Pressable key={entry.code} accessibilityRole="radio" accessibilityState={{ checked: reason === entry.code }} disabled={disabled} onPress={() => setReason(entry.code)} style={[styles.option, reason === entry.code && styles.selected]}><Text style={styles.copy}>{entry.label}</Text></Pressable>)}
       <Text style={styles.copy}>Additional details (optional)</Text>
       <TextInput accessibilityLabel="Return details" multiline maxLength={1000} editable={!disabled} value={detail} onChangeText={setDetail} style={styles.input} />
+      <Text style={styles.title}>Evidence ({files.length}/5, optional)</Text>
+      <Text style={styles.copy}>Attach photos or PDFs. Avoid including unrelated personal or payment information.</Text>
+      <Pressable accessibilityRole="button" disabled={disabled || files.length >= 5 || !user} onPress={() => void attach()} style={styles.option}><Text style={styles.copy}>{uploading ? "Uploading evidence..." : "Add image or PDF"}</Text></Pressable>
+      {files.map((file) => <View key={file.key} style={styles.item}><Text style={styles.copy}>{file.name}</Text><Pressable accessibilityRole="button" accessibilityLabel={`Remove evidence ${file.name}`} disabled={disabled} onPress={() => setFiles((current) => current.filter((entry) => entry.key !== file.key))} style={styles.option}><Text style={styles.copy}>Remove attachment</Text></Pressable></View>)}
       <Text style={styles.title}>Refund preference</Text>
       {(["ORIGINAL_PAYMENT", "MANUAL"] as const).map((value) => <Pressable key={value} accessibilityRole="radio" accessibilityState={{ checked: method === value }} disabled={disabled} onPress={() => setMethod(value)} style={[styles.option, method === value && styles.selected]}><Text style={styles.copy}>{value === "MANUAL" ? "Manual arrangement with support" : "Original payment method"}</Text></Pressable>)}
       <Pressable accessibilityRole="button" disabled={disabled} onPress={prepare} style={styles.primary}><Text style={styles.light}>Review return request</Text></Pressable>
