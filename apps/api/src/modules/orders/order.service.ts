@@ -83,8 +83,24 @@ export class OrderService {
     if (session.status !== "ACTIVE" || !session.permissions.includes("orders:read")) throw new ApiProblem(403, "ORDERS_FORBIDDEN", "Order access is not allowed");
     const elevated = session.principal.roles.some((role) => ["SUPER_ADMIN", "OPERATIONS_ADMIN"].includes(role));
     if (!elevated && session.principal.vendorIds.length === 0) return [];
-    const rows = await this.client.vendorOrder.findMany({ where: { ...(elevated ? {} : { vendorId: { in: session.principal.vendorIds } }), ...(status ? { status } : {}) }, include: vendorOrderInclude, orderBy: { createdAt: "desc" }, take: 100 });
-    return rows.map(vendorOrderDto);
+    const rows = await this.client.vendorOrder.findMany({ where: { ...(elevated ? {} : { vendorId: { in: session.principal.vendorIds } }), ...(status ? { status } : {}) }, include: { shop: true, items: true }, orderBy: { createdAt: "desc" }, take: 100 });
+    if (!rows.length) return [];
+    const packageIds = rows.map((row) => row.id);
+    const orderIds = [...new Set(rows.map((row) => row.orderId))];
+    const [orders, shipments, dispatchPackages] = await Promise.all([
+      this.client.order.findMany({ where: { id: { in: orderIds } }, include: vendorOrderInclude.order.include }),
+      this.client.shipment.findMany({ where: { vendorOrderId: { in: packageIds } }, include: { events: vendorOrderInclude.shipments.include.events } }),
+      this.client.vendorOrder.findMany({ where: { id: { in: packageIds } }, select: { id: true, dispatches: vendorOrderInclude.dispatches } })
+    ]);
+    const ordersById = new Map(orders.map((order) => [order.id, order]));
+    const shipmentsByPackage = new Map(shipments.map((shipment) => [shipment.vendorOrderId, shipment]));
+    const dispatchesByPackage = new Map(dispatchPackages.map((row) => [row.id, row.dispatches]));
+    return rows.map((row) => {
+      const order = ordersById.get(row.orderId);
+      if (!order) throw new ApiProblem(503, "ORDER_READ_INCOMPLETE", "Order data changed; please retry");
+      const shipment = shipmentsByPackage.get(row.id);
+      return vendorOrderDto({ ...row, order, shipments: shipment ? [shipment] : [], dispatches: dispatchesByPackage.get(row.id) ?? [] });
+    });
   }
 
   async vendorOrder(session: Session, id: string) {
