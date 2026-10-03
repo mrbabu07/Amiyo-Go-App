@@ -14,7 +14,7 @@ Tests cover configured expiry, exact boundary, admin extension, missing/invalid/
 
 Validation: full `npm test` passed (including 91 repository script checks); final rebuild, six focused policy/replay tests and all 65 mobile tests passed. Secret scan and whitespace checks passed.
 
-- Display an exact per-package deadline/eligibility summary in the customer UI rather than relying only on submission errors and explanatory text.
+- Exact per-package deadline/eligibility UI is now implemented; see `return-eligibility-ui-2026-10-03.md`. Rendered browser/device acceptance remains open.
 - Exercise policy changes and admin extensions in staging with real delivery events and configured evidence storage.
 - Legacy delivered packages lacking delivery dates need operational reconciliation, not fabricated timestamps.
 - Return-window snapshots, restocking-fee policy and historical financial acceptance need owner-approved semantics; do not infer them from the window guard.

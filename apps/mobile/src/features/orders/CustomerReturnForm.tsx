@@ -1,11 +1,12 @@
 import { createReturnSchema, type CreateReturn, type OrderDto } from "@amiyo/contracts";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { buildReturnSelection, remainingReturnQuantity } from "./return-selection";
 import { useCurrentUser } from "../auth/use-current-user";
 import { firebaseAuth } from "../auth/firebase";
 import { pickAndUploadDocument } from "../media/media.api";
+import { returnEligibilityMessage } from "./return-eligibility";
 
 const reasons = [{ code: "DAMAGED", label: "Damaged item" }, { code: "DEFECTIVE", label: "Not working" }, { code: "WRONG_ITEM", label: "Wrong item" }, { code: "OTHER", label: "Other issue" }];
 
@@ -22,7 +23,16 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
   const [files, setFiles] = useState<Array<{ key: string; name: string }>>([]);
   const [uploading, setUploading] = useState(false);
   const uploadLock = useRef(false);
-  const disabled = busy || sending || uploading;
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
+  const eligibility = vendorOrder.returnEligibility;
+  const unavailable = returnEligibilityMessage(eligibility, now);
+  const disabled = busy || sending || uploading || Boolean(unavailable);
+  const checkPolicy = (evidenceCount: number) => {
+    const message = returnEligibilityMessage(eligibility, Date.now());
+    if (message) throw new Error(message);
+    if (eligibility?.requireEvidence && evidenceCount === 0) throw new Error("Attach at least one image or PDF before requesting a return.");
+  };
   const attach = async () => {
     if (!user || disabled || uploadLock.current || files.length >= 5) return;
     const accountId = user.uid;
@@ -34,13 +44,14 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
     finally { uploadLock.current = false; setUploading(false); }
   };
   const prepare = () => {
-    try { setReview(createReturnSchema.parse({ ...buildReturnSelection(vendorOrder.id, vendorOrder.items, quantities, reason, detail, method), evidenceStorageKeys: files.map((file) => file.key) })); setError(""); }
+    try { checkPolicy(files.length); setReview(createReturnSchema.parse({ ...buildReturnSelection(vendorOrder.id, vendorOrder.items, quantities, reason, detail, method), evidenceStorageKeys: files.map((file) => file.key) })); setError(""); }
     catch (failure) { setError(reason ? (failure instanceof Error ? failure.message : "Check your selection.") : "Choose a return reason."); }
   };
   const submit = async () => {
     if (!review || disabled || submitting.current) return;
     submitting.current = true; setSending(true); setError("");
     try {
+      checkPolicy(review.evidenceStorageKeys?.length ?? 0);
       const checked = buildReturnSelection(vendorOrder.id, vendorOrder.items, Object.fromEntries(review.items.map((item) => [item.orderItemId, item.quantity])), review.reasonCode, review.reasonDetail ?? "", review.refundMethod);
       await onSubmit({ ...checked, evidenceStorageKeys: review.evidenceStorageKeys });
     }
@@ -49,7 +60,9 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
   };
   return <View style={styles.panel}>
     <Text accessibilityRole="header" style={styles.title}>Request a return</Text>
-    <Text style={styles.copy}>Select the items and quantities to return. The delivery-based return window, admin-approved exceptions and evidence policy are checked by the server. Attach evidence when your policy requires it.</Text>
+    <Text style={styles.copy}>Select the items and quantities to return. Eligibility is checked again by the server when you submit.</Text>
+    {eligibility?.deadline ? <Text style={styles.copy}>Return before: {new Date(eligibility.deadline).toLocaleString()} (your local time)</Text> : null}
+    {unavailable ? <Text accessibilityRole="alert" style={styles.error}>{unavailable}</Text> : null}
     {review ? <>
       {review.items.map((item) => <Text key={item.orderItemId} style={styles.copy}>{vendorOrder.items.find((entry) => entry.id === item.orderItemId)?.productName} × {item.quantity}</Text>)}
       <Text style={styles.copy}>Reason: {reasons.find((entry) => entry.code === review.reasonCode)?.label}</Text>
@@ -57,7 +70,7 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
       <Text style={styles.copy}>Evidence: {files.length} file(s)</Text>
       {files.map((file) => <Text key={file.key} style={styles.copy}>{file.name}</Text>)}
       <Text style={styles.copy}>Refund: {review.refundMethod === "MANUAL" ? "Manual arrangement after approval" : "Original payment method"}. Submitting is not a refund approval.</Text>
-      <Pressable accessibilityRole="button" disabled={disabled} onPress={() => void submit()} style={[styles.primary, disabled && styles.disabled]}><Text style={styles.light}>{disabled ? "Submitting..." : "Confirm return request"}</Text></Pressable>
+      <Pressable accessibilityRole="button" disabled={disabled} onPress={() => void submit()} style={[styles.primary, disabled && styles.disabled]}><Text style={styles.light}>{sending || busy ? "Submitting..." : "Confirm return request"}</Text></Pressable>
       <Pressable accessibilityRole="button" disabled={disabled} onPress={() => setReview(null)} style={styles.option}><Text style={styles.copy}>Edit selection</Text></Pressable>
     </> : <>
       {vendorOrder.items.map((item) => {
@@ -76,7 +89,7 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
       {reasons.map((entry) => <Pressable key={entry.code} accessibilityRole="radio" accessibilityState={{ checked: reason === entry.code }} disabled={disabled} onPress={() => setReason(entry.code)} style={[styles.option, reason === entry.code && styles.selected]}><Text style={styles.copy}>{entry.label}</Text></Pressable>)}
       <Text style={styles.copy}>Additional details (optional)</Text>
       <TextInput accessibilityLabel="Return details" multiline maxLength={1000} editable={!disabled} value={detail} onChangeText={setDetail} style={styles.input} />
-      <Text style={styles.title}>Evidence ({files.length}/5, required when specified by policy)</Text>
+      <Text style={styles.title}>Evidence ({files.length}/5, {eligibility?.requireEvidence === true ? "required" : eligibility?.requireEvidence === false ? "optional" : "policy unavailable"})</Text>
       <Text style={styles.copy}>Attach photos or PDFs. Avoid including unrelated personal or payment information.</Text>
       <Pressable accessibilityRole="button" disabled={disabled || files.length >= 5 || !user} onPress={() => void attach()} style={styles.option}><Text style={styles.copy}>{uploading ? "Uploading evidence..." : "Add image or PDF"}</Text></Pressable>
       {files.map((file) => <View key={file.key} style={styles.item}><Text style={styles.copy}>{file.name}</Text><Pressable accessibilityRole="button" accessibilityLabel={`Remove evidence ${file.name}`} disabled={disabled} onPress={() => setFiles((current) => current.filter((entry) => entry.key !== file.key))} style={styles.option}><Text style={styles.copy}>Remove attachment</Text></Pressable></View>)}

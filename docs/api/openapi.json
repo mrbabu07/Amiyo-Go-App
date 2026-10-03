@@ -1836,6 +1836,40 @@
                     "shopName": {
                       "type": "string"
                     },
+                    "returnEligibility": {
+                      "type": "object",
+                      "properties": {
+                        "deadline": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "date-time"
+                        },
+                        "requireEvidence": {
+                          "type": [
+                            "boolean",
+                            "null"
+                          ]
+                        },
+                        "reason": {
+                          "type": "string",
+                          "enum": [
+                            "AVAILABLE",
+                            "EXPIRED",
+                            "DELIVERY_UNVERIFIED",
+                            "NOT_DELIVERED",
+                            "NO_ITEMS",
+                            "POLICY_UNAVAILABLE"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "deadline",
+                        "requireEvidence",
+                        "reason"
+                      ]
+                    },
                     "shipment": {
                       "type": [
                         "object",
@@ -3281,6 +3315,40 @@
                 "shopName": {
                   "type": "string"
                 },
+                "returnEligibility": {
+                  "type": "object",
+                  "properties": {
+                    "deadline": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    },
+                    "requireEvidence": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "AVAILABLE",
+                        "EXPIRED",
+                        "DELIVERY_UNVERIFIED",
+                        "NOT_DELIVERED",
+                        "NO_ITEMS",
+                        "POLICY_UNAVAILABLE"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "deadline",
+                    "requireEvidence",
+                    "reason"
+                  ]
+                },
                 "shipment": {
                   "type": [
                     "object",
@@ -3899,6 +3967,40 @@
                     },
                     "shopName": {
                       "type": "string"
+                    },
+                    "returnEligibility": {
+                      "type": "object",
+                      "properties": {
+                        "deadline": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "date-time"
+                        },
+                        "requireEvidence": {
+                          "type": [
+                            "boolean",
+                            "null"
+                          ]
+                        },
+                        "reason": {
+                          "type": "string",
+                          "enum": [
+                            "AVAILABLE",
+                            "EXPIRED",
+                            "DELIVERY_UNVERIFIED",
+                            "NOT_DELIVERED",
+                            "NO_ITEMS",
+                            "POLICY_UNAVAILABLE"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "deadline",
+                        "requireEvidence",
+                        "reason"
+                      ]
                     },
                     "shipment": {
                       "type": [

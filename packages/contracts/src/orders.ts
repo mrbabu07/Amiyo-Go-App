@@ -32,6 +32,11 @@ export const vendorOrderSchema = z.object({
   shopId: uuidSchema,
   vendorName: z.string().optional(),
   shopName: z.string().optional(),
+  returnEligibility: z.object({
+    deadline: timestampSchema.nullable(),
+    requireEvidence: z.boolean().nullable(),
+    reason: z.enum(["AVAILABLE", "EXPIRED", "DELIVERY_UNVERIFIED", "NOT_DELIVERED", "NO_ITEMS", "POLICY_UNAVAILABLE"])
+  }).optional(),
   shipment: z.object({ status: z.string(), provider: z.string().nullable(), trackingNumber: z.string().nullable() }).nullable().optional(),
   status: vendorOrderStatusSchema,
   subtotal: moneySchema,

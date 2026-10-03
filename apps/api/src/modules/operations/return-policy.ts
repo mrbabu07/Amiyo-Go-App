@@ -10,10 +10,16 @@ export async function loadReturnPolicy(client: Pick<Prisma.TransactionClient, "p
   return parsed.data;
 }
 
-export function assertReturnPolicy(input: { deadline: Date | null; deliveredAt: Date | null; evidenceCount: number; policy: z.infer<typeof policySchema>; now: number }) {
+export function returnWindow(input: { deadline: Date | null; deliveredAt: Date | null; policy: z.infer<typeof policySchema>; now: number }) {
   const deliveryTime = input.deliveredAt?.getTime();
   const deadline = input.deadline?.getTime() ?? (deliveryTime === undefined ? NaN : deliveryTime + input.policy.windowDays * 86400000);
-  if (!Number.isFinite(deadline) || (deliveryTime !== undefined && (!Number.isFinite(deliveryTime) || deliveryTime > input.now))) throw new ApiProblem(409, "RETURN_DELIVERY_DATE_MISSING", "Delivery dates need verification. Contact support.");
-  if (input.now >= deadline) throw new ApiProblem(409, "RETURN_WINDOW_EXPIRED", "The return window has ended. Contact support to request an exception.");
+  if (!Number.isFinite(deadline) || (deliveryTime !== undefined && (!Number.isFinite(deliveryTime) || deliveryTime > input.now))) return { deadline: null, reason: "DELIVERY_UNVERIFIED" as const };
+  return { deadline: new Date(deadline).toISOString(), reason: input.now >= deadline ? "EXPIRED" as const : "AVAILABLE" as const };
+}
+
+export function assertReturnPolicy(input: { deadline: Date | null; deliveredAt: Date | null; evidenceCount: number; policy: z.infer<typeof policySchema>; now: number }) {
+  const window = returnWindow(input);
+  if (window.reason === "DELIVERY_UNVERIFIED") throw new ApiProblem(409, "RETURN_DELIVERY_DATE_MISSING", "Delivery dates need verification. Contact support.");
+  if (window.reason === "EXPIRED") throw new ApiProblem(409, "RETURN_WINDOW_EXPIRED", "The return window has ended. Contact support to request an exception.");
   if (input.policy.requireEvidence && input.evidenceCount === 0) throw new ApiProblem(400, "RETURN_EVIDENCE_REQUIRED", "Attach a private image or PDF as required by the return policy.");
 }
