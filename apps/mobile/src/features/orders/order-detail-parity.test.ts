@@ -26,4 +26,14 @@ test("order detail wires the summary, seller shipment and narrow-screen columns"
   assert.ok(source.includes("styles.sideColumn, compact && styles.columnCompact"));
   assert.match(source, /columnCompact: \{ flex: 0, minWidth: 0, width: "100%" \}/);
   assert.ok(source.includes("const user = useCurrentUser()"));
+  assert.ok(source.includes("<OrderItemImage name={item.productName} uri={item.thumbnailUrl} />"));
+});
+
+test("order item image has a local fallback for missing and broken media", async () => {
+  const source = await readFile(new URL("./OrderItemImage.tsx", import.meta.url), "utf8");
+  assert.ok(source.includes("uri && uri !== failedUri"));
+  assert.ok(source.includes("onError={() => setFailedUri(uri!)}"));
+  assert.ok(source.includes("accessibilityLabel={name}"));
+  assert.ok(source.includes("image unavailable"));
+  assert.doesNotMatch(source, /https?:\/\//);
 });

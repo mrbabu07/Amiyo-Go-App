@@ -16,4 +16,10 @@ Two source-level regression tests cover field wiring, empty states and responsiv
 
 Validation: restored missing dependencies with `npm ci --include=dev`; mobile type-check, all 45 mobile tests, secret scan and whitespace checks passed. npm reported blocked dependency install scripts; these checks do not verify Prisma engine generation or native builds after restoration. No browser screenshots or transactional E2E were collected in this update.
 
-Still open: order-detail product images (the shared detail item contract does not yet provide an image), rendered mobile/desktop comparison, customer checkout/cancellation/return journeys, seller/admin acceptance and invoice/QR print checks. No claim of complete reference parity is made by this update.
+Image follow-up: the shared item contract now accepts an optional nullable thumbnail URL. The ownership-filtered customer detail query fetches one ordered product media entry per item without separate per-item queries. The customer UI displays the image with an accessible product name and a local fallback when absent or broken. Existing name, SKU, price and quantity snapshots are unchanged. Images are current catalog media, not historical purchase-time image snapshots; no database migration is involved.
+
+Image validation: Prisma generation, workspace build, mobile type-check, 46 mobile tests and eight targeted order/document API tests pass. The API tests cover present/absent images, snapshot values and the ownership filter. Image rendering/failure tests on an actual browser/device remain open.
+
+Full `npm test` also passed (workspace suites followed by 91 repository tests); secret scan and whitespace checks passed.
+
+Still open: rendered mobile/desktop comparison, customer checkout/cancellation/return journeys, seller/admin acceptance and invoice/QR print checks. No claim of complete reference parity is made by this update.
