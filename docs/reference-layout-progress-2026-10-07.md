@@ -75,6 +75,16 @@ Final verification: mobile type-check, all 82 mobile tests and the full suite in
 
 ## Alert account isolation
 
+### Product alert processing
+
+The worker now starts a product-alert scheduler. Each poll visits up to 250 active subscriptions using an advancing ID boundary, so an early unmatched subscription does not starve later records. It rechecks approved products, active shops, approved vendors, active/non-deleted customers, active BDT variants and unreserved inventory. A target price matches at or below the requested amount; available stock and price must belong to the same option. Money comparisons use bigint.
+
+Claiming a subscription, creating its in-app notification and enqueueing optional push delivery run in one serializable transaction. A subscription becomes inactive only when the notification/outbox transaction commits. Repeated polls cannot claim it twice; an explicit re-subscription can notify again. Serialization/transient failures are reported and retried on a later scan. The push opt-out under account price-drop preferences is respected. Shutdown drains the current alert poll before disconnecting Prisma.
+
+Operation requires the existing worker, database and Redis. In-app notifications do not depend on push tokens; actual push requires a valid registered Expo token and the existing provider. This pass does not implement email/SMS, collection-level preferences, flash-sale alerts or independent simultaneous stock and price subscriptions. It does not claim real-device delivery or multi-connection concurrency acceptance. Worker tests cover target/inventory matching, exact money, opt-out, duplicate polls, deliberate re-subscription, modeled rollback and bounded scan progression. No live customer notification job was run during development.
+
+Verification: full build and workspace suites passed, including 15 worker tests and 90 mobile tests, followed by all 92 repository checks. Secret scan and whitespace checks passed. Production/provider and browser alert-delivery acceptance remain unverified.
+
 Alert queries in product details and the alerts screen now include the Firebase account UID. The alerts screen subscribes to identity changes. Mutations capture their initiating account and cannot update the cache after switching accounts; a stale account cannot initiate an alert write. This fixes cross-account cached alert visibility, not alert delivery parity. Both source regression checks, all 90 mobile tests and mobile type-check passed. No additional browser or notification-delivery acceptance was performed in this pass. Price/stock delivery processing and legacy alert preference parity still require verification and implementation where absent.
 
 ## Wishlist to Cart action

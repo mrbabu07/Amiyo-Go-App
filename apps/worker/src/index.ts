@@ -18,6 +18,7 @@ import { NewsletterOutboxRelay } from "./outbox/newsletter-outbox.relay.js";
 import { createLoyaltyProcessor } from "./loyalty/loyalty.processor.js";
 import { LoyaltyOutboxRelay } from "./outbox/loyalty-outbox.relay.js";
 import { AbandonedCartScheduler } from "./growth/abandoned-cart.scheduler.js";
+import { ProductAlertScheduler } from "./growth/product-alert.scheduler.js";
 
 const env = parseWorkerEnv(process.env);
 const logger = createLogger("amiyo-worker", env.LOG_LEVEL);
@@ -46,6 +47,7 @@ const notificationRelay = new NotificationOutboxRelay(prisma, notificationQueue,
 const newsletterRelay = new NewsletterOutboxRelay(prisma, newsletterQueue, (error) => logger.error({ error }, "Newsletter outbox relay failed"));
 const loyaltyRelay = new LoyaltyOutboxRelay(prisma, loyaltyQueue, (error) => logger.error({ error }, "Loyalty outbox relay failed"));
 const abandonedCartScheduler = new AbandonedCartScheduler(prisma, (error) => logger.error({ error }, "Abandoned cart scheduler failed"));
+const productAlertScheduler = new ProductAlertScheduler(prisma, (error) => logger.error({ error }, "Product alert scheduler failed"));
 
 queueEvents.on("failed", ({ jobId, failedReason }) => logger.error({ queueName, jobId, failedReason }, "Delivery job failed"));
 worker.on("completed", (job) => logger.info({ jobId: job.id }, "Delivery job completed"));
@@ -55,9 +57,11 @@ notificationRelay.start();
 newsletterRelay.start();
 loyaltyRelay.start();
 abandonedCartScheduler.start();
+productAlertScheduler.start();
 logger.info({ queueName, concurrency: env.WORKER_CONCURRENCY }, "Worker booted");
 
 async function shutdown() {
+  await productAlertScheduler.stop();
   logger.info("Worker shutting down"); relay.stop(); mediaRelay.stop(); notificationRelay.stop(); newsletterRelay.stop(); loyaltyRelay.stop(); abandonedCartScheduler.stop(); await worker.close(); await mediaWorker.close(); await notificationWorker.close(); await newsletterWorker.close(); await loyaltyWorker.close(); await queueEvents.close(); await queue.close(); await mediaQueue.close(); await notificationQueue.close(); await newsletterQueue.close(); await loyaltyQueue.close(); await prisma.$disconnect(); await connection.quit();
 }
 
