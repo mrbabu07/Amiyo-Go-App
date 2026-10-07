@@ -52,11 +52,11 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
   const questions = useQuery({ queryKey: ["catalog", "questions", productId], queryFn: () => getProductQuestions(productId!), enabled: Boolean(productId) });
   const ask = useMutation({ mutationFn: async () => { const currentUser = firebaseAuth?.currentUser; if (!currentUser || !productId) throw new Error("Sign in to ask a question"); return createProductQuestion(currentUser, productId, questionBody.trim()); }, onSuccess: async () => { setQuestionBody(""); await queryClient.invalidateQueries({ queryKey: ["catalog", "questions", productId] }); } });
   const saved = Boolean(productId && wishlist.data?.items.some((entry) => entry.productId === productId));
-  const alerted = Boolean(productId && alerts.data?.some((entry) => entry.productId === productId));
+  const alerted = Boolean(productId && alerts.data?.some((entry) => entry.productId === productId && entry.target === null));
   const saveProduct = useMutation({ mutationFn: () => saved ? removeWishlistItem(user!, productId!) : addWishlistItem(user!, productId!), onMutate: () => user?.uid, onSuccess: (data, _variables, uid) => { if (!uid || firebaseAuth?.currentUser?.uid !== uid) return; queryClient.setQueryData(["wishlist", uid], data); void queryClient.invalidateQueries({ queryKey: ["wishlist-collections", uid] }); if (!saved && discoverySessionId && productId) safelyRecordDiscoveryEvent({ sessionId: discoverySessionId, eventType: "WISHLIST", productId }); } });
   const toggleAlert = useMutation({ mutationFn: async () => {
     if (!user || !productId || firebaseAuth?.currentUser?.uid !== user.uid) throw new Error("Sign in to manage alerts");
-    const data = await (alerted ? removeAlert(user, productId) : saveAlert(user, productId));
+    const data = await (alerted ? removeAlert(user, productId, "stock") : saveAlert(user, productId));
     return { data, uid: user.uid };
   }, onSuccess: ({ data, uid }) => {
     if (firebaseAuth?.currentUser?.uid !== uid) return;

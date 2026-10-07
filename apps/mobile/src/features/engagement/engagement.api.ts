@@ -24,7 +24,7 @@ export async function readThread(user: User, threadId: string) { await request(u
 export type ProductAlert = { id: string; productId: string; productName: string; target: { amountMinor: string; currency: string } | null; createdAt: string };
 export async function getAlerts(user: User) { return await request(user, "/api/v2/alerts") as ProductAlert[]; }
 export async function saveAlert(user: User, productId: string, targetMinor?: string | null) { return await request(user, `/api/v2/alerts/${productId}`, { method: "PUT", body: JSON.stringify({ targetMinor: targetMinor ?? null }) }) as ProductAlert[]; }
-export async function removeAlert(user: User, productId: string) { return await request(user, `/api/v2/alerts/${productId}`, { method: "DELETE" }) as ProductAlert[]; }
+export async function removeAlert(user: User, productId: string, kind?: "stock" | "price") { return await request(user, `/api/v2/alerts/${productId}${kind ? `?kind=${kind}` : ""}`, { method: "DELETE" }) as ProductAlert[]; }
 export async function getPromotions(user: User) { return await request(user, "/api/v2/admin/promotions") as Array<{ id: string; name: string; status: string; priority: number; startsAt: string; endsAt: string }> ; }
 export async function getGrowthFeed() { const response = await fetch(`${apiUrl}/api/v2/growth/feed`); if (!response.ok) throw new Error("Could not load offers"); return growthFeedSchema.parse(await response.json()); }
 export async function getProductReviews(productId: string) { const response = await fetch(`${apiUrl}/api/v2/catalog/products/${productId}/reviews`); if (!response.ok) throw new Error("Could not load product reviews"); return reviewSchema.array().parse(await response.json()); }

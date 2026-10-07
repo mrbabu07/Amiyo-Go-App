@@ -26,7 +26,8 @@ test("wishlist alert editor exposes labeled controls outside product navigation"
   assert.match(editor, /firebaseAuth\?\.currentUser\?\.uid !== uid/);
   assert.match(editor, /retry: false/);
   assert.match(editor, /alertPriceToMinor\(value\)/);
-  assert.match(editor, /Saving replaces the current rule/);
+  assert.match(editor, /Stock and price alerts work independently/);
+  assert.match(editor, /action === "off-price" \? "price" : "stock"/);
   assert.match(editor, /accessibilityLabel=\{`Target price in BDT/);
   assert.match(wishlist, /<ProductAlertControls productId=\{item.productId\} productName=\{item.name\}/);
 });

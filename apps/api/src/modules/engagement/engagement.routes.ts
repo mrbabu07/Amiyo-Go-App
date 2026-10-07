@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
-import { answerInputSchema, chatMessageInputSchema, chatThreadInputSchema, contentModerationInputSchema, createPromotionSchema, newsletterBroadcastInputSchema, newsletterSubscribeInputSchema, productReportInputSchema, questionInputSchema, referralCodeInputSchema, reviewInputSchema, stockAlertInputSchema, vendorReviewReplyInputSchema, wishlistItemInputSchema, wishlistSelectionSchema, wishlistCollectionInputSchema } from "@amiyo/contracts";
+import { answerInputSchema, chatMessageInputSchema, chatThreadInputSchema, contentModerationInputSchema, createPromotionSchema, newsletterBroadcastInputSchema, newsletterSubscribeInputSchema, productReportInputSchema, questionInputSchema, referralCodeInputSchema, reviewInputSchema, stockAlertInputSchema, productAlertSelectionSchema, vendorReviewReplyInputSchema, wishlistItemInputSchema, wishlistSelectionSchema, wishlistCollectionInputSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "../identity/identity.middleware.js";
@@ -38,7 +38,7 @@ export function createEngagementRouter() {
   router.delete("/api/v2/wishlist/collections/:id", writeLimit, async (req, res, next) => { try { await collections.remove(requireSession(req).principal.userId, idSchema.parse(req.params).id); res.status(204).end(); } catch (error) { next(error); } });
   router.get("/api/v2/alerts", async (req, res, next) => { try { res.json(await service.alerts(requireSession(req).principal.userId)); } catch (error) { next(error); } });
   router.put("/api/v2/alerts/:productId", writeLimit, async (req, res, next) => { try { const input = stockAlertInputSchema.parse({ ...req.body, productId: productSchema.parse(req.params).productId }); res.json(await service.saveAlert(requireSession(req).principal.userId, input.productId, input.targetMinor)); } catch (error) { next(error); } });
-  router.delete("/api/v2/alerts/:productId", writeLimit, async (req, res, next) => { try { res.json(await service.removeAlert(requireSession(req).principal.userId, productSchema.parse(req.params).productId)); } catch (error) { next(error); } });
+  router.delete("/api/v2/alerts/:productId", writeLimit, async (req, res, next) => { try { res.json(await service.removeAlert(requireSession(req).principal.userId, productSchema.parse(req.params).productId, productAlertSelectionSchema.parse(req.query).kind)); } catch (error) { next(error); } });
   router.get("/api/v2/reviews", async (req, res, next) => { try { res.json(await service.myReviews(requireSession(req))); } catch (error) { next(error); } });
   router.post("/api/v2/reviews", writeLimit, async (req, res, next) => { try { res.status(201).json(await service.createReview(requireSession(req), reviewInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.post("/api/v2/catalog/products/:productId/questions", authenticate, writeLimit, async (req, res, next) => { try { res.status(201).json(await service.createQuestion(requireSession(req), productSchema.parse(req.params).productId, questionInputSchema.parse(req.body))); } catch (error) { next(error); } });

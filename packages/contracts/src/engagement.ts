@@ -14,6 +14,7 @@ export const wishlistCollectionInputSchema = z.object({ name: z.string().trim().
 export const wishlistCollectionSchema = z.object({ id: uuidSchema, name: z.string(), isDefault: z.boolean(), itemCount: z.number().int().nonnegative() });
 export const alertTargetMinorSchema = z.string().regex(/^[1-9]\d{0,18}$/).refine((value) => /^[1-9]\d{0,18}$/.test(value) && BigInt(value) <= 9223372036854775807n, "Target price exceeds the supported range");
 export const stockAlertInputSchema = z.object({ productId: uuidSchema, targetMinor: alertTargetMinorSchema.nullable().optional() });
+export const productAlertSelectionSchema = z.object({ kind: z.enum(["stock", "price"]).optional() });
 
 export const reviewInputSchema = z.object({ orderItemId: uuidSchema, rating: z.number().int().min(1).max(5), title: z.string().trim().max(120).nullable().optional(), body: z.string().trim().min(3).max(2000).nullable().optional() });
 export const reviewSchema = z.object({ id: uuidSchema, productId: uuidSchema, productName: z.string().optional(), productSlug: z.string().optional(), rating: z.number().int().min(1).max(5), title: z.string().nullable(), body: z.string().nullable(), status: z.string().optional(), verifiedPurchase: z.boolean(), authorName: z.string(), vendorReply: z.string().nullable().optional(), vendorRepliedAt: timestampSchema.nullable().optional(), createdAt: timestampSchema });

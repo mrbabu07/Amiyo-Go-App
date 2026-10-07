@@ -18,14 +18,16 @@ function AlertEditor({ productId, productName }: { productId: string; productNam
   const [expanded, setExpanded] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
   const query = useQuery({ queryKey: ["alerts", user?.uid ?? null], queryFn: () => getAlerts(user!), enabled: Boolean(user), staleTime: 30_000 });
-  const saved = query.data?.find((alert) => alert.productId === productId);
-  const value = draft ?? (saved?.target ? alertMinorToPrice(saved.target.amountMinor) : "");
+  const priceAlert = query.data?.find((alert) => alert.productId === productId && alert.target !== null);
+  const stockAlert = query.data?.find((alert) => alert.productId === productId && alert.target === null);
+  const saved = priceAlert || stockAlert;
+  const value = draft ?? (priceAlert?.target ? alertMinorToPrice(priceAlert.target.amountMinor) : "");
   const mutation = useMutation({
     retry: false,
-    mutationFn: async (action: "price" | "stock" | "off") => {
+    mutationFn: async (action: "price" | "stock" | "off-price" | "off-stock") => {
       if (!user || firebaseAuth?.currentUser?.uid !== user.uid) throw new Error("Your account changed. Sign in again.");
       const target = action === "price" ? alertPriceToMinor(value) : null;
-      const data = action === "off" ? await removeAlert(user, productId) : await saveAlert(user, productId, target);
+      const data = action === "off-price" || action === "off-stock" ? await removeAlert(user, productId, action === "off-price" ? "price" : "stock") : await saveAlert(user, productId, target);
       return { uid: user.uid, data };
     },
     onSuccess: ({ uid, data }) => {
@@ -43,13 +45,14 @@ function AlertEditor({ productId, productName }: { productId: string; productNam
       <Text style={styles.label}>{saved ? "Manage product alert" : "Set product alert"}</Text>
     </Pressable>
     {expanded ? <View style={styles.form}>
-      <Text style={styles.copy}>{saved ? saved.target ? `Active: at or below ৳${alertMinorToPrice(saved.target.amountMinor)}` : "Active: notify when available" : "No active alert for this product"}</Text>
+      <Text style={styles.copy}>{priceAlert?.target ? `Price alert: at or below ৳${alertMinorToPrice(priceAlert.target.amountMinor)}` : "Price alert is off"}</Text>
+      <Text style={styles.copy}>{stockAlert ? "Stock alert: notify when available" : "Stock alert is off"}</Text>
       <Text style={styles.label}>Target price (BDT)</Text>
       <TextInput accessibilityLabel={`Target price in BDT for ${productName}`} editable={!disabled} inputMode="decimal" keyboardType="decimal-pad" maxLength={20} value={value} onChangeText={(text) => { setDraft(text); mutation.reset(); }} placeholder="e.g. 500.00" placeholderTextColor={colors.muted} style={styles.input} />
       <Pressable accessibilityRole="button" disabled={disabled} onPress={() => mutation.mutate("price")} style={[styles.primary, disabled && styles.disabled]}><Text style={styles.primaryText}>{mutation.isPending ? "Saving…" : "Save target price"}</Text></Pressable>
-      <Pressable accessibilityRole="button" disabled={disabled} onPress={() => mutation.mutate("stock")} style={[styles.button, disabled && styles.disabled]}><Text style={styles.label}>Notify when available instead</Text></Pressable>
-      {saved ? <Pressable accessibilityRole="button" disabled={disabled} onPress={() => mutation.mutate("off")} style={styles.button}><Text style={styles.error}>Turn off alert</Text></Pressable> : null}
-      <Text style={styles.copy}>One alert per product across your lists. Saving replaces the current rule. It turns off after a match. In-app updates; email and push follow your account preferences.</Text>
+      <Pressable accessibilityRole="button" accessibilityState={{ checked: Boolean(stockAlert) }} disabled={disabled} onPress={() => mutation.mutate(stockAlert ? "off-stock" : "stock")} style={[styles.button, disabled && styles.disabled]}><Text style={styles.label}>{stockAlert ? "Turn off stock alert" : "Notify when available"}</Text></Pressable>
+      {priceAlert ? <Pressable accessibilityRole="button" disabled={disabled} onPress={() => mutation.mutate("off-price")} style={styles.button}><Text style={styles.error}>Turn off price alert</Text></Pressable> : null}
+      <Text style={styles.copy}>Stock and price alerts work independently across your lists. Each turns off after its own match. In-app updates; email and push follow your account preferences.</Text>
       {query.error ? <Pressable accessibilityRole="button" onPress={() => void query.refetch()} style={styles.button}><Text style={styles.error}>Could not load alerts. Tap to retry.</Text></Pressable> : null}
       {mutation.error ? <Text accessibilityRole="alert" style={styles.error}>{mutation.error.message}</Text> : null}
       {mutation.isSuccess ? <Text accessibilityLiveRegion="polite" style={styles.copy}>Alert updated.</Text> : null}

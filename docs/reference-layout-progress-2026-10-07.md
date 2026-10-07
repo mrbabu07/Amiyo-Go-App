@@ -75,6 +75,18 @@ Final verification: mobile type-check, all 82 mobile tests and the full suite in
 
 ## Alert account isolation
 
+### Independent stock and price subscriptions
+
+Stock and target-price subscriptions now coexist for the same customer/product. PostgreSQL partial unique indexes enforce one row of each kind, and parameterized atomic upserts update only the selected kind while preserving its ID/creation time. No alert rows are deleted by the migration. The worker's existing row-level claim turns off only the matched subscription. Prisma cannot express these partial unique indexes; retain the hand-authored migration as the database constraint source.
+
+Wishlist controls show both conditions separately and provide independent off actions. Product-detail stock toggles no longer remove a price subscription. The alert list removes only the chosen row's kind. API DELETE accepts optional `kind=stock|price`; omission retains legacy remove-all semantics. OpenAPI documents both behaviors. This remains product/account-scoped, not collection-scoped; independent flash-sale subscriptions are still missing.
+
+The isolated PGlite test runs the actual baseline plus new migration and the production SQL upsert helper. It verifies preservation of a pre-existing inactive subscription, repeated upserts, separate kind deactivation, distinct owners and uniqueness constraints. API tests check owner/kind deletion predicates. This is not evidence of real concurrent multi-connection load.
+
+After explicit user approval and isolated test success, only pending migration `20261007010000_independent_product_alerts` was deployed to the configured Neon database. Prisma reports all 20 migrations applied. The Windows-loaded Prisma engine initially blocked generation; the agent-owned development process tree was stopped, generation succeeded, and API/Expo/Firebase development services were restarted. API health returned HTTP 200. No real order/payment or customer alert mutation was performed.
+
+Verification: mobile type-check, full build/workspace suites (including 93 mobile, 23 worker and 63 contract tests) and all 93 repository checks passed; secret scan and whitespace checks passed. Browser re-login after the emulator restart encountered a storage `Database is closing/hidden` error and detached action handling. Independent-control browser acceptance is therefore not claimed in this pass; the sign-in tab was left available for follow-up. No alert was submitted from the browser.
+
 ### Product alert email delivery
 
 Product-alert matches now queue email independently of push when the customer has an email address and the account price-drop email preference is enabled. The notification worker handles only the two supported product-alert email types, rereads account status/deletion/email opt-out before sending, and preserves the in-app notification when external delivery is skipped or fails. Email uses plain text and a product link restricted to the configured app origin. Invalid app URLs or unsupported notification types fail closed.
