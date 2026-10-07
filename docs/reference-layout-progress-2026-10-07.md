@@ -72,3 +72,13 @@ The baseline migration already has a partial unique index for default wishlists.
 An initial browser create request was interrupted by a development-server restart. A fresh read confirmed no collection was created before retrying. The stable subsequent browser lifecycle passed. Public sharing, populated cart mutations, multi-connection concurrency, alert parity and bulk cart remain outside this acceptance pass.
 
 Final verification: mobile type-check, all 82 mobile tests and the full suite including 92 repository checks passed; secret scan and whitespace checks passed. The temporary collection was deleted. Its test product remains in the demo customer's default wishlist pending the separately requested cleanup confirmation. Browser viewport was restored.
+
+## Wishlist to Cart action
+
+Added the legacy selected-list bulk cart action while retaining the current palette. It copies one unit of each unique available single-option product using the existing authenticated cart API. Multi-option products are not guessed: their results link to the product selector. Sold-out/unavailable products have explicit outcomes. Saved items and collections are never removed by this action.
+
+The operation checks account identity before reads and writes, serializes its writes, prevents overlapping bulk operations for the same account in the current runtime, and never automatically retries cart writes. An unconfirmed write stops later additions and prompts cart review because the last item may already have committed. Cart queries are invalidated for the initiating account so review does not rely on stale cached totals. Individual add/remove controls are disabled while the bulk action is running; result rows distinguish added, skipped and unattempted products.
+
+This is not an atomic server batch or durable cross-restart idempotency guarantee. Review the cart after an interrupted run; browser reload does not reconstruct a partial run. Unit tests exercise mixed availability/options, duplicate products, read failures, partial write failure, identity changes and same-account overlap. The source wiring test covers the account-scoped cart cache and disabled replay button.
+
+Checks passed: mobile type-check, 88 mobile tests, full suite including 92 repository checks, secret scan and whitespace check. Browser inspection verified the visible action and a 312px by 44px button at a measured 360px viewport without document overflow. No cart mutation was submitted in the browser during this pass. Viewport was reset. The earlier collection/card correction commit was successfully pushed; per-product alerts, durable bulk recovery and broader page parity remain open.
