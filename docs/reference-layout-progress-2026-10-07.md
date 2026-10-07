@@ -34,3 +34,13 @@ Compared `Client/src/pages/Orders.jsx` header and seven status groups with `Cust
 Compact order cards stack their headings and explicitly release flex sizing for product copy. Detail/tracking/invoice links and account-scoped fetching are retained. Expanded item/payment summaries, inline review/cancel/return interactions and rendered mobile/desktop comparison are still open; this follow-up does not claim full Orders parity. Browser reconnection encountered stale tab ownership followed by browser-unavailable, so no new Orders screenshot is accepted as evidence.
 
 Orders follow-up checks: mobile TypeScript, all 75 mobile tests, full suite including 91 repository checks, secret scan and whitespace check passed. Status classification tests cover all ten supported parent states and ensure return/refund states cannot be shown as shipped. Progress labels now say Processing rather than claiming the package is already packed.
+
+## Inline order expansion
+
+The order preview now acts as an accessible expand/collapse disclosure, matching the reference's in-list detail interaction. Independent full-detail, tracking and invoice links remain. Expanded content mounts on demand, so collapsed cards do not fetch full detail/tracking. Both queries use account-scoped keys and existing authenticated ownership-checked APIs.
+
+The expanded area groups all purchased products by seller package and displays snapshot name/SKU/attributes, images, quantities, unit/line prices, discounts, package totals, delivery address, payment/refunded amount and order totals. Shipment events are matched by vendor-order ID and show actual timestamps. Missing events, payment/address data and fetch failures have explicit states; no completed delivery is fabricated. Existing theme tokens are used throughout, with stacked small-screen summaries.
+
+Inline cancel/review/reorder/return workflows, rescheduling, return trackers and evidence remain to be aligned. This read-only expansion introduces no payment or order mutations. Tests for disclosure wiring and query scope are source-level, not mounted React/browser interaction acceptance.
+
+Expansion checks: mobile TypeScript, all 77 mobile tests, full suite including 91 repository checks, secret scan and whitespace check passed. The navigation regression now asserts the disclosure alongside retained independent destination links. No browser visual acceptance is claimed for the expanded state yet.

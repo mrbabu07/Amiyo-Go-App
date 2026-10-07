@@ -8,6 +8,7 @@ import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
 import { getCustomerOrders } from "./orders.api";
+import { CustomerOrderExpansion } from "./CustomerOrderExpansion";
 
 import { orderFilters as filters, orderStatusGroup, orderProgressStep, type OrderFilter as Filter } from "./order-list-presentation";
 
@@ -55,17 +56,19 @@ export function CustomerOrdersScreen() {
 }
 
 function OrderCard({ compact, order }: { compact: boolean; order: CustomerOrderSummary }) {
+  const [expanded, setExpanded] = useState(false);
   const isCancelled = order.status === "CANCELLED";
   const isDelivered = order.status === "DELIVERED";
   const activeStep = orderProgressStep(order.status);
   const mainItem = order.previewItems[0];
   return <View style={styles.card}>
     <View style={[styles.cardTop, compact && styles.headerCompact]}><View style={styles.headingText}><Text style={styles.orderNumber}>{order.orderNumber}</Text><Text style={styles.muted}>{new Date(order.createdAt).toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric" })} - {order.vendorOrderCount} seller package{order.vendorOrderCount === 1 ? "" : "s"}</Text></View><Status status={order.status} /></View>
-    <Link href={`/order/${order.id}` as never} asChild><Pressable accessibilityLabel={`Open order ${order.orderNumber}`} accessibilityRole="link" style={StyleSheet.flatten([styles.productArea, compact && styles.productAreaCompact])}>
+    <Pressable accessibilityLabel={`${expanded ? "Collapse" : "Expand"} order ${order.orderNumber}`} accessibilityRole="button" accessibilityState={{ expanded }} onPress={() => setExpanded((value) => !value)} style={StyleSheet.flatten([styles.productArea, compact && styles.productAreaCompact])}>
       <ProductPreview items={order.previewItems} />
       <View style={[styles.productCopy, compact && styles.productCopyCompact]}><Text numberOfLines={2} style={styles.productTitle}>{mainItem?.name ?? "Order items"}</Text><Text style={styles.muted}>{order.itemCount} item{order.itemCount === 1 ? "" : "s"} total{mainItem ? ` - ${mainItem.sku}` : ""}</Text>{activeStep !== null ? <Progress activeStep={activeStep} cancelled={false} /> : <Text style={styles.muted}>{statusLabel(order.status)} — open details for recorded updates.</Text>}</View>
-      <View style={styles.totalBox}><Text style={styles.totalLabel}>Total</Text><Text style={styles.total}>{money(order.total.amountMinor)}</Text><Ionicons color={colors.muted} name="chevron-forward" size={18} /></View>
-    </Pressable></Link>
+      <View style={styles.totalBox}><Text style={styles.totalLabel}>Total</Text><Text style={styles.total}>{money(order.total.amountMinor)}</Text><Ionicons color={colors.muted} name={expanded ? "chevron-up" : "chevron-down"} size={18} /><Text style={styles.muted}>{expanded ? "Hide details" : "Show details"}</Text></View>
+    </Pressable>
+    {expanded ? <CustomerOrderExpansion id={order.id} compact={compact} /> : null}
     <View style={styles.actions}>
       <Link href={`/order/${order.id}` as never} asChild><Pressable accessibilityRole="link" accessibilityLabel={`View details for ${order.orderNumber}`} style={styles.primarySmall}><Text style={styles.primaryText}>View details</Text></Pressable></Link>
       {orderStatusGroup(order.status) !== "RETURN" && !isCancelled && !isDelivered ? <Link href={`/order/${order.id}/tracking` as never} asChild><Pressable accessibilityRole="link" accessibilityLabel={`Track order ${order.orderNumber}`} style={styles.secondary}><Ionicons color={colors.primary} name="navigate-outline" size={16} /><Text style={styles.secondaryText}>Track order</Text></Pressable></Link> : null}

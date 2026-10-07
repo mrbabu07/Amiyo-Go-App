@@ -8,10 +8,12 @@ test("customer order navigation has real destinations and independent named link
   for (const suffix of ["", "/tracking", "/invoice"]) {
     assert.ok(source.includes('href={`/order/${order.id}' + suffix + '` as never} asChild'));
   }
-  for (const label of ["Open order", "View details for", "Track order", "Invoice for"]) {
+  for (const label of ["View details for", "Track order", "Invoice for"]) {
     assert.ok(source.includes('accessibilityLabel={`' + label + ' ${order.orderNumber}`}'));
   }
   assert.match(source, /const user = useCurrentUser\(\)/);
+  assert.match(source, /accessibilityState=\{\{ expanded \}\}/);
+  assert.ok(source.includes('accessibilityLabel={`${expanded ? "Collapse" : "Expand"} order ${order.orderNumber}`}'));
   assert.match(source, /style=\{StyleSheet.flatten\(\[styles.productArea, compact && styles.productAreaCompact\]\)\}/);
   assert.match(source, /queryKey: \["orders", "customer", user\?\.uid\]/);
   assert.doesNotMatch(source, /onPress=\{on(?:Open|Track|Invoice)\}/);
