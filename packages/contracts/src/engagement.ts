@@ -9,6 +9,9 @@ export type ReferralSummary = z.infer<typeof referralSummarySchema>;
 export const wishlistSchema = z.object({ id: uuidSchema, name: z.string(), isDefault: z.boolean(), shareUrl: z.string().url().nullable(), items: z.array(z.object({ productId: uuidSchema, name: z.string(), slug: z.string(), thumbnailUrl: z.string().url().nullable(), price: moneySchema.nullable(), addedAt: timestampSchema })) });
 export const sharedWishlistSchema = z.object({ name: z.string(), items: z.array(z.object({ productId: uuidSchema, name: z.string(), slug: z.string(), price: moneySchema.nullable() })) });
 export const wishlistItemInputSchema = z.object({ productId: uuidSchema });
+export const wishlistSelectionSchema = z.object({ collectionId: uuidSchema.optional() });
+export const wishlistCollectionInputSchema = z.object({ name: z.string().trim().min(1).max(80) }).strict();
+export const wishlistCollectionSchema = z.object({ id: uuidSchema, name: z.string(), isDefault: z.boolean(), itemCount: z.number().int().nonnegative() });
 export const stockAlertInputSchema = z.object({ productId: uuidSchema, targetMinor: z.string().regex(/^\d+$/).nullable().optional() });
 
 export const reviewInputSchema = z.object({ orderItemId: uuidSchema, rating: z.number().int().min(1).max(5), title: z.string().trim().max(120).nullable().optional(), body: z.string().trim().min(3).max(2000).nullable().optional() });

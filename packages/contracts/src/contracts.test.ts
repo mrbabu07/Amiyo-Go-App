@@ -33,6 +33,11 @@ test("OpenAPI document exposes typed v2 resources", () => {
   assert.ok(document.paths?.["/api/v2/growth/feed"]);
   assert.ok(document.paths?.["/api/v2/wishlist"]);
   assert.ok(document.paths?.["/api/v2/wishlist/share"]);
+  assert.ok(document.paths?.["/api/v2/wishlist/collections"]?.get?.security);
+  assert.ok(document.paths?.["/api/v2/wishlist/collections"]?.post?.requestBody);
+  assert.ok(document.paths?.["/api/v2/wishlist/collections/{id}"]?.patch?.security);
+  assert.ok(document.paths?.["/api/v2/wishlist/collections/{id}"]?.delete?.security);
+  assert.ok(document.paths?.["/api/v2/wishlist/items/{productId}"]?.delete?.parameters);
   assert.ok(document.paths?.["/api/v2/wishlists/shared/{token}"]);
   assert.ok(document.paths?.["/api/v2/loyalty/referral"]);
   assert.ok(document.paths?.["/api/v2/loyalty/referral/apply"]);

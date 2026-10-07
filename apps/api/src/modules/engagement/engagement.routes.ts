@@ -1,12 +1,13 @@
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
-import { answerInputSchema, chatMessageInputSchema, chatThreadInputSchema, contentModerationInputSchema, createPromotionSchema, newsletterBroadcastInputSchema, newsletterSubscribeInputSchema, productReportInputSchema, questionInputSchema, referralCodeInputSchema, reviewInputSchema, stockAlertInputSchema, vendorReviewReplyInputSchema, wishlistItemInputSchema } from "@amiyo/contracts";
+import { answerInputSchema, chatMessageInputSchema, chatThreadInputSchema, contentModerationInputSchema, createPromotionSchema, newsletterBroadcastInputSchema, newsletterSubscribeInputSchema, productReportInputSchema, questionInputSchema, referralCodeInputSchema, reviewInputSchema, stockAlertInputSchema, vendorReviewReplyInputSchema, wishlistItemInputSchema, wishlistSelectionSchema, wishlistCollectionInputSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "../identity/identity.middleware.js";
 import { IdentityService } from "../identity/identity.service.js";
 import { EngagementService } from "./engagement.service.js";
+import { WishlistCollectionsService } from "./wishlist-collections.service.js";
 
 const idSchema = z.object({ id: z.string().uuid() });
 const productSchema = z.object({ productId: z.string().uuid() });
@@ -14,6 +15,7 @@ const tokenSchema = z.object({ token: z.string().uuid() });
 
 export function createEngagementRouter() {
   const router = Router(); const service = new EngagementService(prisma); const authenticate = createAuthenticationMiddleware(new FirebaseTokenVerifier(), new IdentityService(prisma));
+  const collections = new WishlistCollectionsService(prisma);
   const writeLimit = rateLimit({ windowMs: 60_000, limit: 20, standardHeaders: "draft-7", legacyHeaders: false, message: { type: "https://amiyo.app/problems/rate-limit", title: "Too many requests", status: 429, code: "ENGAGEMENT_RATE_LIMITED" } });
   const chatLimit = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: "draft-7", legacyHeaders: false, message: { type: "https://amiyo.app/problems/rate-limit", title: "Too many messages", status: 429, code: "CHAT_RATE_LIMITED" } });
 
@@ -25,11 +27,15 @@ export function createEngagementRouter() {
   router.get("/api/v2/wishlists/shared/:token", async (req, res, next) => { try { res.json(await service.sharedWishlist(tokenSchema.parse(req.params).token)); } catch (error) { next(error); } });
 
   router.use(["/api/v2/wishlist", "/api/v2/alerts", "/api/v2/reviews", "/api/v2/questions", "/api/v2/notifications", "/api/v2/chat", "/api/v2/loyalty", "/api/v2/vendor/engagement", "/api/v2/admin/content", "/api/v2/admin/promotions", "/api/v2/admin/newsletter"], authenticate);
-  router.get("/api/v2/wishlist", async (req, res, next) => { try { res.json(await service.wishlist(requireSession(req).principal.userId)); } catch (error) { next(error); } });
-  router.post("/api/v2/wishlist/items", writeLimit, async (req, res, next) => { try { res.status(201).json(await service.addWishlistItem(requireSession(req).principal.userId, wishlistItemInputSchema.parse(req.body).productId)); } catch (error) { next(error); } });
-  router.delete("/api/v2/wishlist/items/:productId", writeLimit, async (req, res, next) => { try { res.json(await service.removeWishlistItem(requireSession(req).principal.userId, productSchema.parse(req.params).productId)); } catch (error) { next(error); } });
-  router.post("/api/v2/wishlist/share", writeLimit, async (req, res, next) => { try { res.json(await service.shareWishlist(requireSession(req).principal.userId)); } catch (error) { next(error); } });
-  router.delete("/api/v2/wishlist/share", writeLimit, async (req, res, next) => { try { res.json(await service.unshareWishlist(requireSession(req).principal.userId)); } catch (error) { next(error); } });
+  router.get("/api/v2/wishlist", async (req, res, next) => { try { res.json(await service.wishlist(requireSession(req).principal.userId, wishlistSelectionSchema.parse(req.query).collectionId)); } catch (error) { next(error); } });
+  router.post("/api/v2/wishlist/items", writeLimit, async (req, res, next) => { try { res.status(201).json(await service.addWishlistItem(requireSession(req).principal.userId, wishlistItemInputSchema.parse(req.body).productId, wishlistSelectionSchema.parse(req.query).collectionId)); } catch (error) { next(error); } });
+  router.delete("/api/v2/wishlist/items/:productId", writeLimit, async (req, res, next) => { try { res.json(await service.removeWishlistItem(requireSession(req).principal.userId, productSchema.parse(req.params).productId, wishlistSelectionSchema.parse(req.query).collectionId)); } catch (error) { next(error); } });
+  router.post("/api/v2/wishlist/share", writeLimit, async (req, res, next) => { try { res.json(await service.shareWishlist(requireSession(req).principal.userId, wishlistSelectionSchema.parse(req.query).collectionId)); } catch (error) { next(error); } });
+  router.delete("/api/v2/wishlist/share", writeLimit, async (req, res, next) => { try { res.json(await service.unshareWishlist(requireSession(req).principal.userId, wishlistSelectionSchema.parse(req.query).collectionId)); } catch (error) { next(error); } });
+  router.get("/api/v2/wishlist/collections", async (req, res, next) => { try { await service.wishlist(requireSession(req).principal.userId); res.json(await collections.list(requireSession(req).principal.userId)); } catch (error) { next(error); } });
+  router.post("/api/v2/wishlist/collections", writeLimit, async (req, res, next) => { try { res.status(201).json(await collections.create(requireSession(req).principal.userId, wishlistCollectionInputSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.patch("/api/v2/wishlist/collections/:id", writeLimit, async (req, res, next) => { try { await collections.rename(requireSession(req).principal.userId, idSchema.parse(req.params).id, wishlistCollectionInputSchema.parse(req.body)); res.status(204).end(); } catch (error) { next(error); } });
+  router.delete("/api/v2/wishlist/collections/:id", writeLimit, async (req, res, next) => { try { await collections.remove(requireSession(req).principal.userId, idSchema.parse(req.params).id); res.status(204).end(); } catch (error) { next(error); } });
   router.get("/api/v2/alerts", async (req, res, next) => { try { res.json(await service.alerts(requireSession(req).principal.userId)); } catch (error) { next(error); } });
   router.put("/api/v2/alerts/:productId", writeLimit, async (req, res, next) => { try { const input = stockAlertInputSchema.parse({ ...req.body, productId: productSchema.parse(req.params).productId }); res.json(await service.saveAlert(requireSession(req).principal.userId, input.productId, input.targetMinor)); } catch (error) { next(error); } });
   router.delete("/api/v2/alerts/:productId", writeLimit, async (req, res, next) => { try { res.json(await service.removeAlert(requireSession(req).principal.userId, productSchema.parse(req.params).productId)); } catch (error) { next(error); } });

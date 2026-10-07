@@ -32,18 +32,28 @@ export class EngagementService {
 
   private async defaultWishlist(userId: string) {
     const existing = await this.client.wishlist.findFirst({ where: { userId, isDefault: true } }); if (existing) return existing;
-    try { return await this.client.wishlist.create({ data: { userId, isDefault: true } }); } catch { return this.client.wishlist.findFirstOrThrow({ where: { userId, isDefault: true } }); }
+    return withSerializableTransaction(this.client, async (transaction) => {
+      const found = await transaction.wishlist.findFirst({ where: { userId, isDefault: true } });
+      return found || transaction.wishlist.create({ data: { userId, isDefault: true } });
+    });
   }
 
-  async wishlist(userId: string) {
-    const list = await this.defaultWishlist(userId); const loaded = await this.client.wishlist.findUniqueOrThrow({ where: { id: list.id }, include: { share: true, items: { orderBy: { createdAt: "desc" }, include: { product: { include: { media: { orderBy: { displayOrder: "asc" }, take: 1 }, variants: { where: { active: true }, orderBy: { priceMinor: "asc" }, take: 1 } } } } } } });
+  private async ownWishlist(userId: string, collectionId?: string) {
+    if (!collectionId) return this.defaultWishlist(userId);
+    const list = await this.client.wishlist.findFirst({ where: { id: collectionId, userId } });
+    if (!list) throw new ApiProblem(404, "WISHLIST_COLLECTION_NOT_FOUND", "Wishlist collection not found");
+    return list;
+  }
+
+  async wishlist(userId: string, collectionId?: string) {
+    const list = await this.ownWishlist(userId, collectionId); const loaded = await this.client.wishlist.findUniqueOrThrow({ where: { id: list.id }, include: { share: true, items: { orderBy: { createdAt: "desc" }, include: { product: { include: { media: { orderBy: { displayOrder: "asc" }, take: 1 }, variants: { where: { active: true }, orderBy: { priceMinor: "asc" }, take: 1 } } } } } } });
     return { id: loaded.id, name: loaded.name, isDefault: loaded.isDefault, shareUrl: loaded.share && (!loaded.share.expiresAt || loaded.share.expiresAt > new Date()) ? `${process.env.APP_PUBLIC_URL || "http://localhost:8081"}/wishlist/shared/${loaded.share.shareToken}` : null, items: loaded.items.map((item) => ({ productId: item.productId, name: item.product.name, slug: item.product.slug, thumbnailUrl: mediaUrl(item.product.media[0]?.storageKey), price: item.product.variants[0] ? money(item.product.variants[0].priceMinor, item.product.variants[0].currency) : null, addedAt: item.createdAt.toISOString() })) };
   }
 
-  async addWishlistItem(userId: string, productId: string) { const list = await this.defaultWishlist(userId); const product = await this.client.product.findFirst({ where: { id: productId, status: "APPROVED" } }); if (!product) throw new ApiProblem(404, "PRODUCT_NOT_FOUND", "Product not found"); await this.client.wishlistItem.upsert({ where: { wishlistId_productId: { wishlistId: list.id, productId } }, create: { wishlistId: list.id, productId }, update: {} }); return this.wishlist(userId); }
-  async removeWishlistItem(userId: string, productId: string) { const list = await this.defaultWishlist(userId); await this.client.wishlistItem.deleteMany({ where: { wishlistId: list.id, productId } }); return this.wishlist(userId); }
-  async shareWishlist(userId: string) { const list = await this.defaultWishlist(userId); await this.client.sharedWishlist.upsert({ where: { wishlistId: list.id }, create: { wishlistId: list.id, shareToken: randomUUID(), expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60_000) }, update: { shareToken: randomUUID(), expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60_000) } }); return this.wishlist(userId); }
-  async unshareWishlist(userId: string) { const list = await this.defaultWishlist(userId); await this.client.sharedWishlist.deleteMany({ where: { wishlistId: list.id } }); return this.wishlist(userId); }
+  async addWishlistItem(userId: string, productId: string, collectionId?: string) { const list = await this.ownWishlist(userId, collectionId); const product = await this.client.product.findFirst({ where: { id: productId, status: "APPROVED" } }); if (!product) throw new ApiProblem(404, "PRODUCT_NOT_FOUND", "Product not found"); await this.client.wishlistItem.upsert({ where: { wishlistId_productId: { wishlistId: list.id, productId } }, create: { wishlistId: list.id, productId }, update: {} }); return this.wishlist(userId, collectionId); }
+  async removeWishlistItem(userId: string, productId: string, collectionId?: string) { const list = await this.ownWishlist(userId, collectionId); await this.client.wishlistItem.deleteMany({ where: { wishlistId: list.id, productId } }); return this.wishlist(userId, collectionId); }
+  async shareWishlist(userId: string, collectionId?: string) { const list = await this.ownWishlist(userId, collectionId); await this.client.sharedWishlist.upsert({ where: { wishlistId: list.id }, create: { wishlistId: list.id, shareToken: randomUUID(), expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60_000) }, update: { shareToken: randomUUID(), expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60_000) } }); return this.wishlist(userId, collectionId); }
+  async unshareWishlist(userId: string, collectionId?: string) { const list = await this.ownWishlist(userId, collectionId); await this.client.sharedWishlist.deleteMany({ where: { wishlistId: list.id } }); return this.wishlist(userId, collectionId); }
   async sharedWishlist(token: string) { const shared = await this.client.sharedWishlist.findFirst({ where: { shareToken: token, OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] }, include: { wishlist: { include: { items: { include: { product: { include: { variants: { where: { active: true }, take: 1 } } } } } } } } }); if (!shared) throw new ApiProblem(404, "WISHLIST_SHARE_NOT_FOUND", "Shared wishlist not found"); return { name: shared.wishlist.name, items: shared.wishlist.items.map((item) => ({ productId: item.productId, name: item.product.name, slug: item.product.slug, price: item.product.variants[0] ? money(item.product.variants[0].priceMinor, item.product.variants[0].currency) : null })) }; }
 
   async alerts(userId: string) { const rows = await this.client.stockAlert.findMany({ where: { userId, active: true }, include: { product: true }, orderBy: { createdAt: "desc" } }); return rows.map((row) => ({ id: row.id, productId: row.productId, productName: row.product.name, target: row.targetMinor === null ? null : money(row.targetMinor), createdAt: row.createdAt.toISOString() })); }

@@ -12,6 +12,8 @@ import { quickCartVariant } from "../catalog/product-card-policy";
 import { addCartItem } from "../commerce/commerce.api";
 import { getWishlist, removeWishlistItem, shareWishlist, unshareWishlist } from "./engagement.api";
 
+import { WishlistCollections, WishlistCollectionPicker } from "./WishlistCollections";
+
 type WishlistItem = Awaited<ReturnType<typeof getWishlist>>["items"][number];
 const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
 
@@ -19,12 +21,16 @@ export function WishlistScreen() {
   const router = useRouter();
   const cache = useQueryClient();
   const user = useCurrentUser();
+  const [selection, setSelection] = useState<{ uid: string; id?: string } | null>(null);
+  const collectionId = selection?.uid === user?.uid ? selection?.id : undefined;
+  const wishlistKey = collectionId ? ["wishlist", user?.uid ?? null, collectionId] : ["wishlist", user?.uid ?? null];
+  const selectCollection = (id?: string) => { if (user) setSelection({ uid: user.uid, id }); };
   const { width } = useWindowDimensions();
   const compact = width < 1024;
   const [shareError, setShareError] = useState("");
-  const query = useQuery({ queryKey: ["wishlist", user?.uid ?? null], queryFn: () => getWishlist(user!), enabled: Boolean(user) });
-  const updateShare = useMutation({ mutationFn: () => query.data?.shareUrl ? unshareWishlist(user!) : shareWishlist(user!), onMutate: () => user?.uid, onSuccess: (data, _variables, uid) => { if (uid && firebaseAuth?.currentUser?.uid === uid) cache.setQueryData(["wishlist", uid], data); } });
-  const remove = useMutation({ mutationFn: (productId: string) => removeWishlistItem(user!, productId), onMutate: () => user?.uid, onSuccess: (data, _variables, uid) => { if (uid && firebaseAuth?.currentUser?.uid === uid) cache.setQueryData(["wishlist", uid], data); } });
+  const query = useQuery({ queryKey: wishlistKey, queryFn: () => getWishlist(user!, collectionId), enabled: Boolean(user) });
+  const updateShare = useMutation({ mutationFn: () => query.data?.shareUrl ? unshareWishlist(user!, collectionId) : shareWishlist(user!, collectionId), onMutate: () => ({ uid: user?.uid, key: wishlistKey }), onSuccess: (data, _variables, context) => { if (context?.uid && firebaseAuth?.currentUser?.uid === context.uid) { cache.setQueryData(context.key, data); void cache.invalidateQueries({ queryKey: ["wishlist-collections", context.uid] }); } } });
+  const remove = useMutation({ mutationFn: (productId: string) => removeWishlistItem(user!, productId, collectionId), onMutate: () => ({ uid: user?.uid, key: wishlistKey }), onSuccess: (data, _variables, context) => { if (context?.uid && firebaseAuth?.currentUser?.uid === context.uid) { cache.setQueryData(context.key, data); void cache.invalidateQueries({ queryKey: ["wishlist-collections", context.uid] }); } } });
 
   async function openShare() {
     if (!query.data?.shareUrl) return;
@@ -50,10 +56,7 @@ export function WishlistScreen() {
     </View>
     <View style={[styles.workspace, compact && styles.stacked]}>
       <View style={[styles.sidebar, compact && styles.fullWidth]}>
-        <View style={styles.panel}>
-          <Text accessibilityRole="header" style={styles.sectionTitle}>Saved items</Text>
-          <View style={styles.selectedList}><Ionicons color={colors.text} name="heart" size={21} /><View style={styles.flex}><Text style={styles.sectionTitle}>All saved items</Text><Text style={styles.muted}>{query.data.shareUrl ? "Public link active" : "Private list"}</Text></View><Text style={styles.count}>{query.data.items.length}</Text></View>
-        </View>
+        <WishlistCollections key={`${user.uid}:${collectionId || "default"}`} selectedId={collectionId} onSelect={selectCollection} />
         <View style={styles.panel}>
           <View style={styles.headingRow}><Ionicons color={colors.text} name={query.data.shareUrl ? "globe-outline" : "lock-closed-outline"} size={23} /><Text style={styles.sectionTitle}>{query.data.shareUrl ? "Sharing is active" : "Your list is private"}</Text></View>
           <Text style={styles.muted}>{query.data.shareUrl ? "Anyone with this link can view the list for up to 30 days." : "Generate a link when you want to share your saved products."}</Text>
@@ -64,14 +67,14 @@ export function WishlistScreen() {
       </View>
       <View style={[styles.content, compact && styles.fullWidth]}>
         <View style={styles.panel}><Text accessibilityRole="header" style={styles.sectionTitle}>{query.data.name || "All saved items"}</Text><Text style={styles.muted}>Choose a product to view options, or add it directly to your cart.</Text></View>
-        {query.data.items.length ? <View style={styles.grid}>{query.data.items.map((item) => <WishlistCard key={`${user.uid}:${item.productId}`} busy={remove.isPending} item={item} onOpen={() => router.push(`/product/${item.slug || item.productId}` as never)} onRemove={() => remove.mutate(item.productId)} />)}</View> : <View style={styles.empty}><Ionicons color={colors.primary} name="heart-outline" size={52} /><Text style={styles.emptyTitle}>Your wishlist is empty</Text><Text style={styles.muted}>Tap the heart on a product to save it here.</Text><Pressable accessibilityRole="link" onPress={() => router.replace("/")} style={styles.primary}><Text style={styles.primaryText}>Explore products</Text></Pressable></View>}
+        {query.data.items.length ? <View style={styles.grid}>{query.data.items.map((item) => <WishlistCard key={`${user.uid}:${item.productId}`} busy={remove.isPending} collectionId={query.data.id} item={item} onOpen={() => router.push(`/product/${item.slug || item.productId}` as never)} onRemove={() => remove.mutate(item.productId)} />)}</View> : <View style={styles.empty}><Ionicons color={colors.primary} name="heart-outline" size={52} /><Text style={styles.emptyTitle}>Your wishlist is empty</Text><Text style={styles.muted}>Tap the heart on a product to save it here.</Text><Pressable accessibilityRole="link" onPress={() => router.replace("/")} style={styles.primary}><Text style={styles.primaryText}>Explore products</Text></Pressable></View>}
         {remove.error ? <Text accessibilityRole="alert" style={styles.error}>{remove.error.message}</Text> : null}
       </View>
     </View>
   </Screen>;
 }
 
-function WishlistCard({ busy, item, onOpen, onRemove }: { busy: boolean; item: WishlistItem; onOpen: () => void; onRemove: () => void }) {
+function WishlistCard({ busy, collectionId, item, onOpen, onRemove }: { busy: boolean; collectionId: string; item: WishlistItem; onOpen: () => void; onRemove: () => void }) {
   const cache = useQueryClient();
   const user = useCurrentUser();
   const [failedImage, setFailedImage] = useState<string | null>(null);
@@ -98,6 +101,7 @@ function WishlistCard({ busy, item, onOpen, onRemove }: { busy: boolean; item: W
       <Pressable accessibilityRole="button" accessibilityLabel={`Add ${item.name} to cart`} accessibilityState={{ busy: addToCart.isPending }} disabled={addToCart.isPending || !item.price} onPress={() => addToCart.mutate()} style={[styles.primary, styles.cartButton, (addToCart.isPending || !item.price) && styles.disabled]}><Ionicons color="#fff" name="cart-outline" size={18} /><Text style={styles.primaryText}>{addToCart.isPending ? "Adding…" : "Add to cart"}</Text></Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${item.name} from wishlist`} accessibilityState={{ busy }} disabled={busy} onPress={onRemove} style={[styles.iconButton, busy && styles.disabled]}><Ionicons color={colors.danger} name="trash-outline" size={20} /></Pressable>
     </View>
+    <WishlistCollectionPicker productId={item.productId} selectedId={collectionId} />
     {addToCart.error ? <Text accessibilityRole="alert" style={styles.feedbackError}>{addToCart.error.message}</Text> : null}
     {addToCart.isSuccess && addToCart.data ? <Text accessibilityLiveRegion="polite" style={styles.feedback}>Added to cart</Text> : null}
   </View>;
