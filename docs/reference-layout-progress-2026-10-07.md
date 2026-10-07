@@ -75,6 +75,16 @@ Final verification: mobile type-check, all 82 mobile tests and the full suite in
 
 ## Alert account isolation
 
+### Independent-alert browser acceptance and loading feedback
+
+The earlier demo-login blockage was recovered using the existing email/password form's keyboard submit; no authentication bypass or Firebase persistence change was made. With explicit approval, the demo customer created a price alert for Travel Organizer Bundle using Bangla `৫০০.৫০`, then a stock alert. Both appeared together. Turning off price retained stock; recreating price and turning off stock retained price. A fresh authenticated API read independently confirmed the remaining `50050` BDT-minor target. The alert list subsequently rendered that persisted price condition after navigation. Finally the remaining test price alert was turned off in the list and the UI showed zero active alerts. No cart/order/payment was submitted. The default wishlist item remains unchanged.
+
+At 360px, both independent controls were 312x44px with document width equal to viewport width. The alert list's action originally squeezed the product title into a narrow column; it now wraps below the content on mobile. A screenshot verified the full title and full-width action. Each row has an independent product link and a kind-specific removal label. Price display uses exact minor-unit conversion rather than floating-point formatting. Browser viewport was restored.
+
+Reload also exposed a long pending engagement request (a separate authenticated API read took about 11.8 seconds). Authenticated engagement requests now have a 20-second deadline covering token retrieval, HTTP and response decoding. Fetch is aborted on expiry and a token resolving late cannot initiate an HTTP mutation. There is no automatic write replay; the error asks the customer to refresh and check the latest state before retrying an uncertain write. This bounds a request; it is not proof that remote database latency or the earlier browser-storage issue is permanently resolved. Unit tests cover result/error propagation, stalled operations, abort and late-token safety.
+
+Validation passed: mobile type-check, 97 mobile tests, the full build/workspace suite and all 93 repository checks, secret scan and whitespace check. Flash-sale subscriptions, collection-scoped preferences, external delivery acceptance and broader reference page parity remain open.
+
 ### Independent stock and price subscriptions
 
 Stock and target-price subscriptions now coexist for the same customer/product. PostgreSQL partial unique indexes enforce one row of each kind, and parameterized atomic upserts update only the selected kind while preserving its ID/creation time. No alert rows are deleted by the migration. The worker's existing row-level claim turns off only the matched subscription. Prisma cannot express these partial unique indexes; retain the hand-authored migration as the database constraint source.
