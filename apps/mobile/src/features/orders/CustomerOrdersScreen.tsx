@@ -3,29 +3,20 @@ import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
 import { getCustomerOrders } from "./orders.api";
 
-type Filter = "ALL" | "ACTIVE" | "DELIVERED" | "CANCELLED";
-const filters: Array<{ label: string; value: Filter }> = [
-  { label: "All", value: "ALL" },
-  { label: "In progress", value: "ACTIVE" },
-  { label: "Delivered", value: "DELIVERED" },
-  { label: "Cancelled", value: "CANCELLED" }
-];
+import { orderFilters as filters, orderStatusGroup, orderProgressStep, type OrderFilter as Filter } from "./order-list-presentation";
 
-const fallbackImage = "https://placehold.co/240x240/eaf4f8/1e7098?text=Amiyo";
+import { OrderItemImage } from "./OrderItemImage";
 const money = (minor: string) => `Tk ${(Number(minor) / 100).toLocaleString("en-BD")}`;
 const statusLabel = (status: string) => status.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 function matchesFilter(order: CustomerOrderSummary, filter: Filter) {
-  if (filter === "ALL") return true;
-  if (filter === "DELIVERED") return order.status === "DELIVERED";
-  if (filter === "CANCELLED") return order.status === "CANCELLED";
-  return !["DELIVERED", "CANCELLED", "REFUNDED"].includes(order.status);
+  return filter === "ALL" || orderStatusGroup(order.status) === filter;
 }
 
 export function CustomerOrdersScreen() {
@@ -36,19 +27,29 @@ export function CustomerOrdersScreen() {
   const [filter, setFilter] = useState<Filter>("ALL");
   const orders = useQuery({ queryKey: ["orders", "customer", user?.uid], queryFn: () => getCustomerOrders(user!), enabled: Boolean(user), refetchInterval: 30_000 });
   const visibleOrders = useMemo(() => orders.data?.filter((order) => matchesFilter(order, filter)) ?? [], [filter, orders.data]);
-  const activeCount = orders.data?.filter((order) => matchesFilter(order, "ACTIVE")).length ?? 0;
-  const deliveredCount = orders.data?.filter((order) => order.status === "DELIVERED").length ?? 0;
+
 
   if (!user) return <OrderState title="Your orders are private" copy="Sign in to view purchases, delivery updates and invoices." action="Sign in" onPress={() => router.replace("/auth")} />;
   if (orders.isLoading) return <OrderState loading title="Loading your orders" copy="Fetching your latest purchase history." />;
   if (orders.error) return <OrderState title="Could not load orders" copy={orders.error instanceof Error ? orders.error.message : "Please try again."} action="Try again" onPress={() => orders.refetch()} />;
 
-  return <Screen eyebrow="MY ACCOUNT" title="My orders" description="Track deliveries, invoices and return support in one place.">
-    <View style={[styles.hero, compact && styles.heroCompact]}>
-      <View style={styles.heroCopy}><Text style={styles.heroTitle}>{orders.data?.length ?? 0} orders</Text><Text style={styles.heroText}>{activeCount} active deliveries - {deliveredCount} completed purchases</Text></View>
-      <View style={styles.heroIcon}><Ionicons color="#fff" name="bag-check-outline" size={30} /></View>
+  return <Screen hideHeading title="My Orders">
+    <View style={[styles.pageHeader, compact && styles.headerCompact]}>
+      <View style={styles.headingCopy}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Back to account" onPress={() => router.push("/account")} style={styles.back}><Ionicons name="arrow-back" size={22} color={colors.text} /></Pressable>
+        <View style={styles.headingText}><Text accessibilityRole="header" style={styles.pageTitle}>My Orders</Text><Text style={styles.muted}>Track and manage your orders</Text></View>
+      </View>
+      <View style={styles.headerActions}>
+        <Link href="/returns" asChild><Pressable accessibilityRole="link" style={styles.secondary}><Text style={styles.secondaryText}>My Returns</Text></Pressable></Link>
+        <Link href="/" asChild><Pressable accessibilityRole="link" style={styles.primarySmall}><Text style={styles.primaryText}>Continue Shopping</Text></Pressable></Link>
+      </View>
     </View>
-    <View accessibilityRole="tablist" style={styles.filters}>{filters.map((item) => <Pressable accessibilityRole="tab" accessibilityState={{ selected: filter === item.value }} key={item.value} onPress={() => setFilter(item.value)} style={[styles.filter, filter === item.value && styles.filterActive]}><Text style={[styles.filterText, filter === item.value && styles.filterTextActive]}>{item.label}</Text></Pressable>)}</View>
+    <ScrollView horizontal showsHorizontalScrollIndicator={compact} style={styles.filterScroll} contentContainerStyle={styles.filters}>
+      <View accessibilityRole="tablist" style={styles.filterRow}>{filters.map((item) => {
+        const count = orders.data?.filter((order) => matchesFilter(order, item.value)).length ?? 0;
+        return <Pressable accessibilityRole="tab" accessibilityLabel={`${item.label}, ${count} orders`} accessibilityState={{ selected: filter === item.value }} key={item.value} onPress={() => setFilter(item.value)} style={[styles.filter, filter === item.value && styles.filterActive]}><Text style={[styles.filterText, filter === item.value && styles.filterTextActive]}>{item.label}</Text><View style={styles.countBadge}><Text style={styles.countText}>{count}</Text></View></Pressable>;
+      })}</View>
+    </ScrollView>
     {visibleOrders.length ? <View style={styles.list}>{visibleOrders.map((order) => <OrderCard compact={compact} key={order.id} order={order} />)}</View> : <View style={styles.empty}><Ionicons color={colors.primary} name="receipt-outline" size={48} /><Text accessibilityRole="header" style={styles.emptyTitle}>{filter === "ALL" ? "No orders yet" : `No ${filters.find((item) => item.value === filter)?.label.toLowerCase()} orders`}</Text><Text style={styles.muted}>Your matching orders will appear here.</Text><Pressable accessibilityRole="button" onPress={() => router.replace("/")} style={styles.primary}><Text style={styles.primaryText}>Start shopping</Text></Pressable></View>}
   </Screen>;
 }
@@ -56,18 +57,18 @@ export function CustomerOrdersScreen() {
 function OrderCard({ compact, order }: { compact: boolean; order: CustomerOrderSummary }) {
   const isCancelled = order.status === "CANCELLED";
   const isDelivered = order.status === "DELIVERED";
-  const activeStep = isCancelled ? -1 : order.status === "DELIVERED" ? 3 : ["PENDING_PAYMENT", "CONFIRMED"].includes(order.status) ? 0 : ["PROCESSING", "READY_TO_SHIP"].includes(order.status) ? 1 : 2;
+  const activeStep = orderProgressStep(order.status);
   const mainItem = order.previewItems[0];
   return <View style={styles.card}>
-    <View style={styles.cardTop}><View><Text style={styles.orderNumber}>{order.orderNumber}</Text><Text style={styles.muted}>{new Date(order.createdAt).toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric" })} - {order.vendorOrderCount} seller package{order.vendorOrderCount === 1 ? "" : "s"}</Text></View><Status status={order.status} /></View>
+    <View style={[styles.cardTop, compact && styles.headerCompact]}><View style={styles.headingText}><Text style={styles.orderNumber}>{order.orderNumber}</Text><Text style={styles.muted}>{new Date(order.createdAt).toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric" })} - {order.vendorOrderCount} seller package{order.vendorOrderCount === 1 ? "" : "s"}</Text></View><Status status={order.status} /></View>
     <Link href={`/order/${order.id}` as never} asChild><Pressable accessibilityLabel={`Open order ${order.orderNumber}`} accessibilityRole="link" style={StyleSheet.flatten([styles.productArea, compact && styles.productAreaCompact])}>
       <ProductPreview items={order.previewItems} />
-      <View style={styles.productCopy}><Text numberOfLines={2} style={styles.productTitle}>{mainItem?.name ?? "Order items"}</Text><Text style={styles.muted}>{order.itemCount} item{order.itemCount === 1 ? "" : "s"} total{mainItem ? ` - ${mainItem.sku}` : ""}</Text><Progress activeStep={activeStep} cancelled={isCancelled} /></View>
+      <View style={[styles.productCopy, compact && styles.productCopyCompact]}><Text numberOfLines={2} style={styles.productTitle}>{mainItem?.name ?? "Order items"}</Text><Text style={styles.muted}>{order.itemCount} item{order.itemCount === 1 ? "" : "s"} total{mainItem ? ` - ${mainItem.sku}` : ""}</Text>{activeStep !== null ? <Progress activeStep={activeStep} cancelled={false} /> : <Text style={styles.muted}>{statusLabel(order.status)} — open details for recorded updates.</Text>}</View>
       <View style={styles.totalBox}><Text style={styles.totalLabel}>Total</Text><Text style={styles.total}>{money(order.total.amountMinor)}</Text><Ionicons color={colors.muted} name="chevron-forward" size={18} /></View>
     </Pressable></Link>
     <View style={styles.actions}>
       <Link href={`/order/${order.id}` as never} asChild><Pressable accessibilityRole="link" accessibilityLabel={`View details for ${order.orderNumber}`} style={styles.primarySmall}><Text style={styles.primaryText}>View details</Text></Pressable></Link>
-      {!isCancelled && !isDelivered ? <Link href={`/order/${order.id}/tracking` as never} asChild><Pressable accessibilityRole="link" accessibilityLabel={`Track order ${order.orderNumber}`} style={styles.secondary}><Ionicons color={colors.primary} name="navigate-outline" size={16} /><Text style={styles.secondaryText}>Track order</Text></Pressable></Link> : null}
+      {orderStatusGroup(order.status) !== "RETURN" && !isCancelled && !isDelivered ? <Link href={`/order/${order.id}/tracking` as never} asChild><Pressable accessibilityRole="link" accessibilityLabel={`Track order ${order.orderNumber}`} style={styles.secondary}><Ionicons color={colors.primary} name="navigate-outline" size={16} /><Text style={styles.secondaryText}>Track order</Text></Pressable></Link> : null}
       <Link href={`/order/${order.id}/invoice` as never} asChild><Pressable accessibilityRole="link" accessibilityLabel={`Invoice for ${order.orderNumber}`} style={styles.secondary}><Ionicons color={colors.primary} name="document-text-outline" size={16} /><Text style={styles.secondaryText}>Invoice</Text></Pressable></Link>
     </View>
   </View>;
@@ -75,11 +76,11 @@ function OrderCard({ compact, order }: { compact: boolean; order: CustomerOrderS
 
 function ProductPreview({ items }: { items: CustomerOrderSummary["previewItems"] }) {
   const visible = items.slice(0, 3);
-  return <View style={styles.previewWrap}>{visible.length ? visible.map((item, index) => <View key={`${item.productId}:${item.sku}`} style={[styles.previewFrame, index > 0 && { marginLeft: -16 }]}><Image source={{ uri: item.thumbnailUrl || fallbackImage }} style={styles.previewImage} /><View style={styles.qtyBadge}><Text style={styles.qtyText}>x{item.quantity}</Text></View></View>) : <View style={styles.previewFrame}><Image source={{ uri: fallbackImage }} style={styles.previewImage} /></View>}{items.length > visible.length ? <View style={styles.moreBadge}><Text style={styles.moreText}>+{items.length - visible.length}</Text></View> : null}</View>;
+  return <View style={styles.previewWrap}>{visible.length ? visible.map((item, index) => <View key={`${item.productId}:${item.sku}`} style={[styles.previewFrame, index > 0 && { marginLeft: -16 }]}><OrderItemImage name={item.name} uri={item.thumbnailUrl} /><View style={styles.qtyBadge}><Text style={styles.qtyText}>x{item.quantity}</Text></View></View>) : <View style={styles.previewFrame}><OrderItemImage name="Order item" /></View>}{items.length > visible.length ? <View style={styles.moreBadge}><Text style={styles.moreText}>+{items.length - visible.length}</Text></View> : null}</View>;
 }
 
 function Progress({ activeStep, cancelled }: { activeStep: number; cancelled: boolean }) {
-  const steps = cancelled ? ["Cancelled"] : ["Placed", "Packed", "Shipped", "Delivered"];
+  const steps = cancelled ? ["Cancelled"] : ["Placed", "Processing", "Shipped", "Delivered"];
   return <View style={styles.progress}>{steps.map((step, index) => { const active = cancelled || index <= activeStep; return <View key={step} style={styles.step}><View style={[styles.dot, active && (cancelled ? styles.dotDanger : styles.dotActive)]} />{index < steps.length - 1 ? <View style={[styles.line, active && styles.lineActive]} /> : null}<Text style={[styles.stepText, active && styles.stepTextActive, cancelled && styles.stepTextDanger]}>{step}</Text></View>; })}</View>;
 }
 
@@ -94,33 +95,38 @@ function OrderState({ action, copy, loading, onPress, title }: { action?: string
 }
 
 const styles = StyleSheet.create({
-  hero: { alignItems: "center", backgroundColor: colors.navy, borderRadius: radius.xl, flexDirection: "row", justifyContent: "space-between", padding: spacing.xl },
-  heroCompact: { padding: spacing.lg },
-  heroCopy: { flex: 1, minWidth: 0 },
-  heroTitle: { color: "#fff", fontSize: 28, fontWeight: "700", letterSpacing: -0.6 },
-  heroText: { color: "#cbd5e1", lineHeight: 20, marginTop: 5 },
-  heroIcon: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.lg, height: 58, justifyContent: "center", width: 58 },
+  pageHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.md, backgroundColor: colors.surface, padding: spacing.lg, borderRadius: radius.lg },
+  headerCompact: { flexDirection: "column", alignItems: "stretch" },
+  headingCopy: { flexDirection: "row", alignItems: "center", gap: spacing.md, flexShrink: 1, minWidth: 0 },
+  headingText: { flexShrink: 1, minWidth: 0 },
+  pageTitle: { color: colors.text, fontSize: 28, fontWeight: "600" },
+  back: { height: 44, width: 44, alignItems: "center", justifyContent: "center", backgroundColor: colors.background, borderRadius: radius.md },
+  headerActions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  filterScroll: { flexGrow: 0 },
+  filterRow: { flexDirection: "row", gap: spacing.sm },
+  countBadge: { backgroundColor: colors.surface, borderRadius: radius.pill, paddingHorizontal: 7, paddingVertical: 2 },
+  countText: { color: colors.primary, fontSize: 11, fontWeight: "600" },
+  productCopyCompact: { flexGrow: 0, flexShrink: 0, flexBasis: "auto", width: "100%" },
   filters: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl, borderWidth: 1, flexDirection: "row", flexWrap: "wrap", gap: 7, padding: 7 },
-  filter: { borderRadius: radius.pill, paddingHorizontal: spacing.md, paddingVertical: 10 },
+  filter: { flexDirection: "row", alignItems: "center", gap: spacing.sm, minHeight: 44, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 10 },
   filterActive: { backgroundColor: colors.primary },
   filterText: { color: colors.muted, fontSize: 12, fontWeight: "700" },
   filterTextActive: { color: colors.surface },
   list: { gap: spacing.md },
-  card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl, borderWidth: 1, overflow: "hidden" },
+  card: { backgroundColor: colors.surface, borderRadius: radius.xl, overflow: "hidden" },
   cardTop: { alignItems: "center", borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: "row", gap: spacing.md, justifyContent: "space-between", padding: spacing.md },
   orderNumber: { color: colors.text, fontSize: 16, fontWeight: "700" },
   muted: { color: colors.muted, flexShrink: 1, fontSize: 11, lineHeight: 18, marginTop: 3 },
   status: { backgroundColor: colors.primarySoft, borderRadius: radius.pill, color: colors.primary, fontSize: 10, fontWeight: "700", overflow: "hidden", paddingHorizontal: 10, paddingVertical: 6 },
-  statusSuccess: { backgroundColor: "#ecfdf5", color: colors.success },
-  statusDanger: { backgroundColor: "#fef2f2", color: colors.danger },
+  statusSuccess: { backgroundColor: colors.accentSoft, color: colors.success },
+  statusDanger: { backgroundColor: colors.primarySoft, color: colors.danger },
   productArea: { alignItems: "center", flexDirection: "row", gap: spacing.md, padding: spacing.md },
   productAreaCompact: { alignItems: "flex-start", flexDirection: "column" },
   previewWrap: { alignItems: "center", flexDirection: "row", minWidth: 92 },
-  previewFrame: { backgroundColor: "#f8fafc", borderColor: "#fff", borderRadius: radius.md, borderWidth: 3, overflow: "hidden", position: "relative" },
-  previewImage: { height: 72, width: 72 },
+  previewFrame: { backgroundColor: colors.surface, borderRadius: radius.md, overflow: "hidden", position: "relative" },
   qtyBadge: { backgroundColor: "rgba(15,23,42,.78)", borderRadius: radius.pill, bottom: 4, paddingHorizontal: 6, paddingVertical: 2, position: "absolute", right: 4 },
   qtyText: { color: "#fff", fontSize: 9, fontWeight: "700" },
-  moreBadge: { alignItems: "center", backgroundColor: colors.primarySoft, borderColor: "#fff", borderRadius: radius.pill, borderWidth: 3, height: 42, justifyContent: "center", marginLeft: -14, width: 42 },
+  moreBadge: { alignItems: "center", backgroundColor: colors.primarySoft, borderColor: colors.surface, borderRadius: radius.pill, borderWidth: 3, height: 42, justifyContent: "center", marginLeft: -14, width: 42 },
   moreText: { color: colors.primary, fontSize: 11, fontWeight: "700" },
   productCopy: { flex: 1, minWidth: 0 },
   productTitle: { color: colors.text, fontSize: 15, fontWeight: "700", lineHeight: 20 },
