@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Prisma, type PrismaClient } from "@prisma/client";
+import { productAlertChannelEnabled } from "../notifications/product-alert-preferences.js";
 
 type AlertVariant = { id: string; active: boolean; currency: string; priceMinor: bigint; inventory: { onHand: number; reserved: number } | null };
 
@@ -11,11 +12,7 @@ export function matchingAlertVariant(variants: AlertVariant[], targetMinor: bigi
 }
 
 export function productAlertPushEnabled(preferences: Prisma.JsonValue | undefined) {
-  if (!preferences || typeof preferences !== "object" || Array.isArray(preferences)) return true;
-  const notifications = preferences.notificationPreferences;
-  if (!notifications || typeof notifications !== "object" || Array.isArray(notifications)) return true;
-  const priceDrops = notifications.priceDrops;
-  return !priceDrops || typeof priceDrops !== "object" || Array.isArray(priceDrops) || priceDrops.push !== false;
+  return productAlertChannelEnabled(preferences, "push");
 }
 
 export class ProductAlertScheduler {
@@ -57,7 +54,8 @@ export class ProductAlertScheduler {
         idempotencyKey: `product-alert:${alert.id}:${randomUUID()}`,
         deliveries: { create: [
           { channel: "in_app", status: "DELIVERED", deliveredAt: now },
-          ...(productAlertPushEnabled(alert.user.profile?.preferences) ? [{ channel: "push", status: "PENDING" as const }] : [])
+          ...(productAlertPushEnabled(alert.user.profile?.preferences) ? [{ channel: "push", status: "PENDING" as const }] : []),
+          ...(alert.user.normalizedEmail && productAlertChannelEnabled(alert.user.profile?.preferences, "email") ? [{ channel: "email", status: "PENDING" as const }] : [])
         ] }
       }, include: { deliveries: true } });
       for (const delivery of notification.deliveries.filter((item) => item.status === "PENDING")) {

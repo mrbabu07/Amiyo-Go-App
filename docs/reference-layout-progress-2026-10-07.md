@@ -75,6 +75,16 @@ Final verification: mobile type-check, all 82 mobile tests and the full suite in
 
 ## Alert account isolation
 
+### Product alert email delivery
+
+Product-alert matches now queue email independently of push when the customer has an email address and the account price-drop email preference is enabled. The notification worker handles only the two supported product-alert email types, rereads account status/deletion/email opt-out before sending, and preserves the in-app notification when external delivery is skipped or fails. Email uses plain text and a product link restricted to the configured app origin. Invalid app URLs or unsupported notification types fail closed.
+
+The existing Resend adapter receives a stable delivery-specific idempotency key; provider/network or persistence failures remain retryable with that key. Completed deliveries are not resent by the processor. Product-alert email jobs older than 23 hours are rejected to avoid replay after the provider's 24-hour idempotency retention window ([Resend documentation](https://resend.com/changelog/idempotency-keys)). A changed recipient or configuration can cause a provider payload-conflict error on retry; the code does not evade it with a fresh key. Provider acceptance is recorded using the existing delivery status and provider reference; this does not prove inbox arrival, and bounce/webhook reconciliation remains open.
+
+Worker operation needs `APP_PUBLIC_URL`, `EMAIL_PROVIDER_TOKEN`, `EMAIL_FROM`, the existing database/Redis and a running notification worker. No real email or remote customer mutation was used in development. Fake-provider tests cover preference changes, inactive/deleted recipients, missing email, expired jobs, safe links, stable retry payloads, recorded receipt, duplicate completed jobs and failures. Scheduler tests cover separate email/push choice. Independent per-collection stock/price/flash subscriptions and real provider acceptance remain unfinished.
+
+Verification: full build/workspace suites and 92 repository checks passed. The final focused worker rerun passed all 23 tests, including pending-email routing through the actual notification processor. Secret scan and whitespace checks passed. This is fake-provider acceptance, not evidence of inbox delivery.
+
 ### Wishlist target-price controls
 
 Wishlist cards now expose a separate expandable alert editor outside the product link. Customers can enter a BDT target, switch to availability alerts, see the saved condition or turn it off. The editor retains the current palette, labels its decimal input and uses 44px actions. It explicitly explains the current one-product/one-rule behavior across collections rather than pretending to offer legacy independent stock/price/flash switches.

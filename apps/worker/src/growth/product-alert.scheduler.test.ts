@@ -24,7 +24,7 @@ test("product alerts honor the customer's saved push opt-out", () => {
   assert.equal(productAlertPushEnabled({ notificationPreferences: { priceDrops: { push: true } } }), true);
 });
 
-function fixture(push = true) {
+function fixture(push = true, email?: { address: string; enabled: boolean }) {
   let active = true;
   let failOutbox = false;
   const notifications: any[] = [];
@@ -37,7 +37,7 @@ function fixture(push = true) {
         assert.equal(input.where.product.shop.status, "ACTIVE");
         assert.equal(input.where.product.vendor.status, "APPROVED");
         assert.equal(input.where.product.status, "APPROVED");
-        return active ? { id: "alert", userId: "customer", productId: "product", targetMinor: 500n, user: { profile: { preferences: { notificationPreferences: { priceDrops: { push } } } } }, product: { name: "Product", slug: "product", variants: [variant] } } : null;
+        return active ? { id: "alert", userId: "customer", productId: "product", targetMinor: 500n, user: { normalizedEmail: email?.address, profile: { preferences: { notificationPreferences: { priceDrops: { push, email: email?.enabled } } } } }, product: { name: "Product", slug: "product", variants: [variant] } } : null;
       },
       updateMany: async (input: any) => {
         assert.deepEqual(input.where, { id: "alert", active: true });
@@ -97,6 +97,15 @@ test("opted-out push remains an in-app alert without a push outbox event", async
   assert.equal(context.outbox.length, 0);
   assert.equal(context.notifications[0].deliveries.create.length, 1);
   assert.equal(context.notifications[0].deliveries.create[0].status, "DELIVERED");
+});
+
+test("email is queued independently of push only with an address and enabled preference", async () => {
+  for (const enabled of [true, false]) {
+    const context = fixture(false, { address: "demo@example.test", enabled });
+    await context.scheduler.deliver("alert");
+    assert.deepEqual(context.notifications[0].deliveries.create.map((delivery: { channel: string }) => delivery.channel), enabled ? ["in_app", "email"] : ["in_app"]);
+    assert.equal(context.outbox.length, enabled ? 1 : 0);
+  }
 });
 
 test("bounded polling advances past unmatched alerts and continues after one failure", async () => {

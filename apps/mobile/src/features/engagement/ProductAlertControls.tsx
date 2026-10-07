@@ -49,7 +49,7 @@ function AlertEditor({ productId, productName }: { productId: string; productNam
       <Pressable accessibilityRole="button" disabled={disabled} onPress={() => mutation.mutate("price")} style={[styles.primary, disabled && styles.disabled]}><Text style={styles.primaryText}>{mutation.isPending ? "Saving…" : "Save target price"}</Text></Pressable>
       <Pressable accessibilityRole="button" disabled={disabled} onPress={() => mutation.mutate("stock")} style={[styles.button, disabled && styles.disabled]}><Text style={styles.label}>Notify when available instead</Text></Pressable>
       {saved ? <Pressable accessibilityRole="button" disabled={disabled} onPress={() => mutation.mutate("off")} style={styles.button}><Text style={styles.error}>Turn off alert</Text></Pressable> : null}
-      <Text style={styles.copy}>One alert per product across your lists. Saving replaces the current rule. It turns off after a match. In-app updates; push follows your account preferences.</Text>
+      <Text style={styles.copy}>One alert per product across your lists. Saving replaces the current rule. It turns off after a match. In-app updates; email and push follow your account preferences.</Text>
       {query.error ? <Pressable accessibilityRole="button" onPress={() => void query.refetch()} style={styles.button}><Text style={styles.error}>Could not load alerts. Tap to retry.</Text></Pressable> : null}
       {mutation.error ? <Text accessibilityRole="alert" style={styles.error}>{mutation.error.message}</Text> : null}
       {mutation.isSuccess ? <Text accessibilityLiveRegion="polite" style={styles.copy}>Alert updated.</Text> : null}
