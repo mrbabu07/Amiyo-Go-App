@@ -32,10 +32,18 @@ export class EngagementService {
 
   private async defaultWishlist(userId: string) {
     const existing = await this.client.wishlist.findFirst({ where: { userId, isDefault: true } }); if (existing) return existing;
-    return withSerializableTransaction(this.client, async (transaction) => {
-      const found = await transaction.wishlist.findFirst({ where: { userId, isDefault: true } });
-      return found || transaction.wishlist.create({ data: { userId, isDefault: true } });
-    });
+    try {
+      return await withSerializableTransaction(this.client, async (transaction) => {
+        const found = await transaction.wishlist.findFirst({ where: { userId, isDefault: true } });
+        return found || transaction.wishlist.create({ data: { userId, isDefault: true } });
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        const winner = await this.client.wishlist.findFirst({ where: { userId, isDefault: true } });
+        if (winner) return winner;
+      }
+      throw error;
+    }
   }
 
   private async ownWishlist(userId: string, collectionId?: string) {

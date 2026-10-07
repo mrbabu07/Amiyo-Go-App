@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 import { wishlistCollectionInputSchema, wishlistSelectionSchema } from "@amiyo/contracts";
 import { WishlistCollectionsService } from "./wishlist-collections.service.js";
 import { EngagementService } from "./engagement.service.js";
@@ -8,6 +8,23 @@ import { EngagementService } from "./engagement.service.js";
 const owner = "11111111-1111-4111-8111-111111111111";
 const other = "22222222-2222-4222-8222-222222222222";
 const id = "33333333-3333-4333-8333-333333333333";
+
+test("default wishlist creation recovers only a committed unique-race winner", async () => {
+  const conflict = new Prisma.PrismaClientKnownRequestError("Unique constraint failed", { code: "P2002", clientVersion: "5.22.0" });
+  let reads = 0;
+  const client = { wishlist: {
+    findFirst: async () => ++reads === 1 ? null : { id },
+    findUniqueOrThrow: async () => ({ id, name: "My Wishlist", isDefault: true, share: null, items: [] })
+  }, $transaction: async () => { throw conflict; } } as unknown as PrismaClient;
+  assert.equal((await new EngagementService(client).wishlist(owner)).id, id);
+  assert.equal(reads, 2);
+});
+
+test("unrelated default-list failures are not masked as successful races", async () => {
+  const failure = new Error("Database unavailable");
+  const client = { wishlist: { findFirst: async () => null }, $transaction: async () => { throw failure; } } as unknown as PrismaClient;
+  await assert.rejects(new EngagementService(client).wishlist(owner), (error) => error === failure);
+});
 
 test("collection summaries select only the owner's lists and safe counts", async () => {
   const client = { wishlist: { findMany: async ({ where }: { where: unknown }) => {

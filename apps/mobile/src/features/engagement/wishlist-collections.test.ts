@@ -3,6 +3,14 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { URL } from "node:url";
 
+test("catalog heart mutations invalidate the collection counts for their initiating account", () => {
+  for (const path of ["../home/components/ProductCard.tsx", "../catalog/ProductDetailScreen.tsx"]) {
+    const source = readFileSync(new URL(path, import.meta.url), "utf8");
+    assert.match(source, /firebaseAuth\?\.currentUser\?\.uid !== uid/);
+    assert.match(source, /invalidateQueries\(\{ queryKey: \["wishlist-collections", uid\] \}\)/);
+  }
+});
+
 test("collection selection, cache writes and picker state are account scoped", () => {
   const screen = readFileSync(new URL("./WishlistScreen.tsx", import.meta.url), "utf8");
   assert.match(screen, /selection\?\.uid === user\?\.uid/);

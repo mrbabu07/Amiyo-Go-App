@@ -32,4 +32,5 @@ test("wishlist layout preserves theme, responsive stacking and independent contr
   assert.match(source, /Product image unavailable/);
   assert.match(source, /catch \{\s*setShareError/);
   assert.doesNotMatch(source, /placehold.co|#334155|#064e3b|minWidth: 250/);
+  assert.match(source, /flexBasis: 260, flexGrow: 1, flexShrink: 1, minWidth: 0, maxWidth: 360/);
 });

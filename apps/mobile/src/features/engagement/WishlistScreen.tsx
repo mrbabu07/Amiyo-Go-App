@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   secondaryText: { color: colors.text, fontWeight: "600" },
   dangerText: { color: colors.danger, fontWeight: "600" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
-  card: { backgroundColor: colors.surface, borderRadius: radius.lg, flexGrow: 1, flexBasis: 260, minWidth: 0, maxWidth: "100%", overflow: "hidden" },
+  card: { backgroundColor: colors.surface, borderRadius: radius.lg, flexBasis: 260, flexGrow: 1, flexShrink: 1, minWidth: 0, maxWidth: 360, overflow: "hidden" },
   openArea: { flex: 1 },
   image: { backgroundColor: colors.background, aspectRatio: 1.25, width: "100%" },
   imageFallback: { alignItems: "center", justifyContent: "center" },

@@ -49,6 +49,7 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
     onSuccess: (data, _variables, uid) => {
       if (!uid || firebaseAuth?.currentUser?.uid !== uid) return;
       queryClient.setQueryData(["wishlist", uid], data);
+      void queryClient.invalidateQueries({ queryKey: ["wishlist-collections", uid] });
       if (!saved) void getDiscoverySessionId().then((sessionId) => safelyRecordDiscoveryEvent({ sessionId, eventType: "WISHLIST", productId: product.id }));
     }
   });
