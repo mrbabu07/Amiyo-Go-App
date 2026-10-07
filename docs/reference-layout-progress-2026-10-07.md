@@ -75,6 +75,14 @@ Final verification: mobile type-check, all 82 mobile tests and the full suite in
 
 ## Alert account isolation
 
+### Wishlist target-price controls
+
+Wishlist cards now expose a separate expandable alert editor outside the product link. Customers can enter a BDT target, switch to availability alerts, see the saved condition or turn it off. The editor retains the current palette, labels its decimal input and uses 44px actions. It explicitly explains the current one-product/one-rule behavior across collections rather than pretending to offer legacy independent stock/price/flash switches.
+
+English and Bangla digits convert to minor units using bigint; zero, negative, malformed, over-precision and PostgreSQL bigint-overflow targets are rejected. The API input contract now applies the same positive/bounded amount rule, and OpenAPI was regenerated. Account-scoped queries and post-mutation identity guards prevent cross-account cache updates; failed/ambiguous mutations revalidate alert state without automatic write retries.
+
+Verification: mobile type-check, all 93 mobile tests, contract tests, full build/workspace suites and all 92 repository checks passed; secret scan and whitespace check passed. Browser inspection at 360px showed no horizontal overflow and 312-by-44px input/actions. The editor accepted a Bangla draft and rendered correctly; the draft was cleared and viewport restored. No alert mutation or provider send was performed. Independent multi-type/collection alert preferences, flash-sale controls, email delivery and end-to-end delivery acceptance remain open.
+
 ### Product alert processing
 
 The worker now starts a product-alert scheduler. Each poll visits up to 250 active subscriptions using an advancing ID boundary, so an early unmatched subscription does not starve later records. It rechecks approved products, active shops, approved vendors, active/non-deleted customers, active BDT variants and unreserved inventory. A target price matches at or below the requested amount; available stock and price must belong to the same option. Money comparisons use bigint.

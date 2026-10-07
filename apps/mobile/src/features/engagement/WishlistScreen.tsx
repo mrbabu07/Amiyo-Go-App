@@ -14,6 +14,7 @@ import { getWishlist, removeWishlistItem, shareWishlist, unshareWishlist } from 
 
 import { WishlistCollections, WishlistCollectionPicker } from "./WishlistCollections";
 import { WishlistToCart } from "./WishlistToCart";
+import { ProductAlertControls } from "./ProductAlertControls";
 
 type WishlistItem = Awaited<ReturnType<typeof getWishlist>>["items"][number];
 const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
@@ -104,6 +105,7 @@ function WishlistCard({ busy, collectionId, item, onOpen, onRemove }: { busy: bo
       <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${item.name} from wishlist`} accessibilityState={{ busy }} disabled={busy} onPress={onRemove} style={[styles.iconButton, busy && styles.disabled]}><Ionicons color={colors.danger} name="trash-outline" size={20} /></Pressable>
     </View>
     <WishlistCollectionPicker productId={item.productId} selectedId={collectionId} />
+    <ProductAlertControls productId={item.productId} productName={item.name} />
     {addToCart.error ? <Text accessibilityRole="alert" style={styles.feedbackError}>{addToCart.error.message}</Text> : null}
     {addToCart.isSuccess && addToCart.data ? <Text accessibilityLiveRegion="polite" style={styles.feedback}>Added to cart</Text> : null}
   </View>;
