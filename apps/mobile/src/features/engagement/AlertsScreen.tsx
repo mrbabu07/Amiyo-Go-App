@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { EngagementState } from "./components/EngagementState";
 import { getAlerts, removeAlert } from "./engagement.api";
 
@@ -12,10 +13,17 @@ const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-
 
 export function AlertsScreen() {
   const router = useRouter();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
   const cache = useQueryClient();
-  const query = useQuery({ queryKey: ["alerts"], queryFn: () => getAlerts(user!), enabled: Boolean(user) });
-  const remove = useMutation({ mutationFn: (productId: string) => removeAlert(user!, productId), onSuccess: (data) => cache.setQueryData(["alerts"], data) });
+  const query = useQuery({ queryKey: ["alerts", user?.uid ?? null], queryFn: () => getAlerts(user!), enabled: Boolean(user) });
+  const remove = useMutation({ mutationFn: async (productId: string) => {
+    if (!user || firebaseAuth?.currentUser?.uid !== user.uid) throw new Error("Sign in to manage alerts");
+    const data = await removeAlert(user, productId);
+    return { data, uid: user.uid };
+  }, onSuccess: ({ data, uid }) => {
+    if (firebaseAuth?.currentUser?.uid !== uid) return;
+    cache.setQueryData(["alerts", uid], data);
+  } });
 
   if (!user) return <EngagementState eyebrow="SMART SHOPPING" icon="notifications-outline" title="Never miss an update" copy="Sign in to manage stock and target-price alerts." action="Sign in" onPress={() => router.replace("/auth")} />;
   if (query.isLoading) return <EngagementState loading eyebrow="SMART SHOPPING" icon="notifications-outline" title="Loading product alerts" copy="Checking your saved notification rules." />;

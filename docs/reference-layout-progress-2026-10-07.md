@@ -73,6 +73,10 @@ An initial browser create request was interrupted by a development-server restar
 
 Final verification: mobile type-check, all 82 mobile tests and the full suite including 92 repository checks passed; secret scan and whitespace checks passed. The temporary collection was deleted. Its test product remains in the demo customer's default wishlist pending the separately requested cleanup confirmation. Browser viewport was restored.
 
+## Alert account isolation
+
+Alert queries in product details and the alerts screen now include the Firebase account UID. The alerts screen subscribes to identity changes. Mutations capture their initiating account and cannot update the cache after switching accounts; a stale account cannot initiate an alert write. This fixes cross-account cached alert visibility, not alert delivery parity. Both source regression checks, all 90 mobile tests and mobile type-check passed. No additional browser or notification-delivery acceptance was performed in this pass. Price/stock delivery processing and legacy alert preference parity still require verification and implementation where absent.
+
 ## Wishlist to Cart action
 
 Added the legacy selected-list bulk cart action while retaining the current palette. It copies one unit of each unique available single-option product using the existing authenticated cart API. Multi-option products are not guessed: their results link to the product selector. Sold-out/unavailable products have explicit outcomes. Saved items and collections are never removed by this action.
