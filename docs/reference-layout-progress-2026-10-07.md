@@ -4,6 +4,14 @@
 
 Follow the legacy Client layout, spacing, component grouping, navigation and responsive behavior while preserving Amiyo-App's current off-white, maroon, navy and olive light/dark palette. Do not copy the reference's orange/slate colors or modify Client/Server. Functionality and authorization must remain intact.
 
+## Inline return milestones — 2026-10-08
+
+Added the reference's four-stage return tracker to customer list cards: requested, pickup scheduled, item received and refund processed. Cards now show these milestones without requiring a separate navigation. Unlike the legacy status-based fallback, a checkmark and timestamp require an actual matching event. Approval, review, rejection, closure and refund-pending statuses cannot fabricate pickup, receipt or refund completion. Missing history is explicitly labelled; duplicate milestones use the latest valid event timestamp. The full tracking link remains available for all review events.
+
+The bounded customer returns query now includes only public event IDs, transition statuses and timestamps, plus refund method. Actor identities, private notes and evidence metadata remain excluded by both the database projection and serializer. The tracker uses existing palette tokens and stacks at the card's compact breakpoint.
+
+Verification: API build and all 187 API tests passed; mobile type-check and all 103 mobile tests passed. Coverage includes owner-scoped public list history, private metadata exclusion, missing and out-of-order milestone history, rejected/closed states and invalid dates. Secret scan passed. With the approved local demo login, the browser DOM at measured width 360px showed the REVIEWING return, four unchecked/unrecorded milestones, product information, refund summary and original-payment preference. Document width was also 360px, without horizontal overflow. The existing fixture has no milestone-matching events; none were invented. Scroll/screenshot commands timed out, so final visual acceptance is incomplete. The temporary viewport override was reset. No return, order, refund or support mutation was submitted. Initial authenticated data loading was slow and remains a separate performance concern.
+
 ## Return support context — 2026-10-08
 
 Reference `Client/src/pages/Returns.jsx` links disputed/rejected returns to a prefilled support request. The customer return list now carries only the return UUID to support. Support loads the signed-in customer's return through the owner-scoped detail API, then offers an explicit "Use return details" action. Applying it fills RETURN category, high priority, order ID, recorded status/reason and full return ID in the editable message. No ticket is created automatically and delayed lookup results cannot overwrite a user's draft. Invalid or inaccessible return references show an error rather than trusting URL-supplied order information.

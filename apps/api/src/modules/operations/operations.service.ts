@@ -116,7 +116,8 @@ export class OperationsService {
 
   async returns(session: Session, admin = false) {
     if (admin && elevated(session) && session.permissions.includes("finance:read")) requirePermission(session, "finance:read"); else requirePermission(session, "returns:manage");
-    const rows = await this.client.return.findMany({ where: admin && elevated(session) ? {} : { userId: session.principal.userId }, include: { items: { include: { orderItem: { select: returnProductSelect } } } }, orderBy: { createdAt: "desc" }, take: 100 }); return rows.map((row) => ({ ...returnDto(row), items: returnDto(row).items.map((item, index) => ({ ...item, ...returnProductDetails(row.items[index]!.orderItem) })) }));
+    const rows = await this.client.return.findMany({ where: admin && elevated(session) ? {} : { userId: session.principal.userId }, include: { items: { include: { orderItem: { select: returnProductSelect } } }, events: { select: { id: true, fromStatus: true, toStatus: true, createdAt: true }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] } }, orderBy: { createdAt: "desc" }, take: 100 });
+    return rows.map((row) => ({ ...returnDto(row), items: returnDto(row).items.map((item, index) => ({ ...item, ...returnProductDetails(row.items[index]!.orderItem) })), refundMethod: row.refundMethod, events: row.events.map((event) => ({ id: event.id, fromStatus: event.fromStatus, toStatus: event.toStatus, createdAt: event.createdAt.toISOString() })) }));
   }
 
   async ownReturn(session: Session, id: string, vendor = false) {

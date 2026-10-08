@@ -33,6 +33,19 @@ test("missing or unowned return returns 404 without exposing existence", async (
   await assert.rejects(() => service.ownReturn(session, "other"), (error: unknown) => error instanceof ApiProblem && error.status === 404);
 });
 
+test("customer return list exposes recorded milestones but not internal event metadata", async () => {
+  const service = new OperationsService({ return: { findMany: async (query: any) => {
+    assert.deepEqual(query.where, { userId: "customer" });
+    assert.equal(query.take, 100);
+    assert.deepEqual(query.include.events.select, { id: true, fromStatus: true, toStatus: true, createdAt: true });
+    assert.deepEqual(query.include.events.orderBy, [{ createdAt: "asc" }, { id: "asc" }]);
+    return [{ id: "return", orderId: "order", vendorOrderId: "package", status: "REQUESTED", reasonCode: "DAMAGED", reasonDetail: null, requestedMinor: 123n, approvedMinor: null, currency: "BDT", version: 1, createdAt: new Date("2026-10-08"), items: [], refundMethod: "MANUAL", events: [{ id: "event", fromStatus: null, toStatus: "REQUESTED", createdAt: new Date("2026-10-08"), actorId: "private", note: "internal", metadata: { evidenceStorageKeys: ["secret"] } }] }];
+  } } } as never);
+  const result = await service.returns(session);
+  assert.deepEqual(result[0]?.events, [{ id: "event", fromStatus: null, toStatus: "REQUESTED", createdAt: "2026-10-08T00:00:00.000Z" }]);
+  assert.equal(result[0]?.refundMethod, "MANUAL");
+});
+
 test("inactive, unauthorized and non-vendor sessions fail before querying returns", async () => {
   const service = new OperationsService({} as never);
   for (const vendor of [true, false]) {
