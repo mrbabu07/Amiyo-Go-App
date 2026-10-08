@@ -28,3 +28,13 @@ test("return wizard stages preserve final explicit review and policy checks", ()
   assert.match(screen, /CustomerReturnWizard key=\{user.uid\}/);
   assert.match(screen, /const requestReturn = \(\) => setShowWizard\(true\)/);
 });
+
+test("expanded orders open the shared return wizard without loading the order picker", () => {
+  const wizard = readFileSync(new URL("../operations/CustomerReturnWizard.tsx", import.meta.url), "utf8");
+  assert.match(wizard, /useState\(initialOrderId\)/);
+  assert.match(wizard, /enabled: Boolean\(user && !initialOrderId\)/);
+  assert.match(wizard, /!initialOrderId \? <>/);
+  const expansion = readFileSync(new URL("./CustomerOrderExpansion.tsx", import.meta.url), "utf8");
+  assert.match(expansion, /key=\{`\$\{user.uid\}:\$\{id\}`\} initialOrderId=\{id\}/);
+  assert.match(expansion, /Request return/);
+});

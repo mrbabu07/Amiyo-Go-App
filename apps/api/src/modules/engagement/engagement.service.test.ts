@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 import type { Session } from "@amiyo/contracts";
 import { EngagementService } from "./engagement.service.js";
 
@@ -9,6 +9,60 @@ const threadId = "22222222-2222-4222-8222-222222222222";
 const vendorId = "33333333-3333-4333-8333-333333333333";
 const customer = { principal: { userId, roles: ["CUSTOMER"], vendorIds: [] }, status: "ACTIVE", email: null, phone: null, profile: { firstName: null, lastName: null, displayName: "Customer", avatarStorageKey: null, locale: "en", currency: "BDT" }, permissions: [], vendorMemberships: [] } as Session;
 const seller = { ...customer, principal: { userId, roles: ["VENDOR_OWNER"], vendorIds: [vendorId] }, permissions: ["vendor:read", "support:manage"] } as Session;
+
+test("review creation checks active permission and owned delivered purchase", async () => {
+  let reads = 0;
+  const client = { orderItem: { findFirst: async ({ where }: { where: unknown }) => {
+    reads++;
+    assert.deepEqual(where, { id: threadId, order: { userId, status: "DELIVERED" } });
+    return null;
+  } } } as unknown as PrismaClient;
+  const service = new EngagementService(client);
+  const input = { orderItemId: threadId, rating: 4 };
+  await assert.rejects(service.createReview(customer, input), /Review access/);
+  await assert.rejects(service.createReview({ ...customer, status: "SUSPENDED", permissions: ["reviews:manage"] } as Session, input), /Review access/);
+  assert.equal(reads, 0);
+  await assert.rejects(service.createReview({ ...customer, permissions: ["reviews:manage"] }, input), /delivered order item/);
+  assert.equal(reads, 1);
+});
+
+test("purchased-item review lookup remains owner scoped and filters before the list limit", async () => {
+  const client = { review: { findMany: async ({ where }: { where: unknown }) => {
+    assert.deepEqual(where, { userId, orderItemId: threadId });
+    return [];
+  } } } as unknown as PrismaClient;
+  assert.deepEqual(await new EngagementService(client).myReviews({ ...customer, permissions: ["reviews:manage"] }, threadId), []);
+});
+
+test("review images require owned processed public review uploads", async () => {
+  let writes = 0;
+  const client = {
+    orderItem: { findFirst: async () => ({ id: threadId, productId: vendorId }) },
+    review: { findUnique: async () => null, create: async () => { writes++; } },
+    mediaUpload: { findMany: async ({ where }: { where: unknown }) => {
+      assert.deepEqual(where, { id: { in: [vendorId] }, userId, purpose: "review", visibility: "public", status: "ready", mimeType: { in: ["image/jpeg", "image/png", "image/webp"] } });
+      return [];
+    } }
+  } as unknown as PrismaClient;
+  await assert.rejects(new EngagementService(client).createReview({ ...customer, permissions: ["reviews:manage"] }, { orderItemId: threadId, rating: 5, mediaUploadIds: [vendorId] }), /own processed photo uploads/);
+  assert.equal(writes, 0);
+});
+
+test("review unique collision becomes a duplicate conflict only when the item review exists", async () => {
+  for (const existing of [true, false]) {
+    let reads = 0;
+    const failure = new Prisma.PrismaClientKnownRequestError("Unique constraint", { code: "P2002", clientVersion: "5.22.0" });
+    const client = {
+      orderItem: { findFirst: async () => ({ id: threadId, productId: vendorId }) },
+      review: {
+        findUnique: async () => ++reads > 1 && existing ? { id: "review" } : null,
+        create: async () => { throw failure; }
+      }
+    } as unknown as PrismaClient;
+    await assert.rejects(new EngagementService(client).createReview({ ...customer, permissions: ["reviews:manage"] }, { orderItemId: threadId, rating: 5 }), (error) => existing ? error instanceof Error && error.message.includes("already been reviewed") : error === failure);
+    assert.equal(reads, 2);
+  }
+});
 
 test("starting seller chat reuses the customer's open vendor thread", async () => {
   let createCalls = 0;

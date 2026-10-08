@@ -11,6 +11,11 @@ function publicUrl(storageKey: string, visibility: string) { const base = proces
 
 export class MediaService {
   constructor(private readonly client: PrismaClient, private readonly storage: MediaStorageProvider) {}
+  async status(session: Session, id: string) {
+    const row = await this.client.mediaUpload.findFirst({ where: { id, userId: session.principal.userId }, select: { id: true, status: true } });
+    if (!row) throw new ApiProblem(404, "MEDIA_UPLOAD_NOT_FOUND", "Media upload not found");
+    return { id: row.id, status: row.status, ready: row.status === "ready" };
+  }
   async initiate(session: Session, input: MediaUploadInput) {
     requirePurposeAccess(session, input.purpose);
     const id = randomUUID(); const visibility = privatePurposes.has(input.purpose) ? "private" : "public"; const expiresAt = new Date(Date.now() + 10 * 60_000); const storageKey = `${visibility}/${input.purpose}/${session.principal.userId}/${id}.${extensionByMime[input.mimeType]}`;

@@ -1,22 +1,27 @@
 import type { OrderDto } from "@amiyo/contracts";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useCurrentUser } from "../auth/use-current-user";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { getCustomerOrder, getOrderTracking } from "./orders.api";
 import { OrderItemImage } from "./OrderItemImage";
+import { CustomerReturnWizard } from "../operations/CustomerReturnWizard";
+import { OrderReviewForm } from "./OrderReviewForm";
 
 const label = (value: string) => value.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 const money = (value: OrderDto["total"]) => `${value.currency} ${(Number(value.amountMinor) / 100).toLocaleString("en-BD", { minimumFractionDigits: 2 })}`;
 
 export function CustomerOrderExpansion({ id, compact }: { id: string; compact: boolean }) {
   const user = useCurrentUser();
-  const order = useQuery({ queryKey: ["orders", "customer", id, user?.uid], queryFn: () => getCustomerOrder(user!, id), enabled: Boolean(user), refetchInterval: 30_000 });
-  const tracking = useQuery({ queryKey: ["orders", id, "tracking", user?.uid], queryFn: () => getOrderTracking(user!, id), enabled: Boolean(user), refetchInterval: 30_000 });
+  const [showReturn, setShowReturn] = useState(false);
+  const order = useQuery({ queryKey: ["orders", "customer", id, user?.uid], queryFn: () => getCustomerOrder(user!, id), enabled: Boolean(user), retry: false, refetchInterval: 30_000 });
+  const tracking = useQuery({ queryKey: ["orders", id, "tracking", user?.uid], queryFn: () => getOrderTracking(user!, id), enabled: Boolean(user), retry: false, refetchInterval: 30_000 });
   if (!user) return null;
   if (!order.data) return <View style={styles.content}>{order.isLoading ? <><ActivityIndicator color={colors.primary} /><Text style={styles.muted}>Loading order details…</Text></> : <Retry message={order.error?.message || "Order details are unavailable."} onRetry={() => void order.refetch()} />}</View>;
   const detail = order.data;
   return <View style={styles.content}>
+    {showReturn ? <CustomerReturnWizard key={`${user.uid}:${id}`} initialOrderId={id} onClose={() => setShowReturn(false)} /> : <Pressable accessibilityRole="button" onPress={() => setShowReturn(true)} style={styles.retryButton}><Text style={styles.title}>Request return</Text></Pressable>}
     <View style={styles.notice}><Text style={styles.title}>{label(detail.status)}</Text><Text style={styles.muted}>Each seller package has its own fulfillment status. Shipment events below are recorded updates, not estimated completion.</Text></View>
     {order.error ? <Retry message="Order details could not refresh. Showing the last loaded details." onRetry={() => void order.refetch()} /> : null}
     {detail.vendorOrders.map((pack) => {
@@ -27,6 +32,7 @@ export function CustomerOrderExpansion({ id, compact }: { id: string; compact: b
           <View style={styles.itemIdentity}><OrderItemImage name={item.productName} uri={item.thumbnailUrl} /><View style={styles.itemCopy}><Text style={styles.title}>{item.productName}</Text><Text style={styles.muted}>SKU: {item.sku} · Qty: {item.quantity}</Text><Text style={styles.muted}>{Object.entries(item.attributes ?? {}).filter(([, value]) => typeof value === "string" || typeof value === "number").map(([key, value]) => `${key}: ${value}`).join(" · ")}</Text><Text style={styles.muted}>{money(item.unitPrice)} each</Text></View></View>
           <View style={styles.itemPrice}><Text style={styles.amount}>{money(item.lineTotal)}</Text>{BigInt(item.discount.amountMinor) > 0n ? <Text style={styles.muted}>Discount: {money(item.discount)}</Text> : null}</View>
         </View>)}
+        {detail.status === "DELIVERED" ? pack.items.map((item) => <OrderReviewForm key={`${user.uid}:${item.id}`} orderItemId={item.id} productName={item.productName} />) : null}
         <View style={styles.packageTotals}><Amount label="Package subtotal" value={pack.subtotal} /><Amount label="Delivery" value={pack.delivery} /><Amount label="Package total" value={pack.total} /></View>
         <View style={styles.tracking}>
           <Text accessibilityRole="header" style={styles.title}>Delivery updates</Text>

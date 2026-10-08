@@ -2,11 +2,21 @@ import { CryptoDigestAlgorithm, digest } from "expo-crypto";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import type { MediaUploadInput } from "@amiyo/contracts";
-import { mediaUploadResultSchema, mediaUploadTicketSchema } from "@amiyo/contracts";
+import { mediaUploadResultSchema, mediaUploadTicketSchema, mediaUploadStatusSchema } from "@amiyo/contracts";
+import { withReadDeadline } from "../../network/request-deadline";
 import type { User } from "firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
 type PickedFile = { fileName: string; mimeType: MediaUploadInput["mimeType"]; size: number; uri: string };
+export async function getMediaUploadStatus(user: User, id: string) {
+  return withReadDeadline("GET", async (signal) => {
+    const token = await user.getIdToken();
+    if (signal?.aborted) throw new Error("Request timed out");
+    const response = await fetch(`${apiUrl}/api/v2/media/uploads/${encodeURIComponent(id)}`, { signal, headers: { Authorization: `Bearer ${token}` } });
+    if (!response.ok) throw new Error("Could not check image processing. Try again.");
+    return mediaUploadStatusSchema.parse(await response.json());
+  });
+}
 async function authenticated(user: User, path: string, init: RequestInit) { const token = await user.getIdToken(); const response = await fetch(`${apiUrl}${path}`, { ...init, headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...init.headers } }); if (!response.ok) { const problem = await response.json().catch(() => null) as { detail?: string; title?: string } | null; throw new Error(problem?.detail || problem?.title || `Media request failed (${response.status})`); } return response.json(); }
 function supportedMime(value: string | null | undefined): MediaUploadInput["mimeType"] { if (["image/jpeg", "image/png", "image/webp", "application/pdf"].includes(value || "")) return value as MediaUploadInput["mimeType"]; throw new Error("Choose a JPEG, PNG, WebP or PDF file"); }
 function toHex(buffer: ArrayBuffer) { return Array.from(new Uint8Array(buffer), (byte) => byte.toString(16).padStart(2, "0")).join(""); }

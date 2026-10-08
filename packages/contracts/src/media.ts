@@ -6,6 +6,7 @@ export const mediaUploadInputSchema = z.object({ purpose: mediaPurposeSchema, fi
 export const mediaUploadTicketSchema = z.object({ id: uuidSchema, storageKey: z.string(), uploadUrl: z.string().url(), method: z.literal("PUT"), headers: z.record(z.string()), expiresAt: timestampSchema });
 export const mediaUploadResultSchema = z.object({ id: uuidSchema, storageKey: z.string(), status: z.enum(["uploaded", "processing", "ready"]), publicUrl: z.string().url().nullable() });
 export const mediaProcessingJobSchema = z.object({ mediaUploadId: uuidSchema, storageKey: z.string().min(3) });
+export const mediaUploadStatusSchema = z.object({ id: uuidSchema, status: z.string(), ready: z.boolean() });
 
 export type MediaUploadInput = z.infer<typeof mediaUploadInputSchema>;
 export type MediaUploadTicket = z.infer<typeof mediaUploadTicketSchema>;

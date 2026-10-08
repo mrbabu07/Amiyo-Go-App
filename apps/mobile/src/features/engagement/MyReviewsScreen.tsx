@@ -1,16 +1,17 @@
+import { ReviewImages } from "./ReviewImages";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getMyReviews } from "./engagement.api";
 
 export function MyReviewsScreen() {
   const router = useRouter();
-  const user = firebaseAuth?.currentUser ?? null;
-  const reviews = useQuery({ queryKey: ["reviews", "mine"], queryFn: () => getMyReviews(user!), enabled: Boolean(user) });
+  const user = useCurrentUser();
+  const reviews = useQuery({ queryKey: ["reviews", "mine", user?.uid], queryFn: () => getMyReviews(user!), enabled: Boolean(user), retry: false });
   const average = reviews.data?.length ? reviews.data.reduce((sum, item) => sum + item.rating, 0) / reviews.data.length : 0;
   const verified = reviews.data?.filter((review) => review.verifiedPurchase).length ?? 0;
 
@@ -20,7 +21,7 @@ export function MyReviewsScreen() {
 
   return <Screen eyebrow="YOUR VOICE" title="My reviews" description="Your product feedback helps other Amiyo-Go shoppers buy with confidence.">
     <View style={styles.summary}><View style={styles.ratingBlock}><Text accessibilityRole="header" style={styles.score}>{average.toFixed(1)}</Text><RatingStars rating={Math.round(average)} size={21} /><Text style={styles.summaryMuted}>Average rating</Text></View><View style={styles.summaryDivider} /><View style={styles.stat}><Text style={styles.statNumber}>{reviews.data?.length ?? 0}</Text><Text style={styles.summaryMuted}>Published</Text></View><View style={styles.stat}><Text style={styles.statNumber}>{verified}</Text><Text style={styles.summaryMuted}>Verified</Text></View><Ionicons color="#7dd3fc" name="chatbox-ellipses-outline" size={35} /></View>
-    {reviews.data?.length ? <View style={styles.list}>{reviews.data.map((review) => <View key={review.id} style={styles.card}><View style={styles.cardHeader}><View style={styles.productIcon}><Ionicons color={colors.primary} name="cube-outline" size={22} /></View><View style={styles.flex}><Text style={styles.productName}>{review.productName || "Reviewed product"}</Text><Text style={styles.date}>{new Date(review.createdAt).toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric" })}</Text></View>{review.verifiedPurchase ? <View style={styles.verified}><Ionicons color={colors.success} name="checkmark-circle" size={14} /><Text style={styles.verifiedText}>Verified</Text></View> : null}</View><RatingStars rating={review.rating} size={18} />{review.title ? <Text style={styles.title}>{review.title}</Text> : null}{review.body ? <Text style={styles.body}>{review.body}</Text> : <Text style={styles.bodyMuted}>Rating submitted without a written review.</Text>}<Pressable accessibilityRole="link" onPress={() => router.push(`/product/${review.productSlug || review.productId}` as never)} style={styles.productLink}><Text style={styles.linkText}>View product</Text><Ionicons color={colors.primary} name="arrow-forward" size={16} /></Pressable></View>)}</View> : <View style={styles.empty}><Ionicons color={colors.primary} name="star-outline" size={52} /><Text style={styles.emptyTitle}>No reviews yet</Text><Text style={styles.muted}>After a delivered order, open the product page to share your experience.</Text><Pressable onPress={() => router.push("/orders")} style={styles.primary}><Text style={styles.primaryText}>View my orders</Text></Pressable></View>}
+    {reviews.data?.length ? <View style={styles.list}>{reviews.data.map((review) => <View key={review.id} style={styles.card}><View style={styles.cardHeader}><View style={styles.productIcon}><Ionicons color={colors.primary} name="cube-outline" size={22} /></View><View style={styles.flex}><Text style={styles.productName}>{review.productName || "Reviewed product"}</Text><Text style={styles.date}>{new Date(review.createdAt).toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric" })}</Text></View>{review.verifiedPurchase ? <View style={styles.verified}><Ionicons color={colors.success} name="checkmark-circle" size={14} /><Text style={styles.verifiedText}>Verified</Text></View> : null}</View><RatingStars rating={review.rating} size={18} />{review.title ? <Text style={styles.title}>{review.title}</Text> : null}{review.body ? <Text style={styles.body}>{review.body}</Text> : <Text style={styles.bodyMuted}>Rating submitted without a written review.</Text>}<ReviewImages images={review.images} /><Pressable accessibilityRole="link" onPress={() => router.push(`/product/${review.productSlug || review.productId}` as never)} style={styles.productLink}><Text style={styles.linkText}>View product</Text><Ionicons color={colors.primary} name="arrow-forward" size={16} /></Pressable></View>)}</View> : <View style={styles.empty}><Ionicons color={colors.primary} name="star-outline" size={52} /><Text style={styles.emptyTitle}>No reviews yet</Text><Text style={styles.muted}>After a delivered order, open the product page to share your experience.</Text><Pressable onPress={() => router.push("/orders")} style={styles.primary}><Text style={styles.primaryText}>View my orders</Text></Pressable></View>}
   </Screen>;
 }
 

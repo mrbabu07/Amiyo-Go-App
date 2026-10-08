@@ -15,7 +15,7 @@ import { mayDiscardOrderRejection } from "../orders/pending-order-action";
 import { returnEligibilityMessage } from "../orders/return-eligibility";
 import { createCustomerReturn, OperationsRequestError } from "./operations.api";
 
-export function CustomerReturnWizard({ onClose }: { onClose(): void }) {
+export function CustomerReturnWizard({ onClose, initialOrderId = "" }: { onClose(): void; initialOrderId?: string }) {
   const user = useCurrentUser();
   const router = useRouter();
   const cache = useQueryClient();
@@ -23,10 +23,10 @@ export function CustomerReturnWizard({ onClose }: { onClose(): void }) {
   const lock = useRef(false);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const current = () => mounted.current && Boolean(user) && firebaseAuth?.currentUser?.uid === user?.uid;
-  const [orderId, setOrderId] = useState("");
+  const [orderId, setOrderId] = useState(initialOrderId);
   const [packageId, setPackageId] = useState("");
   const [savedRequest, setSavedRequest] = useState(false);
-  const orders = useQuery({ queryKey: ["return-order-picker", user?.uid], queryFn: () => getCustomerOrders(user!), enabled: Boolean(user), retry: false });
+  const orders = useQuery({ queryKey: ["return-order-picker", user?.uid], queryFn: () => getCustomerOrders(user!), enabled: Boolean(user && !initialOrderId), retry: false });
   const order = useQuery({ queryKey: ["return-order-details", user?.uid, orderId], queryFn: () => getCustomerOrder(user!, orderId), enabled: Boolean(user && orderId), retry: false, refetchOnWindowFocus: false });
   const recovery = useQuery({ queryKey: ["return-order-recovery", user?.uid, orderId], queryFn: () => pendingOrderActions.load(user!.uid, orderId), enabled: Boolean(user && orderId), staleTime: 0 });
   const selected = order.data?.vendorOrders.find((item) => item.id === packageId);
@@ -59,12 +59,14 @@ export function CustomerReturnWizard({ onClose }: { onClose(): void }) {
   if (!user) return null;
   return <View style={styles.panel}>
     <Text accessibilityRole="header" style={styles.title}>Start a return</Text>
-    <Text style={styles.copy}>Choose an order, then a seller package. Return windows and remaining quantities are checked from its current policy.</Text>
+    <Text style={styles.copy}>{initialOrderId ? "Choose a seller package from this order." : "Choose an order, then a seller package."} Return windows and remaining quantities are checked from its current policy.</Text>
+    {!initialOrderId ? <>
     {orders.isLoading ? <ActivityIndicator color={colors.primary} /> : null}
     {orders.error ? <Button label="Retry loading orders" onPress={() => void orders.refetch()} /> : null}
     {!orders.isLoading && !orders.error && !orders.data?.length ? <Text style={styles.copy}>No orders found in the loaded list.</Text> : null}
     {orders.data?.map((item) => <Pressable key={item.id} accessibilityRole="radio" accessibilityState={{ checked: orderId === item.id }} disabled={mutation.isPending || pending} onPress={() => { setOrderId(item.id); setPackageId(""); setSavedRequest(false); }} style={[styles.button, orderId === item.id && styles.selected]}><Text style={styles.copy}>#{item.orderNumber} · {item.status.replaceAll("_", " ")}</Text>{item.previewItems.map((product, index) => <View key={`${product.productId}:${index}`} style={styles.product}><OrderItemImage name={product.name} uri={product.thumbnailUrl} /><Text style={styles.productCopy}>{product.name} · Qty {product.quantity}</Text></View>)}</Pressable>)}
     <Text style={styles.copy}>Only the loaded order list is shown. Older orders can also be opened from My Orders.</Text>
+    </> : null}
     {orderId && (order.isLoading || recovery.isLoading) ? <ActivityIndicator color={colors.primary} /> : null}
     {order.error ? <Button label="Retry order details" onPress={() => void order.refetch()} /> : null}
     {pending || recovery.error ? <View style={styles.notice}><Text style={styles.copy}>A saved request needs checking, or recovery could not be loaded. Open this order to recover it before sending another request.</Text><Button label="Open order recovery" onPress={() => router.push(`/order/${orderId}` as never)} /></View> : null}

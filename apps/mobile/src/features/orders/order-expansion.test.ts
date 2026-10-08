@@ -17,6 +17,9 @@ test("expanded order data remains account scoped and uses real package event tim
   assert.match(source, /queryKey: \["orders", "customer", id, user\?\.uid\]/);
   assert.match(source, /queryKey: \["orders", id, "tracking", user\?\.uid\]/);
   assert.match(source, /if \(!user\) return null/);
+  assert.equal((source.match(/retry: false/g) ?? []).length, 2);
+  assert.match(source, /onRetry=\{\(\) => void order.refetch\(\)\}/);
+  assert.match(source, /onRetry=\{\(\) => void tracking.refetch\(\)\}/);
   assert.match(source, /entry.vendorOrderId === pack.id/);
   assert.match(source, /shipment.events.map/);
   assert.match(source, /event.occurredAt/);

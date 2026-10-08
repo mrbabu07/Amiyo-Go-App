@@ -15,7 +15,8 @@ export async function shareWishlist(user: User, collectionId?: string) { return 
 export async function unshareWishlist(user: User, collectionId?: string) { return wishlistSchema.parse(await request(user, `/api/v2/wishlist/share${collectionQuery(collectionId)}`, { method: "DELETE" })); }
 export async function getSharedWishlist(token: string) { const response = await fetch(`${apiUrl}/api/v2/wishlists/shared/${encodeURIComponent(token)}`); if (!response.ok) throw new Error("This wishlist link is invalid or expired"); return sharedWishlistSchema.parse(await response.json()); }
 export async function getNotifications(user: User) { return notificationSchema.array().parse(await request(user, "/api/v2/notifications")); }
-export async function getMyReviews(user: User) { return reviewSchema.array().parse(await request(user, "/api/v2/reviews")); }
+export async function getMyReviews(user: User, orderItemId?: string) { return reviewSchema.array().parse(await request(user, `/api/v2/reviews${orderItemId ? `?orderItemId=${encodeURIComponent(orderItemId)}` : ""}`)); }
+export async function submitOrderReview(user: User, input: import("@amiyo/contracts").ReviewInput) { return reviewSchema.parse(await request(user, "/api/v2/reviews", { method: "POST", body: JSON.stringify(input) })); }
 export async function readNotification(user: User, id: string) { return notificationSchema.array().parse(await request(user, `/api/v2/notifications/${id}/read`, { method: "POST" })); }
 export async function getLoyalty(user: User) { return await request(user, "/api/v2/loyalty") as { id: string; pointsBalance: string; version: number; transactions: Array<{ id: string; points: string; entryType: string; createdAt: string }> }; }
 export type ReferralSummary = { code: string; shareUrl: string; referralCount: number; convertedCount: number; rewardPoints: string; appliedCode: string | null };

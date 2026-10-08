@@ -22904,6 +22904,28 @@
                       "status": {
                         "type": "string"
                       },
+                      "images": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "url": {
+                              "type": "string",
+                              "format": "uri"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "url"
+                          ]
+                        },
+                        "maxItems": 5,
+                        "default": []
+                      },
                       "verifiedPurchase": {
                         "type": "boolean"
                       },
@@ -22996,9 +23018,20 @@
             "firebaseBearer": []
           }
         ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "orderItemId",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Current customer reviews",
+            "description": "Current customer reviews, optionally filtered by purchased item",
             "content": {
               "application/json": {
                 "schema": {
@@ -23039,6 +23072,28 @@
                       },
                       "status": {
                         "type": "string"
+                      },
+                      "images": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "url": {
+                              "type": "string",
+                              "format": "uri"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "url"
+                          ]
+                        },
+                        "maxItems": 5,
+                        "default": []
                       },
                       "verifiedPurchase": {
                         "type": "boolean"
@@ -23159,6 +23214,14 @@
                     ],
                     "minLength": 3,
                     "maxLength": 2000
+                  },
+                  "mediaUploadIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "maxItems": 5
                   }
                 },
                 "required": [
@@ -23210,6 +23273,28 @@
                     },
                     "status": {
                       "type": "string"
+                    },
+                    "images": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "url": {
+                            "type": "string",
+                            "format": "uri"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "url"
+                        ]
+                      },
+                      "maxItems": 5,
+                      "default": []
                     },
                     "verifiedPurchase": {
                       "type": "boolean"
@@ -23851,6 +23936,28 @@
                       "status": {
                         "type": "string"
                       },
+                      "images": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "url": {
+                              "type": "string",
+                              "format": "uri"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "url"
+                          ]
+                        },
+                        "maxItems": 5,
+                        "default": []
+                      },
                       "verifiedPurchase": {
                         "type": "boolean"
                       },
@@ -24016,6 +24123,28 @@
                       },
                       "status": {
                         "type": "string"
+                      },
+                      "images": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "url": {
+                              "type": "string",
+                              "format": "uri"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "url"
+                          ]
+                        },
+                        "maxItems": 5,
+                        "default": []
                       },
                       "verifiedPurchase": {
                         "type": "boolean"
@@ -24286,6 +24415,28 @@
                       },
                       "status": {
                         "type": "string"
+                      },
+                      "images": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "url": {
+                              "type": "string",
+                              "format": "uri"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "url"
+                          ]
+                        },
+                        "maxItems": 5,
+                        "default": []
                       },
                       "verifiedPurchase": {
                         "type": "boolean"
@@ -49513,6 +49664,98 @@
                     "storageKey",
                     "status",
                     "publicUrl"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/media/uploads/{id}": {
+      "get": {
+        "tags": [
+          "Media"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owned upload processing status without storage keys",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "ready": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status",
+                    "ready"
                   ]
                 }
               }
