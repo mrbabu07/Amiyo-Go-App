@@ -1,7 +1,7 @@
 import type { ReorderReceipt } from "./reorder-recovery";
 export type ReorderItem = { id: string; productId: string; variantId: string; quantity: number; productName: string };
 type Variant = { id: string; active: boolean; availableQuantity: number };
-export type ReorderOutcome = ReorderItem & { status: "added" | "previously-added" | "unavailable" | "insufficient-stock" | "unconfirmed" | "not-attempted" };
+export type ReorderOutcome = ReorderItem & { status: "added" | "previously-added" | "unavailable" | "insufficient-stock" | "check-failed" | "unconfirmed" | "not-attempted" };
 type Dependencies = { isCurrentAccount(): boolean; loadProduct(id: string): Promise<{ variants: Variant[] }>; addVariant(id: string, quantity: number, key?: string): Promise<void>; recovery?: { load(item: ReorderItem): Promise<ReorderReceipt | null>; prepare(item: ReorderItem): Promise<ReorderReceipt>; complete(item: ReorderItem, key: string): Promise<void> } };
 const activeAccounts = new Set<string>();
 
@@ -30,7 +30,7 @@ export async function reorderItems(uid: string, items: ReorderItem[], dependenci
       } catch { results.push({ ...item, status: "unconfirmed" }); stopped = true; continue; }
       let variant: Variant | undefined;
       try { variant = (await dependencies.loadProduct(item.productId)).variants.find((entry) => entry.id === item.variantId && entry.active); }
-      catch { results.push({ ...item, status: "unavailable" }); continue; }
+      catch { results.push({ ...item, status: "check-failed" }); continue; }
       if (!dependencies.isCurrentAccount()) { stopped = true; results.push({ ...item, status: "not-attempted" }); continue; }
       if (!variant) { results.push({ ...item, status: "unavailable" }); continue; }
       if (variant.availableQuantity < item.quantity) { results.push({ ...item, status: "insufficient-stock" }); continue; }

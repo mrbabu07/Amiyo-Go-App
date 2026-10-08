@@ -6,6 +6,20 @@ import { reorderItems, type ReorderItem } from "./reorder-items";
 import { createReorderRecovery } from "./reorder-recovery";
 
 const item: ReorderItem = { id: "item", productId: "product", variantId: "black", quantity: 2, productName: "Headphones" };
+test("failed catalog checks do not claim missing stock or prepare cart writes", async () => {
+  const result = await reorderItems("failed-check", [item], {
+    isCurrentAccount: () => true,
+    loadProduct: async () => { throw new Error("Network unavailable"); },
+    addVariant: async () => { assert.fail("Must not write"); },
+    recovery: {
+      load: async () => null,
+      prepare: async () => { throw new Error("Must not prepare"); },
+      complete: async () => { assert.fail("Must not complete"); }
+    }
+  });
+  assert.equal(result[0]?.status, "check-failed");
+});
+
 test("reorder preserves the purchased variant and quantity without assuming availability", async () => {
   const writes: unknown[] = [];
   const result = await reorderItems("customer", [item, item], { isCurrentAccount: () => true, loadProduct: async () => ({ variants: [{ id: "red", active: true, availableQuantity: 99 }, { id: "black", active: true, availableQuantity: 3 }] }), addVariant: async (...args) => { writes.push(args); } });
@@ -50,6 +64,10 @@ test("order UI offers per-item and multi-item actions with account-scoped cart w
   assert.match(source, /retry: false/);
   assert.match(source, /cache.setQueryData\(\["cart", user.uid\], cart\)/);
   assert.match(source, /mounted.current && Boolean\(user\)/);
+  assert.match(source, /Retry product checks/);
+  assert.match(expansion, /Delivery rescheduling/);
+  assert.match(expansion, /accessibilityState=\{\{ disabled: true \}\} disabled/);
+  assert.match(expansion, /Courier API pending/);
 });
 
 test("reload recovery replays original key before catalog checks and skips completed items", async () => {
