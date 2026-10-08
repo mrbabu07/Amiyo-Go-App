@@ -29,8 +29,8 @@ export async function getCart(user: User) {
   return cartSchema.parse(await authenticatedRequest(user, "/api/v2/cart"));
 }
 
-export async function addCartItem(user: User, variantId: string, quantity = 1) {
-  return cartSchema.parse(await authenticatedRequest(user, "/api/v2/cart/items", { method: "POST", body: JSON.stringify({ variantId, quantity }) }));
+export async function addCartItem(user: User, variantId: string, quantity = 1, idempotencyKey?: string) {
+  return cartSchema.parse(await authenticatedRequest(user, "/api/v2/cart/items", { method: "POST", ...(idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : {}), body: JSON.stringify({ variantId, quantity }) }));
 }
 
 export async function updateCartItem(user: User, itemId: string, quantity: number) {

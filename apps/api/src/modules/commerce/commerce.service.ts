@@ -127,14 +127,28 @@ export class CommerceService {
 
   async cart(userId: string) { const cart = await this.activeCart(userId); return cartDto(cart, await activeFlashPrices(this.client, cart)); }
 
-  async addItem(userId: string, variantId: string, quantity: number) {
-    const variant = await this.client.productVariant.findFirst({ where: { id: variantId, active: true, product: { status: "APPROVED", vendor: { status: "APPROVED" }, shop: { status: "ACTIVE" } } }, include: { product: true, inventory: true } });
-    if (!variant?.inventory) throw new ApiProblem(404, "VARIANT_NOT_AVAILABLE", "This product variant is not available");
+  async addItem(userId: string, variantId: string, quantity: number, idempotencyKey?: string) {
     const cart = await this.activeCart(userId);
-    const current = await this.client.cartItem.findUnique({ where: { cartId_variantId: { cartId: cart.id, variantId } } });
-    const requested = (current?.quantity ?? 0) + quantity;
-    if (requested > variant.inventory.onHand - variant.inventory.reserved) throw new ApiProblem(409, "INSUFFICIENT_STOCK", "Requested quantity is not available");
-    await this.client.cartItem.upsert({ where: { cartId_variantId: { cartId: cart.id, variantId } }, create: { cartId: cart.id, productId: variant.productId, variantId, quantity, displayPriceMinor: variant.priceMinor, currency: variant.currency }, update: { quantity: requested, displayPriceMinor: variant.priceMinor } });
+    const scope = `cart-add:${userId}`;
+    const requestHash = createHash("sha256").update(JSON.stringify({ variantId, quantity })).digest("hex");
+    await withSerializableTransaction(this.client, async (transaction) => {
+      if (idempotencyKey) {
+        const previous = await transaction.idempotencyRecord.findUnique({ where: { scope_key: { scope, key: idempotencyKey } } });
+        if (previous) {
+          if (previous.requestHash !== requestHash) throw new ApiProblem(409, "IDEMPOTENCY_KEY_REUSED", "This cart request key belongs to different items");
+          if (!previous.expiresAt || previous.expiresAt <= new Date()) throw new ApiProblem(409, "CART_REQUEST_EXPIRED", "Check your cart before starting a new request");
+          return;
+        }
+      }
+      if (!await transaction.cart.findFirst({ where: { id: cart.id, userId, status: "ACTIVE" }, select: { id: true } })) throw new ApiProblem(409, "CART_CHANGED", "Your cart changed. Refresh before adding items");
+      const variant = await transaction.productVariant.findFirst({ where: { id: variantId, active: true, product: { status: "APPROVED", vendor: { status: "APPROVED" }, shop: { status: "ACTIVE" } } }, include: { product: true, inventory: true } });
+      if (!variant?.inventory) throw new ApiProblem(404, "VARIANT_NOT_AVAILABLE", "This product variant is not available");
+      const current = await transaction.cartItem.findUnique({ where: { cartId_variantId: { cartId: cart.id, variantId } } });
+      const requested = (current?.quantity ?? 0) + quantity;
+      if (requested > variant.inventory.onHand - variant.inventory.reserved) throw new ApiProblem(409, "INSUFFICIENT_STOCK", "Requested quantity is not available");
+      await transaction.cartItem.upsert({ where: { cartId_variantId: { cartId: cart.id, variantId } }, create: { cartId: cart.id, productId: variant.productId, variantId, quantity, displayPriceMinor: variant.priceMinor, currency: variant.currency }, update: { quantity: requested, displayPriceMinor: variant.priceMinor } });
+      if (idempotencyKey) await transaction.idempotencyRecord.create({ data: { scope, key: idempotencyKey, requestHash, response: { cartId: cart.id }, expiresAt: new Date(Date.now() + 24 * 60 * 60_000) } });
+    });
     return this.cart(userId);
   }
 

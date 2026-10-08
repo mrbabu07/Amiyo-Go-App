@@ -8,6 +8,8 @@ import { getCustomerOrder, getOrderTracking } from "./orders.api";
 import { OrderItemImage } from "./OrderItemImage";
 import { CustomerReturnWizard } from "../operations/CustomerReturnWizard";
 import { OrderReviewForm } from "./OrderReviewForm";
+import { InlineOrderCancellation } from "./InlineOrderCancellation";
+import { OrderReorder } from "./OrderReorder";
 
 const label = (value: string) => value.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 const money = (value: OrderDto["total"]) => `${value.currency} ${(Number(value.amountMinor) / 100).toLocaleString("en-BD", { minimumFractionDigits: 2 })}`;
@@ -21,6 +23,8 @@ export function CustomerOrderExpansion({ id, compact }: { id: string; compact: b
   if (!order.data) return <View style={styles.content}>{order.isLoading ? <><ActivityIndicator color={colors.primary} /><Text style={styles.muted}>Loading order details…</Text></> : <Retry message={order.error?.message || "Order details are unavailable."} onRetry={() => void order.refetch()} />}</View>;
   const detail = order.data;
   return <View style={styles.content}>
+    <InlineOrderCancellation key={`${user.uid}:${id}`} order={detail} />
+    {detail.vendorOrders.reduce((count, pack) => count + pack.items.length, 0) > 1 ? <OrderReorder key={`reorder:${user.uid}:${id}`} items={detail.vendorOrders.flatMap((pack) => pack.items)} /> : null}
     {showReturn ? <CustomerReturnWizard key={`${user.uid}:${id}`} initialOrderId={id} onClose={() => setShowReturn(false)} /> : <Pressable accessibilityRole="button" onPress={() => setShowReturn(true)} style={styles.retryButton}><Text style={styles.title}>Request return</Text></Pressable>}
     <View style={styles.notice}><Text style={styles.title}>{label(detail.status)}</Text><Text style={styles.muted}>Each seller package has its own fulfillment status. Shipment events below are recorded updates, not estimated completion.</Text></View>
     {order.error ? <Retry message="Order details could not refresh. Showing the last loaded details." onRetry={() => void order.refetch()} /> : null}
@@ -32,7 +36,7 @@ export function CustomerOrderExpansion({ id, compact }: { id: string; compact: b
           <View style={styles.itemIdentity}><OrderItemImage name={item.productName} uri={item.thumbnailUrl} /><View style={styles.itemCopy}><Text style={styles.title}>{item.productName}</Text><Text style={styles.muted}>SKU: {item.sku} · Qty: {item.quantity}</Text><Text style={styles.muted}>{Object.entries(item.attributes ?? {}).filter(([, value]) => typeof value === "string" || typeof value === "number").map(([key, value]) => `${key}: ${value}`).join(" · ")}</Text><Text style={styles.muted}>{money(item.unitPrice)} each</Text></View></View>
           <View style={styles.itemPrice}><Text style={styles.amount}>{money(item.lineTotal)}</Text>{BigInt(item.discount.amountMinor) > 0n ? <Text style={styles.muted}>Discount: {money(item.discount)}</Text> : null}</View>
         </View>)}
-        {detail.status === "DELIVERED" ? pack.items.map((item) => <OrderReviewForm key={`${user.uid}:${item.id}`} orderItemId={item.id} productName={item.productName} />) : null}
+        {pack.items.map((item) => <View key={`actions:${user.uid}:${item.id}`} style={styles.itemCopy}><Text style={styles.title}>{item.productName}</Text><OrderReorder items={[item]} />{detail.status === "DELIVERED" ? <OrderReviewForm orderItemId={item.id} productName={item.productName} /> : null}</View>)}
         <View style={styles.packageTotals}><Amount label="Package subtotal" value={pack.subtotal} /><Amount label="Delivery" value={pack.delivery} /><Amount label="Package total" value={pack.total} /></View>
         <View style={styles.tracking}>
           <Text accessibilityRole="header" style={styles.title}>Delivery updates</Text>

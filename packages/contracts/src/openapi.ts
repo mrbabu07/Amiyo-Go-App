@@ -74,7 +74,7 @@ registry.registerPath({
   path: "/api/v2/cart/items",
   tags: ["Commerce"],
   security: firebaseSecurity,
-  request: { body: { content: { "application/json": { schema: addCartItemSchema } } } },
+  request: { headers: z.object({ "idempotency-key": z.string().uuid().optional() }), body: { content: { "application/json": { schema: addCartItemSchema } } } },
   responses: { 201: { description: "Cart with added item", content: { "application/json": { schema: cart } } }, ...errorResponses }
 });
 
