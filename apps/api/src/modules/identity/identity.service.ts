@@ -12,6 +12,7 @@ const sessionInclude = {
 
 type SessionUser = Prisma.UserGetPayload<{ include: typeof sessionInclude }>;
 const loginActivityWriteIntervalMs = 5 * 60_000;
+const pendingSessions = new WeakMap<PrismaClient, Map<string, Promise<Session>>>();
 
 function normalized(value: string | undefined) {
   return value?.trim().toLowerCase() || null;
@@ -168,6 +169,19 @@ async function writeAudit(
 export class IdentityService {
   constructor(private readonly client: PrismaClient) {}
 
+  private async sharePendingSession(key: string, operation: () => Promise<Session>) {
+    let pending = pendingSessions.get(this.client);
+    if (!pending) { pending = new Map(); pendingSessions.set(this.client, pending); }
+    let request = pending.get(key);
+    if (!request) {
+      request = operation();
+      pending.set(key, request);
+      const release = () => { if (pending.get(key) === request) pending.delete(key); };
+      void request.then(release, release);
+    }
+    return structuredClone(await request);
+  }
+
   private async readSessionUser(where: Prisma.UserWhereUniqueInput): Promise<SessionUser | null> {
     const user = await this.client.user.findUnique({ where });
     if (!user) return null;
@@ -180,6 +194,10 @@ export class IdentityService {
   }
 
   async synchronizeSession(identity: VerifiedIdentity, correlationId?: string): Promise<Session> {
+    return this.sharePendingSession(JSON.stringify(["provider", identity.subject, identity.email, identity.phone, identity.displayName]), () => this.synchronizeSessionUnshared(identity, correlationId));
+  }
+
+  private async synchronizeSessionUnshared(identity: VerifiedIdentity, correlationId?: string): Promise<Session> {
     const existing = await this.readSessionUser({ providerSubject: identity.subject });
     if (existing) return toSession(await this.refreshSessionUser(existing, identity));
 
@@ -241,9 +259,11 @@ export class IdentityService {
   }
 
   async getSession(userId: string) {
-    const user = await this.readSessionUser({ id: userId });
-    if (!user) throw new ApiProblem(404, "USER_NOT_FOUND", "User not found");
-    return toSession(user);
+    return this.sharePendingSession(JSON.stringify(["user", userId]), async () => {
+      const user = await this.readSessionUser({ id: userId });
+      if (!user) throw new ApiProblem(404, "USER_NOT_FOUND", "User not found");
+      return toSession(user);
+    });
   }
 
   async updateProfile(userId: string, input: UpdateProfile, correlationId?: string) {

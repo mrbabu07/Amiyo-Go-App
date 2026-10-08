@@ -4,6 +4,14 @@
 
 Follow the legacy Client layout, spacing, component grouping, navigation and responsive behavior while preserving Amiyo-App's current off-white, maroon, navy and olive light/dark palette. Do not copy the reference's orange/slate colors or modify Client/Server. Functionality and authorization must remain intact.
 
+## Authenticated read fan-out — 2026-10-08
+
+Read-only diagnostics against the configured database measured a first `SELECT 1` at 3148ms and warm round trips at 276/275ms. Three standalone demo session reads each issued seven SQL queries and took 3290/2875/1716ms. This confirms meaningful database round-trip cost; it does not identify every cause of the much longer browser loading periods.
+
+Identity services now share only identical in-flight session work across instances using the same Prisma client. Completed or failed promises are immediately removed; there is no TTL authorization cache. Account/identity/client boundaries remain separate, returned sessions are cloned, and token verification including revocation remains per request. Subsequent requests read current account status and permissions again. This reduces concurrent redundant database work, not the round-trip cost of an isolated request.
+
+The read-only eight-caller probe after the change issued seven SQL queries total in each run, taking 4865/2863/1701ms. Timing varied, so no blanket latency speedup is claimed. API build and all 192 API tests passed, including concurrent sharing, failed-work retry, result isolation, client/account boundaries and fresh suspension checks. Secret scan and whitespace checks passed. No application business records were written by these probes. Remaining work includes end-to-end latency attribution, bounded client loading states and deployed-region/pool verification.
+
 ## Inline return request wizard — 2026-10-08
 
 Request Return now opens an inline order/package selector on the returns page rather than redirecting to My Orders. Order choices show product thumbnails and current summary status. Package policy is loaded from the authenticated order detail API; undelivered, exhausted, expired or unverifiable packages explain why they cannot be selected. The shared customer form is divided into items, reason, evidence/refund and explicit review/confirmation stages, preserving quantity, evidence and deadline checks. Current palette tokens are retained.

@@ -31,6 +31,52 @@ function sessionRelations(user = sessionUser(new Date()), roles: () => unknown[]
   };
 }
 
+test("simultaneous session reads share work across service instances but never cache completed authorization", async () => {
+  const user = sessionUser(new Date());
+  let reads = 0;
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  const client = { ...sessionRelations(user), user: { findUnique: async () => { reads++; await gate; return user; } } } as unknown as PrismaClient;
+  const first = new IdentityService(client);
+  const second = new IdentityService(client);
+  const requests = [first.getSession(userId), second.getSession(userId), first.getSession(userId)];
+  assert.equal(reads, 1);
+  release();
+  const results = await Promise.all(requests);
+  results[0]!.permissions.push("invented:permission");
+  assert.ok(!results[1]!.permissions.includes("invented:permission"));
+  user.status = "SUSPENDED";
+  assert.equal((await second.getSession(userId)).status, "SUSPENDED");
+  assert.equal(reads, 2);
+});
+
+test("synchronization shares only identical pending identities and releases failed work", async () => {
+  const user = sessionUser(new Date());
+  let reads = 0;
+  let fail = true;
+  const client = { ...sessionRelations(user), user: { findUnique: async () => { reads++; if (fail) throw new Error("Temporary read failure"); return user; } } } as unknown as PrismaClient;
+  const service = new IdentityService(client);
+  const identity = { subject: "firebase-customer", email: "customer@example.com" };
+  const failures = await Promise.allSettled([service.synchronizeSession(identity), service.synchronizeSession(identity)]);
+  assert.equal(reads, 1);
+  assert.ok(failures.every((result) => result.status === "rejected"));
+  fail = false;
+  await Promise.all([service.synchronizeSession(identity), service.synchronizeSession(identity)]);
+  assert.equal(reads, 2);
+  await Promise.all([service.synchronizeSession(identity), service.synchronizeSession({ ...identity, displayName: "Changed" })]);
+  assert.equal(reads, 4);
+});
+
+test("pending reads never cross database client or account boundaries", async () => {
+  let reads = 0;
+  const user = sessionUser(new Date());
+  const createClient = () => ({ ...sessionRelations(user), user: { findUnique: async () => { reads++; return user; } } }) as unknown as PrismaClient;
+  const first = new IdentityService(createClient());
+  const second = new IdentityService(createClient());
+  await Promise.all([first.getSession(userId), first.getSession("other"), second.getSession(userId)]);
+  assert.equal(reads, 3);
+});
+
 test("session synchronization avoids repeated writes for active users", async () => {
   let updates = 0;
   let transactions = 0;
