@@ -80,7 +80,7 @@ function ScopedOrderDetailScreen({ id }: { id: string }) {
   useEffect(() => { setConfirmCancel(false); }, [id, user?.uid]);
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const handle = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(handle); }, []);
-  const order = useQuery({ queryKey: ["orders", "customer", id, user?.uid], queryFn: () => getCustomerOrder(user!, id), enabled: Boolean(user), refetchInterval: 30_000 });
+  const order = useQuery({ queryKey: ["orders", "customer", id, user?.uid], queryFn: () => getCustomerOrder(user!, id), enabled: Boolean(user), retry: false, refetchInterval: 30_000 });
   const refresh = async () => { await cache.invalidateQueries({ queryKey: ["orders"] }); await order.refetch(); };
   const cancel = useMutation({ mutationFn: (reason: string) => { if (!actionIsCurrent()) throw new Error("Your account changed. Reopen this order."); if (!order.data || !cancellationState(order.data, Date.now()).cancellable) throw new Error("Cancellation is no longer available. Refresh the order."); return sendCommand({ kind: "cancel", input: { reason, expectedVersion: order.data.version } }); }, onSuccess: async () => { if (!actionIsCurrent()) return; setConfirmCancel(false); await refresh(); } });
   const createReturn = useMutation({ mutationFn: (input: CreateReturn) => { if (!actionIsCurrent()) throw new Error("Your account changed. Reopen this order."); return sendCommand({ kind: "return", input }); }, onSuccess: async () => { if (!actionIsCurrent()) return; await cache.invalidateQueries({ queryKey: ["returns"] }); if (actionIsCurrent()) router.push("/returns"); } });

@@ -22,7 +22,7 @@ export function ReturnsScreen() {
   const [showWizard, setShowWizard] = useState(false);
   const { width } = useWindowDimensions();
   const compact = width < 768;
-  const query = useQuery({ queryKey: ["returns", user?.uid], queryFn: () => getReturns(user!), enabled: Boolean(user), refetchInterval: 30_000 });
+  const query = useQuery({ queryKey: ["returns", user?.uid], queryFn: () => getReturns(user!), enabled: Boolean(user), retry: false, refetchInterval: 30_000 });
   const open = query.data?.filter((item) => !["REFUNDED", "REJECTED", "CLOSED"].includes(item.status)).length;
   const refunded = query.data?.filter((item) => item.status === "REFUNDED").length;
   const requestReturn = () => setShowWizard(true);

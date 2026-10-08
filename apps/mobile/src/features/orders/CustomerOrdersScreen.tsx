@@ -26,7 +26,7 @@ export function CustomerOrdersScreen() {
   const { width } = useWindowDimensions();
   const compact = width < 520;
   const [filter, setFilter] = useState<Filter>("ALL");
-  const orders = useQuery({ queryKey: ["orders", "customer", user?.uid], queryFn: () => getCustomerOrders(user!), enabled: Boolean(user), refetchInterval: 30_000 });
+  const orders = useQuery({ queryKey: ["orders", "customer", user?.uid], queryFn: () => getCustomerOrders(user!), enabled: Boolean(user), retry: false, refetchInterval: 30_000 });
   const visibleOrders = useMemo(() => orders.data?.filter((order) => matchesFilter(order, filter)) ?? [], [filter, orders.data]);
 
 

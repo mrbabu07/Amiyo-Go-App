@@ -1,5 +1,6 @@
 import { adminCodWorkspaceSchema, adminOrderRefundResultSchema, deliveryQueueItemSchema, deliveryRetryResultSchema, returnSchema, vendorFinanceSchema, type AdminCodConfirmationInput, type AdminCodDeliveryInput, type AdminOrderRefundInput, type CancelOrder, type CreateReturn, type DeliveryRetryInput, type SellerReturnReceipt, type SellerReturnResponse } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
+import { withReadDeadline } from "../../network/request-deadline";
 import { approveOrderSettlementSchema, orderSettlementResultSchema, vendorChargeReportSchema, vendorCommissionInvoiceSchema, vendorStatementSchema } from "@amiyo/contracts";
 import * as Crypto from "expo-crypto";
 import { returnEvidenceFileSchema, returnEvidenceAccessSchema } from "@amiyo/contracts";
@@ -8,7 +9,8 @@ const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").repl
 export class OperationsRequestError extends Error {
   constructor(message: string, readonly status: number, readonly code: string) { super(message); }
 }
-async function request(user: User, path: string, init?: RequestInit) { const token = await user.getIdToken(); const response = await fetch(`${apiUrl}${path}`, { ...init, headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...init?.headers } }); if (!response.ok) { const problem = await response.json().catch(() => null) as { title?: string; detail?: string; code?: string } | null; throw new OperationsRequestError(problem?.detail || problem?.title || `Operations request failed (${response.status})`, response.status, problem?.code ?? "UNKNOWN"); } return response.json() as Promise<unknown>; }
+async function request(user: User, path: string, init?: RequestInit) { return withReadDeadline(init?.method, async (signal) => { const token = await user.getIdToken(); if (signal?.aborted) throw new Error("Request timed out"); const response = await fetch(`${apiUrl}${path}`, { ...init, signal: signal ?? init?.signal, headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...init?.headers } }); if (!response.ok) { const problem = await response.json().catch(() => null) as { title?: string; detail?: string; code?: string } | null; throw new OperationsRequestError(problem?.detail || problem?.title || `Operations request failed (${response.status})`, response.status, problem?.code ?? "UNKNOWN"); } return response.json() as Promise<unknown>; }); }
+
 export async function getReturns(user: User) { return returnSchema.array().parse(await request(user, "/api/v2/returns")); }
 export async function getOwnReturn(user: User, id: string, vendor = false) { return returnSchema.parse(await request(user, `/api/v2/${vendor ? "vendor/" : ""}returns/${encodeURIComponent(id)}`)); }
 export async function cancelCustomerOrder(user: User, orderId: string, input: CancelOrder, idempotencyKey: string) { return request(user, `/api/v2/orders/${orderId}/cancel`, { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: JSON.stringify(input) }); }

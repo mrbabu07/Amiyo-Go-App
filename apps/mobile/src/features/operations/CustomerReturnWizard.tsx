@@ -26,8 +26,8 @@ export function CustomerReturnWizard({ onClose }: { onClose(): void }) {
   const [orderId, setOrderId] = useState("");
   const [packageId, setPackageId] = useState("");
   const [savedRequest, setSavedRequest] = useState(false);
-  const orders = useQuery({ queryKey: ["return-order-picker", user?.uid], queryFn: () => getCustomerOrders(user!), enabled: Boolean(user) });
-  const order = useQuery({ queryKey: ["return-order-details", user?.uid, orderId], queryFn: () => getCustomerOrder(user!, orderId), enabled: Boolean(user && orderId), refetchOnWindowFocus: false });
+  const orders = useQuery({ queryKey: ["return-order-picker", user?.uid], queryFn: () => getCustomerOrders(user!), enabled: Boolean(user), retry: false });
+  const order = useQuery({ queryKey: ["return-order-details", user?.uid, orderId], queryFn: () => getCustomerOrder(user!, orderId), enabled: Boolean(user && orderId), retry: false, refetchOnWindowFocus: false });
   const recovery = useQuery({ queryKey: ["return-order-recovery", user?.uid, orderId], queryFn: () => pendingOrderActions.load(user!.uid, orderId), enabled: Boolean(user && orderId), staleTime: 0 });
   const selected = order.data?.vendorOrders.find((item) => item.id === packageId);
   const pending = savedRequest || Boolean(recovery.data);

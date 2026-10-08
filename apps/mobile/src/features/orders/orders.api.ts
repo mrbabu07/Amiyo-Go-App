@@ -1,8 +1,10 @@
 import { customerOrderSummarySchema, documentQrVerificationSchema, fulfillmentDocumentSchema, invoiceSchema, orderSchema, orderTrackingSchema, vendorOrderDetailSchema, type VendorOrderTransition } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
+import { withReadDeadline } from "../../network/request-deadline";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
-async function request(user: User, path: string, init?: RequestInit) { const token = await user.getIdToken(); const response = await fetch(`${apiUrl}${path}`, { ...init, headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...init?.headers } }); if (!response.ok) { const problem = await response.json().catch(() => null) as { title?: string; detail?: string } | null; throw new Error(problem?.detail || problem?.title || `Order request failed (${response.status})`); } return response.json() as Promise<unknown>; }
+async function request(user: User, path: string, init?: RequestInit) { return withReadDeadline(init?.method, async (signal) => { const token = await user.getIdToken(); if (signal?.aborted) throw new Error("Request timed out"); const response = await fetch(`${apiUrl}${path}`, { ...init, signal: signal ?? init?.signal, headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...init?.headers } }); if (!response.ok) { const problem = await response.json().catch(() => null) as { title?: string; detail?: string } | null; throw new Error(problem?.detail || problem?.title || `Order request failed (${response.status})`); } return response.json() as Promise<unknown>; }); }
+
 export async function getCustomerOrders(user: User) { return customerOrderSummarySchema.array().parse(await request(user, "/api/v2/orders")); }
 export async function getCustomerOrder(user: User, id: string) { return orderSchema.parse(await request(user, `/api/v2/orders/${id}`)); }
 export async function getOrderTracking(user: User, id: string) { return orderTrackingSchema.parse(await request(user, `/api/v2/orders/${id}/tracking`)); }

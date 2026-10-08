@@ -4,6 +4,14 @@
 
 Follow the legacy Client layout, spacing, component grouping, navigation and responsive behavior while preserving Amiyo-App's current off-white, maroon, navy and olive light/dark palette. Do not copy the reference's orange/slate colors or modify Client/Server. Functionality and authorization must remain intact.
 
+## Bounded customer loading — 2026-10-08
+
+Order, operations/returns and support GET/HEAD requests now have a shared 20-second deadline covering token acquisition, HTTP and JSON parsing. A stalled read aborts and reports an error; a token resolved after expiry cannot start a late request. Customer orders, return list/detail, inline wizard and support ticket queries disable automatic retry loops so a timeout can reach their visible error/retry state rather than extending the initial spinner repeatedly. Existing background refresh intervals remain unchanged.
+
+The new wrapper does not impose a deadline or replay on POST/PUT/PATCH/DELETE operations: their existing idempotency and mutation behavior is preserved. Engagement keeps its previously implemented request deadline through a compatibility export. This is a loading-state safeguard, not a claim that database or network latency is fixed. Return detail now distinguishes a failed read from a missing return, and support tickets have an explicit retry action. Fault-injected browser/network acceptance remains outstanding; the deadline behavior is exercised with controlled unit tests.
+
+Verification: mobile type-check, all 110 mobile tests, secret scan and whitespace checks passed. Tests cover stalled GET/HEAD abort, no replay, late token resolution, unchanged mutation paths and preservation of typed API failures. No network outage was forced in the user's browser.
+
 ## Authenticated read fan-out — 2026-10-08
 
 Read-only diagnostics against the configured database measured a first `SELECT 1` at 3148ms and warm round trips at 276/275ms. Three standalone demo session reads each issued seven SQL queries and took 3290/2875/1716ms. This confirms meaningful database round-trip cost; it does not identify every cause of the much longer browser loading periods.
