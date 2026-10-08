@@ -4,6 +4,16 @@
 
 Follow the legacy Client layout, spacing, component grouping, navigation and responsive behavior while preserving Amiyo-App's current off-white, maroon, navy and olive light/dark palette. Do not copy the reference's orange/slate colors or modify Client/Server. Functionality and authorization must remain intact.
 
+## Flash-sale subscriptions — 2026-10-08
+
+Added an independent, owner-scoped flash-sale subscription API, wishlist alert toggle and alerts-page section without changing the palette. Stock/price subscriptions are not replaced or removed by flash toggles. Writes do not automatically retry; account-scoped caches reject stale-account mutation results. OpenAPI includes the new routes.
+
+The worker checks the admin flash-sales flag, live sale window, remaining allocation, purchasable inventory and an actual price reduction. Subscription claim, in-app notification and optional email/push outbox entries share a serializable transaction. Queued external deliveries recheck current eligibility and recipient preferences before sending. Email/push currently follow the existing account price-drop channel preferences, not reference collection-specific channel settings.
+
+Deployment prerequisite: `20261007020000_flash_sale_alerts` must be applied before enabling this API/UI/worker revision. The migration has only been tested in isolated PostgreSQL-compatible PGlite; it has NOT been applied to configured Neon. Remote migration approval and flash-specific browser acceptance remain pending. No live worker/provider send was performed. Unit rollback fixtures model transaction semantics and do not prove real multi-connection concurrency or provider exactly-once delivery.
+
+Verification: full `npm test` passed (build, workspace suites including 30 worker tests, and all 93 repository checks). Mobile type-check, isolated migration/stock-price independence test, secret scan and staged whitespace check also passed. Worker tests cover offer expiry, disabled sales, exhausted inventory/allocation, recipient opt-out, duplicate polls, modeled enqueue rollback and deliberate re-subscription. Broader reference layout parity and collection-level alert preferences remain open.
+
 ## Current pass: customer returns
 
 Source reference: `Client/src/pages/Returns.jsx`. Rebuilt `ReturnsScreen` now has a back-to-orders header, request action, three summary cards, article-style return cards, product/reason column and status/refund column. Cards stack below 1024px; header/metrics stack on small screens. Children release row flex sizing when stacked. Buttons are independent of their card container and at least 44px high. All surfaces/text use existing theme tokens; palette definitions are unchanged.

@@ -193,6 +193,7 @@ model User {
   wishlists          Wishlist[]
   orders             Order[]
   stockAlerts        StockAlert[]
+  flashSaleAlerts    FlashSaleAlert[]
   couponRedemptions  CouponRedemption[]
   reviews            Review[]
   questions          Question[]
@@ -663,6 +664,7 @@ model Product {
   moderationEvents     ProductModerationEvent[]
   shopListings         ShopProduct[]
   stockAlerts          StockAlert[]
+  flashSaleAlerts      FlashSaleAlert[]
   cartItems            CartItem[]
   wishlistItems        WishlistItem[]
   orderItems           OrderItem[]
@@ -806,6 +808,20 @@ model StockAlert {
   product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("stock_alerts")
+}
+
+model FlashSaleAlert {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([active, id])
+  @@map("flash_sale_alerts")
 }
 
 model Cart {

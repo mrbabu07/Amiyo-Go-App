@@ -9,5 +9,5 @@ export function productAlertChannelEnabled(preferences: Prisma.JsonValue | undef
 }
 
 export function isProductAlert(type: string) {
-  return type === "product.back_in_stock" || type === "product.target_price";
+  return type === "product.back_in_stock" || type === "product.target_price" || type === "product.flash_sale";
 }

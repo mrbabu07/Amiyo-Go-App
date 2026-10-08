@@ -6,6 +6,7 @@ import { firebaseAuth } from "../auth/firebase";
 import { useCurrentUser } from "../auth/use-current-user";
 import { alertMinorToPrice, alertPriceToMinor } from "./alert-price";
 import { getAlerts, removeAlert, saveAlert } from "./engagement.api";
+import { FlashAlertToggle } from "./FlashAlerts";
 
 export function ProductAlertControls({ productId, productName }: { productId: string; productName: string }) {
   const user = useCurrentUser();
@@ -53,6 +54,7 @@ function AlertEditor({ productId, productName }: { productId: string; productNam
       <Pressable accessibilityRole="button" accessibilityState={{ checked: Boolean(stockAlert) }} disabled={disabled} onPress={() => mutation.mutate(stockAlert ? "off-stock" : "stock")} style={[styles.button, disabled && styles.disabled]}><Text style={styles.label}>{stockAlert ? "Turn off stock alert" : "Notify when available"}</Text></Pressable>
       {priceAlert ? <Pressable accessibilityRole="button" disabled={disabled} onPress={() => mutation.mutate("off-price")} style={styles.button}><Text style={styles.error}>Turn off price alert</Text></Pressable> : null}
       <Text style={styles.copy}>Stock and price alerts work independently across your lists. Each turns off after its own match. In-app updates; email and push follow your account preferences.</Text>
+      <FlashAlertToggle key={`${user?.uid}:${productId}`} productId={productId} productName={productName} />
       {query.error ? <Pressable accessibilityRole="button" onPress={() => void query.refetch()} style={styles.button}><Text style={styles.error}>Could not load alerts. Tap to retry.</Text></Pressable> : null}
       {mutation.error ? <Text accessibilityRole="alert" style={styles.error}>{mutation.error.message}</Text> : null}
       {mutation.isSuccess ? <Text accessibilityLiveRegion="polite" style={styles.copy}>Alert updated.</Text> : null}

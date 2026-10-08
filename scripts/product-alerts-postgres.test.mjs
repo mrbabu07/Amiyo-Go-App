@@ -42,6 +42,14 @@ test("alert migration preserves existing subscriptions and atomic upserts keep s
     assert.equal((await database.query("SELECT active FROM stock_alerts WHERE id = $1", [existing])).rows[0].active, true);
     await upsertProductAlert(client, stranger, product, null);
     assert.equal((await database.query("SELECT count(*)::int AS count FROM stock_alerts")).rows[0].count, 3);
+    const stockBefore = (await database.query("SELECT * FROM stock_alerts ORDER BY id")).rows;
+    await database.exec(await readFile(new URL("../prisma/migrations/20261007020000_flash_sale_alerts/migration.sql", import.meta.url), "utf8"));
+    await database.query("INSERT INTO flash_sale_alerts (id, user_id, product_id) VALUES (gen_random_uuid(), $1, $2)", [owner, product]);
+    await assert.rejects(database.query("INSERT INTO flash_sale_alerts (id, user_id, product_id) VALUES (gen_random_uuid(), $1, $2)", [owner, product]), /unique/);
+    await database.query("UPDATE flash_sale_alerts SET active = false WHERE user_id = $1 AND product_id = $2", [stranger, product]);
+    assert.equal((await database.query("SELECT active FROM flash_sale_alerts WHERE user_id = $1", [owner])).rows[0].active, true);
+    await database.query("UPDATE flash_sale_alerts SET active = false WHERE user_id = $1 AND product_id = $2", [owner, product]);
+    assert.deepEqual((await database.query("SELECT * FROM stock_alerts ORDER BY id")).rows, stockBefore);
     for (const target of [null, "100"]) {
       await assert.rejects(database.query("INSERT INTO stock_alerts (id, user_id, product_id, target_minor) VALUES (gen_random_uuid(), $1, $2, $3)", [owner, product, target]), /unique/);
     }

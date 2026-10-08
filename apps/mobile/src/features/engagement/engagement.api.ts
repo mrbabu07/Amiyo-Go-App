@@ -1,10 +1,13 @@
-import { chatThreadCreatedSchema, chatThreadSchema, growthFeedSchema, newsletterWorkspaceSchema, notificationSchema, productReportResultSchema, questionSchema, reviewSchema, sharedWishlistSchema, wishlistSchema, wishlistCollectionSchema, type ContentModerationInput, type NewsletterBroadcastInput, type ProductReportInput } from "@amiyo/contracts";
+import { flashAlertSchema, chatThreadCreatedSchema, chatThreadSchema, growthFeedSchema, newsletterWorkspaceSchema, notificationSchema, productReportResultSchema, questionSchema, reviewSchema, sharedWishlistSchema, wishlistSchema, wishlistCollectionSchema, type ContentModerationInput, type NewsletterBroadcastInput, type ProductReportInput } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
 import { withRequestDeadline } from "./request-deadline";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
 async function request(user: User, path: string, init?: RequestInit) { return withRequestDeadline(async (signal) => { const token = await user.getIdToken(); if (signal.aborted) throw new Error("Request timed out"); const response = await fetch(`${apiUrl}${path}`, { ...init, signal, headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...init?.headers } }); if (!response.ok) { const problem = await response.json().catch(() => null) as { detail?: string } | null; throw new Error(problem?.detail || `Engagement request failed (${response.status})`); } return response.status === 204 ? null : response.json() as Promise<unknown>; }); }
 const collectionQuery = (id?: string) => id ? `?collectionId=${encodeURIComponent(id)}` : "";
+export async function getFlashAlerts(user: User) { return flashAlertSchema.array().parse(await request(user, "/api/v2/alerts/flash")); }
+export async function saveFlashAlert(user: User, productId: string) { return flashAlertSchema.array().parse(await request(user, `/api/v2/alerts/${productId}/flash`, { method: "PUT" })); }
+export async function removeFlashAlert(user: User, productId: string) { return flashAlertSchema.array().parse(await request(user, `/api/v2/alerts/${productId}/flash`, { method: "DELETE" })); }
 export async function getWishlist(user: User, collectionId?: string) { return wishlistSchema.parse(await request(user, `/api/v2/wishlist${collectionQuery(collectionId)}`)); }
 export async function addWishlistItem(user: User, productId: string, collectionId?: string) { return wishlistSchema.parse(await request(user, `/api/v2/wishlist/items${collectionQuery(collectionId)}`, { method: "POST", body: JSON.stringify({ productId }) })); }
 export async function removeWishlistItem(user: User, productId: string, collectionId?: string) { return wishlistSchema.parse(await request(user, `/api/v2/wishlist/items/${productId}${collectionQuery(collectionId)}`, { method: "DELETE" })); }

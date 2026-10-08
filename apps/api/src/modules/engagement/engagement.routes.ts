@@ -8,6 +8,7 @@ import { createAuthenticationMiddleware, requireSession } from "../identity/iden
 import { IdentityService } from "../identity/identity.service.js";
 import { EngagementService } from "./engagement.service.js";
 import { WishlistCollectionsService } from "./wishlist-collections.service.js";
+import { FlashAlertService } from "./flash-alert.service.js";
 
 const idSchema = z.object({ id: z.string().uuid() });
 const productSchema = z.object({ productId: z.string().uuid() });
@@ -16,6 +17,7 @@ const tokenSchema = z.object({ token: z.string().uuid() });
 export function createEngagementRouter() {
   const router = Router(); const service = new EngagementService(prisma); const authenticate = createAuthenticationMiddleware(new FirebaseTokenVerifier(), new IdentityService(prisma));
   const collections = new WishlistCollectionsService(prisma);
+  const flashAlerts = new FlashAlertService(prisma);
   const writeLimit = rateLimit({ windowMs: 60_000, limit: 20, standardHeaders: "draft-7", legacyHeaders: false, message: { type: "https://amiyo.app/problems/rate-limit", title: "Too many requests", status: 429, code: "ENGAGEMENT_RATE_LIMITED" } });
   const chatLimit = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: "draft-7", legacyHeaders: false, message: { type: "https://amiyo.app/problems/rate-limit", title: "Too many messages", status: 429, code: "CHAT_RATE_LIMITED" } });
 
@@ -37,6 +39,9 @@ export function createEngagementRouter() {
   router.patch("/api/v2/wishlist/collections/:id", writeLimit, async (req, res, next) => { try { await collections.rename(requireSession(req).principal.userId, idSchema.parse(req.params).id, wishlistCollectionInputSchema.parse(req.body)); res.status(204).end(); } catch (error) { next(error); } });
   router.delete("/api/v2/wishlist/collections/:id", writeLimit, async (req, res, next) => { try { await collections.remove(requireSession(req).principal.userId, idSchema.parse(req.params).id); res.status(204).end(); } catch (error) { next(error); } });
   router.get("/api/v2/alerts", async (req, res, next) => { try { res.json(await service.alerts(requireSession(req).principal.userId)); } catch (error) { next(error); } });
+  router.get("/api/v2/alerts/flash", async (req, res, next) => { try { res.json(await flashAlerts.list(requireSession(req).principal.userId)); } catch (error) { next(error); } });
+  router.put("/api/v2/alerts/:productId/flash", writeLimit, async (req, res, next) => { try { res.json(await flashAlerts.save(requireSession(req).principal.userId, productSchema.parse(req.params).productId)); } catch (error) { next(error); } });
+  router.delete("/api/v2/alerts/:productId/flash", writeLimit, async (req, res, next) => { try { res.json(await flashAlerts.remove(requireSession(req).principal.userId, productSchema.parse(req.params).productId)); } catch (error) { next(error); } });
   router.put("/api/v2/alerts/:productId", writeLimit, async (req, res, next) => { try { const input = stockAlertInputSchema.parse({ ...req.body, productId: productSchema.parse(req.params).productId }); res.json(await service.saveAlert(requireSession(req).principal.userId, input.productId, input.targetMinor)); } catch (error) { next(error); } });
   router.delete("/api/v2/alerts/:productId", writeLimit, async (req, res, next) => { try { res.json(await service.removeAlert(requireSession(req).principal.userId, productSchema.parse(req.params).productId, productAlertSelectionSchema.parse(req.query).kind)); } catch (error) { next(error); } });
   router.get("/api/v2/reviews", async (req, res, next) => { try { res.json(await service.myReviews(requireSession(req))); } catch (error) { next(error); } });

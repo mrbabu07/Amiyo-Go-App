@@ -19,6 +19,7 @@ import { createLoyaltyProcessor } from "./loyalty/loyalty.processor.js";
 import { LoyaltyOutboxRelay } from "./outbox/loyalty-outbox.relay.js";
 import { AbandonedCartScheduler } from "./growth/abandoned-cart.scheduler.js";
 import { ProductAlertScheduler } from "./growth/product-alert.scheduler.js";
+import { FlashAlertScheduler } from "./growth/flash-alert.scheduler.js";
 
 const env = parseWorkerEnv(process.env);
 const logger = createLogger("amiyo-worker", env.LOG_LEVEL);
@@ -58,10 +59,13 @@ newsletterRelay.start();
 loyaltyRelay.start();
 abandonedCartScheduler.start();
 productAlertScheduler.start();
+const flashAlertScheduler = new FlashAlertScheduler(prisma, (error) => logger.error({ error }, "Flash alert scheduler failed"));
+flashAlertScheduler.start();
 logger.info({ queueName, concurrency: env.WORKER_CONCURRENCY }, "Worker booted");
 
 async function shutdown() {
   await productAlertScheduler.stop();
+  await flashAlertScheduler.stop();
   logger.info("Worker shutting down"); relay.stop(); mediaRelay.stop(); notificationRelay.stop(); newsletterRelay.stop(); loyaltyRelay.stop(); abandonedCartScheduler.stop(); await worker.close(); await mediaWorker.close(); await notificationWorker.close(); await newsletterWorker.close(); await loyaltyWorker.close(); await queueEvents.close(); await queue.close(); await mediaQueue.close(); await notificationQueue.close(); await newsletterQueue.close(); await loyaltyQueue.close(); await prisma.$disconnect(); await connection.quit();
 }
 
