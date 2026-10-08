@@ -4,6 +4,16 @@
 
 Follow the legacy Client layout, spacing, component grouping, navigation and responsive behavior while preserving Amiyo-App's current off-white, maroon, navy and olive light/dark palette. Do not copy the reference's orange/slate colors or modify Client/Server. Functionality and authorization must remain intact.
 
+## Inline return request wizard — 2026-10-08
+
+Request Return now opens an inline order/package selector on the returns page rather than redirecting to My Orders. Order choices show product thumbnails and current summary status. Package policy is loaded from the authenticated order detail API; undelivered, exhausted, expired or unverifiable packages explain why they cannot be selected. The shared customer form is divided into items, reason, evidence/refund and explicit review/confirmation stages, preserving quantity, evidence and deadline checks. Current palette tokens are retained.
+
+Submission uses the existing account/order-scoped durable pending-command store and idempotency key. An uncertain result remains recoverable from order details instead of silently resubmitting a changed payload. Known fresh pre-write rejections may release the saved command. Account changes prevent new writes and late navigation; automatic mutation retries are disabled. No new database migration is needed.
+
+The selector covers the API's loaded order list, not an asserted complete history or invented eligible-order count. Browser confirmation of successful return creation, required uploads and recovery after a real interrupted write still requires an isolated eligible fixture. No customer order, return or payment was changed during this pass. Full reference parity remains incomplete.
+
+Verification: mobile type-check and all 107 mobile tests passed, including wizard source-wiring guards and the existing selection/eligibility/durable-command behavior tests. Secret scan and whitespace checks passed. The signed-in demo browser at measured 360px width showed the inline order cards with images; selecting the delivered fixture loaded its package and correctly disabled it with "All items already have return requests." Screenshot inspection showed stacked cards with retained palette and no horizontal overflow. The fixture cannot exercise the eligible form or submit path, and no return was submitted.
+
 ## Customer return evidence — 2026-10-08
 
 Customer return cards now offer an expandable evidence section and return detail includes the same shared panel. It lists only attachments submitted by the signed-in customer on that customer's return. Customer routes are authenticated and owner scoped; seller/admin event evidence is excluded. Existing admin review routes retain their staff checks. No public storage keys are returned, and a preview/download URL is minted only after an explicit action and authorization recheck. URL access is audited with the correct actor type, expires after five minutes, and forces non-image files to download. The account/return/scope-keyed panel discards stale previews and late asynchronous results on account changes; the palette is unchanged.

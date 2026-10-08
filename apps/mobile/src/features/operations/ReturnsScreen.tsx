@@ -11,6 +11,7 @@ import { getReturns } from "./operations.api";
 import { ReturnProductRows } from "./ReturnProductRows";
 import { ReturnStatusTracker } from "./ReturnStatusTracker";
 import { ReturnEvidencePanel } from "./ReturnEvidencePanel";
+import { CustomerReturnWizard } from "./CustomerReturnWizard";
 
 const money = (minor: string, currency: string) => `${currency} ${(Number(minor) / 100).toLocaleString("en-BD", { minimumFractionDigits: 2 })}`;
 const label = (value: string) => value.replaceAll("_", " ").toLowerCase().replace(/^./, (letter) => letter.toUpperCase());
@@ -18,19 +19,20 @@ const label = (value: string) => value.replaceAll("_", " ").toLowerCase().replac
 export function ReturnsScreen() {
   const router = useRouter();
   const user = useCurrentUser();
+  const [showWizard, setShowWizard] = useState(false);
   const { width } = useWindowDimensions();
   const compact = width < 768;
   const query = useQuery({ queryKey: ["returns", user?.uid], queryFn: () => getReturns(user!), enabled: Boolean(user), refetchInterval: 30_000 });
   const open = query.data?.filter((item) => !["REFUNDED", "REJECTED", "CLOSED"].includes(item.status)).length;
   const refunded = query.data?.filter((item) => item.status === "REFUNDED").length;
-  const requestReturn = () => router.push("/orders");
+  const requestReturn = () => setShowWizard(true);
   if (!user) return <Screen title="Returns & refunds" description="Sign in to view your return requests."><Action label="Sign in" primary onPress={() => router.push("/auth")} /></Screen>;
 
   return <Screen hideHeading title="My Returns">
     <View style={styles.hero}>
       <View style={[styles.headingRow, compact && styles.stacked]}>
         <View style={[styles.headingCopy, compact && styles.fullWidth]}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Back to orders" onPress={requestReturn} style={styles.back}><Ionicons name="arrow-back" color={colors.text} size={21} /></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="Back to orders" onPress={() => router.push("/orders")} style={styles.back}><Ionicons name="arrow-back" color={colors.text} size={21} /></Pressable>
           <View style={styles.flex}><Text style={styles.eyebrow}>Returns and refunds</Text><Text accessibilityRole="header" style={styles.title}>My Returns</Text><Text style={styles.muted}>Start a return, upload evidence, and track refund progress in one place.</Text></View>
         </View>
         <Action label="Request Return" primary onPress={requestReturn} />
@@ -38,6 +40,7 @@ export function ReturnsScreen() {
       <View style={[styles.metrics, compact && styles.stacked]}><Metric compact={compact} label="Requests shown" value={query.data?.length} /><Metric compact={compact} label="Active returns" value={open} accent /><Metric compact={compact} label="Refunded" value={refunded} /></View>
       <Text style={styles.caption}>Select a delivered order to start a request. Eligibility follows your package’s return policy. Counts cover the loaded requests.</Text>
     </View>
+    {showWizard ? <CustomerReturnWizard key={user.uid} onClose={() => setShowWizard(false)} /> : null}
     {query.isLoading ? <View accessibilityLabel="Loading return requests" style={styles.empty}><ActivityIndicator color={colors.primary} /><Text style={styles.muted}>Loading your returns…</Text></View> : null}
     {query.error ? <View accessibilityRole="alert" style={styles.errorPanel}><Text style={styles.error}>Could not refresh your returns. {query.error.message}</Text><Action label="Try again" onPress={() => void query.refetch()} /></View> : null}
     <View style={styles.list}>{query.data?.map((item) => <ReturnCard key={item.id} item={item} compact={width < 1024} />)}</View>

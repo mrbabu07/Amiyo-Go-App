@@ -16,6 +16,7 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
   const [detail, setDetail] = useState("");
   const [method, setMethod] = useState<CreateReturn["refundMethod"]>("ORIGINAL_PAYMENT");
   const [review, setReview] = useState<CreateReturn | null>(null);
+  const [step, setStep] = useState(0);
   const [error, setError] = useState("");
   const submitting = useRef(false);
   const [sending, setSending] = useState(false);
@@ -47,6 +48,15 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
     try { checkPolicy(files.length); setReview(createReturnSchema.parse({ ...buildReturnSelection(vendorOrder.id, vendorOrder.items, quantities, reason, detail, method), evidenceStorageKeys: files.map((file) => file.key) })); setError(""); }
     catch (failure) { setError(reason ? (failure instanceof Error ? failure.message : "Check your selection.") : "Choose a return reason."); }
   };
+  const advance = () => {
+    try {
+      const policyError = returnEligibilityMessage(eligibility, Date.now());
+      if (policyError) throw new Error(policyError);
+      buildReturnSelection(vendorOrder.id, vendorOrder.items, quantities, reason || "OTHER", detail, method);
+      if (step === 1 && !reason) throw new Error("Choose a return reason.");
+      setError(""); setStep((current) => Math.min(2, current + 1));
+    } catch (failure) { setError(failure instanceof Error ? failure.message : "Check your selection."); }
+  };
   const submit = async () => {
     if (!review || disabled || submitting.current) return;
     submitting.current = true; setSending(true); setError("");
@@ -61,6 +71,7 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
   return <View style={styles.panel}>
     <Text accessibilityRole="header" style={styles.title}>Request a return</Text>
     <Text style={styles.copy}>Select the items and quantities to return. Eligibility is checked again by the server when you submit.</Text>
+    <View style={styles.steps}>{["Items", "Reason", "Evidence & refund", "Review"].map((title, index) => <View key={title} style={[styles.stage, (review ? 3 : step) === index && styles.selected]}><Text accessibilityLabel={`Step ${index + 1}: ${title}${(review ? 3 : step) === index ? ", current step" : ""}`} style={styles.copy}>{index + 1}. {title}</Text></View>)}</View>
     {eligibility?.deadline ? <Text style={styles.copy}>Return before: {new Date(eligibility.deadline).toLocaleString()} (your local time)</Text> : null}
     {unavailable ? <Text accessibilityRole="alert" style={styles.error}>{unavailable}</Text> : null}
     {review ? <>
@@ -71,8 +82,9 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
       {files.map((file) => <Text key={file.key} style={styles.copy}>{file.name}</Text>)}
       <Text style={styles.copy}>Refund: {review.refundMethod === "MANUAL" ? "Manual arrangement after approval" : "Original payment method"}. Submitting is not a refund approval.</Text>
       <Pressable accessibilityRole="button" disabled={disabled} onPress={() => void submit()} style={[styles.primary, disabled && styles.disabled]}><Text style={styles.light}>{sending || busy ? "Submitting..." : "Confirm return request"}</Text></Pressable>
-      <Pressable accessibilityRole="button" disabled={disabled} onPress={() => setReview(null)} style={styles.option}><Text style={styles.copy}>Edit selection</Text></Pressable>
+      <Pressable accessibilityRole="button" disabled={disabled} onPress={() => { setReview(null); setStep(0); }} style={styles.option}><Text style={styles.copy}>Edit selection</Text></Pressable>
     </> : <>
+      {step === 0 ? <>
       {vendorOrder.items.map((item) => {
         const quantity = quantities[item.id] ?? 0;
         const remaining = remainingReturnQuantity(item);
@@ -85,10 +97,14 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
           </View>
         </View>;
       })}
+      </> : null}
+      {step === 1 ? <>
       <Text style={styles.title}>Reason</Text>
       {reasons.map((entry) => <Pressable key={entry.code} accessibilityRole="radio" accessibilityState={{ checked: reason === entry.code }} disabled={disabled} onPress={() => setReason(entry.code)} style={[styles.option, reason === entry.code && styles.selected]}><Text style={styles.copy}>{entry.label}</Text></Pressable>)}
       <Text style={styles.copy}>Additional details (optional)</Text>
       <TextInput accessibilityLabel="Return details" multiline maxLength={1000} editable={!disabled} value={detail} onChangeText={setDetail} style={styles.input} />
+      </> : null}
+      {step === 2 ? <>
       <Text style={styles.title}>Evidence ({files.length}/5, {eligibility?.requireEvidence === true ? "required" : eligibility?.requireEvidence === false ? "optional" : "policy unavailable"})</Text>
       <Text style={styles.copy}>Attach photos or PDFs. Avoid including unrelated personal or payment information.</Text>
       <Pressable accessibilityRole="button" disabled={disabled || files.length >= 5 || !user} onPress={() => void attach()} style={styles.option}><Text style={styles.copy}>{uploading ? "Uploading evidence..." : "Add image or PDF"}</Text></Pressable>
@@ -96,12 +112,16 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
       <Text style={styles.title}>Refund preference</Text>
       {(["ORIGINAL_PAYMENT", "MANUAL"] as const).map((value) => <Pressable key={value} accessibilityRole="radio" accessibilityState={{ checked: method === value }} disabled={disabled} onPress={() => setMethod(value)} style={[styles.option, method === value && styles.selected]}><Text style={styles.copy}>{value === "MANUAL" ? "Manual arrangement with support" : "Original payment method"}</Text></Pressable>)}
       <Pressable accessibilityRole="button" disabled={disabled} onPress={prepare} style={styles.primary}><Text style={styles.light}>Review return request</Text></Pressable>
+      </> : <Pressable accessibilityRole="button" disabled={disabled} onPress={advance} style={[styles.primary, disabled && styles.disabled]}><Text style={styles.light}>Continue to {step === 0 ? "reason" : "evidence and refund"}</Text></Pressable>}
+      {step > 0 ? <Pressable accessibilityRole="button" disabled={busy || sending || uploading} onPress={() => { setStep((current) => Math.max(0, current - 1)); setError(""); }} style={styles.option}><Text style={styles.copy}>Previous step</Text></Pressable> : null}
     </>}
     {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
   </View>;
 }
 
 const styles = StyleSheet.create({
+  steps: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  stage: { padding: spacing.sm, borderRadius: radius.md, backgroundColor: colors.surface, minWidth: 0 },
   panel: { gap: spacing.sm, marginTop: spacing.md, minWidth: 0 },
   title: { color: colors.text, fontWeight: "600", fontSize: 16 },
   copy: { color: colors.text, lineHeight: 20, flexShrink: 1 },
