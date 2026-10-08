@@ -49,7 +49,7 @@ function ReturnCard({ item, compact }: { item: ReturnDto; compact: boolean }) {
   return <View style={styles.card}>
     <View style={[styles.cardHeader, compact && styles.stacked]}>
       <View style={[styles.flex, compact && styles.fullWidth]}><View style={styles.identity}><Text accessibilityRole="header" style={styles.returnNumber}>Return #{item.id.slice(0, 8).toUpperCase()}</Text><Text style={[styles.status, rejected && styles.rejected]}>{label(item.status)}</Text></View><Text style={styles.muted}>Order #{item.orderId.slice(0, 8).toUpperCase()} · Submitted {new Date(item.createdAt).toLocaleDateString("en-BD")}</Text></View>
-      {rejected || item.status === "REVIEWING" ? <Action label="Contact support" onPress={() => router.push("/support")} /> : null}
+      {rejected || item.status === "REVIEWING" ? <Action label="Contact support" onPress={() => router.push({ pathname: "/support", params: { returnId: item.id } } as never)} /> : null}
     </View>
     <View style={[styles.cardBody, compact && styles.stacked]}>
       <View style={[styles.productColumn, compact && styles.fullWidth]}>

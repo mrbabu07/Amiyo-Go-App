@@ -52,6 +52,10 @@ export class SupportService {
 
   async create(session: Session, input: CreateSupportTicket) {
     requireSupport(session);
+    if (input.orderId) {
+      const order = await this.client.order.findFirst({ where: { id: input.orderId, userId: session.principal.userId }, select: { id: true } });
+      if (!order) throw new ApiProblem(404, "SUPPORT_ORDER_NOT_FOUND", "Order not found in your account");
+    }
     const verified = await this.verifiedAttachments(session.principal.userId, input.attachments);
     const row = await this.client.supportTicket.create({
       data: {

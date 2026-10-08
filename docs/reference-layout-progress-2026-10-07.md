@@ -4,6 +4,16 @@
 
 Follow the legacy Client layout, spacing, component grouping, navigation and responsive behavior while preserving Amiyo-App's current off-white, maroon, navy and olive light/dark palette. Do not copy the reference's orange/slate colors or modify Client/Server. Functionality and authorization must remain intact.
 
+## Return support context — 2026-10-08
+
+Reference `Client/src/pages/Returns.jsx` links disputed/rejected returns to a prefilled support request. The customer return list now carries only the return UUID to support. Support loads the signed-in customer's return through the owner-scoped detail API, then offers an explicit "Use return details" action. Applying it fills RETURN category, high priority, order ID, recorded status/reason and full return ID in the editable message. No ticket is created automatically and delayed lookup results cannot overwrite a user's draft. Invalid or inaccessible return references show an error rather than trusting URL-supplied order information.
+
+Ticket creation now verifies the linked order belongs to the authenticated customer. Support drafts/remounts and ticket query caches are scoped to identity; old uploads and mutation completions cannot populate a different account or navigate its screen. Upload errors are visible, submission is disabled during upload, and the form keeps the existing theme colors. No database migration is required for this change.
+
+This closes the missing return-to-support context handoff, not the entire returns workflow. Inline return creation, evidence previews, inline tracking, browser acceptance and the reference's richer structured dispute metadata still need work. The return reference is currently preserved in the ticket message, not a separate return relation. No real support ticket was submitted during development.
+
+Verification: API build and six support service tests passed; mobile type-check and all 100 mobile tests passed, including draft/context regression checks. Both after-sales route checks, secret scan and whitespace check passed. Rendered browser acceptance has not been performed for this handoff.
+
 ## Flash-sale subscriptions — 2026-10-08
 
 Added an independent, owner-scoped flash-sale subscription API, wishlist alert toggle and alerts-page section without changing the palette. Stock/price subscriptions are not replaced or removed by flash toggles. Writes do not automatically retry; account-scoped caches reject stale-account mutation results. OpenAPI includes the new routes.

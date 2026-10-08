@@ -28,3 +28,26 @@ test("support rejects attachments not owned by the sender", async () => {
   const client = { mediaUpload: { findMany: async () => [] } } as unknown as PrismaClient;
   await assert.rejects(() => new SupportService(client).create(customer, { subject: "Payment evidence", category: "PAYMENT", priority: "high", message: "Please review this receipt", attachments: [{ storageKey: "support/receipt.pdf", name: "receipt.pdf", mimeType: "application/pdf" }] }), /completed support upload owned by the sender/);
 });
+
+test("support cannot link a missing or another customer's order", async () => {
+  const client = { order: { findFirst: async ({ where }: any) => {
+    assert.deepEqual(where, { id: ticketId, userId: customerId });
+    return null;
+  } } } as unknown as PrismaClient;
+  await assert.rejects(new SupportService(client).create(customer, { subject: "Return review", category: "RETURN", priority: "high", orderId: ticketId, message: "Please review my return", attachments: [] }), /Order not found in your account/);
+});
+
+test("support persists the verified owned order and return review priority", async () => {
+  const client = {
+    order: { findFirst: async ({ where }: any) => { assert.equal(where.userId, customerId); return { id: ticketId }; } },
+    supportTicket: { create: async ({ data }: any) => {
+      assert.equal(data.orderId, ticketId);
+      assert.equal(data.category, "RETURN");
+      assert.equal(data.priority, "high");
+      assert.equal(data.userId, customerId);
+      return { ...data, id: "ticket", assignedTo: null, status: "open", createdAt: new Date(), updatedAt: new Date(), messages: [] };
+    } }
+  } as unknown as PrismaClient;
+  const ticket = await new SupportService(client).create(customer, { subject: "Return review", category: "RETURN", priority: "high", orderId: ticketId, message: "Please review my return", attachments: [] });
+  assert.equal(ticket.orderId, ticketId);
+});
