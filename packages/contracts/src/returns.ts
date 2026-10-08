@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { moneySchema, timestampSchema, uuidSchema, versionSchema } from "./common.js";
 
+export const returnEvidenceFileSchema = z.object({ id: uuidSchema, name: z.string(), mimeType: z.string() });
+export const returnEvidenceAccessSchema = z.object({ url: z.string().url().startsWith("https://"), expiresAt: timestampSchema });
+
 export const returnStatusSchema = z.enum([
   "REQUESTED", "REVIEWING", "APPROVED", "REJECTED", "PICKUP_SCHEDULED", "RECEIVED", "INSPECTED", "REFUND_PENDING", "REFUNDED", "CLOSED"
 ]);

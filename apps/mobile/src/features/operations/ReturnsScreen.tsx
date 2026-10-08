@@ -2,6 +2,7 @@ import type { ReturnDto } from "@amiyo/contracts";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
@@ -9,6 +10,7 @@ import { useCurrentUser } from "../auth/use-current-user";
 import { getReturns } from "./operations.api";
 import { ReturnProductRows } from "./ReturnProductRows";
 import { ReturnStatusTracker } from "./ReturnStatusTracker";
+import { ReturnEvidencePanel } from "./ReturnEvidencePanel";
 
 const money = (minor: string, currency: string) => `${currency} ${(Number(minor) / 100).toLocaleString("en-BD", { minimumFractionDigits: 2 })}`;
 const label = (value: string) => value.replaceAll("_", " ").toLowerCase().replace(/^./, (letter) => letter.toUpperCase());
@@ -45,6 +47,7 @@ export function ReturnsScreen() {
 
 function ReturnCard({ item, compact }: { item: ReturnDto; compact: boolean }) {
   const router = useRouter();
+  const [showEvidence, setShowEvidence] = useState(false);
   const open = () => router.push(`/return/${item.id}` as never);
   const rejected = item.status === "REJECTED";
   return <View style={styles.card}>
@@ -56,6 +59,8 @@ function ReturnCard({ item, compact }: { item: ReturnDto; compact: boolean }) {
       <View style={[styles.productColumn, compact && styles.fullWidth]}>
         <View style={styles.panel}><Text style={styles.panelTitle}>PRODUCT</Text><ReturnProductRows items={item.items} /></View>
         <View style={styles.panel}><Text style={styles.panelTitle}>REASON</Text><Text style={styles.reason}>{label(item.reasonCode)}</Text>{item.reasonDetail ? <Text style={styles.muted}>{item.reasonDetail}</Text> : null}</View>
+        <Pressable accessibilityRole="button" accessibilityState={{ expanded: showEvidence }} onPress={() => setShowEvidence((value) => !value)} style={styles.action}><Text style={styles.actionText}>{showEvidence ? "Hide evidence" : "View your evidence"}</Text></Pressable>
+        {showEvidence ? <ReturnEvidencePanel returnId={item.id} scope="customer" /> : null}
       </View>
       <View style={[styles.progressColumn, compact && styles.fullWidth]}>
         <View style={styles.tracker}><View style={styles.identity}><Ionicons name={rejected ? "close-circle-outline" : "return-down-back-outline"} color={rejected ? colors.danger : colors.primary} size={23} /><Text accessibilityRole="header" style={styles.sectionTitle}>Return status</Text></View><Text style={styles.reason}>{label(item.status)}</Text><ReturnStatusTracker item={item} compact={compact} /><Action label="Track return" primary onPress={open} /></View>

@@ -40,3 +40,32 @@ test("unrelated upload IDs and non-admin/inactive sessions cannot get URLs", asy
   await assert.rejects(service.list({ ...admin, principal: { ...admin.principal, roles: ["CUSTOMER"] } }, "case"), /review access/);
   assert.deepEqual(calls, []);
 });
+
+test("customer evidence requires return ownership and includes only their submitted files", async () => {
+  const customer = { ...admin, principal: { ...admin.principal, userId: "buyer", roles: ["CUSTOMER"] } } as Session;
+  let signed = false;
+  const service = new ReturnEvidenceAccessService({
+    return: { findFirst: async (query: any) => {
+      assert.deepEqual(query.where, { id: "case", userId: "buyer" });
+      assert.deepEqual(query.select.events.where, { actorId: "buyer", actorType: "customer" });
+      return { events: [{ actorId: "buyer", metadata: { evidenceStorageKeys: ["own/file"] } }, { actorId: "seller", metadata: { evidenceStorageKeys: ["seller/private"] } }] };
+    } },
+    mediaUpload: { findMany: async (query: any) => {
+      assert.deepEqual(query.where.OR, [{ userId: "buyer", storageKey: { in: ["own/file"] } }]);
+      return [{ id: "own", originalName: "My photo", mimeType: "image/png", storageKey: "own/file" }];
+    } },
+    auditLog: { create: async ({ data }: any) => { assert.equal(data.actorType, "customer"); assert.equal(data.actorUserId, "buyer"); } }
+  } as never, { createReadUrl: async () => { signed = true; return "https://storage.example.test/own"; } });
+  assert.deepEqual(await service.list(customer, "case", "customer"), [{ id: "own", name: "My photo", mimeType: "image/png" }]);
+  assert.equal(signed, false);
+  await assert.rejects(service.access(customer, "case", "seller-upload", false, "customer"), /not attached/);
+  await service.access(customer, "case", "own", false, "customer");
+  assert.equal(signed, true);
+});
+
+test("missing and unowned customer returns fail before file lookup or URL signing", async () => {
+  const service = new ReturnEvidenceAccessService({ return: { findFirst: async () => null } } as never, { createReadUrl: async () => { throw new Error("Must not sign"); } });
+  await assert.rejects(service.list(admin, "other", "customer"), /Return not found/);
+  await assert.rejects(service.list({ ...admin, status: "SUSPENDED" }, "case", "customer"), /review access/);
+  await assert.rejects(service.list({ ...admin, permissions: [] }, "case", "customer"), /review access/);
+});

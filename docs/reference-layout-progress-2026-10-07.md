@@ -4,6 +4,14 @@
 
 Follow the legacy Client layout, spacing, component grouping, navigation and responsive behavior while preserving Amiyo-App's current off-white, maroon, navy and olive light/dark palette. Do not copy the reference's orange/slate colors or modify Client/Server. Functionality and authorization must remain intact.
 
+## Customer return evidence — 2026-10-08
+
+Customer return cards now offer an expandable evidence section and return detail includes the same shared panel. It lists only attachments submitted by the signed-in customer on that customer's return. Customer routes are authenticated and owner scoped; seller/admin event evidence is excluded. Existing admin review routes retain their staff checks. No public storage keys are returned, and a preview/download URL is minted only after an explicit action and authorization recheck. URL access is audited with the correct actor type, expires after five minutes, and forces non-image files to download. The account/return/scope-keyed panel discards stale previews and late asynchronous results on account changes; the palette is unchanged.
+
+Contract parsing requires HTTPS signed links and valid timestamps. Listing metadata does not sign or download files. This change needs no database migration. Live storage-provider preview/download acceptance remains unverified; no real attachment was uploaded or downloaded during development. Inline return creation and the remaining page parity audit are still open.
+
+Verification: full build/workspace/repository suite passed (93 repository checks), mobile type-check passed, and the final mobile run passed 105 tests. Secret scan and whitespace check passed. Browser testing at measured 360px width verified the evidence toggle, loading state and successful empty attachment response for the demo return, with no horizontal document overflow. A screenshot confirmed the stacked product/reason/evidence panel and retained palette. The fixture has no owned uploaded evidence, so image/PDF provider rendering is not claimed. No external file was opened and no customer business data was changed.
+
 ## Inline return milestones — 2026-10-08
 
 Added the reference's four-stage return tracker to customer list cards: requested, pickup scheduled, item received and refund processed. Cards now show these milestones without requiring a separate navigation. Unlike the legacy status-based fallback, a checkmark and timestamp require an actual matching event. Approval, review, rejection, closure and refund-pending statuses cannot fabricate pickup, receipt or refund completion. Missing history is explicitly labelled; duplicate milestones use the latest valid event timestamp. The full tracking link remains available for all review events.
