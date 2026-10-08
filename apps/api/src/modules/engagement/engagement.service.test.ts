@@ -48,6 +48,40 @@ test("review images require owned processed public review uploads", async () => 
   assert.equal(writes, 0);
 });
 
+test("photo review persists verified media in the same create and exposes safe read projections", async () => {
+  const previousBase = process.env.OBJECT_STORAGE_PUBLIC_URL;
+  process.env.OBJECT_STORAGE_PUBLIC_URL = "https://cdn.example.test";
+  try {
+    const photo = { id: vendorId, storageKey: `public/review/${userId}/${vendorId}.jpg`, mimeType: "image/jpeg" };
+    const row = { id: threadId, userId, productId: vendorId, orderItemId: threadId, rating: 5, title: null, body: "Good product", createdAt: new Date("2026-10-08T00:00:00Z"), media: [photo], product: { name: "Product", slug: "product" }, user: { profile: { displayName: "Customer", firstName: null } } };
+    let writes = 0;
+    const client = {
+      orderItem: { findFirst: async () => ({ id: threadId, productId: vendorId }) },
+      mediaUpload: { findMany: async () => [photo] },
+      review: {
+        findUnique: async () => null,
+        create: async ({ data }: { data: unknown }) => {
+          writes++;
+          assert.deepEqual(data, { userId, productId: vendorId, orderItemId: threadId, rating: 5, title: null, body: "Good product", media: { create: [{ storageKey: photo.storageKey, mimeType: photo.mimeType }] } });
+          return row;
+        },
+        findMany: async ({ include }: { include: { media?: boolean } }) => { assert.equal(include.media, true); return [row]; }
+      }
+    } as unknown as PrismaClient;
+    const service = new EngagementService(client);
+    await service.createReview({ ...customer, permissions: ["reviews:manage"] }, { orderItemId: threadId, rating: 5, body: row.body, mediaUploadIds: [vendorId] });
+    assert.equal(writes, 1);
+    for (const reviews of [await service.myReviews({ ...customer, permissions: ["reviews:manage"] }, threadId), await service.productReviews(vendorId)]) {
+      assert.deepEqual(reviews[0]?.images, [{ id: vendorId, url: `https://cdn.example.test/${photo.storageKey}` }]);
+      assert.equal("storageKey" in reviews[0]!, false);
+      assert.equal("userId" in reviews[0]!, false);
+    }
+  } finally {
+    if (previousBase === undefined) delete process.env.OBJECT_STORAGE_PUBLIC_URL;
+    else process.env.OBJECT_STORAGE_PUBLIC_URL = previousBase;
+  }
+});
+
 test("review unique collision becomes a duplicate conflict only when the item review exists", async () => {
   for (const existing of [true, false]) {
     let reads = 0;

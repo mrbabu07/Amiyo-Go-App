@@ -2,6 +2,8 @@
 
 ## Scope
 
+Photo review positive-path regression: added a service test asserting verified upload metadata is nested into the single review create, then included in both owner and public read projections as safe CDN URLs without top-level user/storage identifiers. API build and all 199 tests passed. This uses a fake Prisma client and does not substitute for actual storage processing, database atomicity or browser upload acceptance.
+
 Batch regression acceptance: full root npm test completed successfully after the Orders/review/photo changes, including workspace build/tests and all 93 repository checks (isolated PostgreSQL-compatible constraint/idempotency checks included). Mobile type-check, secret scan and whitespace checks also passed. This does not cover live provider uploads, real-device delivery, visual equality or all marketplace workflows. Local changes are checkpointed separately from the user-owned mobile tsconfig edit. Push remains held behind the previously noted flash-alert migration deployment prerequisite.
 
 Review photo rendering: public product reviews and owned review reads now include bounded photo URLs; Product Details, My Reviews and expanded Orders render the shared wrapping thumbnail component. The mapper permits only owner-matching public/review image keys through configured HTTPS storage and omits private/external/traversal keys, unsupported MIME types and unsafe/missing CDN configuration. API/mobile suites and type-check passed, as did secret/whitespace checks. URL filtering has unit coverage; successful image upload/processing/CDN delivery and rendered-photo browser acceptance remain unverified. No migration is needed for review media, which already existed in Prisma.
