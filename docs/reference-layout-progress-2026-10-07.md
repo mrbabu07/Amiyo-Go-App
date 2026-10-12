@@ -142,6 +142,8 @@ The current off-white/maroon/navy/olive palette remains authoritative. Legacy bl
 
 The dashboard now supports the reference's custom reporting window end to end instead of changing labels over preset data. Admins enter explicit start/end dates and apply them; invalid, reversed or over-366-day windows are rejected before a request. The API contract independently requires both timestamps, rejects custom dates on presets and sends the approved boundaries into every aggregate/group/trend query. Existing 7/30/90-day callers remain compatible.
 
+Admins can now name, persist, apply and remove up to ten report views, including exact custom boundaries. These are device-local preferences rather than shared business records and are isolated by Firebase UID. Duplicate names, malformed stored data and unsafe custom windows fail visibly; late reads/writes from a previous account cannot update the current dashboard. Buttons retain 44px targets and the current palette.
+
 Tests prove code/contract behavior only, not pixel or visual equivalence. The browser connection succeeded on this pass; rendered acceptance will be recorded separately after the local app loads.
 
 ## Verification this pass

@@ -34,6 +34,10 @@ test("admin dashboard mirrors the reference control-center hierarchy", async () 
   assert.match(dashboard, /Custom report start date/);
   assert.match(dashboard, /Custom reports can cover at most 366 days/);
   assert.match(dashboard, /setAnalyticsSelection\(\{ range: "custom", startsAt, endsAt \}\)/);
+  assert.match(dashboard, /adminSavedViews\.load\(uid\)/);
+  assert.match(dashboard, /firebaseAuth\?\.currentUser\?\.uid === uid/);
+  assert.match(dashboard, /Saved admin view name/);
+  assert.match(dashboard, /Delete saved view/);
   assert.match(dashboard, /ADMIN CONTROL HUB/);
   assert.match(dashboard, /Marketplace Snapshot/);
   assert.match(dashboard, /Reports And Activity/);
