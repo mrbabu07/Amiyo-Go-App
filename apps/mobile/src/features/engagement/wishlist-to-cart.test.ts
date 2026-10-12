@@ -10,10 +10,15 @@ const available = { variants: [{ id: "variant", active: true, availableQuantity:
 test("bulk UI disables replay, updates scoped carts and offers explicit option selection", () => {
   const source = readFileSync(new URL("./WishlistToCart.tsx", import.meta.url), "utf8");
   assert.match(source, /retry: false/);
-  assert.match(source, /addCartItem\(user, variantId, 1\)/);
+  assert.match(source, /addCartItem\(user, variantId, 1, saved\.keys\[productId\]\)/);
+  assert.match(source, /wishlistCartRecovery\.prepare\(uid, collectionId, productIds\)/);
+  assert.match(source, /wishlistCartRecovery\.complete\(uid, collectionId, productIds\)/);
+  assert.match(source, /Resume safely/);
+  assert.match(source, /Start another copy/);
   assert.match(source, /firebaseAuth\?\.currentUser\?\.uid === result.uid/);
   assert.match(source, /invalidateQueries\(\{ queryKey: \["cart", result.uid\] \}\)/);
-  assert.match(source, /disabled=\{!products.length \|\| busy \|\| mutation.isPending \|\| Boolean\(result\)\}/);
+  assert.match(source, /disabled=\{!products.length \|\| busy \|\| mutation.isPending \|\| receipt === undefined \|\| Boolean\(recoveryError\)/);
+  assert.match(source, /Boolean\(receipt\?\.completed\)/);
   assert.match(source, /Choose options for/);
   assert.match(source, /last item may already be there/);
 });

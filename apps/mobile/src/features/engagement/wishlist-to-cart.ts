@@ -5,7 +5,7 @@ export type WishlistCartResult = { items: WishlistCartOutcome[]; accountChanged:
 type Dependencies = {
   isCurrentAccount: () => boolean;
   loadProduct: (identifier: string) => Promise<{ variants: Variant[] }>;
-  addVariant: (id: string) => Promise<void>;
+  addVariant: (id: string, productId: string) => Promise<void>;
 };
 const activeAccounts = new Set<string>();
 
@@ -43,7 +43,7 @@ export async function wishlistToCart(uid: string, products: WishlistCartProduct[
         continue;
       }
       try {
-        await dependencies.addVariant(variants[0]!.id);
+        await dependencies.addVariant(variants[0]!.id, product.productId);
         items.push({ ...product, status: "added" });
       } catch {
         items.push({ ...product, status: "unconfirmed" });
