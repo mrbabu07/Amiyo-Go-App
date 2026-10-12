@@ -14,3 +14,13 @@ test("shared wishlist mirrors product cards without guessing variants", () => {
   assert.match(source, /cache.setQueryData\(\["cart", result.uid\], result.cart\)/);
   assert.match(source, /accessibilityLabel=\{`Add \$\{item.name\} to cart`\}/);
 });
+
+test("shared wishlist heart is independent and account scoped", () => {
+  assert.match(source, /useCurrentUser\(\)/);
+  assert.match(source, /queryKey: \["wishlist", user\?\.uid \?\? null\]/);
+  assert.match(source, /router\.push\("\/auth" as never\)/);
+  assert.match(source, /firebaseAuth\?\.currentUser\?\.uid !== uid/);
+  assert.match(source, /cache\.setQueryData\(\["wishlist", uid\], data\)/);
+  assert.match(source, /accessibilityState=\{\{ busy: toggleWishlist\.isPending, selected: saved \}\}/);
+  assert.match(source, /<\/Pressable>\s*<Pressable accessibilityLabel=\{`\$\{saved \? "Remove" : "Save"\}/);
+});
