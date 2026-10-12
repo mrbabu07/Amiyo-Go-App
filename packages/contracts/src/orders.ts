@@ -67,6 +67,7 @@ export const orderPaymentSchema = z.object({
   amount: moneySchema,
   refunded: moneySchema.optional(),
   transactionId: z.string().nullable(),
+  actionUrl: z.string().url().nullable().optional(),
   createdAt: timestampSchema
 });
 

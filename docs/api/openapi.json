@@ -1799,6 +1799,13 @@
                       "null"
                     ]
                   },
+                  "actionUrl": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uri"
+                  },
                   "createdAt": {
                     "type": "string",
                     "format": "date-time"
@@ -3278,6 +3285,13 @@
                   "null"
                 ]
               },
+              "actionUrl": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uri"
+              },
               "createdAt": {
                 "type": "string",
                 "format": "date-time"
@@ -3930,6 +3944,13 @@
                       "string",
                       "null"
                     ]
+                  },
+                  "actionUrl": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uri"
                   },
                   "createdAt": {
                     "type": "string",

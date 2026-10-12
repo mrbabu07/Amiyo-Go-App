@@ -21,7 +21,7 @@ export class SslCommerzPaymentService {
     if (result.payment.method !== "SSLCOMMERZ") return result;
     if (result.actionUrl) {
       const current = new URL(result.actionUrl);
-      if (current.protocol === "https:" && current.hostname.endsWith("sslcommerz.com")) return result;
+      if (current.protocol === "https:" && (current.hostname === "sslcommerz.com" || current.hostname.endsWith(".sslcommerz.com"))) return result;
     }
     if (!session.email) throw new ApiProblem(400, "SSLCOMMERZ_EMAIL_REQUIRED", "Add an email address before paying with SSLCommerz");
     const address = await this.client.address.findFirst({ where: { id: addressId, userId: session.principal.userId } });
