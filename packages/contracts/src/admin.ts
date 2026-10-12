@@ -84,10 +84,15 @@ export const adminBannerInputSchema = z.object({
 });
 export const adminBannerSchema = z.object({ id: uuidSchema, title: z.string().nullable(), subtitle: z.string().nullable(), placement: adminBannerPlacementSchema, storageKey: z.string(), mobileStorageKey: z.string().nullable(), ctaLabel: z.string().nullable(), badgeText: z.string().nullable(), targetType: z.string().nullable(), targetValue: z.string().nullable(), startsAt: timestampSchema, endsAt: timestampSchema, active: z.boolean(), displayOrder: z.number().int().nonnegative(), imageUrl: z.string().url().nullable(), mobileImageUrl: z.string().url().nullable(), status: z.enum(["active", "scheduled", "inactive", "expired"]) });
 export const adminCategoryRequestReviewSchema = z.object({ status: z.enum(["approved", "rejected"]), reason: z.string().trim().min(3).max(500) });
-export const adminAnalyticsQuerySchema = z.object({ range: z.enum(["7d", "30d", "90d"]).default("30d") });
+export const adminAnalyticsQuerySchema = z.object({ range: z.enum(["7d", "30d", "90d", "custom"]).default("30d"), startsAt: z.coerce.date().optional(), endsAt: z.coerce.date().optional() }).superRefine((value, context) => {
+  if (value.range === "custom" && (!value.startsAt || !value.endsAt)) context.addIssue({ code: "custom", message: "Custom analytics requires both dates", path: [!value.startsAt ? "startsAt" : "endsAt"] });
+  if (value.range !== "custom" && (value.startsAt || value.endsAt)) context.addIssue({ code: "custom", message: "Preset analytics cannot include custom dates", path: ["range"] });
+  if (value.startsAt && value.endsAt && value.startsAt >= value.endsAt) context.addIssue({ code: "custom", message: "startsAt must precede endsAt", path: ["endsAt"] });
+  if (value.startsAt && value.endsAt && value.endsAt.getTime() - value.startsAt.getTime() > 366 * 86_400_000) context.addIssue({ code: "custom", message: "Custom analytics cannot exceed 366 days", path: ["endsAt"] });
+});
 const analyticsAmountSchema = z.object({ amountMinor: z.string().regex(/^\d+$/), currency: z.literal("BDT") });
 export const adminAnalyticsSchema = z.object({
-  range: z.object({ key: z.enum(["7d", "30d", "90d"]), startsAt: timestampSchema, endsAt: timestampSchema }),
+  range: z.object({ key: z.enum(["7d", "30d", "90d", "custom"]), startsAt: timestampSchema, endsAt: timestampSchema }),
   summary: z.object({ totalCustomers: z.number().int().nonnegative(), newCustomers: z.number().int().nonnegative(), purchasingCustomers: z.number().int().nonnegative(), orders: z.number().int().nonnegative(), gmv: analyticsAmountSchema, averageOrderValue: analyticsAmountSchema, repeatPurchaseRate: z.number().min(0).max(100) }),
   trend: z.array(z.object({ date: z.string(), orders: z.number().int().nonnegative(), revenue: analyticsAmountSchema })),
   segments: z.array(z.object({ key: z.enum(["new", "regular", "vip"]), customers: z.number().int().nonnegative(), orders: z.number().int().nonnegative(), revenue: analyticsAmountSchema })),

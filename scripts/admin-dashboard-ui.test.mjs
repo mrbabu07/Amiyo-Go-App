@@ -31,6 +31,9 @@ test("admin dashboard mirrors the reference control-center hierarchy", async () 
   assert.match(dashboard, /href="\/admin\/cod-delivery"/);
   assert.match(dashboard, /Global order queue/);
   assert.match(dashboard, /Payout and payment desk/);
+  assert.match(dashboard, /Custom report start date/);
+  assert.match(dashboard, /Custom reports can cover at most 366 days/);
+  assert.match(dashboard, /setAnalyticsSelection\(\{ range: "custom", startsAt, endsAt \}\)/);
   assert.match(dashboard, /ADMIN CONTROL HUB/);
   assert.match(dashboard, /Marketplace Snapshot/);
   assert.match(dashboard, /Reports And Activity/);

@@ -322,7 +322,7 @@ export class AdminService {
     await this.client.$transaction([this.client.category.update({ where: { id }, data: changes }), this.client.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "admin", action: "catalog.category.updated", resourceType: "category", resourceId: id, before: json({ status: before.status, displayOrder: before.displayOrder }), after: json(input) } })]); return this.platform(session);
   }
   async analytics(session: Session, input: AdminAnalyticsQuery) {
-    requireAdmin(session); const days = input.range === "7d" ? 7 : input.range === "90d" ? 90 : 30; const endsAt = new Date(); const startsAt = new Date(endsAt.getTime() - days * 86_400_000); const activeOrderWhere = { createdAt: { gte: startsAt, lte: endsAt }, status: { not: "CANCELLED" as const } };
+    requireAdmin(session); const days = input.range === "7d" ? 7 : input.range === "90d" ? 90 : 30; const endsAt = input.range === "custom" ? input.endsAt! : new Date(); const startsAt = input.range === "custom" ? input.startsAt! : new Date(endsAt.getTime() - days * 86_400_000); const activeOrderWhere = { createdAt: { gte: startsAt, lte: endsAt }, status: { not: "CANCELLED" as const } };
     const [totalCustomers, newCustomers, orderAggregate, customers, productGroups, vendorGroups, trend] = await Promise.all([
       this.client.user.count(), this.client.user.count({ where: { createdAt: { gte: startsAt, lte: endsAt } } }), this.client.order.aggregate({ where: activeOrderWhere, _count: { _all: true }, _sum: { totalMinor: true } }),
       this.client.order.groupBy({ by: ["userId"], where: { ...activeOrderWhere, userId: { not: null } }, _count: { _all: true }, _sum: { totalMinor: true } }),

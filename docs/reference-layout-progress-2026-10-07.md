@@ -140,6 +140,8 @@ The dashboard's four priority cards now match the reference operational entry po
 
 The current off-white/maroon/navy/olive palette remains authoritative. Legacy blue/green dashboard accents were removed from the component and replaced with theme tokens or palette-derived maroon/olive translucencies. This is source and test coverage; rendered narrow/desktop and dark-theme acceptance remains pending.
 
+The dashboard now supports the reference's custom reporting window end to end instead of changing labels over preset data. Admins enter explicit start/end dates and apply them; invalid, reversed or over-366-day windows are rejected before a request. The API contract independently requires both timestamps, rejects custom dates on presets and sends the approved boundaries into every aggregate/group/trend query. Existing 7/30/90-day callers remain compatible.
+
 Tests prove code/contract behavior only, not pixel or visual equivalence. The browser connection succeeded on this pass; rendered acceptance will be recorded separately after the local app loads.
 
 ## Verification this pass

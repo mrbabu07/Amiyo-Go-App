@@ -43343,12 +43343,35 @@
               "enum": [
                 "7d",
                 "30d",
-                "90d"
+                "90d",
+                "custom"
               ],
               "default": "30d"
             },
             "required": false,
             "name": "range",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "required": false,
+            "name": "startsAt",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "required": false,
+            "name": "endsAt",
             "in": "query"
           }
         ],
@@ -43368,7 +43391,8 @@
                           "enum": [
                             "7d",
                             "30d",
-                            "90d"
+                            "90d",
+                            "custom"
                           ]
                         },
                         "startsAt": {
