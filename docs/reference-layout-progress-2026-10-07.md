@@ -134,6 +134,12 @@ No eligibility count is invented: the current API only returns a bounded return 
 - Compare admin navigation, dashboard, catalog, orders/invoices, vendors, commission, payout and operational queues.
 - Verify each group at narrow mobile and desktop widths, with loading/empty/error, keyboard and dark-theme states.
 
+## Admin dashboard priority parity
+
+The dashboard's four priority cards now match the reference operational entry points: homepage shop visibility, COD delivery confirmation, the global order queue and payout/payment finance. Each card opens its dedicated live workspace rather than a loosely related trust/platform/catalog page. Existing queue and analytics data supply honest metrics; the COD card is labeled as a desk instead of inventing a count unavailable from the current aggregate response.
+
+The current off-white/maroon/navy/olive palette remains authoritative. Legacy blue/green dashboard accents were removed from the component and replaced with theme tokens or palette-derived maroon/olive translucencies. This is source and test coverage; rendered narrow/desktop and dark-theme acceptance remains pending.
+
 Tests prove code/contract behavior only, not pixel or visual equivalence. The browser connection succeeded on this pass; rendered acceptance will be recorded separately after the local app loads.
 
 ## Verification this pass

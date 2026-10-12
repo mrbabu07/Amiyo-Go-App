@@ -27,6 +27,10 @@ test("admin dashboard mirrors the reference control-center hierarchy", async () 
   assert.match(dashboard, /Amiyo-Go Control Center/);
   assert.match(dashboard, /MARKETPLACE OPERATIONS/);
   assert.match(dashboard, /What needs attention/);
+  assert.match(dashboard, /Shop by brand visibility/);
+  assert.match(dashboard, /href="\/admin\/cod-delivery"/);
+  assert.match(dashboard, /Global order queue/);
+  assert.match(dashboard, /Payout and payment desk/);
   assert.match(dashboard, /ADMIN CONTROL HUB/);
   assert.match(dashboard, /Marketplace Snapshot/);
   assert.match(dashboard, /Reports And Activity/);
@@ -36,5 +40,6 @@ test("admin dashboard mirrors the reference control-center hierarchy", async () 
   assert.match(dashboard, /getAdminAnalytics/);
   assert.match(dashboard, /getAdminPlatform/);
   assert.match(dashboard, /getAdminWorkspace/);
+  assert.doesNotMatch(dashboard, /#1e7098|#00B14F|#1A1A2E|#7dd3fc|#bae6fd/);
   assert.doesNotMatch(dashboard, /Admin queues.*links\.map/s);
 });
