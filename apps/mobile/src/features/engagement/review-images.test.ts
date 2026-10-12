@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { URL } from "node:url";
 
 test("shared review photos wire independent previews, close and failed-image retry", () => {
   const source = readFileSync(new URL("./ReviewImages.tsx", import.meta.url), "utf8");

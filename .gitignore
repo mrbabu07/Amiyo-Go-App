@@ -22,3 +22,5 @@ prisma/migrations/*/migration.sql
 *.pem
 *.key
 service-account*.json
+.codex-*.json
+RENDER-ENV-SETUP.md
