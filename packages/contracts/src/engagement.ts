@@ -7,7 +7,7 @@ export type ReferralCodeInput = z.infer<typeof referralCodeInputSchema>;
 export type ReferralSummary = z.infer<typeof referralSummarySchema>;
 
 export const wishlistSchema = z.object({ id: uuidSchema, name: z.string(), isDefault: z.boolean(), shareUrl: z.string().url().nullable(), items: z.array(z.object({ productId: uuidSchema, name: z.string(), slug: z.string(), thumbnailUrl: z.string().url().nullable(), price: moneySchema.nullable(), availableQuantity: z.number().int().nonnegative(), addedAt: timestampSchema })) });
-export const sharedWishlistSchema = z.object({ name: z.string(), items: z.array(z.object({ productId: uuidSchema, name: z.string(), slug: z.string(), price: moneySchema.nullable(), availableQuantity: z.number().int().nonnegative() })) });
+export const sharedWishlistSchema = z.object({ name: z.string(), items: z.array(z.object({ productId: uuidSchema, name: z.string(), slug: z.string(), thumbnailUrl: z.string().url().nullable(), price: moneySchema.nullable(), availableQuantity: z.number().int().nonnegative() })) });
 export const wishlistItemInputSchema = z.object({ productId: uuidSchema });
 export const wishlistSelectionSchema = z.object({ collectionId: uuidSchema.optional() });
 export const wishlistCollectionInputSchema = z.object({ name: z.string().trim().min(1).max(80) }).strict();

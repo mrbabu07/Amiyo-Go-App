@@ -22140,6 +22140,13 @@
                           "slug": {
                             "type": "string"
                           },
+                          "thumbnailUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
                           "price": {
                             "type": [
                               "object",
@@ -22170,6 +22177,7 @@
                           "productId",
                           "name",
                           "slug",
+                          "thumbnailUrl",
                           "price",
                           "availableQuantity"
                         ]
