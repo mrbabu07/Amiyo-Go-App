@@ -6,6 +6,7 @@ test("admin dashboard mirrors the reference control-center hierarchy", async () 
   const dashboard = await readFile(new URL("../apps/mobile/src/features/admin/AdminDashboardScreen.tsx", import.meta.url), "utf8");
   const route = await readFile(new URL("../apps/mobile/app/admin/dashboard.tsx", import.meta.url), "utf8");
   const screen = await readFile(new URL("../apps/mobile/src/ui/Screen.tsx", import.meta.url), "utf8");
+  const reportRange = await readFile(new URL("../apps/mobile/src/features/admin/admin-report-range.ts", import.meta.url), "utf8");
   assert.match(route, /AdminDashboardScreen/);
   assert.match(screen, /hideHeading/);
   assert.match(screen, /Admin workspace/);
@@ -32,8 +33,8 @@ test("admin dashboard mirrors the reference control-center hierarchy", async () 
   assert.match(dashboard, /Global order queue/);
   assert.match(dashboard, /Payout and payment desk/);
   assert.match(dashboard, /Custom report start date/);
-  assert.match(dashboard, /Custom reports can cover at most 366 days/);
-  assert.match(dashboard, /setAnalyticsSelection\(\{ range: "custom", startsAt, endsAt \}\)/);
+  assert.match(reportRange, /Custom reports can cover at most 366 days/);
+  assert.match(dashboard, /setAnalyticsSelection\(buildCustomAdminRange\(customStart, customEnd\)\)/);
   assert.match(dashboard, /adminSavedViews\.load\(uid\)/);
   assert.match(dashboard, /firebaseAuth\?\.currentUser\?\.uid === uid/);
   assert.match(dashboard, /Saved admin view name/);

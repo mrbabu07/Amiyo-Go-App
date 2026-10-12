@@ -144,6 +144,8 @@ The dashboard now supports the reference's custom reporting window end to end in
 
 Admins can now name, persist, apply and remove up to ten report views, including exact custom boundaries. These are device-local preferences rather than shared business records and are isolated by Firebase UID. Duplicate names, malformed stored data and unsafe custom windows fail visibly; late reads/writes from a previous account cannot update the current dashboard. Buttons retain 44px targets and the current palette.
 
+The dedicated Analytics & customer insights page now uses the same backend-backed custom range instead of exposing presets only. Shared Dhaka-calendar conversion covers both selected days completely, applies the same 366-day cap and keeps CSV export tied to the actually applied dataset. Date inputs and actions stack through the existing wrapping layout and keep 44px targets.
+
 Tests prove code/contract behavior only, not pixel or visual equivalence. The browser connection succeeded on this pass; rendered acceptance will be recorded separately after the local app loads.
 
 ## Verification this pass

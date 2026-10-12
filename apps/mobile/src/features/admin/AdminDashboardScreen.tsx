@@ -11,6 +11,7 @@ import { getAdminQueues } from "../operations/operations.api";
 import { getAdminAnalytics, getAdminPlatform, getAdminWorkspace } from "./admin.api";
 import type { AdminSavedView } from "./admin-saved-views";
 import { adminSavedViews } from "./admin-saved-views.storage";
+import { buildCustomAdminRange } from "./admin-report-range";
 
 const ranges = ["7d", "30d", "90d"] as const;
 const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
@@ -38,10 +39,8 @@ export function AdminDashboardScreen() {
   async function refresh() { await Promise.all([workspace.refetch(), platform.refetch(), analytics.refetch(), queues.refetch()]); }
   function choosePreset(value: typeof ranges[number]) { setRange(value); setCustomError(""); setAnalyticsSelection({ range: value }); }
   function applyCustomRange() {
-    const startsAt = new Date(`${customStart}T00:00:00+06:00`); const endsAt = new Date(`${customEnd}T23:59:59.999+06:00`);
-    if (!customStart || !customEnd || Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime()) || startsAt >= endsAt) { setCustomError("Choose a valid start and end date."); return; }
-    if (endsAt.getTime() - startsAt.getTime() > 366 * 86_400_000) { setCustomError("Custom reports can cover at most 366 days."); return; }
-    setCustomError(""); setAnalyticsSelection({ range: "custom", startsAt, endsAt });
+    try { setAnalyticsSelection(buildCustomAdminRange(customStart, customEnd)); setCustomError(""); }
+    catch (error) { setCustomError(error instanceof Error ? error.message : "Choose a valid start and end date."); }
   }
   async function saveView() {
     if (!user || !savedViewName.trim() || savedViewsBusy) return;
