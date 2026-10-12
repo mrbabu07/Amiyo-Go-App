@@ -4,10 +4,11 @@ import { orderFilters, orderProgressStep, orderStatusGroup } from "./order-list-
 
 test("reference order filters classify every supported parent order state", () => {
   const expected = {
-    PENDING_PAYMENT: "PENDING", CONFIRMED: "PENDING", PROCESSING: "PROCESSING", READY_TO_SHIP: "PROCESSING", SHIPPED: "SHIPPED", DELIVERED: "DELIVERED", CANCELLED: "CANCELLED", RETURN_REQUESTED: "RETURN", RETURNED: "RETURN", REFUNDED: "RETURN"
+    PENDING_PAYMENT: "TO_PAY", CONFIRMED: "PROCESSING", PROCESSING: "PROCESSING", READY_TO_SHIP: "PROCESSING", SHIPPED: "SHIPPED", DELIVERED: "DELIVERED", CANCELLED: "CANCELLED", RETURN_REQUESTED: "RETURN", RETURNED: "RETURN", REFUNDED: "RETURN"
   };
   for (const [status, group] of Object.entries(expected)) assert.equal(orderStatusGroup(status), group);
   assert.equal(orderStatusGroup("UNKNOWN"), null);
+  assert.deepEqual(orderFilters.map((filter) => filter.label), ["All", "To Pay", "Processing", "Shipped", "Delivered", "Cancelled", "Return / refund"]);
   assert.equal(orderFilters.length, 7);
 });
 
