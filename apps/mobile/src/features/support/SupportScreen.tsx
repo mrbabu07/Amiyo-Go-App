@@ -12,15 +12,16 @@ import { pickAndUploadDocument } from "../media/media.api";
 import { createTicket, getMyTickets } from "./support.api";
 import { useCurrentUser } from "../auth/use-current-user";
 import { ReturnSupportContext } from "./ReturnSupportContext";
+import { OrderSupportContext } from "./OrderSupportContext";
 
 const categories = ["ORDER", "DELIVERY", "PAYMENT", "RETURN", "ACCOUNT", "PRODUCT", "OTHER"] as const;
 type Attachment = { storageKey: string; name: string; mimeType: "image/jpeg" | "image/png" | "image/webp" | "application/pdf" };
-export function SupportScreen({ returnId }: { returnId?: string } = {}) {
+export function SupportScreen({ returnId, orderId }: { returnId?: string; orderId?: string } = {}) {
   const user = useCurrentUser();
-  return <SupportForm key={`${user?.uid ?? "guest"}:${returnId ?? "general"}`} user={user} returnId={returnId} />;
+  return <SupportForm key={`${user?.uid ?? "guest"}:${returnId ?? "general"}:${orderId ?? "general"}`} user={user} returnId={returnId} contextOrderId={orderId} />;
 }
 
-function SupportForm({ user, returnId }: { user: User | null; returnId?: string }) {
+function SupportForm({ user, returnId, contextOrderId }: { user: User | null; returnId?: string; contextOrderId?: string }) {
   const router = useRouter(); const cache = useQueryClient();
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
@@ -49,7 +50,8 @@ function SupportForm({ user, returnId }: { user: User | null; returnId?: string 
   if (!user) return <Screen title="Customer support" description="Sign in to create and track support requests."><Pressable onPress={() => router.push("/auth")} style={styles.primary}><Text style={styles.primaryText}>Sign in</Text></Pressable></Screen>;
   return <Screen eyebrow="HELP CENTER" title="How can we help?" description="Create a ticket and keep the full conversation and evidence in one place.">
     {returnId ? <ReturnSupportContext user={user} returnId={returnId} onApply={(draft) => { if (!current() || create.isPending) return; setSubject(draft.subject); setMessage(draft.message); setCategory(draft.category); setPriority(draft.priority); setOrderId(draft.orderId); }} /> : null}
-    {orderId ? <Text style={styles.label}>Linked order: {orderId} · High priority return review</Text> : null}
+    {!returnId && contextOrderId ? <OrderSupportContext user={user} orderId={contextOrderId} onApply={(draft) => { if (!current() || create.isPending) return; setSubject(draft.subject); setMessage(draft.message); setCategory(draft.category); setPriority(draft.priority); setOrderId(draft.orderId); }} /> : null}
+    {orderId ? <Text style={styles.label}>Linked order: {orderId}{returnId ? " · High priority return review" : ""}</Text> : null}
     {uploadError ? <Text accessibilityRole="alert" style={styles.error}>{uploadError}</Text> : null}
     {tickets.error ? <View><Text accessibilityRole="alert" style={styles.error}>Could not load your support tickets. {tickets.error.message}</Text><Pressable accessibilityRole="button" onPress={() => void tickets.refetch()} style={styles.primary}><Text style={styles.primaryText}>Retry tickets</Text></Pressable></View> : null}
     <View style={styles.stats}><Stat label="Open" value={tickets.data?.filter((item) => ["open", "in_progress"].includes(item.status)).length ?? 0} /><Stat label="Resolved" value={tickets.data?.filter((item) => ["resolved", "closed"].includes(item.status)).length ?? 0} /></View>
