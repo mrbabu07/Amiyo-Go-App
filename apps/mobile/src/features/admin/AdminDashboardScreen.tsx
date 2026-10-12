@@ -76,7 +76,9 @@ export function AdminDashboardScreen() {
   const pendingKyc = workspace.data?.kyc.filter((item) => ["SUBMITTED", "REVIEWING"].includes(item.status)).length ?? 0;
   const openTrust = workspace.data?.trustCases.filter((item) => !["RESOLVED", "CLOSED"].includes(item.status.toUpperCase())).length ?? 0;
   const pendingPayments = platform.data?.paymentVerifications.filter((item) => item.status === "pending").length ?? 0;
-  const pendingActions = pendingVendors + pendingKyc + openTrust + pendingPayments + (queues.data?.returns.length ?? 0) + (queues.data?.payouts.length ?? 0);
+  const openReturns = queues.data?.returns.filter((item) => !["CLOSED", "REJECTED"].includes(item.status.toUpperCase())) ?? [];
+  const openPayouts = queues.data?.payouts.filter((item) => !["PAID", "REJECTED", "CANCELLED"].includes(item.status.toUpperCase())) ?? [];
+  const pendingActions = pendingVendors + pendingKyc + openTrust + pendingPayments + openReturns.length + openPayouts.length;
   const maxRevenue = Math.max(1, ...(analytics.data?.trend.map((item) => Number(item.revenue.amountMinor)) ?? []));
 
   return <Screen hideHeading title="Admin Dashboard">
@@ -91,7 +93,16 @@ export function AdminDashboardScreen() {
       <PriorityCard color={colors.primary} href="/admin/vendors" icon="storefront-outline" label="Homepage control" metric={`${workspace.data?.vendors.filter((item) => item.status === "APPROVED").length ?? 0} approved`} title="Shop by brand visibility" copy="Manage approved shops and the storefronts customers can discover." onOpen={open} />
       <PriorityCard color={colors.accent} href="/admin/cod-delivery" icon="cash-outline" label="Payment control" metric="COD desk" title="COD delivery confirmation" copy="Review delivery state before confirming marketplace cash collection." onOpen={open} />
       <PriorityCard color={colors.navy} href="/admin/orders" icon="cart-outline" label="Order control" metric={`${analytics.data?.summary.orders ?? 0} in ${range}`} title="Global order queue" copy="Open live orders for payment, fulfillment, returns and customer service." onOpen={open} />
-      <PriorityCard color={colors.primary} href="/admin/payouts" icon="card-outline" label="Finance control" metric={`${queues.data?.payouts.length ?? 0} pending`} title="Payout and payment desk" copy="Review vendor payouts, payment evidence and finance exposure." onOpen={open} />
+      <PriorityCard color={colors.primary} href="/admin/payouts" icon="card-outline" label="Finance control" metric={`${openPayouts.length} pending`} title="Payout and payment desk" copy="Review vendor payouts, payment evidence and finance exposure." onOpen={open} />
+    </View>
+
+    <View style={styles.exceptionInbox}>
+      <View style={styles.exceptionHeader}><View style={styles.flex}><Text style={styles.exceptionEyebrow}>ADMIN COMMAND CENTER</Text><Text style={styles.exceptionTitle}>Exception Handling</Text><Text style={styles.exceptionCopy}>Live return, payout and platform activity queues—prioritized without invented SLA or risk scores.</Text></View><View style={styles.exceptionTotal}><Text style={styles.exceptionTotalLabel}>Open</Text><Text style={styles.exceptionTotalValue}>{openReturns.length + openPayouts.length}</Text></View></View>
+      <View style={styles.exceptionGrid}>
+        <ExceptionLane color={colors.primary} count={openReturns.length} href="/admin/returns" icon="return-down-back-outline" label="Returns & refunds" onOpen={open} rows={openReturns.slice(0, 3).map((item) => ({ id: item.id, title: titleCase(item.status), detail: `${titleCase(item.reasonCode)} · ${money(item.requestedAmount.amountMinor)}` }))} />
+        <ExceptionLane color={colors.accent} count={openPayouts.length} href="/admin/payouts" icon="wallet-outline" label="Payout review" onOpen={open} rows={openPayouts.slice(0, 3).map((item) => ({ id: item.id, title: item.vendor.displayName || item.vendor.legalName, detail: `${titleCase(item.status)} · ${money(item.amount.amountMinor)}` }))} />
+        <ExceptionLane color={colors.navy} count={queues.data?.audit.length ?? 0} href="/admin/platform" icon="pulse-outline" label="Platform activity" onOpen={open} rows={(queues.data?.audit ?? []).slice(0, 3).map((item) => ({ id: item.id, title: titleCase(item.action), detail: `${titleCase(item.resourceType)} · ${new Date(item.createdAt).toLocaleDateString("en-BD")}` }))} />
+      </View>
     </View>
 
     <View style={styles.controlHub}>
@@ -111,8 +122,8 @@ export function AdminDashboardScreen() {
       <Metric icon="people-outline" label="Customers" value={(analytics.data?.summary.totalCustomers ?? 0).toLocaleString("en-BD")} detail={`+${analytics.data?.summary.newCustomers ?? 0} new accounts`} />
       <Metric icon="repeat-outline" label="Repeat purchase" value={`${(analytics.data?.summary.repeatPurchaseRate ?? 0).toFixed(1)}%`} detail={`AOV ${analytics.data ? money(analytics.data.summary.averageOrderValue.amountMinor) : "—"}`} />
       <Metric icon="storefront-outline" label="Active vendors" value={(workspace.data?.vendors.filter((item) => item.status === "APPROVED").length ?? 0).toLocaleString("en-BD")} detail={`${pendingVendors} awaiting approval`} />
-      <Metric icon="wallet-outline" label="Payout queue" value={(queues.data?.payouts.length ?? 0).toLocaleString("en-BD")} detail="Pending vendor settlements" />
-      <Metric icon="return-down-back-outline" label="Return queue" value={(queues.data?.returns.length ?? 0).toLocaleString("en-BD")} detail="Open return requests" />
+      <Metric icon="wallet-outline" label="Payout queue" value={openPayouts.length.toLocaleString("en-BD")} detail="Pending vendor settlements" />
+      <Metric icon="return-down-back-outline" label="Return queue" value={openReturns.length.toLocaleString("en-BD")} detail="Open return requests" />
       <Metric icon="shield-outline" label="Trust reviews" value={(pendingKyc + openTrust).toLocaleString("en-BD")} detail="KYC and safety cases" />
     </View>
 
@@ -132,12 +143,31 @@ export function AdminDashboardScreen() {
 function HeroStat({ label, tone, value }: { label: string; tone?: "primary" | "success"; value: string }) { return <View style={[styles.heroStat, tone === "primary" && styles.heroStatPrimary, tone === "success" && styles.heroStatSuccess]}><Text style={styles.heroStatLabel}>{label}</Text><Text style={styles.heroStatValue}>{value}</Text></View>; }
 function HealthRow({ label, value }: { label: string; value: number }) { return <View style={styles.healthRow}><Text style={styles.healthLabel}>{label}</Text><Text style={styles.healthValue}>{value}</Text></View>; }
 function PriorityCard({ color, copy, href, icon, label, metric, onOpen, title }: { color: string; copy: string; href: string; icon: string; label: string; metric: string; onOpen: (href: never) => void; title: string }) { return <Pressable accessibilityRole="button" onPress={() => onOpen(href as never)} style={styles.priorityCard}><View style={[styles.priorityAccent, { backgroundColor: color }]} /><View style={styles.priorityTop}><View style={[styles.priorityIcon, { backgroundColor: `${color}16` }]}><Ionicons color={color} name={icon as never} size={22} /></View><Text style={styles.priorityMetric}>{metric}</Text></View><Text style={styles.priorityLabel}>{label}</Text><Text style={styles.priorityTitle}>{title}</Text><Text style={styles.priorityCopy}>{copy}</Text><View style={styles.openRow}><Text style={styles.openText}>Open workspace</Text><Ionicons color={colors.primary} name="arrow-forward" size={16} /></View></Pressable>; }
+function ExceptionLane({ color, count, href, icon, label, onOpen, rows }: { color: string; count: number; href: string; icon: string; label: string; onOpen: (href: string) => void; rows: Array<{ id: string; title: string; detail: string }> }) { return <Pressable accessibilityRole="button" onPress={() => onOpen(href)} style={styles.exceptionLane}><View style={styles.exceptionLaneHeader}><View style={[styles.exceptionLaneIcon, { backgroundColor: `${color}16` }]}><Ionicons color={color} name={icon as never} size={19} /></View><View style={styles.flex}><Text style={styles.exceptionLaneLabel}>{label}</Text><Text style={styles.exceptionLaneCount}>{count} {label === "Platform activity" ? "events" : "open"}</Text></View><Ionicons color={colors.muted} name="arrow-forward" size={17} /></View>{rows.length ? rows.map((row) => <View key={row.id} style={styles.exceptionRow}><Text numberOfLines={1} style={styles.exceptionRowTitle}>{row.title}</Text><Text numberOfLines={1} style={styles.exceptionRowDetail}>{row.detail}</Text></View>) : <Text style={styles.exceptionEmpty}>Queue clear</Text>}</Pressable>; }
 function ControlGroup({ icon, label, links, onOpen }: { icon: string; label: string; links: Array<{ href: string; label: string }>; onOpen: (href: string) => void }) { return <View style={styles.controlGroup}><View style={styles.controlGroupTitle}><Ionicons color={colors.accent} name={icon as never} size={18} /><Text style={styles.controlGroupLabel}>{label}</Text></View>{links.map((link) => <Pressable key={link.href} onPress={() => onOpen(link.href)} style={styles.controlLink}><Text style={styles.controlLinkText}>{link.label}</Text><Ionicons color={colors.muted} name="chevron-forward" size={14} /></Pressable>)}</View>; }
 function Metric({ detail, icon, label, value }: { detail: string; icon: string; label: string; value: string }) { return <View style={styles.metric}><View style={styles.metricIcon}><Ionicons color={colors.primary} name={icon as never} size={21} /></View><Text style={styles.metricLabel}>{label}</Text><Text style={styles.metricValue}>{value}</Text><Text style={styles.metricDetail}>{detail}</Text></View>; }
 function PanelHeader({ href, icon, onOpen, title }: { href: string; icon: string; onOpen: (href: never) => void; title: string }) { return <View style={styles.panelHeader}><View style={styles.panelTitleRow}><Ionicons color={colors.primary} name={icon as never} size={20} /><Text style={styles.panelTitle}>{title}</Text></View><Pressable onPress={() => onOpen(href as never)}><Text style={styles.panelLink}>View all →</Text></Pressable></View>; }
 function QueueRow({ color, label, value }: { color: string; label: string; value: number }) { return <View style={styles.queueRow}><View style={[styles.queueDot, { backgroundColor: color }]} /><Text style={styles.queueLabel}>{label}</Text><Text style={styles.queueValue}>{value}</Text></View>; }
 
 const styles = StyleSheet.create({
+  exceptionInbox: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, gap: spacing.lg, padding: spacing.lg },
+  exceptionHeader: { alignItems: "flex-start", flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
+  exceptionEyebrow: { color: colors.primary, fontSize: 9, fontWeight: "700", letterSpacing: 1 },
+  exceptionTitle: { color: colors.text, fontSize: 21, fontWeight: "700", marginTop: 4 },
+  exceptionCopy: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: 4 },
+  exceptionTotal: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.md, minWidth: 72, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  exceptionTotalLabel: { color: colors.primary, fontSize: 9, fontWeight: "700", textTransform: "uppercase" },
+  exceptionTotalValue: { color: colors.primary, fontSize: 23, fontWeight: "700" },
+  exceptionGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
+  exceptionLane: { backgroundColor: colors.background, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flexGrow: 1, minHeight: 150, minWidth: 230, padding: spacing.md },
+  exceptionLaneHeader: { alignItems: "center", flexDirection: "row", gap: spacing.sm, marginBottom: spacing.sm },
+  exceptionLaneIcon: { alignItems: "center", borderRadius: radius.sm, height: 40, justifyContent: "center", width: 40 },
+  exceptionLaneLabel: { color: colors.text, fontSize: 13, fontWeight: "700" },
+  exceptionLaneCount: { color: colors.muted, fontSize: 10, marginTop: 2 },
+  exceptionRow: { borderTopColor: colors.border, borderTopWidth: 1, gap: 2, paddingVertical: spacing.sm },
+  exceptionRowTitle: { color: colors.text, fontSize: 11, fontWeight: "700" },
+  exceptionRowDetail: { color: colors.muted, fontSize: 10 },
+  exceptionEmpty: { color: colors.success, fontSize: 11, fontWeight: "700", paddingVertical: spacing.md, textAlign: "center" },
   savedViews: { backgroundColor: "rgba(255,255,255,0.08)", borderRadius: radius.md, gap: spacing.sm, padding: spacing.sm },
   savedViewForm: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   savedViewInput: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.sm, borderWidth: 1, color: colors.text, flex: 1, minHeight: 44, minWidth: 170, paddingHorizontal: spacing.sm },

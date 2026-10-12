@@ -32,6 +32,13 @@ test("admin dashboard mirrors the reference control-center hierarchy", async () 
   assert.match(dashboard, /href="\/admin\/cod-delivery"/);
   assert.match(dashboard, /Global order queue/);
   assert.match(dashboard, /Payout and payment desk/);
+  assert.match(dashboard, /Exception Handling/);
+  assert.match(dashboard, /Returns & refunds/);
+  assert.match(dashboard, /Payout review/);
+  assert.match(dashboard, /Platform activity/);
+  assert.match(dashboard, /!\["CLOSED", "REJECTED"\]\.includes/);
+  assert.match(dashboard, /!\["PAID", "REJECTED", "CANCELLED"\]\.includes/);
+  assert.match(dashboard, /prioritized without invented SLA or risk scores/);
   assert.match(dashboard, /Custom report start date/);
   assert.match(reportRange, /Custom reports can cover at most 366 days/);
   assert.match(dashboard, /setAnalyticsSelection\(buildCustomAdminRange\(customStart, customEnd\)\)/);

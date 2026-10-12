@@ -276,3 +276,9 @@ The operation checks account identity before reads and writes, serializes its wr
 This is not an atomic server batch or durable cross-restart idempotency guarantee. Review the cart after an interrupted run; browser reload does not reconstruct a partial run. Unit tests exercise mixed availability/options, duplicate products, read failures, partial write failure, identity changes and same-account overlap. The source wiring test covers the account-scoped cart cache and disabled replay button.
 
 Checks passed: mobile type-check, 88 mobile tests, full suite including 92 repository checks, secret scan and whitespace check. Browser inspection verified the visible action and a 312px by 44px button at a measured 360px viewport without document overflow. No cart mutation was submitted in the browser during this pass. Viewport was reset. The earlier collection/card correction commit was successfully pushed; per-product alerts, durable bulk recovery and broader page parity remain open.
+
+## Admin exception handling
+
+The admin control center now includes a responsive Exception Handling inbox using the existing live operations reads. It separates unresolved returns/refunds, unresolved vendor payouts and recent platform audit activity, shows up to three current items per lane, and links each lane to its real management workspace. Closed or rejected returns and paid, rejected or cancelled payouts no longer inflate pending-action counts.
+
+The reference dashboard exposes additional criticality, ownership, SLA and finance-exposure fields that the current API does not provide. Those metrics and actions are intentionally not fabricated. This closes the visible live-queue hierarchy gap, not full reference exception-management parity.
