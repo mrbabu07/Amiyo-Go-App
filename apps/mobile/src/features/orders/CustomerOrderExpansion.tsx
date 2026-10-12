@@ -10,6 +10,7 @@ import { CustomerReturnWizard } from "../operations/CustomerReturnWizard";
 import { OrderReviewForm } from "./OrderReviewForm";
 import { InlineOrderCancellation } from "./InlineOrderCancellation";
 import { OrderReorder } from "./OrderReorder";
+import { returnActionState } from "./return-action";
 
 const label = (value: string) => value.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 const money = (value: OrderDto["total"]) => `${value.currency} ${(Number(value.amountMinor) / 100).toLocaleString("en-BD", { minimumFractionDigits: 2 })}`;
@@ -22,10 +23,11 @@ export function CustomerOrderExpansion({ id, compact }: { id: string; compact: b
   if (!user) return null;
   if (!order.data) return <View style={styles.content}>{order.isLoading ? <><ActivityIndicator color={colors.primary} /><Text style={styles.muted}>Loading order details…</Text></> : <Retry message={order.error?.message || "Order details are unavailable."} onRetry={() => void order.refetch()} />}</View>;
   const detail = order.data;
+  const returnAction = returnActionState(detail, Date.now());
   return <View style={styles.content}>
     <InlineOrderCancellation key={`${user.uid}:${id}`} order={detail} />
     {detail.vendorOrders.reduce((count, pack) => count + pack.items.length, 0) > 1 ? <OrderReorder key={`reorder:${user.uid}:${id}`} items={detail.vendorOrders.flatMap((pack) => pack.items)} /> : null}
-    {showReturn ? <CustomerReturnWizard key={`${user.uid}:${id}`} initialOrderId={id} onClose={() => setShowReturn(false)} /> : <Pressable accessibilityRole="button" onPress={() => setShowReturn(true)} style={styles.retryButton}><Text style={styles.title}>Request return</Text></Pressable>}
+    {returnAction.available ? showReturn ? <CustomerReturnWizard key={`${user.uid}:${id}`} initialOrderId={id} onClose={() => setShowReturn(false)} /> : <Pressable accessibilityRole="button" onPress={() => setShowReturn(true)} style={styles.retryButton}><Text style={styles.title}>Request return</Text></Pressable> : <View style={styles.notice}><Text accessibilityRole="header" style={styles.title}>Return availability</Text><Text style={styles.muted}>{returnAction.message}</Text></View>}
     <View style={styles.notice}><Text style={styles.title}>{label(detail.status)}</Text><Text style={styles.muted}>Each seller package has its own fulfillment status. Shipment events below are recorded updates, not estimated completion.</Text></View>
     {!['DELIVERED', 'CANCELLED', 'REFUNDED'].includes(detail.status) ? <View style={styles.notice}><Text accessibilityRole="header" style={styles.title}>Delivery rescheduling</Text><Text style={styles.muted}>Choosing a different delivery slot is not available yet. Courier scheduling support must be connected before a new slot can be confirmed.</Text><Pressable accessibilityRole="button" accessibilityState={{ disabled: true }} disabled style={styles.retryButton}><Text style={styles.muted}>Courier API pending</Text></Pressable></View> : null}
     {order.error ? <Retry message="Order details could not refresh. Showing the last loaded details." onRetry={() => void order.refetch()} /> : null}
