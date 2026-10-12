@@ -21,7 +21,7 @@ test("wishlist cart cache and card state stay scoped to the signed-in account", 
   assert.match(source, /firebaseAuth\?\.currentUser\?\.uid === result.uid/);
   assert.match(source, /cache.setQueryData\(\["cart", result.uid\], result.cart\)/);
   assert.ok(source.includes('key={`${user.uid}:${item.productId}`}'));
-  assert.match(source, /addToCart.isPending \|\| !item.price/);
+  assert.match(source, /addToCart.isPending \|\| !item.price \|\| item.availableQuantity === 0/);
 });
 
 test("wishlist layout preserves theme, responsive stacking and independent controls", () => {
@@ -33,4 +33,6 @@ test("wishlist layout preserves theme, responsive stacking and independent contr
   assert.match(source, /catch \{\s*setShareError/);
   assert.doesNotMatch(source, /placehold.co|#334155|#064e3b|minWidth: 250/);
   assert.match(source, /flexBasis: 260, flexGrow: 1, flexShrink: 1, minWidth: 0, maxWidth: 360/);
+  assert.match(source, /Only \$\{item\.availableQuantity\} left/);
+  assert.match(source, /item\.availableQuantity === 0 \? "Out of stock"/);
 });

@@ -163,6 +163,8 @@ Expansion checks: mobile TypeScript, all 77 mobile tests, full suite including 9
 
 ## Wishlist layout and cart action
 
+Wishlist cards now receive authoritative sellable quantity from all active variants instead of inferring availability from price. The API subtracts reserved units, clamps each variant at zero and returns the aggregate in both private and shared wishlist contracts. Cards show reference-style `In stock`, `Only N left` and `Out of stock` badges using the current palette, and the direct cart action is disabled when the aggregate is zero. The add action still reloads current product details before writing, so the summary does not replace final variant-level stock validation. No schema migration is required.
+
 Compared `Client/src/pages/Wishlist.jsx`: the rebuilt page now has a back/header, saved-item count, cart destination, desktop saved-list/sharing sidebar and main product area. The workspace stacks below 1024px. Removed the unrelated dark hero, fixed minimum card width and hardcoded slate/green privacy colors; palette definitions remain unchanged. Product cards have independent open, Add to cart and remove controls with 44px targets and local missing-image fallback. Sharing failures are surfaced instead of becoming unhandled rejections.
 
 Add to cart fetches current product details, rejects sold-out variants, routes multiple-choice products to their detail selector and updates only the initiating account's cart cache. Saved products are not silently removed after adding. Existing authenticated wishlist/share/remove APIs remain in use. Collections CRUD, per-product price/stock/flash-sale alerts and variant-aware bulk wishlist-to-cart remain reference gaps; no fake controls or alert promises are displayed.

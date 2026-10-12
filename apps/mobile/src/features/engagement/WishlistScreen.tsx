@@ -81,6 +81,7 @@ function WishlistCard({ busy, collectionId, item, onOpen, onRemove }: { busy: bo
   const cache = useQueryClient();
   const user = useCurrentUser();
   const [failedImage, setFailedImage] = useState<string | null>(null);
+  const stockLabel = item.availableQuantity === 0 ? "Out of stock" : item.availableQuantity <= 5 ? `Only ${item.availableQuantity} left` : "In stock";
   const addToCart = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Sign in to add products to your cart.");
@@ -98,10 +99,10 @@ function WishlistCard({ busy, collectionId, item, onOpen, onRemove }: { busy: bo
   return <View style={styles.card}>
     <Pressable accessibilityRole="link" accessibilityLabel={`Open ${item.name}`} onPress={onOpen} style={styles.openArea}>
       {item.thumbnailUrl && failedImage !== item.thumbnailUrl ? <Image accessibilityLabel={item.name} resizeMode="contain" source={{ uri: item.thumbnailUrl }} onError={() => setFailedImage(item.thumbnailUrl)} style={styles.image} /> : <View accessibilityRole="image" accessibilityLabel="Product image unavailable" style={[styles.image, styles.imageFallback]}><Ionicons color={colors.muted} name="image-outline" size={36} /></View>}
-      <View style={styles.cardCopy}><Text numberOfLines={2} style={styles.productName}>{item.name}</Text><Text style={styles.added}>Saved {new Date(item.addedAt).toLocaleDateString("en-BD", { day: "numeric", month: "short" })}</Text><Text style={styles.price}>{item.price ? money(item.price.amountMinor) : "Currently unavailable"}</Text></View>
+      <View style={styles.cardCopy}><Text numberOfLines={2} style={styles.productName}>{item.name}</Text><Text style={styles.added}>Saved {new Date(item.addedAt).toLocaleDateString("en-BD", { day: "numeric", month: "short" })}</Text><View style={styles.priceRow}><Text style={styles.price}>{item.price ? money(item.price.amountMinor) : "Currently unavailable"}</Text><Text accessibilityLabel={`${item.name}: ${stockLabel}`} style={[styles.stock, item.availableQuantity === 0 ? styles.stockOut : item.availableQuantity <= 5 ? styles.stockLow : styles.stockIn]}>{stockLabel}</Text></View></View>
     </Pressable>
     <View style={styles.cardActions}>
-      <Pressable accessibilityRole="button" accessibilityLabel={`Add ${item.name} to cart`} accessibilityState={{ busy: addToCart.isPending }} disabled={busy || addToCart.isPending || !item.price} onPress={() => addToCart.mutate()} style={[styles.primary, styles.cartButton, (busy || addToCart.isPending || !item.price) && styles.disabled]}><Ionicons color="#fff" name="cart-outline" size={18} /><Text style={styles.primaryText}>{addToCart.isPending ? "Adding…" : "Add to cart"}</Text></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={`Add ${item.name} to cart`} accessibilityState={{ busy: addToCart.isPending }} disabled={busy || addToCart.isPending || !item.price || item.availableQuantity === 0} onPress={() => addToCart.mutate()} style={[styles.primary, styles.cartButton, (busy || addToCart.isPending || !item.price || item.availableQuantity === 0) && styles.disabled]}><Ionicons color="#fff" name="cart-outline" size={18} /><Text style={styles.primaryText}>{addToCart.isPending ? "Adding…" : item.availableQuantity === 0 ? "Out of stock" : "Add to cart"}</Text></Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${item.name} from wishlist`} accessibilityState={{ busy }} disabled={busy} onPress={onRemove} style={[styles.iconButton, busy && styles.disabled]}><Ionicons color={colors.danger} name="trash-outline" size={20} /></Pressable>
     </View>
     <WishlistCollectionPicker productId={item.productId} selectedId={collectionId} />
@@ -145,6 +146,11 @@ const styles = StyleSheet.create({
   productName: { color: colors.text, fontSize: 16, fontWeight: "600", minHeight: 40 },
   added: { color: colors.muted, fontSize: 12 },
   price: { color: colors.primary, fontSize: 18, fontWeight: "700" },
+  priceRow: { alignItems: "center", flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, justifyContent: "space-between" },
+  stock: { borderRadius: 999, fontSize: 11, fontWeight: "600", overflow: "hidden", paddingHorizontal: spacing.sm, paddingVertical: 4 },
+  stockIn: { backgroundColor: colors.accentSoft, color: colors.success },
+  stockLow: { backgroundColor: colors.primarySoft, color: colors.warning },
+  stockOut: { backgroundColor: colors.primarySoft, color: colors.danger },
   cardActions: { alignItems: "center", flexDirection: "row", gap: spacing.sm, padding: spacing.sm },
   cartButton: { flex: 1 },
   iconButton: { alignItems: "center", justifyContent: "center", minHeight: 44, minWidth: 44 },

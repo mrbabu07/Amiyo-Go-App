@@ -21515,6 +21515,10 @@
                               "amountMinor"
                             ]
                           },
+                          "availableQuantity": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
                           "addedAt": {
                             "type": "string",
                             "format": "date-time"
@@ -21526,6 +21530,7 @@
                           "slug",
                           "thumbnailUrl",
                           "price",
+                          "availableQuantity",
                           "addedAt"
                         ]
                       }
@@ -21692,6 +21697,10 @@
                               "amountMinor"
                             ]
                           },
+                          "availableQuantity": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
                           "addedAt": {
                             "type": "string",
                             "format": "date-time"
@@ -21703,6 +21712,7 @@
                           "slug",
                           "thumbnailUrl",
                           "price",
+                          "availableQuantity",
                           "addedAt"
                         ]
                       }
@@ -21851,6 +21861,10 @@
                               "amountMinor"
                             ]
                           },
+                          "availableQuantity": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
                           "addedAt": {
                             "type": "string",
                             "format": "date-time"
@@ -21862,6 +21876,7 @@
                           "slug",
                           "thumbnailUrl",
                           "price",
+                          "availableQuantity",
                           "addedAt"
                         ]
                       }
@@ -22008,6 +22023,10 @@
                               "amountMinor"
                             ]
                           },
+                          "availableQuantity": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
                           "addedAt": {
                             "type": "string",
                             "format": "date-time"
@@ -22019,6 +22038,7 @@
                           "slug",
                           "thumbnailUrl",
                           "price",
+                          "availableQuantity",
                           "addedAt"
                         ]
                       }
@@ -22140,13 +22160,18 @@
                             "required": [
                               "amountMinor"
                             ]
+                          },
+                          "availableQuantity": {
+                            "type": "integer",
+                            "minimum": 0
                           }
                         },
                         "required": [
                           "productId",
                           "name",
                           "slug",
-                          "price"
+                          "price",
+                          "availableQuantity"
                         ]
                       }
                     }
@@ -42871,6 +42896,10 @@
                               "amountMinor"
                             ]
                           },
+                          "availableQuantity": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
                           "addedAt": {
                             "type": "string",
                             "format": "date-time"
@@ -42882,6 +42911,7 @@
                           "slug",
                           "thumbnailUrl",
                           "price",
+                          "availableQuantity",
                           "addedAt"
                         ]
                       }
