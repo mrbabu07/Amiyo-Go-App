@@ -60,7 +60,25 @@ export const logisticsDeliveryAttemptSchema = z.object({
   if (value.outcome === "failed" && !value.reason) context.addIssue({ code: "custom", message: "Failure reason is required", path: ["reason"] });
   if (value.outcome === "failed" && value.codCollected) context.addIssue({ code: "custom", message: "A failed delivery cannot collect COD", path: ["codCollected"] });
 });
-export const codRemittanceInputSchema = z.object({ courierPartnerId: uuidSchema.nullable().default(null), courierName: z.string().trim().min(2).max(120), collectedAmountMinor: minorSchema, remittedAmountMinor: minorSchema, forwardedToVendorMinor: minorSchema, reference: z.string().trim().max(160).nullable().default(null), notes: z.string().trim().max(1000).nullable().default(null), orderIds: z.array(uuidSchema).max(500) });
+export const codRemittanceInputSchema = z.object({
+  courierPartnerId: uuidSchema.nullable().default(null),
+  courierName: z.string().trim().min(2).max(120),
+  collectedAmountMinor: minorSchema,
+  remittedAmountMinor: minorSchema,
+  forwardedToVendorMinor: minorSchema,
+  reference: z.string().trim().min(2).max(160),
+  notes: z.string().trim().max(1000).nullable().default(null),
+  orderIds: z.array(uuidSchema).max(500)
+}).superRefine((value, context) => {
+  const collected = BigInt(value.collectedAmountMinor);
+  const remitted = BigInt(value.remittedAmountMinor);
+  const forwarded = BigInt(value.forwardedToVendorMinor);
+  if (collected <= 0n) context.addIssue({ code: "custom", message: "Collected amount must be positive", path: ["collectedAmountMinor"] });
+  if (remitted <= 0n) context.addIssue({ code: "custom", message: "Remitted amount must be positive", path: ["remittedAmountMinor"] });
+  if (remitted > collected) context.addIssue({ code: "custom", message: "Remitted amount cannot exceed collected amount", path: ["remittedAmountMinor"] });
+  if (forwarded > remitted) context.addIssue({ code: "custom", message: "Forwarded amount cannot exceed remitted amount", path: ["forwardedToVendorMinor"] });
+  if (new Set(value.orderIds).size !== value.orderIds.length) context.addIssue({ code: "custom", message: "Order IDs must be unique", path: ["orderIds"] });
+});
 export const failedDeliveryReattemptSchema = z.object({ nextAttemptAt: timestampSchema, redeliveryFeeMinor: minorSchema, reason: z.string().trim().min(2).max(500), note: z.string().trim().max(1000).nullable().default(null) });
 export const failedDeliveryReturnSchema = z.object({ returnFeeMinor: minorSchema, reason: z.string().trim().min(2).max(500), note: z.string().trim().max(1000).nullable().default(null) });
 export const logisticsNoteSchema = z.object({ note: z.string().trim().min(2).max(1000) });

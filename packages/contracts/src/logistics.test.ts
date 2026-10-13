@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { logisticsCodStateInputSchema, logisticsDeliveryAttemptSchema, logisticsManifestPickupSchema, logisticsReturnActionSchema, logisticsTrackingEventSchema } from "./logistics.js";
+import { codRemittanceInputSchema, logisticsCodStateInputSchema, logisticsDeliveryAttemptSchema, logisticsManifestPickupSchema, logisticsReturnActionSchema, logisticsTrackingEventSchema } from "./logistics.js";
 
 const shipmentId = "11111111-1111-4111-8111-111111111111";
 
@@ -29,4 +29,13 @@ test("reverse logistics accepts structured inspection evidence", () => {
 test("COD state evidence is bounded and explicit", () => {
   assert.equal(logisticsCodStateInputSchema.safeParse({ reference: "REM-100", reason: null, note: "Courier remittance received" }).success, true);
   assert.equal(logisticsCodStateInputSchema.safeParse({ note: "x" }).success, false);
+});
+
+test("COD remittance amounts preserve finance invariants", () => {
+  const valid = { courierPartnerId: null, courierName: "Amiyo Delivery", collectedAmountMinor: "10000", remittedAmountMinor: "9000", forwardedToVendorMinor: "8000", reference: "REM-100", notes: null, orderIds: [shipmentId] };
+  assert.equal(codRemittanceInputSchema.safeParse(valid).success, true);
+  assert.equal(codRemittanceInputSchema.safeParse({ ...valid, remittedAmountMinor: "11000" }).success, false);
+  assert.equal(codRemittanceInputSchema.safeParse({ ...valid, forwardedToVendorMinor: "9500" }).success, false);
+  assert.equal(codRemittanceInputSchema.safeParse({ ...valid, reference: "" }).success, false);
+  assert.equal(codRemittanceInputSchema.safeParse({ ...valid, orderIds: [shipmentId, shipmentId] }).success, false);
 });

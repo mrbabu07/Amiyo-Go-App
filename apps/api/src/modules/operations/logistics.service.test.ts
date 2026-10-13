@@ -247,3 +247,23 @@ test("COD transitions reject pre-delivery collection and invalid failure states"
   await assert.rejects(() => new LogisticsService(delivered).updateCodState(session, shipmentId, "cod_failed", { reference: null, reason: "Not collected", note: "Marked failed" }), /failed or cancelled parcel/);
   assert.equal(writes, 0);
 });
+
+test("COD remittance uses the active courier identity and audits atomically", async () => {
+  const calls: string[] = [];
+  const row = { id: "remittance-1", courierPartnerId: shipmentId, courierName: "Trusted Courier", collectedAmountMinor: 10000n, remittedAmountMinor: 9000n, forwardedToVendorMinor: 8000n, reference: "REM-100", notes: null, orderIds: [], createdBy: session.principal.userId, createdAt: new Date("2026-10-13T12:00:00.000Z") };
+  const client = transactional({
+    courierPartner: { findFirst: async () => ({ id: shipmentId, status: "active", name: "Trusted Courier" }) },
+    codRemittance: { create: async ({ data }: { data: { courierName: string } }) => { calls.push("remittance"); assert.equal(data.courierName, "Trusted Courier"); return row; } },
+    auditLog: { create: async () => { calls.push("audit"); } }
+  }) as unknown as PrismaClient;
+  const result = await new LogisticsService(client).recordCodRemittance(session, { courierPartnerId: shipmentId, courierName: "Spoofed Name", collectedAmountMinor: "10000", remittedAmountMinor: "9000", forwardedToVendorMinor: "8000", reference: "REM-100", notes: null, orderIds: [] });
+  assert.equal(result.courierName, "Trusted Courier");
+  assert.deepEqual(calls, ["remittance", "audit"]);
+});
+
+test("COD remittance rejects an inactive selected courier before writes", async () => {
+  let writes = 0;
+  const client = transactional({ courierPartner: { findFirst: async () => null }, codRemittance: { create: async () => { writes++; } } }) as unknown as PrismaClient;
+  await assert.rejects(() => new LogisticsService(client).recordCodRemittance(session, { courierPartnerId: shipmentId, courierName: "Courier", collectedAmountMinor: "10000", remittedAmountMinor: "9000", forwardedToVendorMinor: "0", reference: "REM-100", notes: null, orderIds: [] }), /selected courier is not active/);
+  assert.equal(writes, 0);
+});
