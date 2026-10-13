@@ -294,3 +294,7 @@ Using the approved demo product, temporary stock and price subscriptions were cr
 The seller order detail now renders a responsive fulfillment timeline from the live shipment event array already returned by the API. It includes the package creation timestamp, then recorded courier status, description, optional location and occurrence time without inferring unrecorded milestones. An empty shipment history is explicit. The primary document action is renamed `Shipping documents` because its destination contains both the signed thermal parcel label and A4 packing slip exports.
 
 This improves reference parity for seller fulfillment evidence, but does not claim the legacy courier assignment, pickup scheduling, buyer messaging, delivery-exception or seller-side COD collection controls. Those require corresponding seller-authorized APIs rather than decorative buttons.
+
+## Seller order product thumbnails
+
+Seller order list/detail reads now load only the first ordered product-media record needed for each purchased line and expose it through the existing optional `thumbnailUrl` contract. The seller detail uses the shared resilient order-item image component beside the snapshot name, SKU and variant attributes, including an accessible fallback when media is missing or fails. The bounded relation is shared by list and detail reads, and API/mobile regressions cover the query shape, mapped URL and UI wiring.

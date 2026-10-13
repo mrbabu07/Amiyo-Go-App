@@ -9,4 +9,6 @@ test("vendor fulfillment and customer tracking expose accessible actions", async
   assert.match(source, /Fulfillment timeline/);
   assert.match(source, /item\.shipment\?\.events\.map/);
   assert.match(source, /Recorded package and courier events only/);
+  assert.match(source, /OrderItemImage/);
+  assert.match(source, /uri=\{line\.thumbnailUrl\}/);
 });

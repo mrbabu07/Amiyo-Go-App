@@ -13,7 +13,7 @@ import { buildInvoiceQrPayload, buildParcelQrPayload, verifyDocumentQrPayload } 
 const vendorOrderInclude = {
   order: { include: { addresses: true, payments: { orderBy: { createdAt: "desc" as const }, take: 1 }, user: { include: { profile: true } } } },
   shop: true,
-  items: true,
+  items: { include: { product: { select: { media: { orderBy: { displayOrder: "asc" as const }, take: 1, select: { storageKey: true } } } } } },
   shipments: { orderBy: { createdAt: "desc" as const }, take: 1, include: { events: { orderBy: { occurredAt: "asc" as const } } } },
   dispatches: { orderBy: { createdAt: "desc" as const }, take: 1 }
 } satisfies Prisma.VendorOrderInclude;
@@ -49,7 +49,7 @@ function vendorOrderDto(row: LoadedVendorOrder) {
     deliveryAddress: deliveryAddress ? { recipientName: deliveryAddress.recipientName, phone: deliveryAddress.phone, line1: deliveryAddress.line1, line2: deliveryAddress.line2, division: deliveryAddress.division, district: deliveryAddress.district, upazila: deliveryAddress.upazila, unionName: deliveryAddress.unionName, postalCode: deliveryAddress.postalCode } : null,
     payment: payment ? { provider: payment.provider, method: payment.method, status: payment.status, amount: money(payment.amountMinor, payment.currency), transactionId: payment.providerTransactionId, createdAt: payment.createdAt.toISOString() } : null,
     subtotal: money(row.subtotalMinor, row.order.currency), discount: money(row.discountMinor, row.order.currency), delivery: money(row.deliveryMinor, row.order.currency), total: money(row.totalMinor, row.order.currency), version: row.version, createdAt: row.createdAt.toISOString(),
-    items: row.items.map((item) => ({ id: item.id, productId: item.productId, variantId: item.variantId, productName: item.productNameSnapshot, sku: item.skuSnapshot, attributes: item.attributesSnapshot as Record<string, unknown> | null, quantity: item.quantity, unitPrice: money(item.unitPriceMinor, item.currency), discount: money(item.discountMinor, item.currency), lineTotal: money(item.lineTotalMinor, item.currency) })),
+    items: row.items.map((item) => ({ id: item.id, productId: item.productId, variantId: item.variantId, productName: item.productNameSnapshot, sku: item.skuSnapshot, thumbnailUrl: mediaUrl(item.product.media[0]?.storageKey), attributes: item.attributesSnapshot as Record<string, unknown> | null, quantity: item.quantity, unitPrice: money(item.unitPriceMinor, item.currency), discount: money(item.discountMinor, item.currency), lineTotal: money(item.lineTotalMinor, item.currency) })),
     shipment: shipmentDto(row.shipments[0]), dispatchStatus: row.dispatches[0]?.status ?? null
   };
 }
@@ -96,7 +96,7 @@ export class OrderService {
     if (session.status !== "ACTIVE" || !session.permissions.includes("orders:read")) throw new ApiProblem(403, "ORDERS_FORBIDDEN", "Order access is not allowed");
     const elevated = session.principal.roles.some((role) => ["SUPER_ADMIN", "OPERATIONS_ADMIN"].includes(role));
     if (!elevated && session.principal.vendorIds.length === 0) return [];
-    const rows = await this.client.vendorOrder.findMany({ where: { ...(elevated ? {} : { vendorId: { in: session.principal.vendorIds } }), ...(status ? { status } : {}) }, include: { shop: true, items: true }, orderBy: { createdAt: "desc" }, take: 100 });
+    const rows = await this.client.vendorOrder.findMany({ where: { ...(elevated ? {} : { vendorId: { in: session.principal.vendorIds } }), ...(status ? { status } : {}) }, include: { shop: true, items: vendorOrderInclude.items }, orderBy: { createdAt: "desc" }, take: 100 });
     if (!rows.length) return [];
     const packageIds = rows.map((row) => row.id);
     const orderIds = [...new Set(rows.map((row) => row.orderId))];

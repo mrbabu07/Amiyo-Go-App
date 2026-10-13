@@ -8,6 +8,7 @@ import { useState } from "react";
 import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { firebaseAuth } from "../auth/firebase";
+import { OrderItemImage } from "./OrderItemImage";
 import { getVendorOrder, transitionVendorOrder } from "./orders.api";
 
 const actions: Partial<Record<VendorOrderStatus, Array<{ status: VendorOrderStatus; label: string; danger?: boolean }>>> = {
@@ -62,7 +63,7 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
     </View>
     <Panel title="Products to fulfill" meta={`${item.items.length} product line${item.items.length === 1 ? "" : "s"} from this store.`}>
       <View style={styles.tableHead}><Text style={[styles.head, styles.product]}>Product</Text><Text style={styles.head}>Qty</Text><Text style={styles.head}>Unit</Text><Text style={[styles.head, styles.right]}>Total</Text></View>
-      {item.items.map((line) => <View key={line.id} style={[styles.line, compact && styles.lineCompact]}><View style={styles.product}><Text style={styles.itemName}>{line.productName}</Text><Text style={styles.muted}>{line.sku}{line.attributes ? ` - ${Object.values(line.attributes).filter(Boolean).join(", ")}` : ""}</Text></View><Text style={styles.cell}>{line.quantity}</Text><Text style={styles.cell}>{money(line.unitPrice.amountMinor, line.unitPrice.currency)}</Text><Text style={[styles.cell, styles.right]}>{money(line.lineTotal.amountMinor, line.lineTotal.currency)}</Text></View>)}
+      {item.items.map((line) => <View key={line.id} style={[styles.line, compact && styles.lineCompact]}><View style={[styles.product, styles.productIdentity]}><OrderItemImage name={line.productName} uri={line.thumbnailUrl} /><View style={styles.productCopy}><Text style={styles.itemName}>{line.productName}</Text><Text style={styles.muted}>{line.sku}{line.attributes ? ` - ${Object.values(line.attributes).filter(Boolean).join(", ")}` : ""}</Text></View></View><Text style={styles.cell}>{line.quantity}</Text><Text style={styles.cell}>{money(line.unitPrice.amountMinor, line.unitPrice.currency)}</Text><Text style={[styles.cell, styles.right]}>{money(line.lineTotal.amountMinor, line.lineTotal.currency)}</Text></View>)}
     </Panel>
     <View style={styles.columns}>
       <View style={[styles.column, compact && styles.full]}><Panel title="Package totals"><Detail label="Subtotal" value={money(item.subtotal.amountMinor, item.subtotal.currency)} /><Detail label="Discount" value={`- ${money(item.discount.amountMinor, item.discount.currency)}`} /><Detail label="Delivery" value={money(item.delivery.amountMinor, item.delivery.currency)} /><Detail label="Seller package total" value={money(item.total.amountMinor, item.total.currency)} strong /></Panel></View>
@@ -120,6 +121,8 @@ const styles = StyleSheet.create({
   tableHead: { backgroundColor: colors.navy, borderRadius: radius.md, flexDirection: "row", paddingHorizontal: spacing.sm, paddingVertical: 10 },
   head: { color: "#fff", fontSize: 9, fontWeight: "700", width: 88 },
   product: { flex: 1, minWidth: 170 },
+  productIdentity: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
+  productCopy: { flex: 1, minWidth: 0 },
   right: { textAlign: "right" },
   line: { alignItems: "center", borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: "row", gap: spacing.sm, paddingVertical: spacing.md },
   lineCompact: { alignItems: "flex-start", flexDirection: "column" },

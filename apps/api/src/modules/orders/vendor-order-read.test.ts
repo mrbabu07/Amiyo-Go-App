@@ -27,7 +27,7 @@ test("vendor list keeps scope, status and limit without loading unused vendor re
     assert.deepEqual(query.where, { vendorId: { in: ["vendor"] }, status: "IN_TRANSIT" });
     assert.equal(query.take, 100);
     assert.equal(query.include.vendor, undefined);
-    assert.deepEqual(query.include, { shop: true, items: true });
+    assert.deepEqual(query.include, { shop: true, items: { include: { product: { select: { media: { orderBy: { displayOrder: "asc" }, take: 1, select: { storageKey: true } } } } } } });
     return [];
   } } } as never);
   assert.deepEqual(await service.vendorOrders(seller, "IN_TRANSIT"), []);
@@ -55,7 +55,7 @@ test("seller membership never grants access to a different vendor order", async 
 test("batched list preserves detail DTOs and starts bounded relation branches concurrently", async () => {
   const createdAt = new Date("2026-10-03T00:00:00Z");
   const parent = { id: "parent", orderNumber: "ORDER", currency: "BDT", addresses: [], payments: [], user: null };
-  const rows = ["second", "first"].map((id) => ({ id, orderId: "parent", vendorId: "vendor", shopId: "shop", shop: { name: "Shop" }, status: "PLACED", createdAt, version: 1, subtotalMinor: 100n, discountMinor: 0n, deliveryMinor: 20n, totalMinor: 120n, items: [{ id: `item-${id}`, productId: "product", variantId: null, productNameSnapshot: "Purchased name", skuSnapshot: "SKU", attributesSnapshot: null, quantity: 1, unitPriceMinor: 100n, discountMinor: 0n, lineTotalMinor: 100n, currency: "BDT" }] }));
+  const rows = ["second", "first"].map((id) => ({ id, orderId: "parent", vendorId: "vendor", shopId: "shop", shop: { name: "Shop" }, status: "PLACED", createdAt, version: 1, subtotalMinor: 100n, discountMinor: 0n, deliveryMinor: 20n, totalMinor: 120n, items: [{ id: `item-${id}`, productId: "product", variantId: null, productNameSnapshot: "Purchased name", skuSnapshot: "SKU", attributesSnapshot: null, quantity: 1, unitPriceMinor: 100n, discountMinor: 0n, lineTotalMinor: 100n, currency: "BDT", product: { media: [{ storageKey: "https://cdn.amiyo.test/products/item.webp" }] } }] }));
   const shipment = { id: "shipment", vendorOrderId: "second", status: "DELIVERED", provider: "courier", trackingNumber: "TRACK", events: [{ id: "event", status: "DELIVERED", description: "Delivered", location: null, occurredAt: createdAt }] };
   const started: string[] = [];
   let release: () => void = () => {};
@@ -84,6 +84,7 @@ test("batched list preserves detail DTOs and starts bounded relation branches co
   const result = await service.vendorOrders(seller);
   const expected = await Promise.all(rows.map((row) => new OrderService({ vendorOrder: { findUnique: async () => ({ ...row, order: parent, shipments: row.id === "second" ? [shipment] : [], dispatches: row.id === "second" ? [{ status: "SENT" }] : [] }) } } as never).vendorOrder(seller, row.id)));
   assert.deepEqual(result, expected);
+  assert.equal(result[0]?.items[0]?.thumbnailUrl, "https://cdn.amiyo.test/products/item.webp");
   assert.equal(baseReads, 1);
   assert.equal(started.length, 3);
 });
