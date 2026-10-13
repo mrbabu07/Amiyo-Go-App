@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 import type { Session } from "@amiyo/contracts";
 import { SupportService } from "./support.service.js";
 
@@ -8,6 +8,8 @@ const customerId = "11111111-1111-4111-8111-111111111111";
 const ticketId = "22222222-2222-4222-8222-222222222222";
 const returnId = "44444444-4444-4444-8444-444444444444";
 const customer: Session = { principal: { userId: customerId, roles: ["CUSTOMER"], vendorIds: [] }, status: "ACTIVE", email: "customer@example.com", phone: null, profile: { firstName: null, lastName: null, displayName: "Customer", avatarStorageKey: null, locale: "en", currency: "BDT" }, permissions: ["support:manage"], vendorMemberships: [] };
+const agentId = "66666666-6666-4666-8666-666666666666";
+const agent: Session = { ...customer, principal: { userId: agentId, roles: ["SUPPORT_AGENT"], vendorIds: [] }, email: "agent@example.com", permissions: ["support:manage", "admin:read"] };
 
 test("customer support list is scoped to the signed-in user", async () => {
   let scopedUserId = "";
@@ -23,6 +25,20 @@ test("customer cannot read the staff support queue", async () => {
 test("customer cannot reply to another customer's ticket", async () => {
   const client = { supportTicket: { findUnique: async () => ({ id: ticketId, userId: "33333333-3333-4333-8333-333333333333" }) } } as unknown as PrismaClient;
   await assert.rejects(() => new SupportService(client).addMessage(customer, ticketId, { body: "Any update?", attachments: [] }), /cannot access this support ticket/);
+});
+
+test("support staff can reply to a customer ticket", async () => {
+  let created: { ticketId: string; senderId: string; body: string } | undefined;
+  const client = {
+    supportTicket: {
+      findUnique: async () => ({ id: ticketId, userId: customerId }),
+      update: async () => ({ id: ticketId, userId: customerId, orderId: null, returnId: null, subject: "Delivery update", category: "DELIVERY", priority: "normal", status: "open", assignedTo: null, createdAt: new Date(), updatedAt: new Date(), messages: [] })
+    },
+    supportMessage: { create: async ({ data }: any) => { created = data; } }
+  } as unknown as PrismaClient;
+  const ticket = await new SupportService(client).addMessage(agent, ticketId, { body: "Your delivery case is now under review.", attachments: [] });
+  assert.deepEqual(created, { ticketId, senderId: agentId, body: "Your delivery case is now under review.", attachments: Prisma.JsonNull });
+  assert.equal(ticket.id, ticketId);
 });
 
 test("support rejects attachments not owned by the sender", async () => {

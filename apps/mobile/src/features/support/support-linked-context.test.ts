@@ -18,6 +18,12 @@ test("admin support links verified cases into operational workspaces", () => {
   assert.match(support, /`\/admin\/orders\/\$\{ticket\.orderId\}`/);
   assert.match(support, /pathname: "\/admin\/returns"/);
   assert.match(support, /returnId: ticket\.returnId/);
+  assert.match(support, /replyToTicket\(user!, id, body\)/);
+  assert.match(support, /retry: false, mutationFn: \(\{ id, body \}/);
+  assert.match(support, /Reply to customer/);
+  assert.match(support, /ticket\.status !== "closed"/);
+  assert.match(support, /message\.senderId === ticket\.userId \? "Customer" : "Support"/);
+  assert.match(support, /message\.attachments\.map/);
   assert.match(returns, /returnId\?: string/);
   assert.match(returns, /validReturnSelection\(params\.returnId\)/);
   assert.match(returns, /\^\[0-9a-f\]/);
