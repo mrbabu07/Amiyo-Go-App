@@ -9,6 +9,7 @@ test("return support drafts preserve verified identifiers and recorded status", 
   const draft = returnSupportDraft(item);
   assert.equal(draft.category, "RETURN");
   assert.equal(draft.priority, "high");
+  assert.equal(draft.returnId, item.id);
   assert.equal(draft.orderId, item.orderId);
   assert.ok(draft.message.includes(item.id));
   assert.ok(draft.message.includes(item.orderId));
@@ -29,4 +30,5 @@ test("return support route accepts only a UUID lookup, not arbitrary draft text"
   assert.match(form, /"support", "mine", user\?\.uid/);
   assert.match(form, /if \(!current\(\)\) return/);
   assert.match(form, /retry: false/);
+  assert.match(form, /returnId: linkedReturnId/);
 });

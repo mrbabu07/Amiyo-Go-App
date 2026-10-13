@@ -16763,6 +16763,18 @@
                     ],
                     "maxLength": 160,
                     "default": null
+                  },
+                  "codCollected": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "expectedAssignmentVersion": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "exclusiveMinimum": 0,
+                    "default": null
                   }
                 },
                 "required": [
@@ -17018,6 +17030,14 @@
                     "type": "string",
                     "minLength": 2,
                     "maxLength": 500
+                  },
+                  "expectedAssignmentVersion": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "exclusiveMinimum": 0,
+                    "default": null
                   }
                 },
                 "required": [
@@ -17136,10 +17156,15 @@
                   "codCollected": {
                     "type": "boolean",
                     "default": false
+                  },
+                  "expectedAssignmentVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
                   }
                 },
                 "required": [
-                  "outcome"
+                  "outcome",
+                  "expectedAssignmentVersion"
                 ]
               }
             }
@@ -20092,12 +20117,9 @@
                     "pattern": "^\\d+$"
                   },
                   "reference": {
-                    "type": [
-                      "string",
-                      "null"
-                    ],
-                    "maxLength": 160,
-                    "default": null
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 160
                   },
                   "notes": {
                     "type": [
@@ -20121,6 +20143,7 @@
                   "collectedAmountMinor",
                   "remittedAmountMinor",
                   "forwardedToVendorMinor",
+                  "reference",
                   "orderIds"
                 ]
               }
@@ -20548,10 +20571,15 @@
                     ],
                     "additionalProperties": {},
                     "default": null
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
                   }
                 },
                 "required": [
-                  "note"
+                  "note",
+                  "expectedVersion"
                 ]
               }
             }
@@ -20659,10 +20687,15 @@
                     ],
                     "additionalProperties": {},
                     "default": null
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
                   }
                 },
                 "required": [
-                  "note"
+                  "note",
+                  "expectedVersion"
                 ]
               }
             }
@@ -20770,10 +20803,15 @@
                     ],
                     "additionalProperties": {},
                     "default": null
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
                   }
                 },
                 "required": [
-                  "note"
+                  "note",
+                  "expectedVersion"
                 ]
               }
             }
@@ -20881,10 +20919,15 @@
                     ],
                     "additionalProperties": {},
                     "default": null
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
                   }
                 },
                 "required": [
-                  "note"
+                  "note",
+                  "expectedVersion"
                 ]
               }
             }
@@ -20992,10 +21035,15 @@
                     ],
                     "additionalProperties": {},
                     "default": null
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
                   }
                 },
                 "required": [
-                  "note"
+                  "note",
+                  "expectedVersion"
                 ]
               }
             }
@@ -21103,10 +21151,15 @@
                     ],
                     "additionalProperties": {},
                     "default": null
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
                   }
                 },
                 "required": [
-                  "note"
+                  "note",
+                  "expectedVersion"
                 ]
               }
             }
@@ -21214,10 +21267,15 @@
                     ],
                     "additionalProperties": {},
                     "default": null
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
                   }
                 },
                 "required": [
-                  "note"
+                  "note",
+                  "expectedVersion"
                 ]
               }
             }
@@ -21325,10 +21383,15 @@
                     ],
                     "additionalProperties": {},
                     "default": null
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
                   }
                 },
                 "required": [
-                  "note"
+                  "note",
+                  "expectedVersion"
                 ]
               }
             }
@@ -21436,10 +21499,15 @@
                     ],
                     "additionalProperties": {},
                     "default": null
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
                   }
                 },
                 "required": [
-                  "note"
+                  "note",
+                  "expectedVersion"
                 ]
               }
             }
@@ -26727,6 +26795,13 @@
                         ],
                         "format": "uuid"
                       },
+                      "returnId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "uuid"
+                      },
                       "subject": {
                         "type": "string"
                       },
@@ -26841,6 +26916,7 @@
                       "id",
                       "userId",
                       "orderId",
+                      "returnId",
                       "subject",
                       "category",
                       "priority",
@@ -26945,6 +27021,13 @@
                     ],
                     "format": "uuid"
                   },
+                  "returnId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid"
+                  },
                   "message": {
                     "type": "string",
                     "minLength": 5,
@@ -27011,6 +27094,13 @@
                       "format": "uuid"
                     },
                     "orderId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "uuid"
+                    },
+                    "returnId": {
                       "type": [
                         "string",
                         "null"
@@ -27131,6 +27221,7 @@
                     "id",
                     "userId",
                     "orderId",
+                    "returnId",
                     "subject",
                     "category",
                     "priority",
@@ -27284,6 +27375,13 @@
                       ],
                       "format": "uuid"
                     },
+                    "returnId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "uuid"
+                    },
                     "subject": {
                       "type": "string"
                     },
@@ -27398,6 +27496,7 @@
                     "id",
                     "userId",
                     "orderId",
+                    "returnId",
                     "subject",
                     "category",
                     "priority",
@@ -27483,6 +27582,13 @@
                         "format": "uuid"
                       },
                       "orderId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "uuid"
+                      },
+                      "returnId": {
                         "type": [
                           "string",
                           "null"
@@ -27603,6 +27709,7 @@
                       "id",
                       "userId",
                       "orderId",
+                      "returnId",
                       "subject",
                       "category",
                       "priority",
@@ -27732,6 +27839,13 @@
                       ],
                       "format": "uuid"
                     },
+                    "returnId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "uuid"
+                    },
                     "subject": {
                       "type": "string"
                     },
@@ -27846,6 +27960,7 @@
                     "id",
                     "userId",
                     "orderId",
+                    "returnId",
                     "subject",
                     "category",
                     "priority",

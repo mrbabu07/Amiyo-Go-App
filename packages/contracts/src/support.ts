@@ -12,6 +12,7 @@ export const createSupportTicketSchema = z.object({
   category: supportCategorySchema,
   priority: supportPrioritySchema.default("normal"),
   orderId: uuidSchema.nullable().optional(),
+  returnId: uuidSchema.nullable().optional(),
   message: z.string().trim().min(5).max(3000),
   attachments: z.array(supportAttachmentSchema).max(5).default([])
 });
@@ -34,6 +35,7 @@ export const supportTicketSchema = z.object({
   id: uuidSchema,
   userId: uuidSchema,
   orderId: uuidSchema.nullable(),
+  returnId: uuidSchema.nullable(),
   subject: z.string(),
   category: supportCategorySchema,
   priority: supportPrioritySchema,

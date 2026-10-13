@@ -30,6 +30,7 @@ function present(row: TicketRow) {
     id: row.id,
     userId: row.userId,
     orderId: row.orderId,
+    returnId: row.returnId,
     subject: row.subject,
     category: row.category,
     priority: row.priority,
@@ -52,15 +53,24 @@ export class SupportService {
 
   async create(session: Session, input: CreateSupportTicket) {
     requireSupport(session);
-    if (input.orderId) {
-      const order = await this.client.order.findFirst({ where: { id: input.orderId, userId: session.principal.userId }, select: { id: true } });
+    const returnRequest = input.returnId
+      ? await this.client.return.findFirst({ where: { id: input.returnId, userId: session.principal.userId }, select: { id: true, orderId: true } })
+      : null;
+    if (input.returnId && !returnRequest) throw new ApiProblem(404, "SUPPORT_RETURN_NOT_FOUND", "Return not found in your account");
+    if (returnRequest && input.orderId && input.orderId !== returnRequest.orderId) {
+      throw new ApiProblem(400, "SUPPORT_RETURN_ORDER_MISMATCH", "Return does not belong to the linked order");
+    }
+    const orderId = returnRequest?.orderId ?? input.orderId ?? null;
+    if (orderId && !returnRequest) {
+      const order = await this.client.order.findFirst({ where: { id: orderId, userId: session.principal.userId }, select: { id: true } });
       if (!order) throw new ApiProblem(404, "SUPPORT_ORDER_NOT_FOUND", "Order not found in your account");
     }
     const verified = await this.verifiedAttachments(session.principal.userId, input.attachments);
     const row = await this.client.supportTicket.create({
       data: {
         userId: session.principal.userId,
-        orderId: input.orderId ?? null,
+        orderId,
+        returnId: returnRequest?.id ?? null,
         subject: input.subject,
         category: input.category,
         priority: input.priority,

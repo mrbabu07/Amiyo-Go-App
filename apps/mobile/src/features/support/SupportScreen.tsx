@@ -27,16 +27,17 @@ function SupportForm({ user, returnId, contextOrderId }: { user: User | null; re
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const current = () => mounted.current && Boolean(user) && firebaseAuth?.currentUser?.uid === user?.uid;
   const [orderId, setOrderId] = useState<string | undefined>();
+  const [linkedReturnId, setLinkedReturnId] = useState<string | undefined>();
   const [priority, setPriority] = useState<"normal" | "high">("normal");
   const [uploadError, setUploadError] = useState("");
   const [subject, setSubject] = useState(""); const [message, setMessage] = useState(""); const [category, setCategory] = useState<(typeof categories)[number]>("ORDER"); const [files, setFiles] = useState<Attachment[]>([]); const [uploading, setUploading] = useState(false);
   const tickets = useQuery({ queryKey: ["support", "mine", user?.uid], queryFn: () => getMyTickets(user!), enabled: Boolean(user), retry: false });
   const create = useMutation({ retry: false, mutationFn: () => {
     if (!current()) throw new Error("Sign in again before submitting a ticket");
-    return createTicket(user!, { subject, message, category, priority, orderId, attachments: files });
+    return createTicket(user!, { subject, message, category, priority, orderId, returnId: linkedReturnId, attachments: files });
   }, onSuccess: async (ticket) => {
     if (!current()) return;
-    setSubject(""); setMessage(""); setFiles([]); setOrderId(undefined); setPriority("normal");
+    setSubject(""); setMessage(""); setFiles([]); setOrderId(undefined); setLinkedReturnId(undefined); setPriority("normal");
     await cache.invalidateQueries({ queryKey: ["support", "mine", user!.uid] });
     if (current()) router.push(`/support/${ticket.id}` as never);
   } });
@@ -49,9 +50,9 @@ function SupportForm({ user, returnId, contextOrderId }: { user: User | null; re
   };
   if (!user) return <Screen title="Customer support" description="Sign in to create and track support requests."><Pressable onPress={() => router.push("/auth")} style={styles.primary}><Text style={styles.primaryText}>Sign in</Text></Pressable></Screen>;
   return <Screen eyebrow="HELP CENTER" title="How can we help?" description="Create a ticket and keep the full conversation and evidence in one place.">
-    {returnId ? <ReturnSupportContext user={user} returnId={returnId} onApply={(draft) => { if (!current() || create.isPending) return; setSubject(draft.subject); setMessage(draft.message); setCategory(draft.category); setPriority(draft.priority); setOrderId(draft.orderId); }} /> : null}
+    {returnId ? <ReturnSupportContext user={user} returnId={returnId} onApply={(draft) => { if (!current() || create.isPending) return; setSubject(draft.subject); setMessage(draft.message); setCategory(draft.category); setPriority(draft.priority); setOrderId(draft.orderId); setLinkedReturnId(draft.returnId); }} /> : null}
     {!returnId && contextOrderId ? <OrderSupportContext user={user} orderId={contextOrderId} onApply={(draft) => { if (!current() || create.isPending) return; setSubject(draft.subject); setMessage(draft.message); setCategory(draft.category); setPriority(draft.priority); setOrderId(draft.orderId); }} /> : null}
-    {orderId ? <Text style={styles.label}>Linked order: {orderId}{returnId ? " · High priority return review" : ""}</Text> : null}
+    {orderId ? <Text style={styles.label}>Linked order: {orderId}{linkedReturnId ? " · Verified return review" : ""}</Text> : null}
     {uploadError ? <Text accessibilityRole="alert" style={styles.error}>{uploadError}</Text> : null}
     {tickets.error ? <View><Text accessibilityRole="alert" style={styles.error}>Could not load your support tickets. {tickets.error.message}</Text><Pressable accessibilityRole="button" onPress={() => void tickets.refetch()} style={styles.primary}><Text style={styles.primaryText}>Retry tickets</Text></Pressable></View> : null}
     <View style={styles.stats}><Stat label="Open" value={tickets.data?.filter((item) => ["open", "in_progress"].includes(item.status)).length ?? 0} /><Stat label="Resolved" value={tickets.data?.filter((item) => ["resolved", "closed"].includes(item.status)).length ?? 0} /></View>

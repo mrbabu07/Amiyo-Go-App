@@ -2,6 +2,7 @@ import type { ReturnDto } from "@amiyo/contracts";
 
 export function returnSupportDraft(item: Pick<ReturnDto, "id" | "orderId" | "status" | "reasonCode" | "reasonDetail">) {
   return {
+    returnId: item.id,
     orderId: item.orderId,
     category: "RETURN" as const,
     priority: "high" as const,
