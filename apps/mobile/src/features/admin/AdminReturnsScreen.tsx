@@ -12,15 +12,16 @@ import { applyAdminReturnLogisticsAction, completeAdminRefundCase, getAdminRetur
 const flows = [
   { key: "all", label: "All cases" }, { key: "triage", label: "Needs decision" }, { key: "refund", label: "Refund desk" }, { key: "closed", label: "Closed" }, { key: "rejected", label: "Rejected" }
 ] as const;
+const validReturnSelection = (value?: string) => typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value) ? value : null;
 
 export function AdminReturnsScreen() {
   const user = useCurrentUser();
-  const params = useLocalSearchParams<{ search?: string }>();
+  const params = useLocalSearchParams<{ search?: string; returnId?: string }>();
   const cache = useQueryClient();
   const { width } = useWindowDimensions();
   const [flow, setFlow] = useState<(typeof flows)[number]["key"]>("all");
   const [search, setSearch] = useState(typeof params.search === "string" ? params.search : "");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(validReturnSelection(params.returnId));
   const [nextStatus, setNextStatus] = useState<AdminReturnStatus | null>(null);
   const [note, setNote] = useState("");
   const [amount, setAmount] = useState("");
