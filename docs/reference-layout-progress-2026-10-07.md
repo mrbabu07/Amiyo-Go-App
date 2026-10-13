@@ -318,3 +318,5 @@ Ready-to-ship seller packages now expose a responsive preferred pickup request w
 The admin logistics queue now surfaces the requested date, window and seller note directly on each parcel card before the existing operations-only pickup confirmation. This closes the request handoff without granting sellers courier assignment, shipment-state or COD reconciliation authority.
 
 Operations can now assign or update an active courier partner and pickup staff member directly on pending, ready or failed parcel cards, with an optional tracking number. The command sends the current assignment version to reject stale edits and preserves the seller-requested pickup date, window and note. Assignment still does not mark the parcel picked up; that remains a separate explicit operations action.
+
+The assignment API rejects delivered, in-transit, picked-up and cancelled parcels, inactive courier/staff records, empty targets and attempts to modify an existing assignment without its current version. These checks remain server-side even if a caller bypasses the admin UI.

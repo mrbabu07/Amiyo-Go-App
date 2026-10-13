@@ -23,9 +23,28 @@ test("logistics shipment transition records event and audit", async () => {
 
 test("courier assignment rejects stale versions before changing the parcel", async () => {
   let writes = 0;
-  const client = { shipment: { findUnique: async () => ({ id: shipmentId, provider: null, trackingNumber: null, assignment: { version: 3 } }), update: async () => { writes++; } }, logisticsAssignment: { upsert: async () => { writes++; } } } as unknown as PrismaClient;
-  await assert.rejects(() => new LogisticsService(client).assignShipment(session, shipmentId, { courierPartnerId: null, pickupStaffId: null, bookingMode: "manual", trackingNumber: null, pickupDate: null, pickupWindow: null, estimatedDeliveryDate: null, note: null, expectedVersion: 2 }), /changed; refresh and retry/);
+  const client = { shipment: { findUnique: async () => ({ id: shipmentId, status: "READY_TO_SHIP", provider: null, trackingNumber: null, assignment: { version: 3 } }), update: async () => { writes++; } }, logisticsAssignment: { upsert: async () => { writes++; } } } as unknown as PrismaClient;
+  await assert.rejects(() => new LogisticsService(client).assignShipment(session, shipmentId, { courierPartnerId: shipmentId, pickupStaffId: null, bookingMode: "manual", trackingNumber: null, pickupDate: null, pickupWindow: null, estimatedDeliveryDate: null, note: null, expectedVersion: 2 }), /changed; refresh and retry/);
   assert.equal(writes, 0);
+});
+
+test("courier assignment rejects terminal parcels and inactive resources", async () => {
+  const input = { courierPartnerId: shipmentId, pickupStaffId: null, bookingMode: "manual" as const, trackingNumber: null, pickupDate: null, pickupWindow: null, estimatedDeliveryDate: null, note: null, expectedVersion: null };
+  const terminal = { shipment: { findUnique: async () => ({ id: shipmentId, status: "DELIVERED", assignment: null }) } } as unknown as PrismaClient;
+  await assert.rejects(() => new LogisticsService(terminal).assignShipment(session, shipmentId, input), /Cannot assign a delivered parcel/);
+  let writes = 0;
+  const inactive = {
+    shipment: { findUnique: async () => ({ id: shipmentId, status: "READY_TO_SHIP", provider: null, trackingNumber: null, assignment: null }), update: async () => { writes++; } },
+    courierPartner: { findFirst: async () => null },
+    logisticsAssignment: { upsert: async () => { writes++; } }
+  } as unknown as PrismaClient;
+  await assert.rejects(() => new LogisticsService(inactive).assignShipment(session, shipmentId, input), /selected courier is not active/);
+  assert.equal(writes, 0);
+});
+
+test("existing courier assignment requires an explicit current version", async () => {
+  const client = { shipment: { findUnique: async () => ({ id: shipmentId, status: "READY_TO_SHIP", assignment: { version: 4 } }) } } as unknown as PrismaClient;
+  await assert.rejects(() => new LogisticsService(client).assignShipment(session, shipmentId, { courierPartnerId: shipmentId, pickupStaffId: null, bookingMode: "manual", trackingNumber: null, pickupDate: null, pickupWindow: null, estimatedDeliveryDate: null, note: null, expectedVersion: null }), /Refresh this parcel/);
 });
 
 test("logistics management rejects non-operations admins", async () => {
