@@ -32,4 +32,7 @@ test("operations can see seller pickup evidence before confirming collection", a
   assert.match(source, /row\.assignment\.pickupWindow/);
   assert.match(source, /Mark picked up/);
   assert.match(source, /Pickup confirmed from logistics workspace/);
+  assert.match(source, /Finance exposure/);
+  assert.match(source, /row\.exception\?\.owner\.name/);
+  assert.match(source, /row\.exception\?\.slaTargetAt/);
 });

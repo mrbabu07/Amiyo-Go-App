@@ -281,7 +281,7 @@ Checks passed: mobile type-check, 88 mobile tests, full suite including 92 repos
 
 The admin control center now includes a responsive Exception Handling inbox using the existing live operations reads. It separates unresolved returns/refunds, unresolved vendor payouts and recent platform audit activity, shows up to three current items per lane, and links each lane to its real management workspace. Closed or rejected returns and paid, rejected or cancelled payouts no longer inflate pending-action counts.
 
-The reference dashboard exposes additional criticality, ownership, SLA and finance-exposure fields that the current API does not provide. Those metrics and actions are intentionally not fabricated. This closes the visible live-queue hierarchy gap, not full reference exception-management parity.
+The operations exception queue now derives criticality from persisted overdue targets, repeat attempts and exact financial exposure. Ownership comes from the assigned pickup staff or courier, otherwise it remains explicitly in the operations queue. SLA uses only a recorded next-attempt or estimated-delivery timestamp; absent evidence is labelled unscheduled. Finance exposure includes still-unremitted COD plus persisted redelivery/return fees and excludes remitted or failed COD. The UI shows this evidence on responsive exception cards without inventing deadlines, owners or amounts.
 
 ## Wishlist read resilience and alert acceptance
 

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { PrismaClient } from "@prisma/client";
 import type { Session } from "@amiyo/contracts";
-import { LogisticsService } from "./logistics.service.js";
+import { LogisticsService, logisticsShipmentDto } from "./logistics.service.js";
 
 const shipmentId = "11111111-1111-4111-8111-111111111111";
 const session: Session = { principal: { userId: "22222222-2222-4222-8222-222222222222", roles: ["OPERATIONS_ADMIN"], vendorIds: [] }, status: "ACTIVE", email: null, phone: null, profile: { firstName: null, lastName: null, displayName: "Operator", avatarStorageKey: null, locale: "en", currency: "BDT" }, permissions: ["admin:read", "admin:manage"], vendorMemberships: [] };
@@ -29,6 +29,36 @@ test("logistics management rejects non-operations admins", async () => {
 test("operations exception queue includes courier failures and seller-reported issues", async () => {
   const client = { shipment: { findMany: async ({ where }: { where: unknown }) => { assert.deepEqual(where, { OR: [{ status: "FAILED" }, { failedDelivery: { resolution: "vendor_reported" } }] }); return []; } } } as unknown as PrismaClient;
   assert.deepEqual(await new LogisticsService(client).failedDeliveries(session), []);
+});
+
+test("exception evidence derives owner, persisted SLA and exact finance exposure", () => {
+  const now = new Date("2026-10-13T12:00:00.000Z");
+  const row = {
+    id: shipmentId, vendorOrderId: "package", status: "FAILED", provider: "courier", trackingNumber: "TRACK", codState: "cod_collected", codRemittanceReference: null, codDisputeReason: null, rtoReceivedAt: null, shippedAt: now, deliveredAt: null, createdAt: now, updatedAt: now,
+    vendorOrder: { orderId: "order", vendorId: "vendor", totalMinor: 10000n, vendor: { displayName: "Seller" }, shop: { name: "Shop" }, order: { orderNumber: "AG-1", currency: "BDT", addresses: [], payments: [{ method: "COD" }] } },
+    assignment: { pickupStaff: { name: "Rider Rahim" }, courierPartner: null, estimatedDeliveryDate: new Date("2026-10-13T10:00:00.000Z"), pickupDate: null, createdAt: now, updatedAt: now },
+    failedDelivery: { reason: "Customer unavailable", attemptCount: 2, nextAttemptAt: null, redeliveryFeeMinor: 500n, returnFeeMinor: 200n, createdAt: now, updatedAt: now },
+  };
+  const result = logisticsShipmentDto(row as never, now);
+  assert.equal(result.exception?.criticality, "critical");
+  assert.deepEqual(result.exception?.reasons, ["SLA overdue", "Repeated attempt", "Finance exposure"]);
+  assert.deepEqual(result.exception?.owner, { type: "pickup_staff", name: "Rider Rahim" });
+  assert.equal(result.exception?.financeExposureMinor, "10700");
+  assert.equal(result.exception?.slaState, "overdue");
+});
+
+test("remitted COD is excluded and an unassigned exception stays explicit", () => {
+  const now = new Date("2026-10-13T12:00:00.000Z");
+  const row = {
+    id: shipmentId, vendorOrderId: "package", status: "FAILED", provider: null, trackingNumber: null, codState: "cod_remitted", codRemittanceReference: "REM", codDisputeReason: null, rtoReceivedAt: null, shippedAt: null, deliveredAt: null, createdAt: now, updatedAt: now,
+    vendorOrder: { orderId: "order", vendorId: "vendor", totalMinor: 10000n, vendor: { displayName: "Seller" }, shop: { name: "Shop" }, order: { orderNumber: "AG-1", currency: "BDT", addresses: [], payments: [{ method: "COD" }] } }, assignment: null,
+    failedDelivery: { reason: "Needs review", attemptCount: 1, nextAttemptAt: null, redeliveryFeeMinor: 0n, returnFeeMinor: 0n, createdAt: now, updatedAt: now }
+  };
+  const result = logisticsShipmentDto(row as never, now);
+  assert.equal(result.exception?.criticality, "standard");
+  assert.equal(result.exception?.financeExposureMinor, "0");
+  assert.equal(result.exception?.slaState, "unscheduled");
+  assert.deepEqual(result.exception?.owner, { type: "operations", name: "Operations queue" });
 });
 
 test("RTO requires an active or failed shipment and records its resolution", async () => {
