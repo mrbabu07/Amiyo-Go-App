@@ -10,16 +10,25 @@ function transactional<T extends object>(client: T) { return Object.assign(clien
 
 test("logistics shipment transition records event and audit", async () => {
   const calls: string[] = [];
-  const client = {
+  const client = transactional({
     shipment: {
-      findUnique: async () => ({ id: shipmentId, status: "READY_TO_SHIP" }),
+      findUnique: async () => ({ id: shipmentId, status: "READY_TO_SHIP", assignment: { version: 2, courierPartnerId: shipmentId, pickupStaffId: null, courierPartner: { status: "active" }, pickupStaff: null } }),
       update: async ({ data }: { data: { status: string; events: unknown } }) => { calls.push("shipment"); assert.equal(data.status, "PICKED_UP"); assert.ok(data.events); return { id: shipmentId, status: "PICKED_UP" }; }
     },
     auditLog: { create: async () => { calls.push("audit"); } }
-  } as unknown as PrismaClient;
-  const result = await new LogisticsService(client).transitionShipment(session, shipmentId, { status: "PICKED_UP", note: "Courier confirmed pickup" });
+  }) as unknown as PrismaClient;
+  const result = await new LogisticsService(client).transitionShipment(session, shipmentId, { status: "PICKED_UP", note: "Courier confirmed pickup", expectedAssignmentVersion: 2 });
   assert.equal(result.status, "PICKED_UP");
   assert.deepEqual(calls, ["shipment", "audit"]);
+});
+
+test("shipment transition rejects missing and stale assignments without writes", async () => {
+  let writes = 0;
+  const unassigned = transactional({ shipment: { findUnique: async () => ({ id: shipmentId, status: "READY_TO_SHIP", assignment: null }), update: async () => { writes++; } } }) as unknown as PrismaClient;
+  await assert.rejects(() => new LogisticsService(unassigned).transitionShipment(session, shipmentId, { status: "PICKED_UP", note: "Pickup confirmed", expectedAssignmentVersion: null }), /Assign an active courier/);
+  const stale = transactional({ shipment: { findUnique: async () => ({ id: shipmentId, status: "READY_TO_SHIP", assignment: { version: 3, courierPartnerId: shipmentId, pickupStaffId: null, courierPartner: { status: "active" }, pickupStaff: null } }), update: async () => { writes++; } } }) as unknown as PrismaClient;
+  await assert.rejects(() => new LogisticsService(stale).transitionShipment(session, shipmentId, { status: "PICKED_UP", note: "Pickup confirmed", expectedAssignmentVersion: 2 }), /changed; refresh and retry/);
+  assert.equal(writes, 0);
 });
 
 test("courier assignment rejects stale versions before changing the parcel", async () => {
@@ -120,8 +129,23 @@ test("RTO requires an active or failed shipment and records its resolution", asy
 });
 
 test("manifest pickup rejects parcels that are not ready", async () => {
-  const client = { shipment: { findMany: async () => [{ id: shipmentId, status: "IN_TRANSIT" }] } } as unknown as PrismaClient;
+  const client = transactional({ shipment: { findMany: async () => [{ id: shipmentId, status: "IN_TRANSIT" }] } }) as unknown as PrismaClient;
   await assert.rejects(() => new LogisticsService(client).confirmManifestPickup(session, "manifest-1", { shipmentIds: [shipmentId], note: "Courier pickup confirmed" }), /must be ready to ship/);
+});
+
+test("manifest pickup requires assignment and commits state, events and audit atomically", async () => {
+  const calls: string[] = [];
+  const assignment = { courierPartnerId: shipmentId, pickupStaffId: null, courierPartner: { status: "active" }, pickupStaff: null };
+  const unassigned = transactional({ shipment: { findMany: async () => [{ id: shipmentId, status: "READY_TO_SHIP", assignment: null }] } }) as unknown as PrismaClient;
+  await assert.rejects(() => new LogisticsService(unassigned).confirmManifestPickup(session, "manifest-1", { shipmentIds: [shipmentId], note: "Courier pickup confirmed" }), /must have an active courier/);
+  const client = transactional({
+    shipment: { findMany: async () => [{ id: shipmentId, status: "READY_TO_SHIP", assignment }], updateMany: async () => { calls.push("shipments"); return { count: 1 }; } },
+    shipmentEvent: { createMany: async () => { calls.push("events"); } },
+    auditLog: { create: async () => { calls.push("audit"); } }
+  }) as unknown as PrismaClient;
+  const result = await new LogisticsService(client).confirmManifestPickup(session, "manifest-1", { shipmentIds: [shipmentId], note: "Courier pickup confirmed" });
+  assert.equal(result.shipmentCount, 1);
+  assert.deepEqual(calls, ["shipments", "events", "audit"]);
 });
 
 test("reverse logistics inspection preserves evidence and advances status", async () => {

@@ -43,7 +43,11 @@ export const logisticsAssignmentInputSchema = z.object({
   estimatedDeliveryDate: timestampSchema.nullable().default(null), note: z.string().trim().max(500).nullable().default(null), expectedVersion: z.number().int().positive().nullable().default(null)
 });
 
-export const logisticsShipmentTransitionSchema = z.object({ status: shipmentStatusSchema, note: z.string().trim().min(2).max(500) });
+export const logisticsShipmentTransitionSchema = z.object({
+  status: shipmentStatusSchema,
+  note: z.string().trim().min(2).max(500),
+  expectedAssignmentVersion: z.number().int().positive().nullable().default(null)
+});
 export const logisticsDeliveryAttemptSchema = z.object({ outcome: z.enum(["delivered", "failed"]), receiverName: z.string().trim().max(120).nullable().default(null), reason: z.string().trim().max(500).nullable().default(null), notes: z.string().trim().max(1000).nullable().default(null), codCollected: z.boolean().default(false) });
 export const codRemittanceInputSchema = z.object({ courierPartnerId: uuidSchema.nullable().default(null), courierName: z.string().trim().min(2).max(120), collectedAmountMinor: minorSchema, remittedAmountMinor: minorSchema, forwardedToVendorMinor: minorSchema, reference: z.string().trim().max(160).nullable().default(null), notes: z.string().trim().max(1000).nullable().default(null), orderIds: z.array(uuidSchema).max(500) });
 export const failedDeliveryReattemptSchema = z.object({ nextAttemptAt: timestampSchema, redeliveryFeeMinor: minorSchema, reason: z.string().trim().min(2).max(500), note: z.string().trim().max(1000).nullable().default(null) });

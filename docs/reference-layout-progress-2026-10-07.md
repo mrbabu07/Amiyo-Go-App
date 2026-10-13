@@ -322,3 +322,7 @@ Operations can now assign or update an active courier partner and pickup staff m
 The assignment API rejects delivered, in-transit, picked-up and cancelled parcels, inactive courier/staff records, empty targets and attempts to modify an existing assignment without its current version. These checks remain server-side even if a caller bypasses the admin UI.
 
 Assignment validation, assignment upsert, shipment provider/tracking projection and audit evidence now share one serializable transaction. A failed projection or audit therefore cannot leave a silently assigned parcel with incomplete operational evidence.
+
+Pickup and transit transitions now require a current assignment version plus an active assigned courier or pickup staff member. State, shipment event and audit evidence commit in one serializable transaction, so stale admin tabs and direct API calls cannot advance an unassigned parcel. The logistics UI sends the visible assignment version and withholds pickup confirmation until assignment exists.
+
+Manifest pickup follows the same assignment invariant. Every parcel must still be ready, assigned to an active courier or pickup staff member, and updated in the same serializable transaction as its events and audit record; a partial batch update is rejected. Unassigned manifest groups do not expose pickup confirmation in the admin UI.
