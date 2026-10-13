@@ -24,8 +24,9 @@ test("delivery attempts require outcome evidence and assignment version", () => 
 });
 
 test("reverse logistics accepts structured inspection evidence", () => {
-  const parsed = logisticsReturnActionSchema.parse({ note: "Warehouse inspection completed", inspection: { condition: "sellable", photos: ["media/return-1.jpg"] } });
+  const parsed = logisticsReturnActionSchema.parse({ note: "Warehouse inspection completed", inspection: { condition: "sellable", photos: ["media/return-1.jpg"] }, expectedVersion: 3 });
   assert.equal(parsed.inspection?.condition, "sellable");
+  assert.equal(parsed.expectedVersion, 3);
 });
 
 test("COD state evidence is bounded and explicit", () => {

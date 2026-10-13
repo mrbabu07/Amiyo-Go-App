@@ -251,7 +251,28 @@ export class LogisticsService {
     });
   }
 
-  async reverseReturnAction(session: Session, returnId: string, action: string, input: LogisticsReturnAction) { requireOperator(session, true); const rule = reverseTransitions[action]; if (!rule) throw new ApiProblem(400, "RETURN_LOGISTICS_ACTION_INVALID", "Unsupported reverse logistics action"); const current = await this.client.return.findUnique({ where: { id: returnId } }); if (!current) throw new ApiProblem(404, "RETURN_NOT_FOUND", "Return not found"); if (!rule.allowed.includes(current.status)) throw new ApiProblem(409, "RETURN_LOGISTICS_TRANSITION_INVALID", `Cannot apply ${action} while return is ${current.status}`); const metadata = json({ logisticsState: action, trackingNumber: input.trackingNumber, pickupAt: input.pickupAt, inspection: input.inspection }); const row = await this.client.return.update({ where: { id: returnId }, data: { status: rule.status, version: { increment: 1 }, events: { create: { fromStatus: current.status, toStatus: rule.status, actorType: "admin", actorId: session.principal.userId, note: input.note, metadata } } } }); await this.audit(session, `logistics.return.${action}`, "return", returnId, { status: current.status }, { status: rule.status, ...input }); return { ...row, requestedMinor: row.requestedMinor.toString(), approvedMinor: row.approvedMinor?.toString() ?? null, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() }; }
+  async reverseReturnAction(session: Session, returnId: string, action: string, input: LogisticsReturnAction) {
+    requireOperator(session, true);
+    const rule = reverseTransitions[action];
+    if (!rule) throw new ApiProblem(400, "RETURN_LOGISTICS_ACTION_INVALID", "Unsupported reverse logistics action");
+    return withSerializableTransaction(this.client, async (transaction) => {
+      const current = await transaction.return.findUnique({ where: { id: returnId }, include: { events: { orderBy: { createdAt: "desc" }, take: 20 } } });
+      if (!current) throw new ApiProblem(404, "RETURN_NOT_FOUND", "Return not found");
+      if (current.version !== input.expectedVersion) throw new ApiProblem(409, "RETURN_VERSION_CONFLICT", "Return case changed; refresh and retry");
+      if (!rule.allowed.includes(current.status)) throw new ApiProblem(409, "RETURN_LOGISTICS_TRANSITION_INVALID", `Cannot apply ${action} while return is ${current.status}`);
+      const latestState = current.events.map((event) => event.metadata && typeof event.metadata === "object" && !Array.isArray(event.metadata) ? String((event.metadata as Record<string, unknown>).logisticsState ?? "") : "").find((state) => ["schedule_pickup", "picked_up", "in_transit", "received", "inspected", "restocked", "disposed", "refurbished"].includes(state)) ?? null;
+      if (action === "schedule_pickup" && !input.pickupAt) throw new ApiProblem(400, "RETURN_PICKUP_TIME_REQUIRED", "Pickup time is required");
+      if (["picked_up", "in_transit"].includes(action) && !input.trackingNumber) throw new ApiProblem(400, "RETURN_TRACKING_REQUIRED", "Tracking number is required");
+      if (action === "picked_up" && latestState !== "schedule_pickup") throw new ApiProblem(409, "RETURN_PICKUP_NOT_SCHEDULED", "Schedule pickup before marking the return picked up");
+      if (action === "in_transit" && latestState !== "picked_up") throw new ApiProblem(409, "RETURN_NOT_PICKED_UP", "Mark the return picked up before starting transit");
+      if (action === "received" && !["picked_up", "in_transit"].includes(latestState ?? "")) throw new ApiProblem(409, "RETURN_NOT_IN_TRANSIT", "The return must be picked up before warehouse receipt");
+      if (action === "inspected" && !input.inspection) throw new ApiProblem(400, "RETURN_INSPECTION_REQUIRED", "Structured inspection evidence is required");
+      const metadata = json({ logisticsState: action, trackingNumber: input.trackingNumber, pickupAt: input.pickupAt, inspection: input.inspection });
+      const row = await transaction.return.update({ where: { id: returnId }, data: { status: rule.status, version: { increment: 1 }, events: { create: { fromStatus: current.status, toStatus: rule.status, actorType: "admin", actorId: session.principal.userId, note: input.note, metadata } } } });
+      await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "admin", action: `logistics.return.${action}`, resourceType: "return", resourceId: returnId, before: json({ status: current.status, version: current.version, logisticsState: latestState }), after: json({ status: rule.status, version: row.version, ...input }) } });
+      return { ...row, requestedMinor: row.requestedMinor.toString(), approvedMinor: row.approvedMinor?.toString() ?? null, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() };
+    });
+  }
 
   async recordCodRemittance(session: Session, input: CodRemittanceInput) {
     requireOperator(session, true);

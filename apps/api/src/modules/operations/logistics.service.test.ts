@@ -237,17 +237,28 @@ test("manifest pickup requires assignment and commits state, events and audit at
 
 test("reverse logistics inspection preserves evidence and advances status", async () => {
   const returnId = "33333333-3333-4333-8333-333333333333";
-  let metadata: unknown;
-  const client = {
+  const calls: string[] = []; let metadata: unknown;
+  const client = transactional({
     return: {
-      findUnique: async () => ({ id: returnId, status: "RECEIVED" }),
-      update: async ({ data }: { data: { status: string; events: { create: { metadata: unknown } } } }) => { metadata = data.events.create.metadata; return { id: returnId, status: data.status, requestedMinor: 1000n, approvedMinor: 1000n, createdAt: new Date("2026-08-14T00:00:00Z"), updatedAt: new Date("2026-08-14T00:00:00Z") }; }
+      findUnique: async () => ({ id: returnId, status: "RECEIVED", version: 3, events: [] }),
+      update: async ({ data }: { data: { status: string; events: { create: { metadata: unknown } } } }) => { calls.push("return"); metadata = data.events.create.metadata; return { id: returnId, status: data.status, version: 4, requestedMinor: 1000n, approvedMinor: 1000n, createdAt: new Date("2026-08-14T00:00:00Z"), updatedAt: new Date("2026-08-14T00:00:00Z") }; }
     },
-    auditLog: { create: async () => undefined }
-  } as unknown as PrismaClient;
-  const row = await new LogisticsService(client).reverseReturnAction(session, returnId, "inspected", { note: "Warehouse inspection completed", trackingNumber: null, pickupAt: null, inspection: { condition: "sellable" } });
+    auditLog: { create: async () => { calls.push("audit"); } }
+  }) as unknown as PrismaClient;
+  const row = await new LogisticsService(client).reverseReturnAction(session, returnId, "inspected", { note: "Warehouse inspection completed", trackingNumber: null, pickupAt: null, inspection: { condition: "sellable" }, expectedVersion: 3 });
   assert.equal(row.status, "INSPECTED");
   assert.deepEqual(metadata, { logisticsState: "inspected", trackingNumber: null, pickupAt: null, inspection: { condition: "sellable" } });
+  assert.deepEqual(calls, ["return", "audit"]);
+});
+
+test("reverse logistics rejects stale and out-of-order pickup actions", async () => {
+  const returnId = "33333333-3333-4333-8333-333333333333"; let writes = 0;
+  const scheduledEvent = { metadata: { logisticsState: "schedule_pickup" }, createdAt: new Date("2026-10-13T10:00:00.000Z") };
+  const stale = transactional({ return: { findUnique: async () => ({ id: returnId, status: "PICKUP_SCHEDULED", version: 4, events: [scheduledEvent] }), update: async () => { writes++; } } }) as unknown as PrismaClient;
+  await assert.rejects(() => new LogisticsService(stale).reverseReturnAction(session, returnId, "picked_up", { note: "Courier collected return", trackingNumber: "RET-1", pickupAt: null, inspection: null, expectedVersion: 3 }), /changed; refresh and retry/);
+  const outOfOrder = transactional({ return: { findUnique: async () => ({ id: returnId, status: "PICKUP_SCHEDULED", version: 4, events: [] }), update: async () => { writes++; } } }) as unknown as PrismaClient;
+  await assert.rejects(() => new LogisticsService(outOfOrder).reverseReturnAction(session, returnId, "in_transit", { note: "Return entered transit", trackingNumber: "RET-1", pickupAt: null, inspection: null, expectedVersion: 4 }), /before starting transit/);
+  assert.equal(writes, 0);
 });
 
 test("COD remittance requires reference and follows the shipment state machine", async () => {
