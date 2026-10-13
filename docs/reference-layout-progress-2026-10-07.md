@@ -288,3 +288,9 @@ The reference dashboard exposes additional criticality, ownership, SLA and finan
 The wishlist's bounded authenticated read no longer inherits the global automatic retry policy. A failed or stalled read now reaches the existing explicit `Try again` state after one bounded attempt instead of keeping the customer on a spinner through repeated 20-second attempts. No write is automatically replayed.
 
 Using the approved demo product, temporary stock and price subscriptions were created together against the configured database. Removing only the stock subscription returned the price subscription unchanged; removing the price subscription then left no test alert. This verifies the deployed independent-kind API behavior and cleanup. Chrome's local Firebase persistence remained stuck while loading authenticated screens after emulator restarts, so browser-rendered coexistence is still not claimed from this pass.
+
+## Seller fulfillment timeline
+
+The seller order detail now renders a responsive fulfillment timeline from the live shipment event array already returned by the API. It includes the package creation timestamp, then recorded courier status, description, optional location and occurrence time without inferring unrecorded milestones. An empty shipment history is explicit. The primary document action is renamed `Shipping documents` because its destination contains both the signed thermal parcel label and A4 packing slip exports.
+
+This improves reference parity for seller fulfillment evidence, but does not claim the legacy courier assignment, pickup scheduling, buyer messaging, delivery-exception or seller-side COD collection controls. Those require corresponding seller-authorized APIs rather than decorative buttons.

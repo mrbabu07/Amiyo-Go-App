@@ -52,7 +52,7 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
     <Pressable onPress={() => router.back()} style={styles.back}><Ionicons color={colors.primary} name="arrow-back" size={17} /><Text style={styles.link}>Vendor orders</Text></Pressable>
     <View style={[styles.hero, compact && styles.heroCompact]}>
       <View style={styles.flex}><View style={styles.statusRow}><Text style={styles.status}>{label(item.status)}</Text><Text style={styles.version}>v{item.version}</Text></View><Text accessibilityRole="header" style={styles.title}>{item.orderNumber}</Text><Text style={styles.heroText}>{item.shopName} package with {units} unit{units === 1 ? "" : "s"} ready for seller fulfillment.</Text></View>
-      <View style={[styles.heroActions, compact && styles.heroActionsCompact]}><HeroButton icon="document-text-outline" label="Packing slip" onPress={() => router.push(`/vendor/order/${item.id}/documents` as never)} primary /><HeroButton icon="refresh" label="Refresh" onPress={() => order.refetch()} /></View>
+      <View style={[styles.heroActions, compact && styles.heroActionsCompact]}><HeroButton icon="document-text-outline" label="Shipping documents" onPress={() => router.push(`/vendor/order/${item.id}/documents` as never)} primary /><HeroButton icon="refresh" label="Refresh" onPress={() => order.refetch()} /></View>
     </View>
     {error ? <Text style={styles.error}>{error}</Text> : null}
     <View style={styles.metrics}><Metric icon="cube-outline" label="Units" value={String(units)} /><Metric icon="cash-outline" label="Package total" value={money(item.total.amountMinor, item.total.currency)} /><Metric icon="card-outline" label="Payment" value={item.payment ? `${item.payment.method} - ${item.payment.status}` : "Pending"} /></View>
@@ -68,14 +68,20 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
       <View style={[styles.column, compact && styles.full]}><Panel title="Package totals"><Detail label="Subtotal" value={money(item.subtotal.amountMinor, item.subtotal.currency)} /><Detail label="Discount" value={`- ${money(item.discount.amountMinor, item.discount.currency)}`} /><Detail label="Delivery" value={money(item.delivery.amountMinor, item.delivery.currency)} /><Detail label="Seller package total" value={money(item.total.amountMinor, item.total.currency)} strong /></Panel></View>
       <View style={[styles.column, compact && styles.full]}><Panel title="Shipment status" meta={item.dispatchStatus ?? "Dispatch not requested"}><Detail label="Provider" value={item.shipment?.provider ?? "Amiyo delivery"} /><Detail label="Tracking" value={item.shipment?.trackingNumber ?? "At pickup"} /><Detail label="Shipment" value={item.shipment?.status ? label(item.shipment.status) : "Not created"} /></Panel></View>
     </View>
+    <Panel title="Fulfillment timeline" meta="Recorded package and courier events only.">
+      <TimelineEvent status="PACKAGE_CREATED" description="Seller package created" occurredAt={item.createdAt} first last={!item.shipment?.events.length} />
+      {item.shipment?.events.map((event, index) => <TimelineEvent key={event.id} status={event.status} description={event.description || "No event note recorded"} location={event.location} occurredAt={event.occurredAt} last={index === item.shipment!.events.length - 1} />)}
+      {!item.shipment?.events.length ? <Text style={styles.timelineEmpty}>No courier event has been recorded yet.</Text> : null}
+    </Panel>
     {actions[item.status]?.length ? <View style={styles.actions}>{actions[item.status]!.map((action) => <Pressable disabled={Boolean(busy)} key={action.status} onPress={() => transition(action.status)} style={[styles.primary, action.danger && styles.danger, busy && styles.disabled]}>{busy === action.status ? <ActivityIndicator color="#fff" /> : <><Ionicons name={action.status === "READY_TO_SHIP" ? "cube-outline" : "checkmark-circle-outline"} size={19} color="#fff" /><Text style={styles.primaryText}>{action.label}</Text></>}</Pressable>)}</View> : <Text style={styles.notice}>No seller action is required at this stage.</Text>}
   </ScrollView></SafeAreaView>;
 }
 
-function HeroButton({ icon, label: text, onPress, primary }: { icon: string; label: string; onPress(): void; primary?: boolean }) { return <Pressable onPress={onPress} style={[styles.heroButton, primary && styles.heroButtonPrimary]}><Ionicons color={primary ? "#fff" : colors.primary} name={icon as never} size={17} /><Text style={[styles.heroButtonText, primary && styles.light]}>{text}</Text></Pressable>; }
+function HeroButton({ icon, label: text, onPress, primary }: { icon: string; label: string; onPress(): void; primary?: boolean }) { return <Pressable accessibilityRole="button" onPress={onPress} style={[styles.heroButton, primary && styles.heroButtonPrimary]}><Ionicons color={primary ? "#fff" : colors.primary} name={icon as never} size={17} /><Text style={[styles.heroButtonText, primary && styles.light]}>{text}</Text></Pressable>; }
 function Panel({ children, meta, title }: { children: ReactNode; meta?: string; title: string }) { return <View style={styles.card}><View><Text style={styles.sectionTitle}>{title}</Text>{meta ? <Text style={styles.muted}>{meta}</Text> : null}</View>{children}</View>; }
 function Detail({ label: title, strong, value }: { label: string; strong?: boolean; value: string }) { return <View style={styles.detail}><Text style={styles.detailLabel}>{title}</Text><Text selectable style={[styles.value, strong && styles.strong]}>{value}</Text></View>; }
 function Metric({ icon, label: title, value }: { icon: string; label: string; value: string }) { return <View style={styles.metric}><View style={styles.metricIcon}><Ionicons color={colors.primary} name={icon as never} size={19} /></View><View style={styles.flex}><Text numberOfLines={1} adjustsFontSizeToFit style={styles.metricValue}>{value}</Text><Text style={styles.muted}>{title}</Text></View></View>; }
+function TimelineEvent({ description, first, last, location, occurredAt, status }: { description: string; first?: boolean; last: boolean; location?: string | null; occurredAt: string; status: string }) { return <View style={styles.timelineRow}><View style={styles.timelineRail}><View style={[styles.timelineDot, first && styles.timelineDotFirst]} />{!last ? <View style={styles.timelineLine} /> : null}</View><View style={styles.timelineCopy}><View style={styles.timelineHeading}><Text style={styles.timelineStatus}>{label(status)}</Text><Text style={styles.timelineDate}>{new Date(occurredAt).toLocaleString("en-BD")}</Text></View><Text style={styles.timelineDescription}>{description}</Text>{location ? <Text style={styles.timelineLocation}>{location}</Text> : null}</View></View>; }
 function address(value: NonNullable<VendorOrderDetail["deliveryAddress"]>) { return [value.recipientName, value.line1, value.line2, value.unionName, value.upazila, value.district, value.division, value.postalCode].filter(Boolean).join(", "); }
 
 const styles = StyleSheet.create({
@@ -125,6 +131,18 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.5 },
   primaryText: { color: "#fff", fontWeight: "700" },
   notice: { backgroundColor: colors.primarySoft, borderRadius: radius.md, color: colors.primaryDark, padding: spacing.md },
+  timelineRow: { alignItems: "stretch", flexDirection: "row", gap: spacing.sm },
+  timelineRail: { alignItems: "center", width: 20 },
+  timelineDot: { backgroundColor: colors.accent, borderColor: colors.surface, borderRadius: radius.pill, borderWidth: 3, height: 14, marginTop: 3, width: 14 },
+  timelineDotFirst: { backgroundColor: colors.primary },
+  timelineLine: { backgroundColor: colors.border, flex: 1, marginVertical: 2, width: 2 },
+  timelineCopy: { borderBottomColor: colors.border, borderBottomWidth: 1, flex: 1, gap: 3, paddingBottom: spacing.md },
+  timelineHeading: { alignItems: "flex-start", flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, justifyContent: "space-between" },
+  timelineStatus: { color: colors.text, fontSize: 12, fontWeight: "700" },
+  timelineDate: { color: colors.muted, fontSize: 10 },
+  timelineDescription: { color: colors.text, fontSize: 11, lineHeight: 17 },
+  timelineLocation: { color: colors.accent, fontSize: 10, fontWeight: "600" },
+  timelineEmpty: { color: colors.muted, fontSize: 11, paddingLeft: 28 },
   error: { backgroundColor: "#fef2f2", borderRadius: radius.md, color: colors.danger, padding: spacing.md },
   center: { alignItems: "center", backgroundColor: colors.background, flex: 1, gap: spacing.md, justifyContent: "center", padding: spacing.xl }
 });
