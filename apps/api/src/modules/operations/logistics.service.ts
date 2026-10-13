@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient, type ReturnStatus, type ShipmentStatus } from "@prisma/client";
 import type { CodRemittanceInput, CourierPartnerInput, DeliveryFeeRuleInput, FailedDeliveryReattempt, FailedDeliveryReturn, LogisticsAssignmentInput, LogisticsCodStateInput, LogisticsDeliveryAttempt, LogisticsManifestPickup, LogisticsNote, LogisticsReturnAction, LogisticsShipmentTransition, LogisticsTrackingEvent, LogisticsZoneInput, PickupStaffInput, Session } from "@amiyo/contracts";
+import { withSerializableTransaction } from "../../infrastructure/database/transaction.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
 
 const json = (value: unknown) => JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
@@ -94,22 +95,24 @@ export class LogisticsService {
   async assignShipment(session: Session, shipmentId: string, input: LogisticsAssignmentInput) {
     requireOperator(session, true);
     if (!input.courierPartnerId && !input.pickupStaffId) throw new ApiProblem(400, "ASSIGNMENT_TARGET_REQUIRED", "Select an active courier or pickup staff member");
-    const shipment = await this.client.shipment.findUnique({ where: { id: shipmentId }, include: { assignment: true } });
-    if (!shipment) throw new ApiProblem(404, "SHIPMENT_NOT_FOUND", "Shipment not found");
-    if (!["PENDING", "READY_TO_SHIP", "FAILED"].includes(shipment.status)) throw new ApiProblem(409, "ASSIGNMENT_NOT_ALLOWED", `Cannot assign a ${shipment.status.toLowerCase()} parcel`);
-    if (shipment.assignment && input.expectedVersion === null) throw new ApiProblem(409, "ASSIGNMENT_VERSION_REQUIRED", "Refresh this parcel before changing its assignment");
-    if (input.expectedVersion !== null && shipment.assignment?.version !== input.expectedVersion) throw new ApiProblem(409, "ASSIGNMENT_VERSION_CONFLICT", "Parcel assignment changed; refresh and retry");
-    const [courier, pickupStaff] = await Promise.all([
-      input.courierPartnerId ? this.client.courierPartner.findFirst({ where: { id: input.courierPartnerId, status: "active" } }) : null,
-      input.pickupStaffId ? this.client.pickupStaff.findFirst({ where: { id: input.pickupStaffId, status: "active" } }) : null
-    ]);
-    if (input.courierPartnerId && !courier) throw new ApiProblem(409, "COURIER_UNAVAILABLE", "The selected courier is not active");
-    if (input.pickupStaffId && !pickupStaff) throw new ApiProblem(409, "PICKUP_STAFF_UNAVAILABLE", "The selected pickup staff member is not active");
-    const data = { courierPartnerId: input.courierPartnerId, pickupStaffId: input.pickupStaffId, bookingMode: input.bookingMode, trackingNumber: input.trackingNumber, pickupDate: input.pickupDate ? new Date(input.pickupDate) : null, pickupWindow: input.pickupWindow, estimatedDeliveryDate: input.estimatedDeliveryDate ? new Date(input.estimatedDeliveryDate) : null, note: input.note };
-    const assignment = await this.client.logisticsAssignment.upsert({ where: { shipmentId }, create: { shipmentId, ...data }, update: { ...data, version: { increment: 1 } }, include: { courierPartner: true, pickupStaff: true } });
-    await this.client.shipment.update({ where: { id: shipmentId }, data: { provider: assignment.courierPartner?.provider ?? shipment.provider, trackingNumber: input.trackingNumber ?? shipment.trackingNumber } });
-    await this.audit(session, "logistics.shipment.assigned", "shipment", shipmentId, shipment.assignment, assignment);
-    return assignment;
+    return withSerializableTransaction(this.client, async (transaction) => {
+      const shipment = await transaction.shipment.findUnique({ where: { id: shipmentId }, include: { assignment: true } });
+      if (!shipment) throw new ApiProblem(404, "SHIPMENT_NOT_FOUND", "Shipment not found");
+      if (!["PENDING", "READY_TO_SHIP", "FAILED"].includes(shipment.status)) throw new ApiProblem(409, "ASSIGNMENT_NOT_ALLOWED", `Cannot assign a ${shipment.status.toLowerCase()} parcel`);
+      if (shipment.assignment && input.expectedVersion === null) throw new ApiProblem(409, "ASSIGNMENT_VERSION_REQUIRED", "Refresh this parcel before changing its assignment");
+      if (input.expectedVersion !== null && shipment.assignment?.version !== input.expectedVersion) throw new ApiProblem(409, "ASSIGNMENT_VERSION_CONFLICT", "Parcel assignment changed; refresh and retry");
+      const [courier, pickupStaff] = await Promise.all([
+        input.courierPartnerId ? transaction.courierPartner.findFirst({ where: { id: input.courierPartnerId, status: "active" } }) : null,
+        input.pickupStaffId ? transaction.pickupStaff.findFirst({ where: { id: input.pickupStaffId, status: "active" } }) : null
+      ]);
+      if (input.courierPartnerId && !courier) throw new ApiProblem(409, "COURIER_UNAVAILABLE", "The selected courier is not active");
+      if (input.pickupStaffId && !pickupStaff) throw new ApiProblem(409, "PICKUP_STAFF_UNAVAILABLE", "The selected pickup staff member is not active");
+      const data = { courierPartnerId: input.courierPartnerId, pickupStaffId: input.pickupStaffId, bookingMode: input.bookingMode, trackingNumber: input.trackingNumber, pickupDate: input.pickupDate ? new Date(input.pickupDate) : null, pickupWindow: input.pickupWindow, estimatedDeliveryDate: input.estimatedDeliveryDate ? new Date(input.estimatedDeliveryDate) : null, note: input.note };
+      const assignment = await transaction.logisticsAssignment.upsert({ where: { shipmentId }, create: { shipmentId, ...data }, update: { ...data, version: { increment: 1 } }, include: { courierPartner: true, pickupStaff: true } });
+      await transaction.shipment.update({ where: { id: shipmentId }, data: { provider: assignment.courierPartner?.provider ?? shipment.provider, trackingNumber: input.trackingNumber ?? shipment.trackingNumber } });
+      await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "admin", action: "logistics.shipment.assigned", resourceType: "shipment", resourceId: shipmentId, before: json(shipment.assignment), after: json(assignment) } });
+      return assignment;
+    });
   }
   async syncTrackingEvent(session: Session, input: LogisticsTrackingEvent) { requireOperator(session, true); const shipment = await this.client.shipment.findUnique({ where: { id: input.shipmentId } }); if (!shipment) throw new ApiProblem(404, "SHIPMENT_NOT_FOUND", "Shipment not found"); if (input.status !== shipment.status && !transitions[shipment.status].includes(input.status)) throw new ApiProblem(409, "SHIPMENT_TRANSITION_INVALID", `Cannot move ${shipment.status} to ${input.status}`); const row = await this.client.shipment.update({ where: { id: input.shipmentId }, data: { status: input.status, ...(input.status === "PICKED_UP" ? { shippedAt: new Date(input.occurredAt) } : {}), ...(input.status === "DELIVERED" ? { deliveredAt: new Date(input.occurredAt) } : {}), events: { create: { status: input.status, description: input.description, location: input.location, providerPayload: json({ providerEventId: input.providerEventId }), occurredAt: new Date(input.occurredAt) } } } }); await this.audit(session, "logistics.tracking.synced", "shipment", input.shipmentId, { status: shipment.status }, input); return row; }
   async transitionShipment(session: Session, shipmentId: string, input: LogisticsShipmentTransition) { requireOperator(session, true); const shipment = await this.client.shipment.findUnique({ where: { id: shipmentId } }); if (!shipment) throw new ApiProblem(404, "SHIPMENT_NOT_FOUND", "Shipment not found"); if (!transitions[shipment.status].includes(input.status)) throw new ApiProblem(409, "SHIPMENT_TRANSITION_INVALID", `Cannot move ${shipment.status} to ${input.status}`); const row = await this.client.shipment.update({ where: { id: shipmentId }, data: { status: input.status, ...(input.status === "PICKED_UP" ? { shippedAt: new Date() } : {}), ...(input.status === "DELIVERED" ? { deliveredAt: new Date() } : {}), events: { create: { status: input.status, description: input.note, occurredAt: new Date() } } } }); await this.audit(session, "logistics.shipment.transitioned", "shipment", shipmentId, { status: shipment.status }, { status: row.status, note: input.note }); return row; }

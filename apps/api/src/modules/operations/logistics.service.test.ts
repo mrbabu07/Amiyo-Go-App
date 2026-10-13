@@ -6,6 +6,7 @@ import { LogisticsService, logisticsShipmentDto } from "./logistics.service.js";
 
 const shipmentId = "11111111-1111-4111-8111-111111111111";
 const session: Session = { principal: { userId: "22222222-2222-4222-8222-222222222222", roles: ["OPERATIONS_ADMIN"], vendorIds: [] }, status: "ACTIVE", email: null, phone: null, profile: { firstName: null, lastName: null, displayName: "Operator", avatarStorageKey: null, locale: "en", currency: "BDT" }, permissions: ["admin:read", "admin:manage"], vendorMemberships: [] };
+function transactional<T extends object>(client: T) { return Object.assign(client, { $transaction: async (operation: (transaction: T) => Promise<unknown>) => operation(client) }); }
 
 test("logistics shipment transition records event and audit", async () => {
   const calls: string[] = [];
@@ -23,28 +24,44 @@ test("logistics shipment transition records event and audit", async () => {
 
 test("courier assignment rejects stale versions before changing the parcel", async () => {
   let writes = 0;
-  const client = { shipment: { findUnique: async () => ({ id: shipmentId, status: "READY_TO_SHIP", provider: null, trackingNumber: null, assignment: { version: 3 } }), update: async () => { writes++; } }, logisticsAssignment: { upsert: async () => { writes++; } } } as unknown as PrismaClient;
+  const client = transactional({ shipment: { findUnique: async () => ({ id: shipmentId, status: "READY_TO_SHIP", provider: null, trackingNumber: null, assignment: { version: 3 } }), update: async () => { writes++; } }, logisticsAssignment: { upsert: async () => { writes++; } } }) as unknown as PrismaClient;
   await assert.rejects(() => new LogisticsService(client).assignShipment(session, shipmentId, { courierPartnerId: shipmentId, pickupStaffId: null, bookingMode: "manual", trackingNumber: null, pickupDate: null, pickupWindow: null, estimatedDeliveryDate: null, note: null, expectedVersion: 2 }), /changed; refresh and retry/);
   assert.equal(writes, 0);
 });
 
 test("courier assignment rejects terminal parcels and inactive resources", async () => {
   const input = { courierPartnerId: shipmentId, pickupStaffId: null, bookingMode: "manual" as const, trackingNumber: null, pickupDate: null, pickupWindow: null, estimatedDeliveryDate: null, note: null, expectedVersion: null };
-  const terminal = { shipment: { findUnique: async () => ({ id: shipmentId, status: "DELIVERED", assignment: null }) } } as unknown as PrismaClient;
+  const terminal = transactional({ shipment: { findUnique: async () => ({ id: shipmentId, status: "DELIVERED", assignment: null }) } }) as unknown as PrismaClient;
   await assert.rejects(() => new LogisticsService(terminal).assignShipment(session, shipmentId, input), /Cannot assign a delivered parcel/);
   let writes = 0;
-  const inactive = {
+  const inactive = transactional({
     shipment: { findUnique: async () => ({ id: shipmentId, status: "READY_TO_SHIP", provider: null, trackingNumber: null, assignment: null }), update: async () => { writes++; } },
     courierPartner: { findFirst: async () => null },
     logisticsAssignment: { upsert: async () => { writes++; } }
-  } as unknown as PrismaClient;
+  }) as unknown as PrismaClient;
   await assert.rejects(() => new LogisticsService(inactive).assignShipment(session, shipmentId, input), /selected courier is not active/);
   assert.equal(writes, 0);
 });
 
 test("existing courier assignment requires an explicit current version", async () => {
-  const client = { shipment: { findUnique: async () => ({ id: shipmentId, status: "READY_TO_SHIP", assignment: { version: 4 } }) } } as unknown as PrismaClient;
+  const client = transactional({ shipment: { findUnique: async () => ({ id: shipmentId, status: "READY_TO_SHIP", assignment: { version: 4 } }) } }) as unknown as PrismaClient;
   await assert.rejects(() => new LogisticsService(client).assignShipment(session, shipmentId, { courierPartnerId: shipmentId, pickupStaffId: null, bookingMode: "manual", trackingNumber: null, pickupDate: null, pickupWindow: null, estimatedDeliveryDate: null, note: null, expectedVersion: null }), /Refresh this parcel/);
+});
+
+test("courier assignment commits assignment, parcel projection and audit in one transaction", async () => {
+  const calls: string[] = [];
+  const client = transactional({
+    shipment: {
+      findUnique: async () => ({ id: shipmentId, status: "READY_TO_SHIP", provider: null, trackingNumber: null, assignment: null }),
+      update: async ({ data }: { data: { provider: string; trackingNumber: string } }) => { calls.push("shipment"); assert.equal(data.provider, "manual-courier"); assert.equal(data.trackingNumber, "TRACK-1"); }
+    },
+    courierPartner: { findFirst: async () => ({ id: shipmentId, status: "active" }) },
+    logisticsAssignment: { upsert: async () => { calls.push("assignment"); return { id: "assignment", version: 1, courierPartner: { provider: "manual-courier" }, pickupStaff: null }; } },
+    auditLog: { create: async ({ data }: { data: { action: string } }) => { calls.push("audit"); assert.equal(data.action, "logistics.shipment.assigned"); } }
+  }) as unknown as PrismaClient;
+  const result = await new LogisticsService(client).assignShipment(session, shipmentId, { courierPartnerId: shipmentId, pickupStaffId: null, bookingMode: "manual", trackingNumber: "TRACK-1", pickupDate: null, pickupWindow: null, estimatedDeliveryDate: null, note: null, expectedVersion: null });
+  assert.equal(result.version, 1);
+  assert.deepEqual(calls, ["assignment", "shipment", "audit"]);
 });
 
 test("logistics management rejects non-operations admins", async () => {
