@@ -85,7 +85,8 @@ export const logisticsNoteSchema = z.object({ note: z.string().trim().min(2).max
 export const logisticsTrackingEventSchema = z.object({
   shipmentId: uuidSchema, status: shipmentStatusSchema, description: z.string().trim().min(2).max(500),
   location: z.string().trim().max(200).nullable().default(null), occurredAt: timestampSchema,
-  providerEventId: z.string().trim().max(160).nullable().default(null)
+  providerEventId: z.string().trim().max(160).nullable().default(null), codCollected: z.boolean().default(false),
+  expectedAssignmentVersion: z.number().int().positive().nullable().default(null)
 });
 export const logisticsManifestPickupSchema = z.object({ shipmentIds: z.array(uuidSchema).min(1).max(250), note: z.string().trim().min(2).max(1000) });
 export const logisticsReturnActionSchema = z.object({

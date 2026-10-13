@@ -31,6 +31,29 @@ test("shipment transition rejects missing and stale assignments without writes",
   assert.equal(writes, 0);
 });
 
+test("tracking failure commits parcel, exception and audit atomically", async () => {
+  const calls: string[] = [];
+  const assignment = { version: 2, courierPartnerId: shipmentId, pickupStaffId: null, courierPartner: { status: "active", name: "Courier" }, pickupStaff: null };
+  const client = transactional({
+    shipment: { findUnique: async () => ({ id: shipmentId, status: "IN_TRANSIT", codState: "cod_pending", provider: "manual", failedDelivery: null, assignment, vendorOrder: { order: { payments: [{ method: "COD" }] } } }), update: async ({ data }: { data: { status: string } }) => { calls.push("shipment"); return { id: shipmentId, status: data.status }; } },
+    failedDeliveryRecord: { upsert: async () => { calls.push("failed-delivery"); } },
+    auditLog: { create: async () => { calls.push("audit"); } }
+  }) as unknown as PrismaClient;
+  const row = await new LogisticsService(client).syncTrackingEvent(session, { shipmentId, status: "FAILED", description: "Customer unavailable", location: "Dhaka", occurredAt: "2026-10-13T12:00:00.000Z", providerEventId: "evt-failed", codCollected: false, expectedAssignmentVersion: 2 });
+  assert.equal(row.status, "FAILED");
+  assert.deepEqual(calls, ["shipment", "failed-delivery", "audit"]);
+});
+
+test("tracking delivery rejects stale assignment and missing COD evidence", async () => {
+  let writes = 0;
+  const assignment = { version: 2, courierPartnerId: shipmentId, pickupStaffId: null, courierPartner: { status: "active", name: "Courier" }, pickupStaff: null };
+  const client = transactional({ shipment: { findUnique: async () => ({ id: shipmentId, status: "IN_TRANSIT", codState: "cod_pending", provider: "manual", failedDelivery: null, assignment, vendorOrder: { order: { payments: [{ method: "COD" }] } } }), update: async () => { writes++; } } }) as unknown as PrismaClient;
+  const base = { shipmentId, status: "DELIVERED" as const, description: "Delivered", location: "Dhaka", occurredAt: "2026-10-13T12:00:00.000Z", providerEventId: "evt-delivered", codCollected: true };
+  await assert.rejects(() => new LogisticsService(client).syncTrackingEvent(session, { ...base, expectedAssignmentVersion: 1 }), /changed; refresh and retry/);
+  await assert.rejects(() => new LogisticsService(client).syncTrackingEvent(session, { ...base, codCollected: false, expectedAssignmentVersion: 2 }), /Confirm COD collection/);
+  assert.equal(writes, 0);
+});
+
 test("COD delivery commits parcel, collection state and audit atomically", async () => {
   const calls: string[] = [];
   const assignment = { version: 4, courierPartnerId: shipmentId, pickupStaffId: null, courierPartner: { status: "active", name: "Courier" }, pickupStaff: null };

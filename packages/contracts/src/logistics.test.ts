@@ -5,7 +5,9 @@ import { codRemittanceInputSchema, logisticsCodStateInputSchema, logisticsDelive
 const shipmentId = "11111111-1111-4111-8111-111111111111";
 
 test("tracking events require valid state and operational evidence", () => {
-  assert.equal(logisticsTrackingEventSchema.safeParse({ shipmentId, status: "IN_TRANSIT", description: "Reached Dhaka hub", location: "Dhaka", occurredAt: "2026-08-14T12:00:00.000Z", providerEventId: "evt-1" }).success, true);
+  const parsed = logisticsTrackingEventSchema.parse({ shipmentId, status: "IN_TRANSIT", description: "Reached Dhaka hub", location: "Dhaka", occurredAt: "2026-08-14T12:00:00.000Z", providerEventId: "evt-1", expectedAssignmentVersion: 2 });
+  assert.equal(parsed.expectedAssignmentVersion, 2);
+  assert.equal(parsed.codCollected, false);
   assert.equal(logisticsTrackingEventSchema.safeParse({ shipmentId, status: "UNKNOWN", description: "x", occurredAt: "bad" }).success, false);
 });
 

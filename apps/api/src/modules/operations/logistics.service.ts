@@ -114,7 +114,31 @@ export class LogisticsService {
       return assignment;
     });
   }
-  async syncTrackingEvent(session: Session, input: LogisticsTrackingEvent) { requireOperator(session, true); const shipment = await this.client.shipment.findUnique({ where: { id: input.shipmentId } }); if (!shipment) throw new ApiProblem(404, "SHIPMENT_NOT_FOUND", "Shipment not found"); if (input.status !== shipment.status && !transitions[shipment.status].includes(input.status)) throw new ApiProblem(409, "SHIPMENT_TRANSITION_INVALID", `Cannot move ${shipment.status} to ${input.status}`); const row = await this.client.shipment.update({ where: { id: input.shipmentId }, data: { status: input.status, ...(input.status === "PICKED_UP" ? { shippedAt: new Date(input.occurredAt) } : {}), ...(input.status === "DELIVERED" ? { deliveredAt: new Date(input.occurredAt) } : {}), events: { create: { status: input.status, description: input.description, location: input.location, providerPayload: json({ providerEventId: input.providerEventId }), occurredAt: new Date(input.occurredAt) } } } }); await this.audit(session, "logistics.tracking.synced", "shipment", input.shipmentId, { status: shipment.status }, input); return row; }
+  async syncTrackingEvent(session: Session, input: LogisticsTrackingEvent) {
+    requireOperator(session, true);
+    return withSerializableTransaction(this.client, async (transaction) => {
+      const shipment = await transaction.shipment.findUnique({ where: { id: input.shipmentId }, include: { failedDelivery: true, assignment: { include: { courierPartner: true, pickupStaff: true } }, vendorOrder: { include: { order: { include: { payments: { orderBy: { createdAt: "desc" }, take: 1 } } } } } } });
+      if (!shipment) throw new ApiProblem(404, "SHIPMENT_NOT_FOUND", "Shipment not found");
+      const stateChanged = input.status !== shipment.status;
+      if (stateChanged && !transitions[shipment.status].includes(input.status)) throw new ApiProblem(409, "SHIPMENT_TRANSITION_INVALID", `Cannot move ${shipment.status} to ${input.status}`);
+      if (stateChanged && !["PENDING", "READY_TO_SHIP"].includes(input.status)) {
+        if (!shipment.assignment || (!shipment.assignment.courierPartnerId && !shipment.assignment.pickupStaffId)) throw new ApiProblem(409, "SHIPMENT_ASSIGNMENT_REQUIRED", "An active courier or pickup staff assignment is required");
+        if (input.expectedAssignmentVersion === null) throw new ApiProblem(409, "ASSIGNMENT_VERSION_REQUIRED", "Refresh this parcel before synchronizing its state");
+        if (shipment.assignment.version !== input.expectedAssignmentVersion) throw new ApiProblem(409, "ASSIGNMENT_VERSION_CONFLICT", "Parcel assignment changed; refresh and retry");
+        if (shipment.assignment.courierPartnerId && shipment.assignment.courierPartner?.status !== "active") throw new ApiProblem(409, "COURIER_UNAVAILABLE", "The assigned courier is no longer active");
+        if (shipment.assignment.pickupStaffId && shipment.assignment.pickupStaff?.status !== "active") throw new ApiProblem(409, "PICKUP_STAFF_UNAVAILABLE", "The assigned pickup staff member is no longer active");
+      }
+      const isCod = shipment.vendorOrder.order.payments[0]?.method === "COD";
+      if (input.status === "DELIVERED" && isCod && !input.codCollected) throw new ApiProblem(409, "COD_COLLECTION_REQUIRED", "Confirm COD collection before synchronizing delivery");
+      if (!isCod && input.codCollected) throw new ApiProblem(400, "COD_COLLECTION_INVALID", "This parcel does not use cash on delivery");
+      const occurredAt = new Date(input.occurredAt);
+      const row = await transaction.shipment.update({ where: { id: input.shipmentId }, data: { status: input.status, ...(input.status === "PICKED_UP" ? { shippedAt: occurredAt } : {}), ...(input.status === "DELIVERED" ? { deliveredAt: occurredAt, ...(isCod ? { codState: "cod_collected", codDisputeReason: null } : {}) } : {}), events: { create: { status: input.status, description: input.description, location: input.location, providerPayload: json({ providerEventId: input.providerEventId, codCollected: input.codCollected, assignmentVersion: shipment.assignment?.version ?? null }), occurredAt } } } });
+      if (input.status === "FAILED") await transaction.failedDeliveryRecord.upsert({ where: { shipmentId: input.shipmentId }, create: { shipmentId: input.shipmentId, courierName: shipment.assignment?.courierPartner?.name ?? shipment.provider, reason: input.description, resolution: "pending" }, update: { reason: input.description, attemptCount: { increment: 1 }, resolution: "pending" } });
+      else if (input.status === "DELIVERED" && shipment.failedDelivery) await transaction.failedDeliveryRecord.update({ where: { shipmentId: input.shipmentId }, data: { resolution: "delivered" } });
+      await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "admin", action: "logistics.tracking.synced", resourceType: "shipment", resourceId: input.shipmentId, before: json({ status: shipment.status, codState: shipment.codState, assignmentVersion: shipment.assignment?.version ?? null }), after: json({ ...input, codState: isCod && input.status === "DELIVERED" ? "cod_collected" : shipment.codState }) } });
+      return row;
+    });
+  }
   async transitionShipment(session: Session, shipmentId: string, input: LogisticsShipmentTransition) {
     requireOperator(session, true);
     return withSerializableTransaction(this.client, async (transaction) => {
