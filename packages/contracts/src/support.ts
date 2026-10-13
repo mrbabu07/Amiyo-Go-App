@@ -5,7 +5,9 @@ export const supportCategorySchema = z.enum(["ORDER", "DELIVERY", "PAYMENT", "RE
 export const supportPrioritySchema = z.enum(["normal", "high", "urgent"]);
 export const supportStatusSchema = z.enum(["open", "in_progress", "resolved", "closed"]);
 
-export const supportAttachmentSchema = z.object({ storageKey: z.string().trim().min(3).max(500), name: z.string().trim().min(1).max(180), mimeType: z.enum(["image/jpeg", "image/png", "image/webp", "application/pdf"]) });
+export const supportAttachmentInputSchema = z.object({ storageKey: z.string().trim().min(3).max(500), name: z.string().trim().min(1).max(180), mimeType: z.enum(["image/jpeg", "image/png", "image/webp", "application/pdf"]) });
+export const supportAttachmentSchema = z.object({ id: uuidSchema, name: z.string().trim().min(1).max(180), mimeType: z.enum(["image/jpeg", "image/png", "image/webp", "application/pdf"]) });
+export const supportAttachmentAccessSchema = z.object({ url: z.string().url().startsWith("https://"), expiresAt: timestampSchema });
 
 export const createSupportTicketSchema = z.object({
   subject: z.string().trim().min(3).max(160),
@@ -14,10 +16,10 @@ export const createSupportTicketSchema = z.object({
   orderId: uuidSchema.nullable().optional(),
   returnId: uuidSchema.nullable().optional(),
   message: z.string().trim().min(5).max(3000),
-  attachments: z.array(supportAttachmentSchema).max(5).default([])
+  attachments: z.array(supportAttachmentInputSchema).max(5).default([])
 });
 
-export const supportMessageInputSchema = z.object({ body: z.string().trim().min(1).max(3000), attachments: z.array(supportAttachmentSchema).max(5).default([]) });
+export const supportMessageInputSchema = z.object({ body: z.string().trim().min(1).max(3000), attachments: z.array(supportAttachmentInputSchema).max(5).default([]) });
 export const supportTicketStatusInputSchema = z.object({
   status: supportStatusSchema,
   note: z.string().trim().min(1).max(3000).optional()

@@ -25,7 +25,7 @@ type TicketRow = Awaited<ReturnType<PrismaClient["supportTicket"]["findFirstOrTh
 type Attachment = { storageKey: string; name: string; mimeType: "image/jpeg" | "image/png" | "image/webp" | "application/pdf" };
 function attachments(value: Prisma.JsonValue): Attachment[] { if (!Array.isArray(value)) return []; return value.filter((item): item is Attachment => Boolean(item && typeof item === "object" && !Array.isArray(item) && typeof item.storageKey === "string" && typeof item.name === "string" && typeof item.mimeType === "string")); }
 
-function present(row: TicketRow) {
+function present(row: TicketRow, uploads: Map<string, { id: string; originalName: string; mimeType: string }>) {
   return {
     id: row.id,
     userId: row.userId,
@@ -38,7 +38,10 @@ function present(row: TicketRow) {
     assignedTo: row.assignedTo,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
-    messages: row.messages.map((message) => ({ ...message, attachments: attachments(message.attachments), createdAt: message.createdAt.toISOString() }))
+    messages: row.messages.map((message) => ({ ...message, attachments: attachments(message.attachments).flatMap((file) => {
+      const upload = uploads.get(file.storageKey);
+      return upload ? [{ id: upload.id, name: upload.originalName, mimeType: upload.mimeType }] : [];
+    }), createdAt: message.createdAt.toISOString() }))
   };
 }
 
@@ -48,7 +51,7 @@ export class SupportService {
   async listMine(session: Session) {
     requireSupport(session);
     const rows = await this.client.supportTicket.findMany({ where: { userId: session.principal.userId }, include: ticketInclude, orderBy: { updatedAt: "desc" }, take: 100 });
-    return rows.map((row) => present(row));
+    return this.presentRows(rows);
   }
 
   async create(session: Session, input: CreateSupportTicket) {
@@ -78,7 +81,7 @@ export class SupportService {
       },
       include: ticketInclude
     });
-    return present(row);
+    return (await this.presentRows([row]))[0]!;
   }
 
   async addMessage(session: Session, ticketId: string, input: SupportMessageInput) {
@@ -90,13 +93,13 @@ export class SupportService {
     const verified = await this.verifiedAttachments(session.principal.userId, input.attachments);
     await this.client.supportMessage.create({ data: { ticketId, senderId: session.principal.userId, body: input.body, attachments: verified } });
     const updated = await this.client.supportTicket.update({ where: { id: ticketId }, data: { updatedAt: new Date() }, include: ticketInclude });
-    return present(updated);
+    return (await this.presentRows([updated]))[0]!;
   }
 
   async listAdmin(session: Session) {
     requireSupportStaff(session);
     const rows = await this.client.supportTicket.findMany({ include: ticketInclude, orderBy: [{ priority: "desc" }, { updatedAt: "desc" }], take: 200 });
-    return rows.map((row) => present(row));
+    return this.presentRows(rows);
   }
 
   async updateStatus(session: Session, ticketId: string, input: SupportTicketStatusInput) {
@@ -112,7 +115,14 @@ export class SupportService {
       },
       include: ticketInclude
     });
-    return present(updated);
+    return (await this.presentRows([updated]))[0]!;
+  }
+
+  private async presentRows(rows: TicketRow[]) {
+    const keys = [...new Set(rows.flatMap((row) => row.messages.flatMap((message) => attachments(message.attachments).map((file) => file.storageKey))))];
+    const uploads = keys.length ? await this.client.mediaUpload.findMany({ where: { storageKey: { in: keys }, purpose: "support", visibility: "private", status: { in: ["uploaded", "processing", "ready"] } }, select: { id: true, storageKey: true, originalName: true, mimeType: true } }) : [];
+    const uploadMap = new Map(uploads.map((upload) => [upload.storageKey, upload]));
+    return rows.map((row) => present(row, uploadMap));
   }
 
   private async verifiedAttachments(userId: string, values: Attachment[]) {

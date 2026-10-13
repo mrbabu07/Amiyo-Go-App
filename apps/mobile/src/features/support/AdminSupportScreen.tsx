@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
-import { getAdminTickets, replyToTicket, updateTicketStatus } from "./support.api";
+import { accessSupportAttachment, getAdminTickets, replyToTicket, updateTicketStatus } from "./support.api";
 
 const statuses = ["open", "in_progress", "resolved", "closed"] as const;
 
@@ -21,6 +21,10 @@ export function AdminSupportScreen() {
     setDrafts((current) => ({ ...current, [variables.id]: "" }));
     await queryClient.invalidateQueries({ queryKey: ["support", "admin", user!.uid] });
   } });
+  const openAttachment = async (ticketId: string, file: { id: string; mimeType: string }) => {
+    const signed = await accessSupportAttachment(user!, ticketId, file.id, file.mimeType === "application/pdf");
+    await Linking.openURL(signed.url);
+  };
   return <Screen eyebrow="ADMIN QUEUE" title="Support operations" description="Review customer conversations and move tickets through resolution.">
     {tickets.isLoading ? <ActivityIndicator color={colors.primary} /> : null}
     {tickets.error ? <Text style={styles.error}>{tickets.error.message}</Text> : null}
@@ -28,7 +32,7 @@ export function AdminSupportScreen() {
     {tickets.data?.map((ticket) => <ModuleCard key={ticket.id} title={ticket.subject} meta={`${ticket.category} · ${ticket.priority.toUpperCase()} · #${ticket.id.slice(0, 8)}`}>
       <Text style={styles.customer}>Customer {ticket.userId.slice(0, 8)}</Text>
       {ticket.orderId || ticket.returnId ? <View style={styles.context}><View style={styles.contextCopy}><Text style={styles.contextTitle}>Verified linked context</Text><Text style={styles.muted}>{ticket.returnId ? `Return ${ticket.returnId.slice(0, 8).toUpperCase()}` : "Order case"}</Text></View><View style={styles.contextActions}>{ticket.orderId ? <Pressable accessibilityRole="link" onPress={() => router.push(`/admin/orders/${ticket.orderId}` as never)} style={styles.contextButton}><Text style={styles.contextButtonText}>Open order</Text></Pressable> : null}{ticket.returnId ? <Pressable accessibilityRole="link" onPress={() => router.push({ pathname: "/admin/returns", params: { returnId: ticket.returnId } } as never)} style={styles.contextButton}><Text style={styles.contextButtonText}>Open return</Text></Pressable> : null}</View></View> : null}
-      {ticket.messages.map((message) => <View key={message.id} style={styles.message}><Text style={styles.sender}>{message.senderId === ticket.userId ? "Customer" : "Support"}</Text><Text style={styles.messageText}>{message.body}</Text>{message.attachments.map((file) => <Text key={file.storageKey} numberOfLines={1} style={styles.attachment}>Attachment · {file.name}</Text>)}<Text style={styles.muted}>{new Date(message.createdAt).toLocaleString()}</Text></View>)}
+      {ticket.messages.map((message) => <View key={message.id} style={styles.message}><Text style={styles.sender}>{message.senderId === ticket.userId ? "Customer" : "Support"}</Text><Text style={styles.messageText}>{message.body}</Text>{message.attachments.map((file) => <Pressable accessibilityLabel={`Open attachment ${file.name}`} accessibilityRole="link" key={file.id} onPress={() => void openAttachment(ticket.id, file)}><Text numberOfLines={1} style={styles.attachment}>Attachment · {file.name} ↗</Text></Pressable>)}<Text style={styles.muted}>{new Date(message.createdAt).toLocaleString()}</Text></View>)}
       {ticket.status !== "closed" ? <View style={styles.reply}><Text style={styles.contextTitle}>Reply to customer</Text><TextInput accessibilityLabel={`Reply to ticket ${ticket.id.slice(0, 8)}`} maxLength={3000} multiline onChangeText={(body) => setDrafts((current) => ({ ...current, [ticket.id]: body }))} placeholder="Write an operational update..." placeholderTextColor={colors.muted} style={styles.replyInput} value={drafts[ticket.id] ?? ""} />{reply.error && reply.variables?.id === ticket.id ? <Text accessibilityRole="alert" style={styles.error}>{reply.error.message}</Text> : null}<Pressable accessibilityRole="button" disabled={reply.isPending || !(drafts[ticket.id] ?? "").trim()} onPress={() => reply.mutate({ id: ticket.id, body: (drafts[ticket.id] ?? "").trim() })} style={[styles.send, (reply.isPending || !(drafts[ticket.id] ?? "").trim()) && styles.disabled]}>{reply.isPending && reply.variables?.id === ticket.id ? <ActivityIndicator color="#fff" /> : <Text style={styles.sendText}>Send reply</Text>}</Pressable></View> : null}
       <View style={styles.actions}>{statuses.map((status) => <Pressable key={status} disabled={update.isPending || status === ticket.status} onPress={() => update.mutate({ id: ticket.id, status })} style={[styles.chip, status === ticket.status && styles.active]}><Text style={[styles.chipText, status === ticket.status && styles.activeText]}>{status.replaceAll("_", " ")}</Text></Pressable>)}</View>
     </ModuleCard>)}

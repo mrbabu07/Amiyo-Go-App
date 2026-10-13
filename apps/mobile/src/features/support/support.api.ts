@@ -1,4 +1,4 @@
-import { supportTicketSchema, type CreateSupportTicket, type SupportTicketStatusInput } from "@amiyo/contracts";
+import { supportAttachmentAccessSchema, supportTicketSchema, type CreateSupportTicket, type SupportTicketStatusInput } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
 import { withReadDeadline } from "../../network/request-deadline";
 
@@ -19,3 +19,4 @@ export async function createTicket(user: User, input: CreateSupportTicket) { ret
 export async function replyToTicket(user: User, id: string, body: string, attachments: Array<{ storageKey: string; name: string; mimeType: "image/jpeg" | "image/png" | "image/webp" | "application/pdf" }> = []) { return supportTicketSchema.parse(await request(user, `/api/v2/support/tickets/${id}/messages`, { method: "POST", body: JSON.stringify({ body, attachments }) })); }
 export async function getAdminTickets(user: User) { return supportTicketSchema.array().parse(await request(user, "/api/v2/admin/support/tickets")); }
 export async function updateTicketStatus(user: User, id: string, input: SupportTicketStatusInput) { return supportTicketSchema.parse(await request(user, `/api/v2/admin/support/tickets/${id}/status`, { method: "PATCH", body: JSON.stringify(input) })); }
+export async function accessSupportAttachment(user: User, ticketId: string, uploadId: string, download = false) { return supportAttachmentAccessSchema.parse(await request(user, `/api/v2/support/tickets/${encodeURIComponent(ticketId)}/attachments/${encodeURIComponent(uploadId)}/access`, { method: "POST", body: JSON.stringify({ download }) })); }

@@ -2,14 +2,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
 import { pickAndUploadDocument } from "../media/media.api";
-import { getMyTickets, replyToTicket } from "./support.api";
+import { accessSupportAttachment, getMyTickets, replyToTicket } from "./support.api";
 
 type Attachment = { storageKey: string; name: string; mimeType: "image/jpeg" | "image/png" | "image/webp" | "application/pdf" };
+type SavedAttachment = { id: string; name: string; mimeType: Attachment["mimeType"] };
 
 export function SupportThreadScreen({ id }: { id: string }) {
   const router = useRouter();
@@ -32,18 +33,24 @@ export function SupportThreadScreen({ id }: { id: string }) {
       if (result) setFiles((current) => current.length < 5 ? [...current, { storageKey: result.storageKey, name: result.originalName, mimeType: result.mimeType as Attachment["mimeType"] }] : current);
     } finally { setUploading(false); }
   };
+  const openAttachment = async (file: SavedAttachment) => {
+    if (!user) return;
+    const signed = await accessSupportAttachment(user, id, file.id, file.mimeType === "application/pdf");
+    await Linking.openURL(signed.url);
+  };
   if (tickets.isLoading) return <Screen title="Support conversation"><ActivityIndicator color={colors.primary} /></Screen>;
   if (!ticket) return <Screen title="Ticket unavailable" description="This support request could not be found."><Pressable onPress={() => router.replace("/support")} style={styles.primary}><Text style={styles.primaryText}>Back to support</Text></Pressable></Screen>;
   return <Screen eyebrow="SUPPORT THREAD" title={ticket.subject} description={`${ticket.category} · Ticket #${ticket.id.slice(0, 8).toUpperCase()}`}>
     <View style={styles.header}><Pressable onPress={() => router.replace("/support")} style={styles.back}><Ionicons color={colors.primary} name="arrow-back" size={18} /><Text style={styles.backText}>All tickets</Text></Pressable><Text style={styles.status}>{ticket.status.replaceAll("_", " ").toUpperCase()}</Text></View>
     {ticket.orderId || ticket.returnId ? <View style={styles.context}><View style={styles.contextCopy}><Text style={styles.contextTitle}>Linked case context</Text><Text style={styles.date}>{ticket.returnId ? `Return #${ticket.returnId.slice(0, 8).toUpperCase()}` : "Order support"}</Text></View><View style={styles.contextActions}>{ticket.orderId ? <Pressable accessibilityRole="link" onPress={() => router.push(`/orders/${ticket.orderId}` as never)} style={styles.contextButton}><Text style={styles.contextButtonText}>View order</Text></Pressable> : null}{ticket.returnId ? <Pressable accessibilityRole="link" onPress={() => router.push(`/return/${ticket.returnId}` as never)} style={styles.contextButton}><Text style={styles.contextButtonText}>Track return</Text></Pressable> : null}</View></View> : null}
-    <View style={styles.thread}>{ticket.messages.map((message, index) => <View key={message.id} style={[styles.message, index === 0 && styles.opening]}><Text style={styles.sender}>{index === 0 ? "Request opened" : "Conversation update"}</Text><Text style={styles.body}>{message.body}</Text>{message.attachments.map((file) => <AttachmentRow file={file} key={file.storageKey} />)}<Text style={styles.date}>{new Date(message.createdAt).toLocaleString("en-BD")}</Text></View>)}</View>
+    <View style={styles.thread}>{ticket.messages.map((message, index) => <View key={message.id} style={[styles.message, index === 0 && styles.opening]}><Text style={styles.sender}>{index === 0 ? "Request opened" : "Conversation update"}</Text><Text style={styles.body}>{message.body}</Text>{message.attachments.map((file) => <SavedAttachmentRow file={file} key={file.id} open={() => void openAttachment(file)} />)}<Text style={styles.date}>{new Date(message.createdAt).toLocaleString("en-BD")}</Text></View>)}</View>
     {ticket.status !== "closed" ? <View style={styles.composer}><TextInput multiline onChangeText={setBody} placeholder="Write a reply" placeholderTextColor={colors.muted} style={styles.input} value={body} /><View style={styles.attachRow}><Pressable disabled={uploading || files.length >= 5} onPress={() => void addFile()} style={styles.attach}>{uploading ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.attachText}>Attach image or PDF ({files.length}/5)</Text>}</Pressable></View>{files.map((file) => <AttachmentRow file={file} key={file.storageKey} remove={() => setFiles((current) => current.filter((item) => item.storageKey !== file.storageKey))} />)}<Pressable disabled={reply.isPending || !body.trim()} onPress={() => reply.mutate()} style={[styles.primary, (reply.isPending || !body.trim()) && styles.disabled]}>{reply.isPending ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>Send reply</Text>}</Pressable></View> : <Text style={styles.closed}>This ticket is closed. Create a new ticket if you need more help.</Text>}
     {reply.error ? <Text style={styles.error}>{reply.error.message}</Text> : null}
   </Screen>;
 }
 
 function AttachmentRow({ file, remove }: { file: Attachment; remove?: () => void }) { return <View style={styles.attachment}><Ionicons color={colors.primary} name="document-attach-outline" size={17} /><Text numberOfLines={1} style={styles.attachmentText}>{file.name}</Text>{remove ? <Pressable onPress={remove}><Ionicons color={colors.danger} name="close-circle" size={19} /></Pressable> : null}</View>; }
+function SavedAttachmentRow({ file, open }: { file: SavedAttachment; open: () => void }) { return <Pressable accessibilityLabel={`Open attachment ${file.name}`} accessibilityRole="link" onPress={open} style={styles.attachment}><Ionicons color={colors.primary} name="document-attach-outline" size={17} /><Text numberOfLines={1} style={styles.attachmentText}>{file.name}</Text><Ionicons color={colors.primary} name="open-outline" size={17} /></Pressable>; }
 
 const styles = StyleSheet.create({
   header: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" }, back: { alignItems: "center", flexDirection: "row", gap: 6 }, backText: { color: colors.primary, fontWeight: "700" }, status: { backgroundColor: colors.primarySoft, borderRadius: radius.pill, color: colors.primary, fontSize: 9, fontWeight: "700", overflow: "hidden", paddingHorizontal: 10, paddingVertical: 6 },
