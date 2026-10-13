@@ -293,7 +293,7 @@ Using the approved demo product, temporary stock and price subscriptions were cr
 
 The seller order detail now renders a responsive fulfillment timeline from the live shipment event array already returned by the API. It includes the package creation timestamp, then recorded courier status, description, optional location and occurrence time without inferring unrecorded milestones. An empty shipment history is explicit. The primary document action is renamed `Shipping documents` because its destination contains both the signed thermal parcel label and A4 packing slip exports.
 
-This improves reference parity for seller fulfillment evidence, but does not claim the legacy courier assignment, pickup scheduling, buyer messaging, delivery-exception or seller-side COD collection controls. Those require corresponding seller-authorized APIs rather than decorative buttons.
+This improves reference parity for seller fulfillment evidence, but does not claim the legacy courier assignment, pickup scheduling, delivery-exception or seller-side COD collection controls. Those require corresponding seller-authorized APIs rather than decorative buttons.
 
 ## Seller order product thumbnails
 
@@ -302,3 +302,7 @@ Seller order list/detail reads now load only the first ordered product-media rec
 ## Seller and customer chat correctness
 
 The shared customer/seller inbox and thread now subscribe to the reactive authenticated user and scope every conversation query, refresh and read-state invalidation to that user ID. Chat bubbles derive ownership from the persisted message `senderId` instead of alternating by row position, so consecutive messages from either party remain correctly aligned and labeled. Counterparty copy changes between `Seller` and `Customer` for the corresponding inbox. A focused regression plus the full mobile suite cover account isolation and sender attribution; realtime transport beyond the existing polling interval is still not claimed.
+
+## Order-scoped seller-to-customer chat
+
+Seller order detail now offers `Message customer` as a real order-scoped action. The API first verifies that the signed-in seller belongs to the package vendor, rejects guest/self-chat orders, reuses the buyer's existing open vendor conversation when available, and adds the current seller as a participant. Otherwise it creates an order-labeled thread for the buyer and all active vendor members inside a serializable transaction and records an audit event. The UI opens that exact seller thread and reports failures without fabricating a conversation. Focused API tests cover creation, participant roles, audit evidence, reuse and cross-vendor denial; OpenAPI documents the endpoint.

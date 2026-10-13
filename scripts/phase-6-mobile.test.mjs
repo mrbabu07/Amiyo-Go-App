@@ -11,4 +11,7 @@ test("vendor fulfillment and customer tracking expose accessible actions", async
   assert.match(source, /Recorded package and courier events only/);
   assert.match(source, /OrderItemImage/);
   assert.match(source, /uri=\{line\.thumbnailUrl\}/);
+  assert.match(source, /Message customer/);
+  assert.match(source, /openVendorOrderCustomerThread/);
+  assert.match(source, /\/vendor\/messages\/\$\{thread\.id\}/);
 });

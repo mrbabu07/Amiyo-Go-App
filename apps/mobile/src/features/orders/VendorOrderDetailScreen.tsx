@@ -9,7 +9,7 @@ import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Tex
 import { colors, radius, spacing } from "../../ui/tokens";
 import { firebaseAuth } from "../auth/firebase";
 import { OrderItemImage } from "./OrderItemImage";
-import { getVendorOrder, transitionVendorOrder } from "./orders.api";
+import { getVendorOrder, openVendorOrderCustomerThread, transitionVendorOrder } from "./orders.api";
 
 const actions: Partial<Record<VendorOrderStatus, Array<{ status: VendorOrderStatus; label: string; danger?: boolean }>>> = {
   PLACED: [{ status: "ACCEPTED", label: "Accept order" }, { status: "REJECTED", label: "Reject", danger: true }],
@@ -26,6 +26,7 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
   const { width } = useWindowDimensions();
   const compact = width < 640;
   const [busy, setBusy] = useState<VendorOrderStatus | null>(null);
+  const [openingChat, setOpeningChat] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const order = useQuery({ queryKey: ["orders", "vendor", id, user?.uid], queryFn: () => getVendorOrder(user!, id), enabled: Boolean(user) });
 
@@ -44,6 +45,20 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
     }
   }
 
+  async function messageCustomer() {
+    if (!user || openingChat) return;
+    setOpeningChat(true);
+    setError(null);
+    try {
+      const thread = await openVendorOrderCustomerThread(user, id);
+      router.push(`/vendor/messages/${thread.id}` as never);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Customer conversation could not be opened");
+    } finally {
+      setOpeningChat(false);
+    }
+  }
+
   if (order.isLoading) return <View style={styles.center}><ActivityIndicator color={colors.primary} size="large" /></View>;
   if (!order.data) return <View style={styles.center}><Text style={styles.error}>{order.error instanceof Error ? order.error.message : "Order not found"}</Text><Pressable onPress={() => router.back()}><Text style={styles.link}>Go back</Text></Pressable></View>;
 
@@ -53,7 +68,7 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
     <Pressable onPress={() => router.back()} style={styles.back}><Ionicons color={colors.primary} name="arrow-back" size={17} /><Text style={styles.link}>Vendor orders</Text></Pressable>
     <View style={[styles.hero, compact && styles.heroCompact]}>
       <View style={styles.flex}><View style={styles.statusRow}><Text style={styles.status}>{label(item.status)}</Text><Text style={styles.version}>v{item.version}</Text></View><Text accessibilityRole="header" style={styles.title}>{item.orderNumber}</Text><Text style={styles.heroText}>{item.shopName} package with {units} unit{units === 1 ? "" : "s"} ready for seller fulfillment.</Text></View>
-      <View style={[styles.heroActions, compact && styles.heroActionsCompact]}><HeroButton icon="document-text-outline" label="Shipping documents" onPress={() => router.push(`/vendor/order/${item.id}/documents` as never)} primary /><HeroButton icon="refresh" label="Refresh" onPress={() => order.refetch()} /></View>
+      <View style={[styles.heroActions, compact && styles.heroActionsCompact]}><HeroButton icon="chatbubble-ellipses-outline" label={openingChat ? "Opening chat..." : "Message customer"} disabled={openingChat} onPress={messageCustomer} /><HeroButton icon="document-text-outline" label="Shipping documents" onPress={() => router.push(`/vendor/order/${item.id}/documents` as never)} primary /><HeroButton icon="refresh" label="Refresh" onPress={() => order.refetch()} /></View>
     </View>
     {error ? <Text style={styles.error}>{error}</Text> : null}
     <View style={styles.metrics}><Metric icon="cube-outline" label="Units" value={String(units)} /><Metric icon="cash-outline" label="Package total" value={money(item.total.amountMinor, item.total.currency)} /><Metric icon="card-outline" label="Payment" value={item.payment ? `${item.payment.method} - ${item.payment.status}` : "Pending"} /></View>
@@ -78,7 +93,7 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
   </ScrollView></SafeAreaView>;
 }
 
-function HeroButton({ icon, label: text, onPress, primary }: { icon: string; label: string; onPress(): void; primary?: boolean }) { return <Pressable accessibilityRole="button" onPress={onPress} style={[styles.heroButton, primary && styles.heroButtonPrimary]}><Ionicons color={primary ? "#fff" : colors.primary} name={icon as never} size={17} /><Text style={[styles.heroButtonText, primary && styles.light]}>{text}</Text></Pressable>; }
+function HeroButton({ disabled, icon, label: text, onPress, primary }: { disabled?: boolean; icon: string; label: string; onPress(): void; primary?: boolean }) { return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={[styles.heroButton, primary && styles.heroButtonPrimary, disabled && styles.disabled]}><Ionicons color={primary ? "#fff" : colors.primary} name={icon as never} size={17} /><Text style={[styles.heroButtonText, primary && styles.light]}>{text}</Text></Pressable>; }
 function Panel({ children, meta, title }: { children: ReactNode; meta?: string; title: string }) { return <View style={styles.card}><View><Text style={styles.sectionTitle}>{title}</Text>{meta ? <Text style={styles.muted}>{meta}</Text> : null}</View>{children}</View>; }
 function Detail({ label: title, strong, value }: { label: string; strong?: boolean; value: string }) { return <View style={styles.detail}><Text style={styles.detailLabel}>{title}</Text><Text selectable style={[styles.value, strong && styles.strong]}>{value}</Text></View>; }
 function Metric({ icon, label: title, value }: { icon: string; label: string; value: string }) { return <View style={styles.metric}><View style={styles.metricIcon}><Ionicons color={colors.primary} name={icon as never} size={19} /></View><View style={styles.flex}><Text numberOfLines={1} adjustsFontSizeToFit style={styles.metricValue}>{value}</Text><Text style={styles.muted}>{title}</Text></View></View>; }

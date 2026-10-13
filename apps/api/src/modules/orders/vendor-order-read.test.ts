@@ -52,6 +52,41 @@ test("seller membership never grants access to a different vendor order", async 
   await assert.rejects(() => service.vendorOrder(seller, "other-package"), (error: unknown) => error instanceof ApiProblem && error.status === 403);
 });
 
+test("seller opens an audited order-scoped customer thread with active shop members", async () => {
+  const createdParticipants: Array<{ userId: string; role: string }> = [];
+  const client = {
+    vendorOrder: { findUnique: async () => ({ id: "package", orderId: "parent", vendorId: "vendor", order: { orderNumber: "AG-100", userId: "customer" } }) },
+    $transaction: async (operation: (transaction: unknown) => Promise<unknown>) => operation(client),
+    chatThread: {
+      findFirst: async () => null,
+      create: async ({ data }: { data: { vendorId: string; subject: string; metadata: unknown; participants: { create: Array<{ userId: string; role: string }> } } }) => {
+        assert.equal(data.vendorId, "vendor");
+        assert.equal(data.subject, "Order AG-100");
+        assert.deepEqual(data.metadata, { orderId: "parent", vendorOrderId: "package" });
+        createdParticipants.push(...data.participants.create);
+        return { id: "thread" };
+      }
+    },
+    vendorMember: { findMany: async () => [{ userId: "user" }, { userId: "staff" }] },
+    auditLog: { create: async ({ data }: { data: { action: string; resourceId: string } }) => { assert.equal(data.action, "order.customer_chat_opened"); assert.equal(data.resourceId, "package"); } }
+  };
+  assert.deepEqual(await new OrderService(client as never).customerThread(seller, "package"), { id: "thread" });
+  assert.deepEqual(createdParticipants, [{ userId: "customer", role: "customer" }, { userId: "user", role: "vendor" }, { userId: "staff", role: "vendor" }]);
+});
+
+test("seller customer chat reuses an open buyer thread and denies another seller", async () => {
+  let upserted = false;
+  const client = {
+    vendorOrder: { findUnique: async () => ({ id: "package", orderId: "parent", vendorId: "vendor", order: { orderNumber: "AG-100", userId: "customer" } }) },
+    $transaction: async (operation: (transaction: unknown) => Promise<unknown>) => operation(client),
+    chatThread: { findFirst: async () => ({ id: "existing" }) },
+    chatParticipant: { upsert: async ({ create }: { create: { threadId: string; userId: string; role: string } }) => { assert.deepEqual(create, { threadId: "existing", userId: "user", role: "vendor" }); upserted = true; } }
+  };
+  assert.deepEqual(await new OrderService(client as never).customerThread(seller, "package"), { id: "existing" });
+  assert.equal(upserted, true);
+  await assert.rejects(() => new OrderService({ vendorOrder: client.vendorOrder } as never).customerThread({ ...seller, principal: { ...seller.principal, vendorIds: ["other"] } }, "package"), (error: unknown) => error instanceof ApiProblem && error.status === 403);
+});
+
 test("batched list preserves detail DTOs and starts bounded relation branches concurrently", async () => {
   const createdAt = new Date("2026-10-03T00:00:00Z");
   const parent = { id: "parent", orderNumber: "ORDER", currency: "BDT", addresses: [], payments: [], user: null };

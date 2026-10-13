@@ -124,6 +124,27 @@ export class OrderService {
     return vendorOrderDto(row);
   }
 
+  async customerThread(session: Session, id: string) {
+    requireVendorReader(session);
+    const row = await this.client.vendorOrder.findUnique({ where: { id }, select: { id: true, vendorId: true, orderId: true, order: { select: { orderNumber: true, userId: true } } } });
+    if (!row) throw new ApiProblem(404, "VENDOR_ORDER_NOT_FOUND", "Vendor order not found");
+    if (!session.principal.vendorIds.includes(row.vendorId)) throw new ApiProblem(403, "VENDOR_ORDER_FORBIDDEN", "Only this order's seller can contact the customer");
+    const customerId = row.order.userId;
+    if (!customerId || customerId === session.principal.userId) throw new ApiProblem(409, "ORDER_CUSTOMER_CHAT_UNAVAILABLE", "This order does not have a separate customer account available for chat");
+    return withSerializableTransaction(this.client, async (transaction) => {
+      const existing = await transaction.chatThread.findFirst({ where: { vendorId: row.vendorId, status: "open", participants: { some: { userId: customerId } } }, orderBy: { updatedAt: "desc" }, select: { id: true } });
+      if (existing) {
+        await transaction.chatParticipant.upsert({ where: { threadId_userId: { threadId: existing.id, userId: session.principal.userId } }, create: { threadId: existing.id, userId: session.principal.userId, role: "vendor" }, update: {} });
+        return existing;
+      }
+      const members = await transaction.vendorMember.findMany({ where: { vendorId: row.vendorId, status: "active" }, select: { userId: true } });
+      const vendorUserIds = [...new Set([session.principal.userId, ...members.map((member) => member.userId)])].filter((userId) => userId !== customerId);
+      const thread = await transaction.chatThread.create({ data: { vendorId: row.vendorId, subject: `Order ${row.order.orderNumber}`, metadata: json({ orderId: row.orderId, vendorOrderId: row.id }), participants: { create: [{ userId: customerId, role: "customer" }, ...vendorUserIds.map((userId) => ({ userId, role: "vendor" }))] } }, select: { id: true } });
+      await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "order.customer_chat_opened", resourceType: "vendor_order", resourceId: row.id, after: json({ threadId: thread.id, orderId: row.orderId }) } });
+      return thread;
+    });
+  }
+
   async fulfillmentDocument(session: Session, id: string) {
     requireVendorReader(session);
     const row = await this.client.vendorOrder.findUnique({ where: { id }, include: vendorOrderInclude });
