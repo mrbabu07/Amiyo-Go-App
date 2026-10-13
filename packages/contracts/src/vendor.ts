@@ -65,7 +65,13 @@ export const updateVendorShopSchema = z.object({
   settings: z.record(z.unknown()).nullable().optional()
 }).refine((input) => Object.keys(input).length > 1, "At least one shop field is required");
 
-export const submitVendorKycSchema = z.object({ documents: z.array(vendorKycDocumentInputSchema).min(1).max(10) });
+export const submitVendorKycSchema = z.object({ documents: z.array(vendorKycDocumentInputSchema).min(1).max(10) })
+  .superRefine(({ documents }, context) => {
+    const types = documents.map((document) => document.documentType);
+    const keys = documents.map((document) => document.storageKey);
+    if (new Set(types).size !== types.length) context.addIssue({ code: z.ZodIssueCode.custom, path: ["documents"], message: "Document types must be unique" });
+    if (new Set(keys).size !== keys.length) context.addIssue({ code: z.ZodIssueCode.custom, path: ["documents"], message: "Uploaded files must be unique" });
+  });
 export const saveVendorBankAccountSchema = z.object({
   provider: z.enum(["BANK", "BKASH", "NAGAD", "ROCKET"]),
   accountName: z.string().trim().min(2).max(160),

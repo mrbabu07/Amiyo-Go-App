@@ -69,8 +69,21 @@ export class VendorService {
   }
   async submitKyc(session: Session, input: SubmitVendorKyc) {
     const id = vendorId(session); requirePermission(session, "kyc:manage");
-    const submission = await this.client.vendorKycSubmission.create({ data: { vendorId: id, status: "SUBMITTED", submittedAt: new Date(), documents: { create: input.documents.map((document) => ({ ...document, checksum: document.checksum.toLowerCase() })) } } });
-    await this.client.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "vendor.kyc.submitted", resourceType: "vendor_kyc_submission", resourceId: submission.id, after: json({ documentTypes: input.documents.map((item) => item.documentType) }) } });
+    const submission = await withSerializableTransaction(this.client, async (transaction) => {
+      const pending = await transaction.vendorKycSubmission.findFirst({ where: { vendorId: id, status: { in: ["SUBMITTED", "REVIEWING", "APPROVED"] } }, select: { id: true, status: true } });
+      if (pending) throw new ApiProblem(409, "VENDOR_KYC_ALREADY_ACTIVE", `A ${pending.status.toLowerCase()} KYC submission already exists`);
+      const keys = input.documents.map((document) => document.storageKey);
+      const uploads = await transaction.mediaUpload.findMany({ where: { userId: session.principal.userId, purpose: "kyc", visibility: "private", status: "ready", storageKey: { in: keys } }, select: { storageKey: true, mimeType: true, checksum: true } });
+      const byKey = new Map(uploads.map((upload) => [upload.storageKey, upload]));
+      const verified = input.documents.map((document) => {
+        const upload = byKey.get(document.storageKey);
+        if (!upload || upload.mimeType !== document.mimeType || !upload.checksum || upload.checksum.toLowerCase() !== document.checksum.toLowerCase()) throw new ApiProblem(400, "VENDOR_KYC_DOCUMENT_INVALID", "Every KYC document must be your private, scanned and completed upload");
+        return { ...document, checksum: upload.checksum.toLowerCase() };
+      });
+      const created = await transaction.vendorKycSubmission.create({ data: { vendorId: id, status: "SUBMITTED", submittedAt: new Date(), documents: { create: verified } } });
+      await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "vendor.kyc.submitted", resourceType: "vendor_kyc_submission", resourceId: created.id, after: json({ documentTypes: verified.map((item) => item.documentType) }) } });
+      return created;
+    });
     return this.getWorkspace(session);
   }
   async saveBankAccount(session: Session, input: SaveVendorBankAccount) {

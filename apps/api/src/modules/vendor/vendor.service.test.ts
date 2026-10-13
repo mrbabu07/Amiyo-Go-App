@@ -8,6 +8,9 @@ const userId = "11111111-1111-4111-8111-111111111111";
 const categoryId = "22222222-2222-4222-8222-222222222222";
 const session: Session = { principal: { userId, roles: ["CUSTOMER"], vendorIds: [] }, status: "ACTIVE", email: "seller@example.com", phone: null, profile: { firstName: null, lastName: null, displayName: "Seller", avatarStorageKey: null, locale: "en", currency: "BDT" }, permissions: [], vendorMemberships: [] };
 const input: VendorRegistration = { legalName: "Seller Commerce", displayName: "Seller Shop", phone: "01700000000", address: { line1: "Road 1", division: "Dhaka", district: "Dhaka", upazila: "Savar" }, categoryIds: [categoryId], acceptedTerms: true, termsVersion: "2026.06", privacyVersion: "2026.06" };
+const vendorId = "33333333-3333-4333-8333-333333333333";
+const kycSession: Session = { ...session, principal: { ...session.principal, roles: ["VENDOR_OWNER"], vendorIds: [vendorId] }, permissions: ["vendor:read", "kyc:manage"], vendorMemberships: [{ vendorId, role: "VENDOR_OWNER", permissions: ["vendor:read", "kyc:manage"] }] };
+const kycDocument = { documentType: "TRADE_LICENSE" as const, storageKey: `private/kyc/${userId}/license.pdf`, mimeType: "application/pdf", checksum: "a".repeat(64) };
 
 test("vendor registration rejects an existing membership", async () => {
   const client = { vendorMember: { findFirst: async () => ({ id: "member" }) } } as unknown as PrismaClient;
@@ -33,6 +36,27 @@ test("vendor registration creates an owner workspace atomically", async () => {
   assert.equal(roleAssigned, true);
   assert.equal(transactionTimeout, 60_000);
   assert.equal(vendorData?.displayName, input.displayName);
+});
+
+test("KYC submission accepts only the seller's scanned private uploads", async () => {
+  let created = false;
+  const transaction = { vendorKycSubmission: { findFirst: async () => null, create: async () => { created = true; return { id: categoryId }; } }, mediaUpload: { findMany: async ({ where }: any) => { assert.deepEqual(where, { userId, purpose: "kyc", visibility: "private", status: "ready", storageKey: { in: [kycDocument.storageKey] } }); return []; } }, auditLog: { create: async () => ({}) } };
+  const client = { $transaction: async (operation: (value: typeof transaction) => Promise<unknown>) => operation(transaction) } as unknown as PrismaClient;
+  await assert.rejects(() => new VendorService(client).submitKyc(kycSession, { documents: [kycDocument] }), /private, scanned and completed upload/);
+  assert.equal(created, false);
+});
+
+test("KYC submission is atomic and blocks another active review", async () => {
+  const activeTransaction = { vendorKycSubmission: { findFirst: async () => ({ id: categoryId, status: "REVIEWING" }) } };
+  const activeClient = { $transaction: async (operation: (value: typeof activeTransaction) => Promise<unknown>) => operation(activeTransaction) } as unknown as PrismaClient;
+  await assert.rejects(() => new VendorService(activeClient).submitKyc(kycSession, { documents: [kycDocument] }), /reviewing KYC submission already exists/);
+
+  let audited = false;
+  const workspace = { id: vendorId, legalName: "Seller Commerce", displayName: "Seller Shop", status: "PENDING", version: 1, shops: [], kycSubmissions: [], bankAccounts: [] };
+  const transaction = { vendorKycSubmission: { findFirst: async () => null, create: async ({ data }: any) => { assert.equal(data.documents.create[0].checksum, kycDocument.checksum); return { id: categoryId }; } }, mediaUpload: { findMany: async () => [{ storageKey: kycDocument.storageKey, mimeType: kycDocument.mimeType, checksum: kycDocument.checksum.toUpperCase() }] }, auditLog: { create: async () => { audited = true; } } };
+  const client = { $transaction: async (operation: (value: typeof transaction) => Promise<unknown>) => operation(transaction), vendor: { findUniqueOrThrow: async () => workspace } } as unknown as PrismaClient;
+  await new VendorService(client).submitKyc(kycSession, { documents: [kycDocument] });
+  assert.equal(audited, true);
 });
 
 test("vendor report applies the selected period and derives fulfilment metrics", async () => {

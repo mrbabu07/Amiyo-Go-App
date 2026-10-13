@@ -10,6 +10,8 @@ test("vendor bank account requires a supported payout provider", () => {
 test("KYC submission requires durable document metadata", () => {
   assert.throws(() => submitVendorKycSchema.parse({ documents: [] }));
   assert.equal(submitVendorKycSchema.parse({ documents: [{ documentType: "TRADE_LICENSE", storageKey: "private/kyc/demo.pdf", mimeType: "application/pdf", checksum: "0123456789abcdef" }] }).documents.length, 1);
+  assert.throws(() => submitVendorKycSchema.parse({ documents: [{ documentType: "TRADE_LICENSE", storageKey: "private/kyc/one.pdf", mimeType: "application/pdf", checksum: "0123456789abcdef" }, { documentType: "TRADE_LICENSE", storageKey: "private/kyc/two.pdf", mimeType: "application/pdf", checksum: "fedcba9876543210" }] }), /Document types must be unique/);
+  assert.throws(() => submitVendorKycSchema.parse({ documents: [{ documentType: "TRADE_LICENSE", storageKey: "private/kyc/same.pdf", mimeType: "application/pdf", checksum: "0123456789abcdef" }, { documentType: "BANK_PROOF", storageKey: "private/kyc/same.pdf", mimeType: "application/pdf", checksum: "0123456789abcdef" }] }), /Uploaded files must be unique/);
 });
 
 test("shop updates require optimistic version and a changed field", () => {

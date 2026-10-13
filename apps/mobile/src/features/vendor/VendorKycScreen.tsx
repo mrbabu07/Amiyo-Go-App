@@ -7,7 +7,7 @@ import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
-import { pickAndUploadDocument } from "../media/media.api";
+import { pickAndUploadDocument, waitForMediaUploadReady } from "../media/media.api";
 import { getVendorWorkspace, submitVendorKyc } from "./vendor.api";
 
 type DocumentType = "NID_FRONT" | "NID_BACK" | "TRADE_LICENSE" | "BANK_PROOF";
@@ -32,6 +32,7 @@ export function VendorKycScreen() {
     setUploadError(null);
     try {
       const result = await pickAndUploadDocument(owner, "kyc");
+      if (result) await waitForMediaUploadReady(owner, result.id);
       if (result && activeUid.current === owner.uid) setDocuments((current) => ({ ...current, [type]: result }));
     } catch (error) {
       if (activeUid.current === owner.uid) setUploadError(error instanceof Error ? error.message : "Could not upload this document");

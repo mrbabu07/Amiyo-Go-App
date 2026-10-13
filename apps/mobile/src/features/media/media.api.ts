@@ -17,6 +17,16 @@ export async function getMediaUploadStatus(user: User, id: string) {
     return mediaUploadStatusSchema.parse(await response.json());
   });
 }
+export async function waitForMediaUploadReady(user: User, id: string, options: { attempts?: number; delayMs?: number } = {}) {
+  const attempts = options.attempts ?? 20; const delayMs = options.delayMs ?? 750;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const result = await getMediaUploadStatus(user, id);
+    if (result.ready) return result;
+    if (["rejected", "failed"].includes(result.status)) throw new Error("The uploaded file did not pass security checks. Choose another file.");
+    if (attempt + 1 < attempts) await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+  throw new Error("The file is still being checked. Please try again shortly.");
+}
 async function authenticated(user: User, path: string, init: RequestInit) { const token = await user.getIdToken(); const response = await fetch(`${apiUrl}${path}`, { ...init, headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...init.headers } }); if (!response.ok) { const problem = await response.json().catch(() => null) as { detail?: string; title?: string } | null; throw new Error(problem?.detail || problem?.title || `Media request failed (${response.status})`); } return response.json(); }
 function supportedMime(value: string | null | undefined): MediaUploadInput["mimeType"] { if (["image/jpeg", "image/png", "image/webp", "application/pdf"].includes(value || "")) return value as MediaUploadInput["mimeType"]; throw new Error("Choose a JPEG, PNG, WebP or PDF file"); }
 function toHex(buffer: ArrayBuffer) { return Array.from(new Uint8Array(buffer), (byte) => byte.toString(16).padStart(2, "0")).join(""); }

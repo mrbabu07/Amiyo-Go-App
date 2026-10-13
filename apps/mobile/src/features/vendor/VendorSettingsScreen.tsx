@@ -1,30 +1,32 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
-import { pickAndUploadDocument } from "../media/media.api";
+import { useCurrentUser } from "../auth/use-current-user";
+import { pickAndUploadDocument, waitForMediaUploadReady } from "../media/media.api";
 import { getVendorWorkspace, saveVendorBankAccount, submitVendorKyc, updateVendorShop } from "./vendor.api";
 
 export function VendorSettingsScreen() {
-  const user = firebaseAuth?.currentUser ?? null; const queryClient = useQueryClient();
-  const workspace = useQuery({ queryKey: ["vendor", "workspace"], queryFn: () => getVendorWorkspace(user!), enabled: Boolean(user) }); const shop = workspace.data?.shops[0];
+  const user = useCurrentUser(); const queryClient = useQueryClient();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
+  const workspace = useQuery({ queryKey: ["vendor", "workspace", user?.uid], queryFn: () => getVendorWorkspace(user!), enabled: Boolean(user), retry: false }); const shop = workspace.data?.shops[0];
   const [shopName, setShopName] = useState(""); const [description, setDescription] = useState("");
   const [bank, setBank] = useState({ provider: "BANK" as "BANK" | "BKASH" | "NAGAD" | "ROCKET", accountName: "", accountNumber: "" });
-  const [document, setDocument] = useState({ storageKey: "", checksum: "", mimeType: "application/pdf" });
+  const [document, setDocument] = useState({ storageKey: "", checksum: "", mimeType: "application/pdf", originalName: "" });
   useEffect(() => { if (shop) { setShopName(shop.name); setDescription(shop.description ?? ""); } }, [shop]);
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ["vendor", "workspace"] });
+  useEffect(() => { setDocument({ storageKey: "", checksum: "", mimeType: "application/pdf", originalName: "" }); }, [user?.uid]);
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ["vendor", "workspace", user?.uid] });
   const saveShop = useMutation({ mutationFn: () => updateVendorShop(user!, shop!.id, { version: shop!.version, name: shopName, description: description || null }), onSuccess: refresh });
   const saveBank = useMutation({ mutationFn: () => saveVendorBankAccount(user!, { ...bank, isDefault: true }), onSuccess: async () => { setBank({ provider: "BANK", accountName: "", accountNumber: "" }); await refresh(); } });
-  const uploadKyc = useMutation({ mutationFn: () => pickAndUploadDocument(user!, "kyc"), onSuccess: (result) => { if (result) setDocument({ storageKey: result.storageKey, checksum: result.checksum, mimeType: result.mimeType }); } });
+  const uploadKyc = useMutation({ retry: false, mutationFn: async () => { const owner = user!; const result = await pickAndUploadDocument(owner, "kyc"); if (result) await waitForMediaUploadReady(owner, result.id); return { owner, result }; }, onSuccess: ({ owner, result }) => { if (result && activeUid.current === owner.uid) setDocument({ storageKey: result.storageKey, checksum: result.checksum, mimeType: result.mimeType, originalName: result.originalName }); } });
   const saveKyc = useMutation({ mutationFn: () => submitVendorKyc(user!, { documents: [{ documentType: "TRADE_LICENSE", storageKey: document.storageKey, mimeType: document.mimeType, checksum: document.checksum }] }), onSuccess: refresh });
   if (workspace.isLoading) return <Screen title="Vendor settings"><ActivityIndicator color={colors.primary} /></Screen>;
   const error = [workspace.error, saveShop.error, saveBank.error, uploadKyc.error, saveKyc.error].find(Boolean);
   return <Screen eyebrow="SELLER CENTER" title={workspace.data?.displayName || "Vendor settings"} description={`Account status: ${workspace.data?.status || "UNKNOWN"}`}>
     <ModuleCard title="Shop profile" meta={shop?.slug}><Field label="Shop name" value={shopName} onChangeText={setShopName} /><Field label="Description" multiline value={description} onChangeText={setDescription} /><Action busy={saveShop.isPending} label="Save shop" onPress={() => saveShop.mutate()} /></ModuleCard>
-    <ModuleCard title="KYC verification" meta={workspace.data?.kycSubmissions[0] ? `Latest: ${workspace.data.kycSubmissions[0].status}` : "No submission yet"}><Text style={styles.muted}>Trade-license files use private signed uploads and are verified before submission.</Text><Action busy={uploadKyc.isPending} label={document.storageKey ? "Replace trade license" : "Choose trade license"} onPress={() => uploadKyc.mutate()} />{document.storageKey ? <Text style={styles.file}>Ready: {document.storageKey.split("/").at(-1)}</Text> : null}<Action busy={saveKyc.isPending} disabled={!document.storageKey || !document.checksum} label="Submit KYC" onPress={() => saveKyc.mutate()} /></ModuleCard>
+    <ModuleCard title="KYC verification" meta={workspace.data?.kycSubmissions[0] ? `Latest: ${workspace.data.kycSubmissions[0].status}` : "No submission yet"}><Text style={styles.muted}>Trade-license files use private signed uploads and are verified before submission.</Text><Action busy={uploadKyc.isPending} label={document.storageKey ? "Replace trade license" : "Choose trade license"} onPress={() => uploadKyc.mutate()} />{document.storageKey ? <Text style={styles.file}>Ready: {document.originalName}</Text> : null}<Action busy={saveKyc.isPending} disabled={!document.storageKey || !document.checksum} label="Submit KYC" onPress={() => saveKyc.mutate()} /></ModuleCard>
     <ModuleCard title="Payout accounts" meta="Full account numbers are encrypted and never returned.">{workspace.data?.bankAccounts.map((account) => <View key={account.id} style={styles.account}><Text style={styles.accountName}>{account.provider} · {account.accountNumberMasked}</Text><Text style={styles.muted}>{account.accountName}{account.isDefault ? " · Default" : ""}</Text></View>)}<View style={styles.providers}>{(["BANK", "BKASH", "NAGAD", "ROCKET"] as const).map((provider) => <Pressable key={provider} onPress={() => setBank({ ...bank, provider })} style={[styles.chip, bank.provider === provider && styles.active]}><Text style={[styles.chipText, bank.provider === provider && styles.activeText]}>{provider}</Text></Pressable>)}</View><Field label="Account name" value={bank.accountName} onChangeText={(accountName) => setBank({ ...bank, accountName })} /><Field label="Account number" secureTextEntry value={bank.accountNumber} onChangeText={(accountNumber) => setBank({ ...bank, accountNumber })} /><Action busy={saveBank.isPending} label="Save payout account" onPress={() => saveBank.mutate()} />{error ? <Text style={styles.error}>{error.message}</Text> : null}</ModuleCard>
   </Screen>;
 }

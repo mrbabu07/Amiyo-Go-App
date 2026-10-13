@@ -20,3 +20,12 @@ test("vendor KYC UI never renders private storage keys as filenames", () => {
   assert.match(source, /uploadError/);
   assert.match(source, /retry: false/);
 });
+
+test("vendor KYC waits for security processing and legacy settings stay account scoped", () => {
+  const settings = readFileSync(new URL("./VendorSettingsScreen.tsx", import.meta.url), "utf8");
+  assert.match(source, /waitForMediaUploadReady/);
+  assert.match(settings, /waitForMediaUploadReady/);
+  assert.match(settings, /\["vendor", "workspace", user\?\.uid\]/);
+  assert.doesNotMatch(settings, /firebaseAuth/);
+  assert.doesNotMatch(settings, /storageKey\.split/);
+});
