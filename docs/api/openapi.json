@@ -10233,6 +10233,217 @@
         }
       }
     },
+    "/api/v2/vendor/orders/{id}/delivery-exceptions": {
+      "post": {
+        "tags": [
+          "Vendor Orders"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "PICKUP_DELAY",
+                      "CARRIER_NO_SHOW",
+                      "ADDRESS_ISSUE",
+                      "CUSTOMER_UNAVAILABLE",
+                      "PARCEL_DAMAGED",
+                      "OTHER"
+                    ]
+                  },
+                  "requestedResolution": {
+                    "type": "string",
+                    "enum": [
+                      "REATTEMPT",
+                      "CONTACT_CUSTOMER",
+                      "RETURN_TO_SELLER",
+                      "INVESTIGATE"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 500
+                  },
+                  "notes": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 1000,
+                    "default": null
+                  },
+                  "retryAt": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date-time",
+                    "default": null
+                  }
+                },
+                "required": [
+                  "category",
+                  "requestedResolution",
+                  "reason"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Seller delivery exception recorded without changing courier status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "PICKUP_DELAY",
+                        "CARRIER_NO_SHOW",
+                        "ADDRESS_ISSUE",
+                        "CUSTOMER_UNAVAILABLE",
+                        "PARCEL_DAMAGED",
+                        "OTHER"
+                      ]
+                    },
+                    "requestedResolution": {
+                      "type": "string",
+                      "enum": [
+                        "REATTEMPT",
+                        "CONTACT_CUSTOMER",
+                        "RETURN_TO_SELLER",
+                        "INVESTIGATE"
+                      ]
+                    },
+                    "reason": {
+                      "type": "string",
+                      "minLength": 5,
+                      "maxLength": 500
+                    },
+                    "notes": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 1000,
+                      "default": null
+                    },
+                    "retryAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time",
+                      "default": null
+                    },
+                    "vendorOrderId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "shipmentId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "vendor_reported"
+                      ]
+                    },
+                    "reportedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "category",
+                    "requestedResolution",
+                    "reason",
+                    "vendorOrderId",
+                    "shipmentId",
+                    "status",
+                    "reportedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/vendor/orders/{id}/documents": {
       "get": {
         "tags": [

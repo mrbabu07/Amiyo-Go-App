@@ -26,6 +26,11 @@ test("logistics management rejects non-operations admins", async () => {
   await assert.rejects(() => new LogisticsService({} as PrismaClient).saveZone(finance, { name: "Dhaka", code: "DHAKA", districts: [], courierPartnerIds: [], defaultCourierName: null, codAvailable: true, status: "active", slaHours: 24, sortOrder: 10, notes: null }), /operations administrator access/);
 });
 
+test("operations exception queue includes courier failures and seller-reported issues", async () => {
+  const client = { shipment: { findMany: async ({ where }: { where: unknown }) => { assert.deepEqual(where, { OR: [{ status: "FAILED" }, { failedDelivery: { resolution: "vendor_reported" } }] }); return []; } } } as unknown as PrismaClient;
+  assert.deepEqual(await new LogisticsService(client).failedDeliveries(session), []);
+});
+
 test("RTO requires an active or failed shipment and records its resolution", async () => {
   const resolutions: string[] = [];
   const client = {

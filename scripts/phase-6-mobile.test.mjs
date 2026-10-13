@@ -14,4 +14,9 @@ test("vendor fulfillment and customer tracking expose accessible actions", async
   assert.match(source, /Message customer/);
   assert.match(source, /openVendorOrderCustomerThread/);
   assert.match(source, /\/vendor\/messages\/\$\{thread\.id\}/);
+  assert.match(source, /Report delivery issue/);
+  assert.match(source, /reportVendorDeliveryException/);
+  assert.match(source, /Send to operations/);
+  assert.match(source, /\["READY_TO_SHIP", "PICKED_UP", "IN_TRANSIT"\]/);
+  assert.match(source, /const user = useCurrentUser\(\)/);
 });

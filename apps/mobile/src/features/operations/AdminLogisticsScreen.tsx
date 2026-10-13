@@ -41,7 +41,7 @@ function Workspace({ busy, compact, data, manifest, selected, write }: { busy: b
   if (selected === "staff") return <ResourceSection title="Pickup staff" rows={data.pickupStaff.map((row) => ({ id: row.id, title: row.name, subtitle: row.routeName || "No route assigned", meta: `${row.vehicleType} · capacity ${row.capacityOrders}` }))}><CreateStaff busy={busy} write={write} /></ResourceSection>;
   if (selected === "rules") return <ResourceSection title="Delivery fee rules" rows={data.feeRules.map((row) => ({ id: row.id, title: row.name, subtitle: `${row.ruleType} · ${row.zoneCode || "All zones"}`, meta: `${money(row.baseFeeMinor)} base · ${money(row.codFeeMinor)} COD` }))}><CreateRule busy={busy} write={write} /></ResourceSection>;
   if (selected === "cod") return <CodWorkspace busy={busy} data={data} write={write} />;
-  return <ShipmentList compact={compact} rows={data.shipments.filter((row) => row.status === "FAILED")} write={write} failed />;
+  return <ShipmentList compact={compact} rows={data.shipments.filter((row) => row.status === "FAILED" || row.failedDelivery?.resolution === "vendor_reported")} write={write} failed />;
 }
 
 function ShipmentList({ compact, failed = false, rows, write }: { compact: boolean; failed?: boolean; rows: LogisticsShipment[]; write(path: string, body: unknown): void }) {

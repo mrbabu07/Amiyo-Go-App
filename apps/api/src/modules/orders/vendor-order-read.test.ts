@@ -87,6 +87,34 @@ test("seller customer chat reuses an open buyer thread and denies another seller
   await assert.rejects(() => new OrderService({ vendorOrder: client.vendorOrder } as never).customerThread({ ...seller, principal: { ...seller.principal, vendorIds: ["other"] } }, "package"), (error: unknown) => error instanceof ApiProblem && error.status === 403);
 });
 
+test("seller delivery exception is idempotent, audited and never changes courier status", async () => {
+  const input = { category: "CARRIER_NO_SHOW" as const, requestedResolution: "INVESTIGATE" as const, reason: "Courier did not arrive in the pickup window", notes: "Called twice", retryAt: null };
+  let eventData: Record<string, unknown> | undefined;
+  let idempotencyResponse: unknown;
+  const client = {
+    $transaction: async (operation: (transaction: unknown) => Promise<unknown>) => operation(client),
+    idempotencyRecord: { findUnique: async () => null, create: async ({ data }: { data: { response: unknown } }) => { idempotencyResponse = data.response; } },
+    vendorOrder: { findUnique: async () => ({ id: "package", orderId: "parent", vendorId: "vendor", order: { userId: "customer", orderNumber: "AG-100" }, shop: { name: "Demo Shop" }, shipments: [{ id: "shipment", status: "READY_TO_SHIP", provider: "amiyo_delivery" }] }) },
+    failedDeliveryRecord: { upsert: async ({ create }: { create: { resolution: string; reason: string } }) => { assert.equal(create.resolution, "vendor_reported"); assert.equal(create.reason, input.reason); } },
+    shipment: { update: async ({ data }: { data: Record<string, unknown> }) => { eventData = data; } },
+    notification: { upsert: async ({ create }: { create: { userId: string; type: string } }) => { assert.equal(create.userId, "customer"); assert.equal(create.type, "order.delivery_exception"); } },
+    auditLog: { create: async ({ data }: { data: { action: string; actorType: string } }) => { assert.equal(data.action, "logistics.delivery_exception.vendor_reported"); assert.equal(data.actorType, "vendor"); } }
+  };
+  const result = await new OrderService(client as never).reportDeliveryException({ ...seller, permissions: ["orders:read", "orders:manage"] }, "package", input, "44444444-4444-4444-8444-444444444444");
+  assert.equal(result.status, "vendor_reported");
+  assert.equal(eventData?.status, undefined);
+  assert.ok(eventData?.events);
+  assert.deepEqual(idempotencyResponse, result);
+});
+
+test("delivery exception rejects another seller and completed parcels", async () => {
+  const input = { category: "OTHER" as const, requestedResolution: "INVESTIGATE" as const, reason: "Parcel workflow needs operations review", notes: null, retryAt: null };
+  const row = { id: "package", orderId: "parent", vendorId: "vendor", order: { userId: "customer", orderNumber: "AG-100" }, shop: { name: "Demo Shop" }, shipments: [{ id: "shipment", status: "DELIVERED", provider: "courier" }] };
+  const client = { $transaction: async (operation: (transaction: unknown) => Promise<unknown>) => operation(client), idempotencyRecord: { findUnique: async () => null }, vendorOrder: { findUnique: async () => row } };
+  await assert.rejects(() => new OrderService(client as never).reportDeliveryException({ ...seller, permissions: ["orders:manage"], principal: { ...seller.principal, vendorIds: ["other"] } }, "package", input, "44444444-4444-4444-8444-444444444444"), (error: unknown) => error instanceof ApiProblem && error.status === 403);
+  await assert.rejects(() => new OrderService(client as never).reportDeliveryException({ ...seller, permissions: ["orders:manage"] }, "package", input, "44444444-4444-4444-8444-444444444444"), (error: unknown) => error instanceof ApiProblem && error.code === "DELIVERY_EXCEPTION_NOT_ALLOWED");
+});
+
 test("batched list preserves detail DTOs and starts bounded relation branches concurrently", async () => {
   const createdAt = new Date("2026-10-03T00:00:00Z");
   const parent = { id: "parent", orderNumber: "ORDER", currency: "BDT", addresses: [], payments: [], user: null };

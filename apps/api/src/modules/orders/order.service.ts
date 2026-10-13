@@ -2,7 +2,7 @@ import { parcelCollectionAmount } from "./collection-amount.js";
 import { loadReturnPolicy, returnWindow } from "../operations/return-policy.js";
 import { createHash } from "node:crypto";
 import { Prisma, type PrismaClient, type VendorOrderStatus } from "@prisma/client";
-import type { Session, VendorOrderTransition } from "@amiyo/contracts";
+import { vendorDeliveryExceptionSchema, type Session, type VendorDeliveryExceptionInput, type VendorOrderTransition } from "@amiyo/contracts";
 import { canTransitionVendorOrder, deliveryOutboxKey } from "@amiyo/domain";
 import { withSerializableTransaction } from "../../infrastructure/database/transaction.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
@@ -142,6 +142,29 @@ export class OrderService {
       const thread = await transaction.chatThread.create({ data: { vendorId: row.vendorId, subject: `Order ${row.order.orderNumber}`, metadata: json({ orderId: row.orderId, vendorOrderId: row.id }), participants: { create: [{ userId: customerId, role: "customer" }, ...vendorUserIds.map((userId) => ({ userId, role: "vendor" }))] } }, select: { id: true } });
       await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "order.customer_chat_opened", resourceType: "vendor_order", resourceId: row.id, after: json({ threadId: thread.id, orderId: row.orderId }) } });
       return thread;
+    });
+  }
+
+  async reportDeliveryException(session: Session, id: string, input: VendorDeliveryExceptionInput, idempotencyKey: string, correlationId?: string) {
+    const scope = `vendor-delivery-exception:${session.principal.userId}:${id}`;
+    const requestHash = createHash("sha256").update(JSON.stringify(input)).digest("hex");
+    return withSerializableTransaction(this.client, async (transaction) => {
+      const previous = await transaction.idempotencyRecord.findUnique({ where: { scope_key: { scope, key: idempotencyKey } } });
+      if (previous) { if (previous.requestHash !== requestHash) throw new ApiProblem(409, "IDEMPOTENCY_KEY_REUSED", "Idempotency key was used for a different delivery exception"); return vendorDeliveryExceptionSchema.parse(previous.response); }
+      const row = await transaction.vendorOrder.findUnique({ where: { id }, include: { order: { select: { userId: true, orderNumber: true } }, shop: { select: { name: true } }, shipments: { orderBy: { createdAt: "desc" }, take: 1 } } });
+      if (!row) throw new ApiProblem(404, "VENDOR_ORDER_NOT_FOUND", "Vendor order not found");
+      if (session.status !== "ACTIVE" || !session.permissions.includes("orders:manage") || !session.principal.vendorIds.includes(row.vendorId)) throw new ApiProblem(403, "VENDOR_ORDER_FORBIDDEN", "Only this order's seller can report a delivery exception");
+      const shipment = row.shipments[0];
+      if (!shipment || !["READY_TO_SHIP", "PICKED_UP", "IN_TRANSIT"].includes(shipment.status)) throw new ApiProblem(409, "DELIVERY_EXCEPTION_NOT_ALLOWED", "A delivery exception can be reported only while this parcel is awaiting pickup or in transit");
+      const reportedAt = new Date();
+      const note = [input.category.replaceAll("_", " "), input.requestedResolution.replaceAll("_", " "), input.notes].filter(Boolean).join(" · ");
+      await transaction.failedDeliveryRecord.upsert({ where: { shipmentId: shipment.id }, create: { shipmentId: shipment.id, courierName: shipment.provider, reason: input.reason, note, resolution: "vendor_reported", nextAttemptAt: input.retryAt ? new Date(input.retryAt) : null }, update: { reason: input.reason, note, resolution: "vendor_reported", nextAttemptAt: input.retryAt ? new Date(input.retryAt) : null } });
+      await transaction.shipment.update({ where: { id: shipment.id }, data: { events: { create: { status: shipment.status, description: `Seller reported: ${input.reason}`, providerPayload: json({ eventType: "vendor_delivery_exception", category: input.category, requestedResolution: input.requestedResolution, notes: input.notes, retryAt: input.retryAt }), occurredAt: reportedAt } } } });
+      if (row.order.userId) await transaction.notification.upsert({ where: { idempotencyKey: `vendor-delivery-exception:${id}:${idempotencyKey}` }, update: {}, create: { userId: row.order.userId, type: "order.delivery_exception", title: `Delivery update for ${row.order.orderNumber}`, body: `${row.shop.name} reported a delivery issue: ${input.reason}`, data: json({ href: `/orders/${row.orderId}` }), idempotencyKey: `vendor-delivery-exception:${id}:${idempotencyKey}`, deliveries: { create: { channel: "in_app", status: "DELIVERED", deliveredAt: reportedAt } } } });
+      const result = { vendorOrderId: row.id, shipmentId: shipment.id, status: "vendor_reported" as const, ...input, reportedAt: reportedAt.toISOString() };
+      await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "logistics.delivery_exception.vendor_reported", resourceType: "shipment", resourceId: shipment.id, ...(correlationId ? { correlationId } : {}), before: json({ shipmentStatus: shipment.status }), after: json(result) } });
+      await transaction.idempotencyRecord.create({ data: { scope, key: idempotencyKey, requestHash, response: json(result), expiresAt: new Date(Date.now() + 24 * 60 * 60_000) } });
+      return result;
     });
   }
 

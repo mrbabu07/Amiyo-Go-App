@@ -1,15 +1,15 @@
-import type { VendorOrderDetail, VendorOrderStatus } from "@amiyo/contracts";
+import type { VendorDeliveryExceptionInput, VendorOrderDetail, VendorOrderStatus } from "@amiyo/contracts";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Crypto from "expo-crypto";
 import { useRouter } from "expo-router";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { OrderItemImage } from "./OrderItemImage";
-import { getVendorOrder, openVendorOrderCustomerThread, transitionVendorOrder } from "./orders.api";
+import { getVendorOrder, openVendorOrderCustomerThread, reportVendorDeliveryException, transitionVendorOrder } from "./orders.api";
 
 const actions: Partial<Record<VendorOrderStatus, Array<{ status: VendorOrderStatus; label: string; danger?: boolean }>>> = {
   PLACED: [{ status: "ACCEPTED", label: "Accept order" }, { status: "REJECTED", label: "Reject", danger: true }],
@@ -18,15 +18,25 @@ const actions: Partial<Record<VendorOrderStatus, Array<{ status: VendorOrderStat
 };
 const money = (minor: string, currency = "BDT") => `${currency === "BDT" ? "Tk" : currency} ${(Number(minor) / 100).toLocaleString("en-BD", { minimumFractionDigits: 2 })}`;
 const label = (value: string) => value.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
+const exceptionCategories: VendorDeliveryExceptionInput["category"][] = ["PICKUP_DELAY", "CARRIER_NO_SHOW", "ADDRESS_ISSUE", "CUSTOMER_UNAVAILABLE", "PARCEL_DAMAGED", "OTHER"];
+const exceptionResolutions: VendorDeliveryExceptionInput["requestedResolution"][] = ["REATTEMPT", "CONTACT_CUSTOMER", "RETURN_TO_SELLER", "INVESTIGATE"];
 
 export function VendorOrderDetailScreen({ id }: { id: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
   const { width } = useWindowDimensions();
   const compact = width < 640;
   const [busy, setBusy] = useState<VendorOrderStatus | null>(null);
   const [openingChat, setOpeningChat] = useState(false);
+  const [exceptionOpen, setExceptionOpen] = useState(false);
+  const [exceptionBusy, setExceptionBusy] = useState(false);
+  const [exceptionCategory, setExceptionCategory] = useState<VendorDeliveryExceptionInput["category"]>("PICKUP_DELAY");
+  const [exceptionResolution, setExceptionResolution] = useState<VendorDeliveryExceptionInput["requestedResolution"]>("INVESTIGATE");
+  const [exceptionReason, setExceptionReason] = useState("");
+  const [exceptionNotes, setExceptionNotes] = useState("");
+  const [exceptionKey, setExceptionKey] = useState<string | null>(null);
+  const [exceptionSuccess, setExceptionSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const order = useQuery({ queryKey: ["orders", "vendor", id, user?.uid], queryFn: () => getVendorOrder(user!, id), enabled: Boolean(user) });
 
@@ -56,6 +66,28 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
       setError(caught instanceof Error ? caught.message : "Customer conversation could not be opened");
     } finally {
       setOpeningChat(false);
+    }
+  }
+
+  async function reportException() {
+    if (!user || exceptionBusy || exceptionReason.trim().length < 5) return;
+    const key = exceptionKey ?? Crypto.randomUUID();
+    setExceptionKey(key);
+    setExceptionBusy(true);
+    setExceptionSuccess(null);
+    setError(null);
+    try {
+      await reportVendorDeliveryException(user, id, { category: exceptionCategory, requestedResolution: exceptionResolution, reason: exceptionReason.trim(), notes: exceptionNotes.trim() || null, retryAt: null }, key);
+      setExceptionSuccess("Delivery exception sent to operations and the customer was notified.");
+      setExceptionOpen(false);
+      setExceptionReason("");
+      setExceptionNotes("");
+      setExceptionKey(null);
+      await order.refetch();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Delivery exception could not be reported");
+    } finally {
+      setExceptionBusy(false);
     }
   }
 
@@ -89,6 +121,16 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
       {item.shipment?.events.map((event, index) => <TimelineEvent key={event.id} status={event.status} description={event.description || "No event note recorded"} location={event.location} occurredAt={event.occurredAt} last={index === item.shipment!.events.length - 1} />)}
       {!item.shipment?.events.length ? <Text style={styles.timelineEmpty}>No courier event has been recorded yet.</Text> : null}
     </Panel>
+    {item.shipment && ["READY_TO_SHIP", "PICKED_UP", "IN_TRANSIT"].includes(item.shipment.status) ? <Panel title="Delivery exception" meta="Report a pickup or transit problem without changing courier status.">
+      {exceptionSuccess ? <Text style={styles.success}>{exceptionSuccess}</Text> : null}
+      {!exceptionOpen ? <Pressable accessibilityRole="button" onPress={() => setExceptionOpen(true)} style={styles.exceptionTrigger}><Ionicons color={colors.danger} name="warning-outline" size={18} /><Text style={styles.exceptionTriggerText}>Report delivery issue</Text></Pressable> : <View style={styles.exceptionForm}>
+        <Text style={styles.detailLabel}>Issue category</Text><View style={styles.choiceRow}>{exceptionCategories.map((value) => <Choice key={value} active={exceptionCategory === value} disabled={exceptionBusy} label={label(value)} onPress={() => { setExceptionCategory(value); setExceptionKey(null); }} />)}</View>
+        <Text style={styles.detailLabel}>Requested operations action</Text><View style={styles.choiceRow}>{exceptionResolutions.map((value) => <Choice key={value} active={exceptionResolution === value} disabled={exceptionBusy} label={label(value)} onPress={() => { setExceptionResolution(value); setExceptionKey(null); }} />)}</View>
+        <Text style={styles.detailLabel}>Reason</Text><TextInput accessibilityLabel="Delivery exception reason" editable={!exceptionBusy} maxLength={500} onChangeText={(value) => { setExceptionReason(value); setExceptionKey(null); }} placeholder="Describe what is blocking pickup or delivery" placeholderTextColor={colors.muted} style={styles.input} value={exceptionReason} />
+        <Text style={styles.detailLabel}>Additional notes (optional)</Text><TextInput accessibilityLabel="Delivery exception notes" editable={!exceptionBusy} maxLength={1000} multiline onChangeText={(value) => { setExceptionNotes(value); setExceptionKey(null); }} placeholder="Add courier contact, timing, or handling details" placeholderTextColor={colors.muted} style={[styles.input, styles.notes]} value={exceptionNotes} />
+        <View style={styles.actions}><Pressable accessibilityRole="button" disabled={exceptionBusy || exceptionReason.trim().length < 5} onPress={reportException} style={[styles.primary, (exceptionBusy || exceptionReason.trim().length < 5) && styles.disabled]}>{exceptionBusy ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>Send to operations</Text>}</Pressable><Pressable accessibilityRole="button" disabled={exceptionBusy} onPress={() => setExceptionOpen(false)} style={styles.heroButton}><Text style={styles.heroButtonText}>Cancel</Text></Pressable></View>
+      </View>}
+    </Panel> : null}
     {actions[item.status]?.length ? <View style={styles.actions}>{actions[item.status]!.map((action) => <Pressable disabled={Boolean(busy)} key={action.status} onPress={() => transition(action.status)} style={[styles.primary, action.danger && styles.danger, busy && styles.disabled]}>{busy === action.status ? <ActivityIndicator color="#fff" /> : <><Ionicons name={action.status === "READY_TO_SHIP" ? "cube-outline" : "checkmark-circle-outline"} size={19} color="#fff" /><Text style={styles.primaryText}>{action.label}</Text></>}</Pressable>)}</View> : <Text style={styles.notice}>No seller action is required at this stage.</Text>}
   </ScrollView></SafeAreaView>;
 }
@@ -98,6 +140,7 @@ function Panel({ children, meta, title }: { children: ReactNode; meta?: string; 
 function Detail({ label: title, strong, value }: { label: string; strong?: boolean; value: string }) { return <View style={styles.detail}><Text style={styles.detailLabel}>{title}</Text><Text selectable style={[styles.value, strong && styles.strong]}>{value}</Text></View>; }
 function Metric({ icon, label: title, value }: { icon: string; label: string; value: string }) { return <View style={styles.metric}><View style={styles.metricIcon}><Ionicons color={colors.primary} name={icon as never} size={19} /></View><View style={styles.flex}><Text numberOfLines={1} adjustsFontSizeToFit style={styles.metricValue}>{value}</Text><Text style={styles.muted}>{title}</Text></View></View>; }
 function TimelineEvent({ description, first, last, location, occurredAt, status }: { description: string; first?: boolean; last: boolean; location?: string | null; occurredAt: string; status: string }) { return <View style={styles.timelineRow}><View style={styles.timelineRail}><View style={[styles.timelineDot, first && styles.timelineDotFirst]} />{!last ? <View style={styles.timelineLine} /> : null}</View><View style={styles.timelineCopy}><View style={styles.timelineHeading}><Text style={styles.timelineStatus}>{label(status)}</Text><Text style={styles.timelineDate}>{new Date(occurredAt).toLocaleString("en-BD")}</Text></View><Text style={styles.timelineDescription}>{description}</Text>{location ? <Text style={styles.timelineLocation}>{location}</Text> : null}</View></View>; }
+function Choice({ active, disabled, label: text, onPress }: { active: boolean; disabled: boolean; label: string; onPress(): void }) { return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={[styles.choice, active && styles.choiceActive]}><Text style={[styles.choiceText, active && styles.choiceTextActive]}>{text}</Text></Pressable>; }
 function address(value: NonNullable<VendorOrderDetail["deliveryAddress"]>) { return [value.recipientName, value.line1, value.line2, value.unionName, value.upazila, value.district, value.division, value.postalCode].filter(Boolean).join(", "); }
 
 const styles = StyleSheet.create({
@@ -161,6 +204,17 @@ const styles = StyleSheet.create({
   timelineDescription: { color: colors.text, fontSize: 11, lineHeight: 17 },
   timelineLocation: { color: colors.accent, fontSize: 10, fontWeight: "600" },
   timelineEmpty: { color: colors.muted, fontSize: 11, paddingLeft: 28 },
+  exceptionTrigger: { alignItems: "center", alignSelf: "flex-start", borderColor: colors.danger, borderRadius: radius.md, borderWidth: 1, flexDirection: "row", gap: spacing.sm, minHeight: 44, paddingHorizontal: spacing.md },
+  exceptionTriggerText: { color: colors.danger, fontWeight: "700" },
+  exceptionForm: { gap: spacing.sm },
+  choiceRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  choice: { borderColor: colors.border, borderRadius: radius.pill, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 9 },
+  choiceActive: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
+  choiceText: { color: colors.muted, fontSize: 11, fontWeight: "600" },
+  choiceTextActive: { color: colors.primary },
+  input: { backgroundColor: colors.background, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, minHeight: 46, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  notes: { minHeight: 90, textAlignVertical: "top" },
+  success: { backgroundColor: colors.primarySoft, borderRadius: radius.md, color: colors.success, padding: spacing.md },
   error: { backgroundColor: "#fef2f2", borderRadius: radius.md, color: colors.danger, padding: spacing.md },
   center: { alignItems: "center", backgroundColor: colors.background, flex: 1, gap: spacing.md, justifyContent: "center", padding: spacing.xl }
 });

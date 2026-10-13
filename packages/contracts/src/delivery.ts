@@ -12,6 +12,15 @@ export const vendorOrderTransitionSchema = z.object({
   reason: z.string().trim().min(2).max(300).optional()
 });
 
+export const vendorDeliveryExceptionInputSchema = z.object({
+  category: z.enum(["PICKUP_DELAY", "CARRIER_NO_SHOW", "ADDRESS_ISSUE", "CUSTOMER_UNAVAILABLE", "PARCEL_DAMAGED", "OTHER"]),
+  requestedResolution: z.enum(["REATTEMPT", "CONTACT_CUSTOMER", "RETURN_TO_SELLER", "INVESTIGATE"]),
+  reason: z.string().trim().min(5).max(500),
+  notes: z.string().trim().max(1000).nullable().default(null),
+  retryAt: timestampSchema.nullable().default(null)
+});
+export const vendorDeliveryExceptionSchema = vendorDeliveryExceptionInputSchema.extend({ vendorOrderId: uuidSchema, shipmentId: uuidSchema, status: z.literal("vendor_reported"), reportedAt: timestampSchema });
+
 export const shipmentEventSchema = z.object({
   id: uuidSchema,
   status: shipmentStatusSchema,
@@ -112,6 +121,7 @@ export const amiyoDeliveryCallbackSchema = z.object({
 
 export type VendorOrderDetail = z.infer<typeof vendorOrderDetailSchema>;
 export type VendorOrderTransition = z.infer<typeof vendorOrderTransitionSchema>;
+export type VendorDeliveryExceptionInput = z.infer<typeof vendorDeliveryExceptionInputSchema>;
 export type CustomerOrderSummary = z.infer<typeof customerOrderSummarySchema>;
 export type OrderTracking = z.infer<typeof orderTrackingSchema>;
 export type FulfillmentDocument = z.infer<typeof fulfillmentDocumentSchema>;

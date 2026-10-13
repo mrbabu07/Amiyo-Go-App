@@ -1,4 +1,4 @@
-import { chatThreadCreatedSchema, customerOrderSummarySchema, documentQrVerificationSchema, fulfillmentDocumentSchema, invoiceSchema, orderSchema, orderTrackingSchema, vendorOrderDetailSchema, type VendorOrderTransition } from "@amiyo/contracts";
+import { chatThreadCreatedSchema, customerOrderSummarySchema, documentQrVerificationSchema, fulfillmentDocumentSchema, invoiceSchema, orderSchema, orderTrackingSchema, vendorDeliveryExceptionSchema, vendorOrderDetailSchema, type VendorDeliveryExceptionInput, type VendorOrderTransition } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
 import { withReadDeadline } from "../../network/request-deadline";
 
@@ -11,6 +11,7 @@ export async function getOrderTracking(user: User, id: string) { return orderTra
 export async function getVendorOrders(user: User) { return vendorOrderDetailSchema.array().parse(await request(user, "/api/v2/vendor/orders")); }
 export async function getVendorOrder(user: User, id: string) { return vendorOrderDetailSchema.parse(await request(user, `/api/v2/vendor/orders/${id}`)); }
 export async function openVendorOrderCustomerThread(user: User, id: string) { return chatThreadCreatedSchema.parse(await request(user, `/api/v2/vendor/orders/${id}/customer-thread`, { method: "POST" })); }
+export async function reportVendorDeliveryException(user: User, id: string, input: VendorDeliveryExceptionInput, key: string) { return vendorDeliveryExceptionSchema.parse(await request(user, `/api/v2/vendor/orders/${id}/delivery-exceptions`, { method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify(input) })); }
 export async function transitionVendorOrder(user: User, id: string, input: VendorOrderTransition, key: string) { return vendorOrderDetailSchema.parse(await request(user, `/api/v2/vendor/orders/${id}/transitions`, { method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify(input) })); }
 export async function getInvoice(user: User, id: string) { return invoiceSchema.parse(await request(user, `/api/v2/orders/${id}/invoice`)); }
 export async function getFulfillmentDocument(user: User, id: string) { return fulfillmentDocumentSchema.parse(await request(user, `/api/v2/vendor/orders/${id}/documents`)); }

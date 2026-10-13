@@ -293,7 +293,7 @@ Using the approved demo product, temporary stock and price subscriptions were cr
 
 The seller order detail now renders a responsive fulfillment timeline from the live shipment event array already returned by the API. It includes the package creation timestamp, then recorded courier status, description, optional location and occurrence time without inferring unrecorded milestones. An empty shipment history is explicit. The primary document action is renamed `Shipping documents` because its destination contains both the signed thermal parcel label and A4 packing slip exports.
 
-This improves reference parity for seller fulfillment evidence, but does not claim the legacy courier assignment, pickup scheduling, delivery-exception or seller-side COD collection controls. Those require corresponding seller-authorized APIs rather than decorative buttons.
+This improves reference parity for seller fulfillment evidence, but does not claim the legacy courier assignment, pickup scheduling or seller-side COD collection controls. Those require corresponding seller-authorized APIs rather than decorative buttons.
 
 ## Seller order product thumbnails
 
@@ -306,3 +306,7 @@ The shared customer/seller inbox and thread now subscribe to the reactive authen
 ## Order-scoped seller-to-customer chat
 
 Seller order detail now offers `Message customer` as a real order-scoped action. The API first verifies that the signed-in seller belongs to the package vendor, rejects guest/self-chat orders, reuses the buyer's existing open vendor conversation when available, and adds the current seller as a participant. Otherwise it creates an order-labeled thread for the buyer and all active vendor members inside a serializable transaction and records an audit event. The UI opens that exact seller thread and reports failures without fabricating a conversation. Focused API tests cover creation, participant roles, audit evidence, reuse and cross-vendor denial; OpenAPI documents the endpoint.
+
+## Seller delivery exception reporting
+
+Seller order detail now provides a responsive delivery-issue form only while a real shipment is awaiting pickup, picked up or in transit. The seller selects a bounded issue category and requested operations action, supplies a required reason and optional notes, and can safely retry an uncertain request with the same idempotency key. The API verifies active `orders:manage` membership for the package vendor, rejects completed or missing shipments, records a `vendor_reported` exception, appends a structured shipment event without changing courier status, notifies the buyer, writes audit evidence and validates replayed JSON through the response contract. Seller reports appear alongside courier failures in the admin logistics exception queue and summary. Contract, API, admin-query and mobile source regressions cover the workflow; an external courier status remains authoritative.
