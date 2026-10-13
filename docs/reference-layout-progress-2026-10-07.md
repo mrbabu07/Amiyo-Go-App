@@ -314,3 +314,5 @@ Seller order detail now provides a responsive delivery-issue form only while a r
 ## Seller pickup request
 
 Ready-to-ship seller packages now expose a responsive preferred pickup request with bounded next-day presets, fixed operating windows and an optional handling note. Requests are idempotent, limited to the owning active seller, rejected outside the 30-minute-to-14-day window, and blocked once operations has assigned a courier or pickup staff member. The request updates only pickup planning metadata and appends an event; it never marks the parcel picked up or assigns a courier. Operations remains authoritative for assignment and pickup confirmation.
+
+The admin logistics queue now surfaces the requested date, window and seller note directly on each parcel card before the existing operations-only pickup confirmation. This closes the request handoff without granting sellers courier assignment, shipment-state or COD reconciliation authority.

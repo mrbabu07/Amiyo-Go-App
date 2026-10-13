@@ -24,3 +24,12 @@ test("vendor fulfillment and customer tracking expose accessible actions", async
   assert.match(source, /item\.shipment\?\.status === "READY_TO_SHIP"/);
   assert.match(source, /const user = useCurrentUser\(\)/);
 });
+
+test("operations can see seller pickup evidence before confirming collection", async () => {
+  const source = await readFile(new URL("../apps/mobile/src/features/operations/AdminLogisticsScreen.tsx", import.meta.url), "utf8");
+  assert.match(source, /Seller requested pickup/);
+  assert.match(source, /row\.assignment\?\.pickupDate/);
+  assert.match(source, /row\.assignment\.pickupWindow/);
+  assert.match(source, /Mark picked up/);
+  assert.match(source, /Pickup confirmed from logistics workspace/);
+});
