@@ -138,18 +138,58 @@ test("remitted COD is excluded and an unassigned exception stays explicit", () =
 });
 
 test("RTO requires an active or failed shipment and records its resolution", async () => {
-  const resolutions: string[] = [];
-  const client = {
+  const calls: string[] = [];
+  const client = transactional({
     shipment: {
-      findUnique: async () => ({ id: shipmentId, status: "FAILED", provider: "Manual", assignment: null }),
-      update: async ({ data }: { data: { status: string } }) => ({ id: shipmentId, status: data.status })
+      findUnique: async () => ({ id: shipmentId, status: "FAILED", provider: "Manual", assignment: null, failedDelivery: { resolution: "pending" } }),
+      update: async ({ data }: { data: { status: string } }) => { calls.push("shipment"); return { id: shipmentId, status: data.status }; }
     },
-    failedDeliveryRecord: { upsert: async ({ create }: { create: { resolution: string } }) => { resolutions.push(create.resolution); return create; } },
-    auditLog: { create: async () => undefined }
-  } as unknown as PrismaClient;
+    failedDeliveryRecord: { upsert: async ({ update }: { update: { resolution: string } }) => { calls.push("failed-delivery"); assert.equal(update.resolution, "rto_in_transit"); return update; } },
+    auditLog: { create: async () => { calls.push("audit"); } }
+  }) as unknown as PrismaClient;
   const row = await new LogisticsService(client).markRto(session, shipmentId, { note: "Courier is returning the parcel" });
   assert.equal(row.status, "CANCELLED");
-  assert.deepEqual(resolutions, ["rto_in_transit"]);
+  assert.deepEqual(calls, ["shipment", "failed-delivery", "audit"]);
+});
+
+test("RTO receipt commits resolution, parcel evidence and audit together", async () => {
+  const calls: string[] = [];
+  const client = transactional({
+    shipment: { findUnique: async () => ({ id: shipmentId, status: "CANCELLED", failedDelivery: { resolution: "rto_in_transit" } }), update: async () => { calls.push("shipment"); } },
+    failedDeliveryRecord: { update: async ({ data }: { data: { resolution: string } }) => { calls.push("failed-delivery"); return { shipmentId, ...data }; } },
+    auditLog: { create: async () => { calls.push("audit"); } }
+  }) as unknown as PrismaClient;
+  const result = await new LogisticsService(client).confirmRtoReceived(session, shipmentId, { note: "Seller received the returned parcel" });
+  assert.equal(result.resolution, "rto_received");
+  assert.deepEqual(calls, ["failed-delivery", "shipment", "audit"]);
+});
+
+test("failed-delivery reattempt is state guarded and atomic", async () => {
+  const calls: string[] = [];
+  const invalid = transactional({ shipment: { findUnique: async () => ({ id: shipmentId, status: "READY_TO_SHIP", failedDelivery: { resolution: "reattempt_scheduled" } }) } }) as unknown as PrismaClient;
+  await assert.rejects(() => new LogisticsService(invalid).scheduleReattempt(session, shipmentId, { nextAttemptAt: "2026-10-14T12:00:00.000Z", redeliveryFeeMinor: "0", reason: "Customer requested tomorrow", note: null }), /Only an unresolved failed delivery/);
+  const client = transactional({
+    shipment: { findUnique: async () => ({ id: shipmentId, status: "FAILED", failedDelivery: { resolution: "pending" } }), update: async () => { calls.push("shipment"); } },
+    failedDeliveryRecord: { update: async ({ data }: { data: { resolution: string } }) => { calls.push("failed-delivery"); return { shipmentId, ...data }; } },
+    auditLog: { create: async () => { calls.push("audit"); } }
+  }) as unknown as PrismaClient;
+  const result = await new LogisticsService(client).scheduleReattempt(session, shipmentId, { nextAttemptAt: "2026-10-14T12:00:00.000Z", redeliveryFeeMinor: "0", reason: "Customer requested tomorrow", note: null });
+  assert.equal(result.resolution, "reattempt_scheduled");
+  assert.deepEqual(calls, ["failed-delivery", "shipment", "audit"]);
+});
+
+test("return to seller is limited to unresolved failures and commits atomically", async () => {
+  const calls: string[] = [];
+  const invalid = transactional({ shipment: { findUnique: async () => ({ id: shipmentId, status: "FAILED", failedDelivery: { resolution: "reattempt_scheduled" } }) } }) as unknown as PrismaClient;
+  await assert.rejects(() => new LogisticsService(invalid).returnToSeller(session, shipmentId, { returnFeeMinor: "500", reason: "Attempts exhausted", note: null }), /Only an unresolved failed delivery/);
+  const client = transactional({
+    shipment: { findUnique: async () => ({ id: shipmentId, status: "FAILED", failedDelivery: { resolution: "pending" } }), update: async () => { calls.push("shipment"); } },
+    failedDeliveryRecord: { update: async ({ data }: { data: { resolution: string } }) => { calls.push("failed-delivery"); return { shipmentId, ...data }; } },
+    auditLog: { create: async () => { calls.push("audit"); } }
+  }) as unknown as PrismaClient;
+  const result = await new LogisticsService(client).returnToSeller(session, shipmentId, { returnFeeMinor: "500", reason: "Attempts exhausted", note: "Return through assigned courier" });
+  assert.equal(result.resolution, "return_to_seller");
+  assert.deepEqual(calls, ["failed-delivery", "shipment", "audit"]);
 });
 
 test("manifest pickup rejects parcels that are not ready", async () => {
