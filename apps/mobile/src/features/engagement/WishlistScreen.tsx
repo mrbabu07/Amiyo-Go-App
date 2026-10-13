@@ -31,7 +31,7 @@ export function WishlistScreen() {
   const compact = width < 1024;
   const [shareError, setShareError] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
-  const query = useQuery({ queryKey: wishlistKey, queryFn: () => getWishlist(user!, collectionId), enabled: Boolean(user) });
+  const query = useQuery({ queryKey: wishlistKey, queryFn: () => getWishlist(user!, collectionId), enabled: Boolean(user), retry: false });
   const updateShare = useMutation({ mutationFn: () => query.data?.shareUrl ? unshareWishlist(user!, collectionId) : shareWishlist(user!, collectionId), onMutate: () => ({ uid: user?.uid, key: wishlistKey }), onSuccess: (data, _variables, context) => { if (context?.uid && firebaseAuth?.currentUser?.uid === context.uid) { cache.setQueryData(context.key, data); void cache.invalidateQueries({ queryKey: ["wishlist-collections", context.uid] }); } } });
   const remove = useMutation({ mutationFn: (productId: string) => removeWishlistItem(user!, productId, collectionId), onMutate: () => ({ uid: user?.uid, key: wishlistKey }), onSuccess: (data, _variables, context) => { if (context?.uid && firebaseAuth?.currentUser?.uid === context.uid) { cache.setQueryData(context.key, data); void cache.invalidateQueries({ queryKey: ["wishlist-collections", context.uid] }); } } });
 

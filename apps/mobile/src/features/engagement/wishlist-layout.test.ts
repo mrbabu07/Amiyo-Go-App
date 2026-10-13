@@ -25,6 +25,7 @@ test("wishlist cart cache and card state stay scoped to the signed-in account", 
 });
 
 test("wishlist layout preserves theme, responsive stacking and independent controls", () => {
+  assert.match(source, /enabled: Boolean\(user\), retry: false/);
   assert.match(source, /width < 1024/);
   assert.match(source, /compact && styles.fullWidth/);
   assert.match(source, /<\/Pressable>\s*<View style=\{styles.cardActions\}>/);

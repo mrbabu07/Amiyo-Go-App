@@ -282,3 +282,9 @@ Checks passed: mobile type-check, 88 mobile tests, full suite including 92 repos
 The admin control center now includes a responsive Exception Handling inbox using the existing live operations reads. It separates unresolved returns/refunds, unresolved vendor payouts and recent platform audit activity, shows up to three current items per lane, and links each lane to its real management workspace. Closed or rejected returns and paid, rejected or cancelled payouts no longer inflate pending-action counts.
 
 The reference dashboard exposes additional criticality, ownership, SLA and finance-exposure fields that the current API does not provide. Those metrics and actions are intentionally not fabricated. This closes the visible live-queue hierarchy gap, not full reference exception-management parity.
+
+## Wishlist read resilience and alert acceptance
+
+The wishlist's bounded authenticated read no longer inherits the global automatic retry policy. A failed or stalled read now reaches the existing explicit `Try again` state after one bounded attempt instead of keeping the customer on a spinner through repeated 20-second attempts. No write is automatically replayed.
+
+Using the approved demo product, temporary stock and price subscriptions were created together against the configured database. Removing only the stock subscription returned the price subscription unchanged; removing the price subscription then left no test alert. This verifies the deployed independent-kind API behavior and cleanup. Chrome's local Firebase persistence remained stuck while loading authenticated screens after emulator restarts, so browser-rendered coexistence is still not claimed from this pass.
