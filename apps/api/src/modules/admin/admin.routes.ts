@@ -9,6 +9,8 @@ import { IdentityService } from "../identity/identity.service.js";
 import { CommissionService } from "../finance/commission.service.js";
 import { AdminSearchService, type AdminSearchType } from "./admin-search.service.js";
 import { AdminService } from "./admin.service.js";
+import { AdminKycDocumentAccessService } from "./admin-kyc-document-access.service.js";
+import { FirebaseStorageProvider } from "../media/firebase-storage.provider.js";
 
 const idSchema = z.object({ id: z.string().uuid() });
 const adminChatInputSchema = z.object({ body: z.string().trim().min(1).max(4000) });
@@ -20,6 +22,7 @@ export function createAdminRouter() {
   const service = new AdminService(prisma);
   const search = new AdminSearchService(prisma);
   const commissions = new CommissionService(prisma);
+  const kycDocuments = new AdminKycDocumentAccessService(prisma, new FirebaseStorageProvider());
   const authenticate = createAuthenticationMiddleware(new FirebaseTokenVerifier(), new IdentityService(prisma));
   const writes = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: "draft-7", legacyHeaders: false, message: { title: "Too many admin requests", status: 429, code: "ADMIN_RATE_LIMITED" } });
   router.get("/api/v2/platform/settings", async (_req, res, next) => { try { res.json(await service.publicSettings()); } catch (error) { next(error); } });
@@ -81,6 +84,7 @@ export function createAdminRouter() {
   router.put("/api/v2/admin/workspace/users/:id/roles", writes, async (req, res, next) => { try { res.json(await service.updateUserRoles(requireSession(req), idSchema.parse(req.params).id, adminUserRolesInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.patch("/api/v2/admin/workspace/vendors/:id/status", writes, async (req, res, next) => { try { res.json(await service.updateVendor(requireSession(req), idSchema.parse(req.params).id, adminVendorStatusInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.patch("/api/v2/admin/workspace/kyc/:id", writes, async (req, res, next) => { try { res.json(await service.reviewKyc(requireSession(req), idSchema.parse(req.params).id, adminKycReviewInputSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.post("/api/v2/admin/workspace/kyc/:id/documents/:documentId/access", async (req, res, next) => { try { const params = z.object({ id: z.string().uuid(), documentId: z.string().uuid() }).parse(req.params); const input = z.object({ download: z.boolean().default(false) }).parse(req.body); res.set("Cache-Control", "no-store").json(await kycDocuments.access(requireSession(req), params.id, params.documentId, input.download)); } catch (error) { next(error); } });
   router.post("/api/v2/admin/workspace/trust-cases/:id/actions", writes, async (req, res, next) => { try { res.json(await service.actOnTrustCase(requireSession(req), idSchema.parse(req.params).id, trustCaseActionInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/platform", async (req, res, next) => { try { res.json(await service.platform(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/analytics", async (req, res, next) => { try { res.json(await service.analytics(requireSession(req), adminAnalyticsQuerySchema.parse(req.query))); } catch (error) { next(error); } });

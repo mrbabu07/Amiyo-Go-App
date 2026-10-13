@@ -25,7 +25,7 @@ export const vendorKycSubmissionSchema = z.object({
   submittedAt: timestampSchema.nullable(),
   reviewedAt: timestampSchema.nullable(),
   rejectionReason: z.string().nullable(),
-  documents: z.array(z.object({ id: uuidSchema, documentType: z.string(), storageKey: z.string(), mimeType: z.string() }))
+  documents: z.array(z.object({ id: uuidSchema, documentType: z.string(), mimeType: z.string() }))
 });
 
 export const vendorBankAccountSchema = z.object({ id: uuidSchema, provider: z.string(), accountName: z.string(), accountNumberMasked: z.string(), isDefault: z.boolean(), verifiedAt: timestampSchema.nullable() });

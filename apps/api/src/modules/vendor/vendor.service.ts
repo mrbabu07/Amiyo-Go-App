@@ -32,7 +32,7 @@ function workspace(row: Awaited<ReturnType<PrismaClient["vendor"]["findUniqueOrT
   return {
     id: row.id, legalName: row.legalName, displayName: row.displayName, status: row.status, version: row.version,
     shops: row.shops.map((shop) => ({ id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, status: shop.status, description: shop.description, settings: shop.settings, version: shop.version })),
-    kycSubmissions: row.kycSubmissions.map((submission) => ({ id: submission.id, status: submission.status, submittedAt: submission.submittedAt?.toISOString() ?? null, reviewedAt: submission.reviewedAt?.toISOString() ?? null, rejectionReason: submission.rejectionReason, documents: submission.documents.map((document: any) => ({ id: document.id, documentType: document.documentType, storageKey: document.storageKey, mimeType: document.mimeType })) })),
+    kycSubmissions: row.kycSubmissions.map((submission) => ({ id: submission.id, status: submission.status, submittedAt: submission.submittedAt?.toISOString() ?? null, reviewedAt: submission.reviewedAt?.toISOString() ?? null, rejectionReason: submission.rejectionReason, documents: submission.documents.map((document: any) => ({ id: document.id, documentType: document.documentType, mimeType: document.mimeType })) })),
     bankAccounts: row.bankAccounts.map((account) => ({ id: account.id, provider: account.provider, accountName: account.accountName, accountNumberMasked: account.accountNumberMasked, isDefault: account.isDefault, verifiedAt: account.verifiedAt?.toISOString() ?? null }))
   };
 }
