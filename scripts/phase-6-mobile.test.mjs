@@ -35,4 +35,9 @@ test("operations can see seller pickup evidence before confirming collection", a
   assert.match(source, /Finance exposure/);
   assert.match(source, /row\.exception\?\.owner\.name/);
   assert.match(source, /row\.exception\?\.slaTargetAt/);
+  assert.match(source, /Assign courier/);
+  assert.match(source, /Save assignment/);
+  assert.match(source, /expectedVersion: row\.assignment\?\.version/);
+  assert.match(source, /pickupDate: row\.assignment\?\.pickupDate/);
+  assert.match(source, /pickupWindow: row\.assignment\?\.pickupWindow/);
 });

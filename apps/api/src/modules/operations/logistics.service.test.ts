@@ -21,6 +21,13 @@ test("logistics shipment transition records event and audit", async () => {
   assert.deepEqual(calls, ["shipment", "audit"]);
 });
 
+test("courier assignment rejects stale versions before changing the parcel", async () => {
+  let writes = 0;
+  const client = { shipment: { findUnique: async () => ({ id: shipmentId, provider: null, trackingNumber: null, assignment: { version: 3 } }), update: async () => { writes++; } }, logisticsAssignment: { upsert: async () => { writes++; } } } as unknown as PrismaClient;
+  await assert.rejects(() => new LogisticsService(client).assignShipment(session, shipmentId, { courierPartnerId: null, pickupStaffId: null, bookingMode: "manual", trackingNumber: null, pickupDate: null, pickupWindow: null, estimatedDeliveryDate: null, note: null, expectedVersion: 2 }), /changed; refresh and retry/);
+  assert.equal(writes, 0);
+});
+
 test("logistics management rejects non-operations admins", async () => {
   const finance = { ...session, principal: { ...session.principal, roles: ["FINANCE_ADMIN" as const] } };
   await assert.rejects(() => new LogisticsService({} as PrismaClient).saveZone(finance, { name: "Dhaka", code: "DHAKA", districts: [], courierPartnerIds: [], defaultCourierName: null, codAvailable: true, status: "active", slaHours: 24, sortOrder: 10, notes: null }), /operations administrator access/);
