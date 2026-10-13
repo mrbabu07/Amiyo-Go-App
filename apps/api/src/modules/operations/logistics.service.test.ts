@@ -228,10 +228,22 @@ test("reverse logistics inspection preserves evidence and advances status", asyn
 });
 
 test("COD remittance requires reference and follows the shipment state machine", async () => {
-  const client = { shipment: { findUnique: async () => ({ id: shipmentId, status: "DELIVERED", codState: "cod_collected", codRemittanceReference: null }), update: async ({ data }: { data: { codState: string; codRemittanceReference: string } }) => ({ id: shipmentId, ...data }) }, auditLog: { create: async () => undefined } } as unknown as PrismaClient;
+  const calls: string[] = [];
+  const client = transactional({ shipment: { findUnique: async () => ({ id: shipmentId, status: "DELIVERED", codState: "cod_collected", codRemittanceReference: null, vendorOrder: { order: { payments: [{ method: "COD" }] } } }), update: async ({ data }: { data: { codState: string; codRemittanceReference: string } }) => { calls.push("shipment"); return { id: shipmentId, ...data }; } }, auditLog: { create: async () => { calls.push("audit"); } } }) as unknown as PrismaClient;
   const service = new LogisticsService(client);
   await assert.rejects(() => service.updateCodState(session, shipmentId, "cod_remitted", { reference: null, reason: null, note: "Courier remittance received" }), /reference is required/);
   const row = await service.updateCodState(session, shipmentId, "cod_remitted", { reference: "REM-100", reason: null, note: "Courier remittance received" });
   assert.equal(row.codState, "cod_remitted");
   assert.equal(row.codRemittanceReference, "REM-100");
+  assert.deepEqual(calls, ["shipment", "audit"]);
+});
+
+test("COD transitions reject pre-delivery collection and invalid failure states", async () => {
+  let writes = 0;
+  const payment = { vendorOrder: { order: { payments: [{ method: "COD" }] } } };
+  const inTransit = transactional({ shipment: { findUnique: async () => ({ id: shipmentId, status: "IN_TRANSIT", codState: "cod_pending", codRemittanceReference: null, ...payment }), update: async () => { writes++; } } }) as unknown as PrismaClient;
+  await assert.rejects(() => new LogisticsService(inTransit).updateCodState(session, shipmentId, "cod_collected", { reference: null, reason: null, note: "Collected early" }), /only after delivery/);
+  const delivered = transactional({ shipment: { findUnique: async () => ({ id: shipmentId, status: "DELIVERED", codState: "cod_pending", codRemittanceReference: null, ...payment }), update: async () => { writes++; } } }) as unknown as PrismaClient;
+  await assert.rejects(() => new LogisticsService(delivered).updateCodState(session, shipmentId, "cod_failed", { reference: null, reason: "Not collected", note: "Marked failed" }), /failed or cancelled parcel/);
+  assert.equal(writes, 0);
 });
