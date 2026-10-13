@@ -10,6 +10,7 @@ import { CommissionService } from "../finance/commission.service.js";
 import { AdminSearchService, type AdminSearchType } from "./admin-search.service.js";
 import { AdminService } from "./admin.service.js";
 import { AdminKycDocumentAccessService } from "./admin-kyc-document-access.service.js";
+import { AdminPaymentEvidenceAccessService } from "./admin-payment-evidence-access.service.js";
 import { FirebaseStorageProvider } from "../media/firebase-storage.provider.js";
 
 const idSchema = z.object({ id: z.string().uuid() });
@@ -23,6 +24,7 @@ export function createAdminRouter() {
   const search = new AdminSearchService(prisma);
   const commissions = new CommissionService(prisma);
   const kycDocuments = new AdminKycDocumentAccessService(prisma, new FirebaseStorageProvider());
+  const paymentEvidence = new AdminPaymentEvidenceAccessService(prisma, new FirebaseStorageProvider());
   const authenticate = createAuthenticationMiddleware(new FirebaseTokenVerifier(), new IdentityService(prisma));
   const writes = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: "draft-7", legacyHeaders: false, message: { title: "Too many admin requests", status: 429, code: "ADMIN_RATE_LIMITED" } });
   router.get("/api/v2/platform/settings", async (_req, res, next) => { try { res.json(await service.publicSettings()); } catch (error) { next(error); } });
@@ -45,6 +47,7 @@ export function createAdminRouter() {
   router.get("/api/v2/admin/workspace/customer-referrals", async (req, res, next) => { try { res.json(await service.referralDashboard(requireSession(req))); } catch (error) { next(error); } });
   router.post("/api/v2/admin/workspace/customers/:id/loyalty/adjust", writes, async (req, res, next) => { try { res.json(await service.adjustCustomerLoyalty(requireSession(req), idSchema.parse(req.params).id, adminLoyaltyAdjustmentSchema.parse(req.body))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/payment-verifications", async (req, res, next) => { try { res.json(await service.paymentVerifications(requireSession(req))); } catch (error) { next(error); } });
+  router.post("/api/v2/admin/workspace/payment-verifications/:id/evidence/:uploadId/access", async (req, res, next) => { try { const params = z.object({ id: z.string().uuid(), uploadId: z.string().uuid() }).parse(req.params); const input = z.object({ download: z.boolean().default(false) }).parse(req.body); res.set("Cache-Control", "no-store").json(await paymentEvidence.access(requireSession(req), params.id, params.uploadId, input.download)); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/marketing", async (req, res, next) => { try { res.json(await service.marketing(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/audit", async (req, res, next) => { try { res.json(await service.audit(requireSession(req), adminAuditQuerySchema.parse(req.query))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/settings", async (req, res, next) => { try { res.json(await service.settings(requireSession(req))); } catch (error) { next(error); } });

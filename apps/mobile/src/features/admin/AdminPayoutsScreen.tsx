@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { completeAdminPayoutCase, createSettlementProposal, getAdminPayouts, getSettlementProposals, reviewAdminPayoutCase, type AdminPayoutSummary } from "../operations/operations.api";
 
 type PayoutAction = "APPROVE" | "REJECT" | "PAY";
@@ -13,7 +13,8 @@ const statuses = ["ALL", "REQUESTED", "APPROVED", "PROCESSING", "PAID", "REJECTE
 const settlementSteps = ["REQUESTED", "APPROVED", "PROCESSING", "PAID"];
 
 export function AdminPayoutsScreen({ requestsOnly = false }: { requestsOnly?: boolean }) {
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const userId = user?.uid ?? null;
   const params = useLocalSearchParams<{ search?: string; status?: string }>();
   const cache = useQueryClient();
   const { width } = useWindowDimensions();
@@ -26,18 +27,19 @@ export function AdminPayoutsScreen({ requestsOnly = false }: { requestsOnly?: bo
   const [provider, setProvider] = useState("bank_transfer");
   const [providerRef, setProviderRef] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
-  const payouts = useQuery({ queryKey: ["admin", "payouts"], queryFn: () => getAdminPayouts(user!), enabled: Boolean(user), staleTime: 15_000 });
-  const proposals = useQuery({ queryKey: ["admin", "settlement-proposals"], queryFn: () => getSettlementProposals(user!), enabled: Boolean(user), staleTime: 15_000 });
+  const payouts = useQuery({ queryKey: ["admin", "payouts", userId], queryFn: () => getAdminPayouts(user!), enabled: Boolean(user), staleTime: 15_000, retry: false });
+  const proposals = useQuery({ queryKey: ["admin", "settlement-proposals", userId], queryFn: () => getSettlementProposals(user!), enabled: Boolean(user), staleTime: 15_000, retry: false });
   const rows = payouts.data ?? [];
   const filtered = useMemo(() => rows.filter((item) => status === "ALL" || item.status === status).filter((item) => `${item.id} ${item.vendor.displayName} ${item.vendor.legalName} ${item.bankAccount?.accountName ?? ""} ${item.bankAccount?.accountNumberMasked ?? ""}`.toLowerCase().includes(search.trim().toLowerCase())), [rows, search, status]);
   const requestedMinor = sum(rows.filter((item) => item.status === "REQUESTED"));
   const payableMinor = sum(rows.filter((item) => ["APPROVED", "PROCESSING"].includes(item.status)));
   const paidMinor = sum(rows.filter((item) => item.status === "PAID"));
-  const refresh = async () => { await Promise.all([cache.invalidateQueries({ queryKey: ["admin", "payouts"] }), cache.invalidateQueries({ queryKey: ["admin", "queues"] }), cache.invalidateQueries({ queryKey: ["admin", "settlement-proposals"] })]); };
+  const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen the payout desk."); return user; };
+  const refresh = async () => { await Promise.all([cache.invalidateQueries({ queryKey: ["admin", "payouts", userId] }), cache.invalidateQueries({ queryKey: ["admin", "queues", userId] }), cache.invalidateQueries({ queryKey: ["admin", "settlement-proposals", userId] })]); };
   const closeAction = () => { setAction(null); setReason(""); setProviderRef(""); setFormError(null); };
-  const review = useMutation({ mutationFn: async () => { if (!selected || !action || action === "PAY") return; if (action === "REJECT" && reason.trim().length < 3) throw new Error("Add a rejection reason."); return reviewAdminPayoutCase(user!, selected.id, { expectedVersion: selected.version, action, reason: reason.trim() || null }); }, onSuccess: async () => { closeAction(); setSelected(null); await refresh(); }, onError: (error) => setFormError(error.message) });
-  const complete = useMutation({ mutationFn: async () => { if (!selected) return; if (provider.trim().length < 2 || providerRef.trim().length < 2) throw new Error("Provider and transaction reference are required."); return completeAdminPayoutCase(user!, selected.id, provider.trim(), providerRef.trim()); }, onSuccess: async () => { closeAction(); setSelected(null); await refresh(); }, onError: (error) => setFormError(error.message) });
-  const propose = useMutation({ mutationFn: () => createSettlementProposal(user!), onSuccess: refresh });
+  const review = useMutation({ mutationFn: async () => { if (!selected || !action || action === "PAY") return; if (action === "REJECT" && reason.trim().length < 3) throw new Error("Add a rejection reason."); return reviewAdminPayoutCase(currentActor(), selected.id, { expectedVersion: selected.version, action, reason: reason.trim() || null }); }, onSuccess: async () => { closeAction(); setSelected(null); await refresh(); }, onError: (error) => setFormError(error.message) });
+  const complete = useMutation({ mutationFn: async () => { if (!selected) return; if (provider.trim().length < 2 || providerRef.trim().length < 2) throw new Error("Provider and transaction reference are required."); return completeAdminPayoutCase(currentActor(), selected.id, provider.trim(), providerRef.trim()); }, onSuccess: async () => { closeAction(); setSelected(null); await refresh(); }, onError: (error) => setFormError(error.message) });
+  const propose = useMutation({ mutationFn: () => createSettlementProposal(currentActor()), onSuccess: refresh });
   const select = (item: AdminPayoutSummary) => { setSelected(item); closeAction(); };
 
   return <Screen eyebrow="FINANCE CONTROL" title={requestsOnly ? "Payout request review" : "Vendor payout desk"} description="Approve seller withdrawals, verify bank/MFS details and record settlement references with a clean audit trail.">

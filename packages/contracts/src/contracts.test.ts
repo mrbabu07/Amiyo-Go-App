@@ -50,6 +50,7 @@ test("OpenAPI document exposes typed v2 resources", () => {
   assert.ok(document.paths?.["/api/v2/vendor/workspace/category-requests"]);
   assert.ok(document.paths?.["/api/v2/vendor/registrations"]);
   assert.ok(document.paths?.["/api/v2/admin/workspace/category-requests/{id}"]);
+  assert.ok(document.paths?.["/api/v2/admin/workspace/payment-verifications/{id}/evidence/{uploadId}/access"]?.post?.security);
   assert.ok(document.paths?.["/api/v2/vendor/orders/{id}/documents"]);
   assert.ok(document.paths?.["/api/v2/media/uploads"]);
   assert.ok(document.paths?.["/api/v2/catalog/products/{productId}/reports"]);

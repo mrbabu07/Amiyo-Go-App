@@ -26870,10 +26870,9 @@
                               "items": {
                                 "type": "object",
                                 "properties": {
-                                  "storageKey": {
+                                  "id": {
                                     "type": "string",
-                                    "minLength": 3,
-                                    "maxLength": 500
+                                    "format": "uuid"
                                   },
                                   "name": {
                                     "type": "string",
@@ -26891,7 +26890,7 @@
                                   }
                                 },
                                 "required": [
-                                  "storageKey",
+                                  "id",
                                   "name",
                                   "mimeType"
                                 ]
@@ -27175,10 +27174,9 @@
                             "items": {
                               "type": "object",
                               "properties": {
-                                "storageKey": {
+                                "id": {
                                   "type": "string",
-                                  "minLength": 3,
-                                  "maxLength": 500
+                                  "format": "uuid"
                                 },
                                 "name": {
                                   "type": "string",
@@ -27196,7 +27194,7 @@
                                 }
                               },
                               "required": [
-                                "storageKey",
+                                "id",
                                 "name",
                                 "mimeType"
                               ]
@@ -27450,10 +27448,9 @@
                             "items": {
                               "type": "object",
                               "properties": {
-                                "storageKey": {
+                                "id": {
                                   "type": "string",
-                                  "minLength": 3,
-                                  "maxLength": 500
+                                  "format": "uuid"
                                 },
                                 "name": {
                                   "type": "string",
@@ -27471,7 +27468,7 @@
                                 }
                               },
                               "required": [
-                                "storageKey",
+                                "id",
                                 "name",
                                 "mimeType"
                               ]
@@ -27505,6 +27502,119 @@
                     "createdAt",
                     "updatedAt",
                     "messages"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/support/tickets/{id}/attachments/{uploadId}/access": {
+      "post": {
+        "tags": [
+          "Support"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "uploadId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "download": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Audited five-minute signed URL for an attachment on an owned ticket or support-staff case",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "url",
+                    "expiresAt"
                   ]
                 }
               }
@@ -27663,10 +27773,9 @@
                               "items": {
                                 "type": "object",
                                 "properties": {
-                                  "storageKey": {
+                                  "id": {
                                     "type": "string",
-                                    "minLength": 3,
-                                    "maxLength": 500
+                                    "format": "uuid"
                                   },
                                   "name": {
                                     "type": "string",
@@ -27684,7 +27793,7 @@
                                   }
                                 },
                                 "required": [
-                                  "storageKey",
+                                  "id",
                                   "name",
                                   "mimeType"
                                 ]
@@ -27914,10 +28023,9 @@
                             "items": {
                               "type": "object",
                               "properties": {
-                                "storageKey": {
+                                "id": {
                                   "type": "string",
-                                  "minLength": 3,
-                                  "maxLength": 500
+                                  "format": "uuid"
                                 },
                                 "name": {
                                   "type": "string",
@@ -27935,7 +28043,7 @@
                                 }
                               },
                               "required": [
-                                "storageKey",
+                                "id",
                                 "name",
                                 "mimeType"
                               ]
@@ -28167,9 +28275,6 @@
                                 "documentType": {
                                   "type": "string"
                                 },
-                                "storageKey": {
-                                  "type": "string"
-                                },
                                 "mimeType": {
                                   "type": "string"
                                 }
@@ -28177,7 +28282,6 @@
                               "required": [
                                 "id",
                                 "documentType",
-                                "storageKey",
                                 "mimeType"
                               ]
                             }
@@ -28544,9 +28648,6 @@
                                 "documentType": {
                                   "type": "string"
                                 },
-                                "storageKey": {
-                                  "type": "string"
-                                },
                                 "mimeType": {
                                   "type": "string"
                                 }
@@ -28554,7 +28655,6 @@
                               "required": [
                                 "id",
                                 "documentType",
-                                "storageKey",
                                 "mimeType"
                               ]
                             }
@@ -28865,9 +28965,6 @@
                                 "documentType": {
                                   "type": "string"
                                 },
-                                "storageKey": {
-                                  "type": "string"
-                                },
                                 "mimeType": {
                                   "type": "string"
                                 }
@@ -28875,7 +28972,6 @@
                               "required": [
                                 "id",
                                 "documentType",
-                                "storageKey",
                                 "mimeType"
                               ]
                             }
@@ -29193,9 +29289,6 @@
                                 "documentType": {
                                   "type": "string"
                                 },
-                                "storageKey": {
-                                  "type": "string"
-                                },
                                 "mimeType": {
                                   "type": "string"
                                 }
@@ -29203,7 +29296,6 @@
                               "required": [
                                 "id",
                                 "documentType",
-                                "storageKey",
                                 "mimeType"
                               ]
                             }
@@ -29505,9 +29597,6 @@
                                 "documentType": {
                                   "type": "string"
                                 },
-                                "storageKey": {
-                                  "type": "string"
-                                },
                                 "mimeType": {
                                   "type": "string"
                                 }
@@ -29515,7 +29604,6 @@
                               "required": [
                                 "id",
                                 "documentType",
-                                "storageKey",
                                 "mimeType"
                               ]
                             }
@@ -31812,9 +31900,6 @@
                                 "documentType": {
                                   "type": "string"
                                 },
-                                "storageKey": {
-                                  "type": "string"
-                                },
                                 "mimeType": {
                                   "type": "string"
                                 }
@@ -31822,7 +31907,6 @@
                               "required": [
                                 "id",
                                 "documentType",
-                                "storageKey",
                                 "mimeType"
                               ]
                             }
@@ -32205,9 +32289,6 @@
                                 "documentType": {
                                   "type": "string"
                                 },
-                                "storageKey": {
-                                  "type": "string"
-                                },
                                 "mimeType": {
                                   "type": "string"
                                 }
@@ -32215,7 +32296,6 @@
                               "required": [
                                 "id",
                                 "documentType",
-                                "storageKey",
                                 "mimeType"
                               ]
                             }
@@ -32603,9 +32683,6 @@
                                 "documentType": {
                                   "type": "string"
                                 },
-                                "storageKey": {
-                                  "type": "string"
-                                },
                                 "mimeType": {
                                   "type": "string"
                                 }
@@ -32613,7 +32690,6 @@
                               "required": [
                                 "id",
                                 "documentType",
-                                "storageKey",
                                 "mimeType"
                               ]
                             }
@@ -32996,9 +33072,6 @@
                                 "documentType": {
                                   "type": "string"
                                 },
-                                "storageKey": {
-                                  "type": "string"
-                                },
                                 "mimeType": {
                                   "type": "string"
                                 }
@@ -33006,7 +33079,6 @@
                               "required": [
                                 "id",
                                 "documentType",
-                                "storageKey",
                                 "mimeType"
                               ]
                             }
@@ -33388,9 +33460,6 @@
                                 "documentType": {
                                   "type": "string"
                                 },
-                                "storageKey": {
-                                  "type": "string"
-                                },
                                 "mimeType": {
                                   "type": "string"
                                 }
@@ -33398,7 +33467,6 @@
                               "required": [
                                 "id",
                                 "documentType",
-                                "storageKey",
                                 "mimeType"
                               ]
                             }
@@ -33507,6 +33575,119 @@
                     "vendors",
                     "kyc",
                     "trustCases"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/workspace/kyc/{id}/documents/{documentId}/access": {
+      "post": {
+        "tags": [
+          "Admin Trust"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "documentId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "download": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Short-lived audited KYC document access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "url",
+                    "expiresAt"
                   ]
                 }
               }
@@ -33781,9 +33962,6 @@
                                 "documentType": {
                                   "type": "string"
                                 },
-                                "storageKey": {
-                                  "type": "string"
-                                },
                                 "mimeType": {
                                   "type": "string"
                                 }
@@ -33791,7 +33969,6 @@
                               "required": [
                                 "id",
                                 "documentType",
-                                "storageKey",
                                 "mimeType"
                               ]
                             }
@@ -34007,10 +34184,27 @@
                               "null"
                             ]
                           },
-                          "evidenceStorageKey": {
+                          "evidence": {
                             "type": [
-                              "string",
+                              "object",
                               "null"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "mimeType": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "mimeType"
                             ]
                           },
                           "createdAt": {
@@ -34029,7 +34223,7 @@
                           "status",
                           "transactionRef",
                           "senderMasked",
-                          "evidenceStorageKey",
+                          "evidence",
                           "createdAt"
                         ]
                       }
@@ -41622,10 +41816,27 @@
                               "null"
                             ]
                           },
-                          "evidenceStorageKey": {
+                          "evidence": {
                             "type": [
-                              "string",
+                              "object",
                               "null"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "mimeType": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "mimeType"
                             ]
                           },
                           "createdAt": {
@@ -41644,7 +41855,7 @@
                           "status",
                           "transactionRef",
                           "senderMasked",
-                          "evidenceStorageKey",
+                          "evidence",
                           "createdAt"
                         ]
                       }
@@ -43013,10 +43224,27 @@
                               "null"
                             ]
                           },
-                          "evidenceStorageKey": {
+                          "evidence": {
                             "type": [
-                              "string",
+                              "object",
                               "null"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "mimeType": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "mimeType"
                             ]
                           },
                           "createdAt": {
@@ -43035,7 +43263,7 @@
                           "status",
                           "transactionRef",
                           "senderMasked",
-                          "evidenceStorageKey",
+                          "evidence",
                           "createdAt"
                         ]
                       }
@@ -46334,10 +46562,27 @@
                               "null"
                             ]
                           },
-                          "evidenceStorageKey": {
+                          "evidence": {
                             "type": [
-                              "string",
+                              "object",
                               "null"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "mimeType": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "mimeType"
                             ]
                           },
                           "createdAt": {
@@ -46356,7 +46601,7 @@
                           "status",
                           "transactionRef",
                           "senderMasked",
-                          "evidenceStorageKey",
+                          "evidence",
                           "createdAt"
                         ]
                       }
@@ -46771,6 +47016,119 @@
         }
       }
     },
+    "/api/v2/admin/workspace/payment-verifications/{id}/evidence/{uploadId}/access": {
+      "post": {
+        "tags": [
+          "Admin Finance"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "uploadId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "download": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Audited five-minute payment evidence URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "url",
+                    "expiresAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/admin/workspace/categories": {
       "post": {
         "tags": [
@@ -46872,10 +47230,27 @@
                               "null"
                             ]
                           },
-                          "evidenceStorageKey": {
+                          "evidence": {
                             "type": [
-                              "string",
+                              "object",
                               "null"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "mimeType": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "mimeType"
                             ]
                           },
                           "createdAt": {
@@ -46894,7 +47269,7 @@
                           "status",
                           "transactionRef",
                           "senderMasked",
-                          "evidenceStorageKey",
+                          "evidence",
                           "createdAt"
                         ]
                       }
@@ -47451,10 +47826,27 @@
                               "null"
                             ]
                           },
-                          "evidenceStorageKey": {
+                          "evidence": {
                             "type": [
-                              "string",
+                              "object",
                               "null"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "mimeType": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "mimeType"
                             ]
                           },
                           "createdAt": {
@@ -47473,7 +47865,7 @@
                           "status",
                           "transactionRef",
                           "senderMasked",
-                          "evidenceStorageKey",
+                          "evidence",
                           "createdAt"
                         ]
                       }
@@ -48048,10 +48440,27 @@
                               "null"
                             ]
                           },
-                          "evidenceStorageKey": {
+                          "evidence": {
                             "type": [
-                              "string",
+                              "object",
                               "null"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "mimeType": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "mimeType"
                             ]
                           },
                           "createdAt": {
@@ -48070,7 +48479,7 @@
                           "status",
                           "transactionRef",
                           "senderMasked",
-                          "evidenceStorageKey",
+                          "evidence",
                           "createdAt"
                         ]
                       }
@@ -48656,10 +49065,27 @@
                               "null"
                             ]
                           },
-                          "evidenceStorageKey": {
+                          "evidence": {
                             "type": [
-                              "string",
+                              "object",
                               "null"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "mimeType": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "mimeType"
                             ]
                           },
                           "createdAt": {
@@ -48678,7 +49104,7 @@
                           "status",
                           "transactionRef",
                           "senderMasked",
-                          "evidenceStorageKey",
+                          "evidence",
                           "createdAt"
                         ]
                       }
@@ -49161,10 +49587,27 @@
                               "null"
                             ]
                           },
-                          "evidenceStorageKey": {
+                          "evidence": {
                             "type": [
-                              "string",
+                              "object",
                               "null"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "mimeType": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "mimeType"
                             ]
                           },
                           "createdAt": {
@@ -49183,7 +49626,7 @@
                           "status",
                           "transactionRef",
                           "senderMasked",
-                          "evidenceStorageKey",
+                          "evidence",
                           "createdAt"
                         ]
                       }
@@ -49683,10 +50126,27 @@
                               "null"
                             ]
                           },
-                          "evidenceStorageKey": {
+                          "evidence": {
                             "type": [
-                              "string",
+                              "object",
                               "null"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "mimeType": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "mimeType"
                             ]
                           },
                           "createdAt": {
@@ -49705,7 +50165,7 @@
                           "status",
                           "transactionRef",
                           "senderMasked",
-                          "evidenceStorageKey",
+                          "evidence",
                           "createdAt"
                         ]
                       }
