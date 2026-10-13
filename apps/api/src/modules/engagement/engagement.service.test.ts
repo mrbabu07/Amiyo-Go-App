@@ -133,7 +133,7 @@ test("thread listing returns unread messages since participant read time", async
 
 test("wishlist sharing revocation remains scoped to the owner's list", async () => {
   let wishlistId = "";
-  const client = { wishlist: { findFirst: async () => ({ id: "44444444-4444-4444-8444-444444444444" }), findUniqueOrThrow: async () => ({ id: "44444444-4444-4444-8444-444444444444", name: "My Wishlist", isDefault: true, share: null, items: [] }) }, sharedWishlist: { deleteMany: async ({ where }: { where: { wishlistId: string } }) => { wishlistId = where.wishlistId; } } } as unknown as PrismaClient;
+  const client = { wishlist: { findFirst: async ({ include }: { include?: unknown }) => include ? { id: "44444444-4444-4444-8444-444444444444", name: "My Wishlist", isDefault: true, share: null, items: [] } : { id: "44444444-4444-4444-8444-444444444444" } }, sharedWishlist: { deleteMany: async ({ where }: { where: { wishlistId: string } }) => { wishlistId = where.wishlistId; } } } as unknown as PrismaClient;
   const result = await new EngagementService(client).unshareWishlist(userId);
   assert.equal(wishlistId, "44444444-4444-4444-8444-444444444444");
   assert.equal(result.shareUrl, null);

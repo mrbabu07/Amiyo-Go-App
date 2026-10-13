@@ -9,6 +9,23 @@ const owner = "11111111-1111-4111-8111-111111111111";
 const other = "22222222-2222-4222-8222-222222222222";
 const id = "33333333-3333-4333-8333-333333333333";
 
+test("existing wishlist detail loads ownership, items and share state in one database read", async () => {
+  let reads = 0;
+  const client = { wishlist: {
+    findFirst: async ({ where, include }: { where: unknown; include: { share: boolean; items: unknown } }) => {
+      reads++;
+      assert.deepEqual(where, { userId: owner, isDefault: true });
+      assert.equal(include.share, true);
+      assert.ok(include.items);
+      return { id, name: "My Wishlist", isDefault: true, share: null, items: [] };
+    },
+    findUniqueOrThrow: async () => { throw new Error("existing lists must not be read twice"); }
+  } } as unknown as PrismaClient;
+  const result = await new EngagementService(client).wishlist(owner);
+  assert.equal(result.id, id);
+  assert.equal(reads, 1);
+});
+
 test("default wishlist creation recovers only a committed unique-race winner", async () => {
   const conflict = new Prisma.PrismaClientKnownRequestError("Unique constraint failed", { code: "P2002", clientVersion: "5.22.0" });
   let reads = 0;
@@ -37,8 +54,7 @@ test("collection summaries select only the owner's lists and safe counts", async
 test("custom collection sharing and revocation never target the default list", async () => {
   let token = "";
   const client = { wishlist: {
-    findFirst: async ({ where }: { where: unknown }) => { assert.deepEqual(where, { id, userId: owner }); return { id }; },
-    findUniqueOrThrow: async () => ({ id, name: "Gifts", isDefault: false, share: token ? { shareToken: token, expiresAt: new Date(Date.now() + 60_000) } : null, items: [] })
+    findFirst: async ({ where, include }: { where: unknown; include?: unknown }) => { assert.deepEqual(where, { id, userId: owner }); return include ? { id, name: "Gifts", isDefault: false, share: token ? { shareToken: token, expiresAt: new Date(Date.now() + 60_000) } : null, items: [] } : { id }; }
   }, sharedWishlist: {
     upsert: async ({ where, create, update }: { where: unknown; create: { wishlistId: string; shareToken: string; expiresAt: Date }; update: { shareToken: string } }) => {
       assert.deepEqual(where, { wishlistId: id }); assert.equal(create.wishlistId, id);
@@ -99,8 +115,7 @@ test("foreign collection read/add/remove/share/revoke all fail before data acces
 
 test("removing from a custom collection leaves the default and other collections untouched", async () => {
   const client = { wishlist: {
-    findFirst: async () => ({ id, userId: owner }),
-    findUniqueOrThrow: async () => ({ id, name: "Gifts", isDefault: false, share: null, items: [] })
+    findFirst: async ({ include }: { include?: unknown }) => include ? { id, name: "Gifts", isDefault: false, share: null, items: [] } : { id, userId: owner }
   }, wishlistItem: { deleteMany: async ({ where }: { where: unknown }) => { assert.deepEqual(where, { wishlistId: id, productId: other }); return { count: 1 }; } } } as unknown as PrismaClient;
   const result = await new EngagementService(client).removeWishlistItem(owner, other, id);
   assert.equal(result.id, id);

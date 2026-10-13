@@ -33,8 +33,8 @@ export class EngagementService {
     const channels = notificationChannels(eventType); return this.client.$transaction(async (transaction) => { const notification = await transaction.notification.upsert({ where: { idempotencyKey: key }, update: {}, create: { userId, type: eventType, title, body, data: { href }, idempotencyKey: key, deliveries: { create: channels.map((channel) => ({ channel: channel.toLowerCase(), status: channel === "IN_APP" ? "DELIVERED" : "PENDING", ...(channel === "IN_APP" ? { deliveredAt: new Date() } : {}) })) } }, include: { deliveries: true } }); for (const delivery of notification.deliveries.filter((item) => item.status === "PENDING")) await transaction.outboxEvent.upsert({ where: { idempotencyKey: `notification-delivery:${delivery.id}` }, create: { aggregateType: "notification_delivery", aggregateId: delivery.id, eventType: "notification.delivery.requested", idempotencyKey: `notification-delivery:${delivery.id}`, payload: { notificationDeliveryId: delivery.id } }, update: {} }); return notification; });
   }
 
-  private async defaultWishlist(userId: string) {
-    const existing = await this.client.wishlist.findFirst({ where: { userId, isDefault: true } }); if (existing) return existing;
+  private async defaultWishlist(userId: string, missingConfirmed = false) {
+    const existing = missingConfirmed ? null : await this.client.wishlist.findFirst({ where: { userId, isDefault: true } }); if (existing) return existing;
     try {
       return await withSerializableTransaction(this.client, async (transaction) => {
         const found = await transaction.wishlist.findFirst({ where: { userId, isDefault: true } });
@@ -57,7 +57,26 @@ export class EngagementService {
   }
 
   async wishlist(userId: string, collectionId?: string) {
-    const list = await this.ownWishlist(userId, collectionId); const loaded = await this.client.wishlist.findUniqueOrThrow({ where: { id: list.id }, include: { share: true, items: { orderBy: { createdAt: "desc" }, include: { product: { include: { media: { orderBy: { displayOrder: "asc" }, take: 1 }, variants: { where: { active: true }, orderBy: { priceMinor: "asc" }, include: { inventory: true } } } } } } } });
+    const include = {
+      share: true,
+      items: {
+        orderBy: { createdAt: "desc" as const },
+        include: {
+          product: {
+            include: {
+              media: { orderBy: { displayOrder: "asc" as const }, take: 1 },
+              variants: { where: { active: true }, orderBy: { priceMinor: "asc" as const }, include: { inventory: true } }
+            }
+          }
+        }
+      }
+    };
+    let loaded = await this.client.wishlist.findFirst({ where: collectionId ? { id: collectionId, userId } : { userId, isDefault: true }, include });
+    if (!loaded) {
+      if (collectionId) throw new ApiProblem(404, "WISHLIST_COLLECTION_NOT_FOUND", "Wishlist collection not found");
+      const list = await this.defaultWishlist(userId, true);
+      loaded = await this.client.wishlist.findUniqueOrThrow({ where: { id: list.id }, include });
+    }
     return { id: loaded.id, name: loaded.name, isDefault: loaded.isDefault, shareUrl: loaded.share && (!loaded.share.expiresAt || loaded.share.expiresAt > new Date()) ? `${process.env.APP_PUBLIC_URL || "http://localhost:8081"}/wishlist/shared/${loaded.share.shareToken}` : null, items: loaded.items.map((item) => ({ productId: item.productId, name: item.product.name, slug: item.product.slug, thumbnailUrl: mediaUrl(item.product.media[0]?.storageKey), price: item.product.variants[0] ? money(item.product.variants[0].priceMinor, item.product.variants[0].currency) : null, availableQuantity: wishlistAvailableQuantity(item.product.variants), addedAt: item.createdAt.toISOString() })) };
   }
 
