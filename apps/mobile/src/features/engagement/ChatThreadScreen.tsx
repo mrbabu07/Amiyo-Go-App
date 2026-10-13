@@ -5,21 +5,22 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { EngagementState } from "./components/EngagementState";
 import { getThreads, readThread, sendMessage } from "./engagement.api";
 
 export function ChatThreadScreen({ id, inboxPath = "/messages" }: { id: string; inboxPath?: "/messages" | "/vendor/messages" }) {
   const router = useRouter();
   const cache = useQueryClient();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
   const [body, setBody] = useState("");
-  const query = useQuery({ queryKey: ["chat-threads"], queryFn: () => getThreads(user!), enabled: Boolean(user), refetchInterval: 10_000 });
+  const accountId = user?.uid;
+  const query = useQuery({ queryKey: ["chat-threads", accountId], queryFn: () => getThreads(user!), enabled: Boolean(user), refetchInterval: 10_000 });
   const thread = query.data?.find((item) => item.id === id);
   const latestMessageId = thread?.messages.at(-1)?.id;
-  const send = useMutation({ mutationFn: () => sendMessage(user!, id, body.trim()), onSuccess: async () => { setBody(""); await cache.invalidateQueries({ queryKey: ["chat-threads"] }); } });
+  const send = useMutation({ mutationFn: () => sendMessage(user!, id, body.trim()), onSuccess: async () => { setBody(""); await cache.invalidateQueries({ queryKey: ["chat-threads", accountId] }); } });
 
-  useEffect(() => { if (!user || !thread?.unreadCount) return; void readThread(user, id).then(() => cache.invalidateQueries({ queryKey: ["chat-threads"] })); }, [cache, id, latestMessageId, thread?.unreadCount, user]);
+  useEffect(() => { if (!user || !thread?.unreadCount) return; void readThread(user, id).then(() => cache.invalidateQueries({ queryKey: ["chat-threads", accountId] })); }, [accountId, cache, id, latestMessageId, thread?.unreadCount, user]);
 
   if (!user) return <EngagementState eyebrow="PRIVATE CHAT" icon="lock-closed-outline" title="Sign in to continue" copy="This conversation is available only to its participants." action="Sign in" onPress={() => router.replace("/auth")} />;
   if (query.isLoading) return <EngagementState loading eyebrow="PRIVATE CHAT" icon="chatbubble-outline" title="Loading conversation" copy="Fetching secure message history." />;
@@ -27,7 +28,7 @@ export function ChatThreadScreen({ id, inboxPath = "/messages" }: { id: string; 
 
   return <Screen eyebrow="PRIVATE CHAT" title={thread.subject || "Conversation"} description="Messages are visible only to thread participants.">
     <View style={styles.header}><View style={styles.avatar}><Ionicons color={colors.primary} name="storefront-outline" size={24} /></View><View style={styles.flex}><Text accessibilityRole="header" style={styles.headerTitle}>{thread.subject || "Seller conversation"}</Text><View style={styles.statusRow}><View style={styles.dot} /><Text style={styles.status}>{thread.status.replaceAll("_", " ")}</Text></View></View><Pressable onPress={() => router.replace(inboxPath)} style={styles.back}><Ionicons color={colors.primary} name="arrow-back" size={17} /><Text style={styles.backText}>Inbox</Text></Pressable></View>
-    <View style={styles.messages}>{thread.messages.length ? thread.messages.map((message, index) => <View key={message.id} style={[styles.message, index % 2 === 1 && styles.messageAlt]}><View style={styles.messageTop}><Text style={styles.sender}>{index % 2 === 1 ? "You" : "Conversation"}</Text><Text style={styles.time}>{new Date(message.createdAt).toLocaleString("en-BD")}</Text></View><Text style={styles.messageBody}>{message.body}</Text></View>) : <View style={styles.empty}><Ionicons color={colors.primary} name="chatbubble-ellipses-outline" size={45} /><Text style={styles.emptyTitle}>Start the conversation</Text><Text style={styles.muted}>Send a message to the seller below.</Text></View>}</View>
+    <View style={styles.messages}>{thread.messages.length ? thread.messages.map((message) => { const mine = message.senderId === user.uid; return <View key={message.id} style={[styles.message, mine && styles.messageAlt]}><View style={styles.messageTop}><Text style={styles.sender}>{mine ? "You" : inboxPath.startsWith("/vendor") ? "Customer" : "Seller"}</Text><Text style={styles.time}>{new Date(message.createdAt).toLocaleString("en-BD")}</Text></View><Text style={styles.messageBody}>{message.body}</Text></View>; }) : <View style={styles.empty}><Ionicons color={colors.primary} name="chatbubble-ellipses-outline" size={45} /><Text style={styles.emptyTitle}>Start the conversation</Text><Text style={styles.muted}>{inboxPath.startsWith("/vendor") ? "Send a message to the customer below." : "Send a message to the seller below."}</Text></View>}</View>
     <View style={styles.composer}><TextInput accessibilityLabel="Message" multiline onChangeText={setBody} placeholder="Write a message…" placeholderTextColor={colors.muted} style={styles.input} value={body} /><Pressable accessibilityLabel="Send message" accessibilityRole="button" disabled={send.isPending || !body.trim()} onPress={() => send.mutate()} style={[styles.send, (send.isPending || !body.trim()) && styles.sendDisabled]}>{send.isPending ? <ActivityIndicator color={colors.surface} /> : <Ionicons color={colors.surface} name="send" size={20} />}</Pressable></View>
     {send.error ? <Text style={styles.error}>{send.error.message}</Text> : null}<View style={styles.secure}><Ionicons color={colors.success} name="shield-checkmark-outline" size={17} /><Text style={styles.secureText}>Protected marketplace conversation</Text></View>
   </Screen>;

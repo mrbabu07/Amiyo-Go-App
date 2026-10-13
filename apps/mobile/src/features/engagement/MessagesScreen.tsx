@@ -4,14 +4,14 @@ import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { EngagementState } from "./components/EngagementState";
 import { getThreads } from "./engagement.api";
 
 export function MessagesScreen({ basePath = "/messages" }: { basePath?: "/messages" | "/vendor/messages" }) {
   const router = useRouter();
-  const user = firebaseAuth?.currentUser ?? null;
-  const query = useQuery({ queryKey: ["chat-threads"], queryFn: () => getThreads(user!), enabled: Boolean(user), refetchInterval: 15_000 });
+  const user = useCurrentUser();
+  const query = useQuery({ queryKey: ["chat-threads", user?.uid], queryFn: () => getThreads(user!), enabled: Boolean(user), refetchInterval: 15_000 });
 
   if (!user) return <EngagementState eyebrow="INBOX" icon="chatbubbles-outline" title="Your marketplace inbox" copy="Sign in to continue secure conversations with sellers." action="Sign in" onPress={() => router.replace("/auth")} />;
   if (query.isLoading) return <EngagementState loading eyebrow="INBOX" icon="chatbubbles-outline" title="Loading conversations" copy="Fetching your latest messages." />;

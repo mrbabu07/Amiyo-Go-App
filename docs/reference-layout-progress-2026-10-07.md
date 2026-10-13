@@ -298,3 +298,7 @@ This improves reference parity for seller fulfillment evidence, but does not cla
 ## Seller order product thumbnails
 
 Seller order list/detail reads now load only the first ordered product-media record needed for each purchased line and expose it through the existing optional `thumbnailUrl` contract. The seller detail uses the shared resilient order-item image component beside the snapshot name, SKU and variant attributes, including an accessible fallback when media is missing or fails. The bounded relation is shared by list and detail reads, and API/mobile regressions cover the query shape, mapped URL and UI wiring.
+
+## Seller and customer chat correctness
+
+The shared customer/seller inbox and thread now subscribe to the reactive authenticated user and scope every conversation query, refresh and read-state invalidation to that user ID. Chat bubbles derive ownership from the persisted message `senderId` instead of alternating by row position, so consecutive messages from either party remain correctly aligned and labeled. Counterparty copy changes between `Seller` and `Customer` for the corresponding inbox. A focused regression plus the full mobile suite cover account isolation and sender attribution; realtime transport beyond the existing polling interval is still not claimed.
