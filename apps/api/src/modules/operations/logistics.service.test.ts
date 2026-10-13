@@ -31,6 +31,30 @@ test("shipment transition rejects missing and stale assignments without writes",
   assert.equal(writes, 0);
 });
 
+test("COD delivery commits parcel, collection state and audit atomically", async () => {
+  const calls: string[] = [];
+  const assignment = { version: 4, courierPartnerId: shipmentId, pickupStaffId: null, courierPartner: { status: "active", name: "Courier" }, pickupStaff: null };
+  const client = transactional({
+    shipment: {
+      findUnique: async () => ({ id: shipmentId, status: "IN_TRANSIT", codState: "cod_pending", provider: "manual", failedDelivery: null, assignment, vendorOrder: { order: { payments: [{ method: "COD" }] } } }),
+      update: async ({ data }: { data: { status: string; codState: string; events: unknown } }) => { calls.push("shipment"); assert.equal(data.status, "DELIVERED"); assert.equal(data.codState, "cod_collected"); assert.ok(data.events); return { id: shipmentId, status: data.status, codState: data.codState }; }
+    },
+    auditLog: { create: async () => { calls.push("audit"); } }
+  }) as unknown as PrismaClient;
+  const row = await new LogisticsService(client).recordDeliveryAttempt(session, shipmentId, { outcome: "delivered", receiverName: "Customer", reason: null, notes: "Received intact", codCollected: true, expectedAssignmentVersion: 4 });
+  assert.equal(row.codState, "cod_collected");
+  assert.deepEqual(calls, ["shipment", "audit"]);
+});
+
+test("delivery attempt rejects stale assignment and missing COD evidence without writes", async () => {
+  let writes = 0;
+  const assignment = { version: 4, courierPartnerId: shipmentId, pickupStaffId: null, courierPartner: { status: "active", name: "Courier" }, pickupStaff: null };
+  const client = transactional({ shipment: { findUnique: async () => ({ id: shipmentId, status: "IN_TRANSIT", codState: "cod_pending", provider: "manual", failedDelivery: null, assignment, vendorOrder: { order: { payments: [{ method: "COD" }] } } }), update: async () => { writes++; } } }) as unknown as PrismaClient;
+  await assert.rejects(() => new LogisticsService(client).recordDeliveryAttempt(session, shipmentId, { outcome: "delivered", receiverName: "Customer", reason: null, notes: null, codCollected: true, expectedAssignmentVersion: 3 }), /changed; refresh and retry/);
+  await assert.rejects(() => new LogisticsService(client).recordDeliveryAttempt(session, shipmentId, { outcome: "delivered", receiverName: "Customer", reason: null, notes: null, codCollected: false, expectedAssignmentVersion: 4 }), /Confirm COD collection/);
+  assert.equal(writes, 0);
+});
+
 test("courier assignment rejects stale versions before changing the parcel", async () => {
   let writes = 0;
   const client = transactional({ shipment: { findUnique: async () => ({ id: shipmentId, status: "READY_TO_SHIP", provider: null, trackingNumber: null, assignment: { version: 3 } }), update: async () => { writes++; } }, logisticsAssignment: { upsert: async () => { writes++; } } }) as unknown as PrismaClient;

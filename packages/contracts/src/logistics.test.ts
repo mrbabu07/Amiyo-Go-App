@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { logisticsCodStateInputSchema, logisticsManifestPickupSchema, logisticsReturnActionSchema, logisticsTrackingEventSchema } from "./logistics.js";
+import { logisticsCodStateInputSchema, logisticsDeliveryAttemptSchema, logisticsManifestPickupSchema, logisticsReturnActionSchema, logisticsTrackingEventSchema } from "./logistics.js";
 
 const shipmentId = "11111111-1111-4111-8111-111111111111";
 
@@ -12,6 +12,13 @@ test("tracking events require valid state and operational evidence", () => {
 test("manifest pickup cannot be empty", () => {
   assert.equal(logisticsManifestPickupSchema.safeParse({ shipmentIds: [shipmentId], note: "Courier pickup confirmed" }).success, true);
   assert.equal(logisticsManifestPickupSchema.safeParse({ shipmentIds: [], note: "Courier pickup confirmed" }).success, false);
+});
+
+test("delivery attempts require outcome evidence and assignment version", () => {
+  assert.equal(logisticsDeliveryAttemptSchema.safeParse({ outcome: "delivered", receiverName: "Customer", codCollected: true, expectedAssignmentVersion: 2 }).success, true);
+  assert.equal(logisticsDeliveryAttemptSchema.safeParse({ outcome: "delivered", receiverName: null, codCollected: false, expectedAssignmentVersion: 2 }).success, false);
+  assert.equal(logisticsDeliveryAttemptSchema.safeParse({ outcome: "failed", reason: null, codCollected: false, expectedAssignmentVersion: 2 }).success, false);
+  assert.equal(logisticsDeliveryAttemptSchema.safeParse({ outcome: "failed", reason: "Customer unavailable", codCollected: true, expectedAssignmentVersion: 2 }).success, false);
 });
 
 test("reverse logistics accepts structured inspection evidence", () => {

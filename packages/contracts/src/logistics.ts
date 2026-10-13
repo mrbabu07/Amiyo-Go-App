@@ -48,7 +48,18 @@ export const logisticsShipmentTransitionSchema = z.object({
   note: z.string().trim().min(2).max(500),
   expectedAssignmentVersion: z.number().int().positive().nullable().default(null)
 });
-export const logisticsDeliveryAttemptSchema = z.object({ outcome: z.enum(["delivered", "failed"]), receiverName: z.string().trim().max(120).nullable().default(null), reason: z.string().trim().max(500).nullable().default(null), notes: z.string().trim().max(1000).nullable().default(null), codCollected: z.boolean().default(false) });
+export const logisticsDeliveryAttemptSchema = z.object({
+  outcome: z.enum(["delivered", "failed"]),
+  receiverName: z.string().trim().max(120).nullable().default(null),
+  reason: z.string().trim().max(500).nullable().default(null),
+  notes: z.string().trim().max(1000).nullable().default(null),
+  codCollected: z.boolean().default(false),
+  expectedAssignmentVersion: z.number().int().positive()
+}).superRefine((value, context) => {
+  if (value.outcome === "delivered" && !value.receiverName) context.addIssue({ code: "custom", message: "Receiver name is required for delivery", path: ["receiverName"] });
+  if (value.outcome === "failed" && !value.reason) context.addIssue({ code: "custom", message: "Failure reason is required", path: ["reason"] });
+  if (value.outcome === "failed" && value.codCollected) context.addIssue({ code: "custom", message: "A failed delivery cannot collect COD", path: ["codCollected"] });
+});
 export const codRemittanceInputSchema = z.object({ courierPartnerId: uuidSchema.nullable().default(null), courierName: z.string().trim().min(2).max(120), collectedAmountMinor: minorSchema, remittedAmountMinor: minorSchema, forwardedToVendorMinor: minorSchema, reference: z.string().trim().max(160).nullable().default(null), notes: z.string().trim().max(1000).nullable().default(null), orderIds: z.array(uuidSchema).max(500) });
 export const failedDeliveryReattemptSchema = z.object({ nextAttemptAt: timestampSchema, redeliveryFeeMinor: minorSchema, reason: z.string().trim().min(2).max(500), note: z.string().trim().max(1000).nullable().default(null) });
 export const failedDeliveryReturnSchema = z.object({ returnFeeMinor: minorSchema, reason: z.string().trim().min(2).max(500), note: z.string().trim().max(1000).nullable().default(null) });
