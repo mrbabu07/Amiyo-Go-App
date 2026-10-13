@@ -2,12 +2,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { addressInputSchema, type Address, type AddressInput } from "@amiyo/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { createMyAddress, deleteMyAddress, getMyAddresses, updateMyAddress } from "../auth/auth.api";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { LocationSelect } from "../vendor/components/LocationSelect";
 import { districts, divisions, locationName, unions, upazilas } from "../vendor/data/locations";
 import { AccountState } from "./components/AccountState";
@@ -26,14 +26,15 @@ function locationIds(address: Address) {
 export function AddressesScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<AddressForm>(emptyForm);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const addresses = useQuery({ queryKey: ["me", "addresses"], queryFn: () => getMyAddresses(user!), enabled: Boolean(user) });
+  const addresses = useQuery({ queryKey: ["me", "addresses", user?.uid], queryFn: () => getMyAddresses(user!), enabled: Boolean(user), retry: false });
+  useEffect(() => { close(); }, [user?.uid]);
   const districtOptions = useMemo(() => districts.filter((item) => item.parentId === form.divisionId), [form.divisionId]);
   const upazilaOptions = useMemo(() => upazilas.filter((item) => item.parentId === form.districtId), [form.districtId]);
   const unionOptions = useMemo(() => unions.filter((item) => item.parentId === form.upazilaId), [form.upazilaId]);
@@ -45,10 +46,10 @@ export function AddressesScreen() {
   function add() { setEditingId(null); setForm({ ...emptyForm, isDefault: !addresses.data?.length }); setOpen(true); }
   function edit(address: Address) { setEditingId(address.id); setForm({ label: address.label, recipientName: address.recipientName, phone: address.phone, line1: address.line1, line2: address.line2 || "", ...locationIds(address), postalCode: address.postalCode || "", latitude: address.latitude === null ? "" : String(address.latitude), longitude: address.longitude === null ? "" : String(address.longitude), isDefault: address.isDefault }); setOpen(true); }
   function payload(): AddressInput { const latitude = form.latitude.trim() ? Number(form.latitude) : null; const longitude = form.longitude.trim() ? Number(form.longitude) : null; return { label: form.label.trim(), recipientName: form.recipientName.trim(), phone: form.phone.trim(), line1: form.line1.trim(), line2: form.line2.trim() || null, division: locationName(divisions, form.divisionId), district: locationName(districts, form.districtId), upazila: locationName(upazilas, form.upazilaId) || null, unionName: locationName(unions, form.unionId) || null, postalCode: form.postalCode.trim() || null, latitude: Number.isFinite(latitude) ? latitude : null, longitude: Number.isFinite(longitude) ? longitude : null, isDefault: form.isDefault }; }
-  async function refresh() { await queryClient.invalidateQueries({ queryKey: ["me", "addresses"] }); await queryClient.invalidateQueries({ queryKey: ["me", "dashboard"] }); }
-  async function save() { if (!user) return; if (!addressValidation.success) { setError(addressValidation.error.issues[0]?.message || "Please check the address fields"); return; } setBusy(true); setError(null); try { if (editingId) await updateMyAddress(user, editingId, addressValidation.data); else await createMyAddress(user, addressValidation.data); await refresh(); close(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not save address"); } finally { setBusy(false); } }
-  async function makeDefault(address: Address) { if (!user) return; await updateMyAddress(user, address.id, { ...address, isDefault: true }); await refresh(); }
-  function remove(address: Address) { Alert.alert("Delete address?", "Are you sure you want to delete this address?", [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => void (async () => { if (!user) return; await deleteMyAddress(user, address.id); await refresh(); })() }]); }
+  async function refresh(uid: string) { await queryClient.invalidateQueries({ queryKey: ["me", "addresses", uid] }); await queryClient.invalidateQueries({ queryKey: ["me", "dashboard", uid] }); }
+  async function save() { if (!user) return; const owner = user; if (!addressValidation.success) { setError(addressValidation.error.issues[0]?.message || "Please check the address fields"); return; } setBusy(true); setError(null); try { if (editingId) await updateMyAddress(owner, editingId, addressValidation.data); else await createMyAddress(owner, addressValidation.data); await refresh(owner.uid); if (user.uid === owner.uid) close(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not save address"); } finally { setBusy(false); } }
+  async function makeDefault(address: Address) { if (!user) return; const owner = user; await updateMyAddress(owner, address.id, { ...address, isDefault: true }); await refresh(owner.uid); }
+  function remove(address: Address) { const owner = user; Alert.alert("Delete address?", "Are you sure you want to delete this address?", [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => void (async () => { if (!owner) return; await deleteMyAddress(owner, address.id); await refresh(owner.uid); })() }]); }
 
   if (!user) return <AccountState icon="location-outline" title="Your delivery addresses" copy="Sign in to manage saved delivery locations." action="Sign in" onPress={() => router.replace("/auth")} />;
   if (addresses.isLoading) return <AccountState loading icon="location-outline" title="Loading addresses" copy="Fetching your saved delivery locations." />;

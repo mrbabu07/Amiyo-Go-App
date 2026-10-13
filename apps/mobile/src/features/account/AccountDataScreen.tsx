@@ -5,13 +5,13 @@ import { StyleSheet, Text, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { exportMyAccount } from "../auth/auth.api";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { AccountState } from "./components/AccountState";
 
 export function AccountDataScreen() {
   const router = useRouter();
-  const user = firebaseAuth?.currentUser ?? null;
-  const data = useQuery({ queryKey: ["me", "export"], queryFn: () => exportMyAccount(user!), enabled: Boolean(user) });
+  const user = useCurrentUser();
+  const data = useQuery({ queryKey: ["me", "export", user?.uid], queryFn: () => exportMyAccount(user!), enabled: Boolean(user), retry: false });
   if (!user) return <AccountState icon="document-lock-outline" title="Your account data" copy="Sign in to view your portable marketplace data export." action="Sign in" onPress={() => router.replace("/auth")} />;
   if (data.isLoading) return <AccountState loading icon="document-lock-outline" title="Preparing your data" copy="Collecting your account and marketplace records." />;
   if (data.error || !data.data) return <AccountState icon="alert-circle-outline" title="Could not prepare export" copy={data.error instanceof Error ? data.error.message : "Please try again."} action="Try again" onPress={() => data.refetch()} />;

@@ -3,13 +3,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AccountPreferences } from "@amiyo/contracts";
 import { signOut } from "firebase/auth";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { getAccountDashboard, updateAccountPreferences, updateMyProfile } from "../auth/auth.api";
 import { useAuthStore } from "../auth/auth.store";
 import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { AccountState } from "./components/AccountState";
 
 const quickLinks = [
@@ -31,14 +32,15 @@ const notificationRows = [
 export function AccountScreen() {
   const router = useRouter();
   const cache = useQueryClient();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const { session, setSession, status } = useAuthStore();
-  const dashboard = useQuery({ queryKey: ["me", "dashboard"], queryFn: () => getAccountDashboard(user!), enabled: Boolean(user && session) });
+  const dashboard = useQuery({ queryKey: ["me", "dashboard", user?.uid], queryFn: () => getAccountDashboard(user!), enabled: Boolean(user && session), retry: false });
   const [profile, setProfile] = useState({ firstName: "", lastName: "", displayName: "", locale: "en" as "en" | "bn", currency: "BDT" });
   const [preferences, setPreferences] = useState<AccountPreferences | null>(null);
   useEffect(() => { if (dashboard.data) { const value = dashboard.data.session.profile; setProfile({ firstName: value.firstName ?? "", lastName: value.lastName ?? "", displayName: value.displayName ?? "", locale: value.locale === "bn" ? "bn" : "en", currency: value.currency }); setPreferences(dashboard.data.preferences); } }, [dashboard.data]);
-  const saveProfile = useMutation({ mutationFn: () => updateMyProfile(user!, { firstName: profile.firstName.trim() || null, lastName: profile.lastName.trim() || null, displayName: profile.displayName.trim() || null, locale: profile.locale, currency: profile.currency }), onSuccess: async (next) => { setSession(next); await cache.invalidateQueries({ queryKey: ["me", "dashboard"] }); } });
-  const savePreferences = useMutation({ mutationFn: () => updateAccountPreferences(user!, preferences!), onSuccess: async () => cache.invalidateQueries({ queryKey: ["me", "dashboard"] }) });
+  const saveProfile = useMutation({ retry: false, mutationFn: (owner?: NonNullable<typeof user>) => updateMyProfile(owner ?? user!, { firstName: profile.firstName.trim() || null, lastName: profile.lastName.trim() || null, displayName: profile.displayName.trim() || null, locale: profile.locale, currency: profile.currency }), onMutate: () => user!, onSuccess: async (next, _variables, owner) => { if (activeUid.current === owner.uid) setSession(next); await cache.invalidateQueries({ queryKey: ["me", "dashboard", owner.uid] }); } });
+  const savePreferences = useMutation({ retry: false, mutationFn: (owner?: NonNullable<typeof user>) => updateAccountPreferences(owner ?? user!, preferences!), onMutate: () => user!, onSuccess: async (_data, _variables, owner) => cache.invalidateQueries({ queryKey: ["me", "dashboard", owner.uid] }) });
 
   if (status === "loading") return <AccountState loading icon="person-circle-outline" title="Loading your account" copy="Restoring your secure customer workspace." />;
   if (!user || !session) return <AccountState icon="person-circle-outline" title="Your Amiyo-Go account" copy="Sign in to manage orders, addresses, tracking and preferences." action="Sign in or create account" onPress={() => router.replace("/auth")} />;
