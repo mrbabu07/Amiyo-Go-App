@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { vendorOrderStatusSchema } from "@amiyo/contracts";
-import { documentQrVerificationInputSchema, vendorDeliveryExceptionInputSchema, vendorOrderTransitionSchema } from "@amiyo/contracts";
+import { documentQrVerificationInputSchema, vendorDeliveryExceptionInputSchema, vendorOrderTransitionSchema, vendorPickupRequestInputSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
 import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
@@ -40,6 +40,13 @@ export function createOrderRouter() {
       const key = req.header("idempotency-key");
       if (!key || !z.string().uuid().safeParse(key).success) throw new ApiProblem(400, "IDEMPOTENCY_KEY_REQUIRED", "A UUID Idempotency-Key header is required");
       res.json(await service.reportDeliveryException(requireSession(req), idSchema.parse(req.params).id, vendorDeliveryExceptionInputSchema.parse(req.body), key, req.header("x-correlation-id")));
+    } catch (error) { next(error); }
+  });
+  router.post("/api/v2/vendor/orders/:id/pickup-request", async (req, res, next) => {
+    try {
+      const key = req.header("idempotency-key");
+      if (!key || !z.string().uuid().safeParse(key).success) throw new ApiProblem(400, "IDEMPOTENCY_KEY_REQUIRED", "A UUID Idempotency-Key header is required");
+      res.json(await service.requestPickup(requireSession(req), idSchema.parse(req.params).id, vendorPickupRequestInputSchema.parse(req.body), key, req.header("x-correlation-id")));
     } catch (error) { next(error); }
   });
   router.get("/api/v2/vendor/orders/:id/documents", async (req, res, next) => { try { res.json(await service.fulfillmentDocument(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });

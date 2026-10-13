@@ -2722,6 +2722,37 @@
                     "occurredAt"
                   ]
                 }
+              },
+              "pickupRequest": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "pickupDate": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "pickupWindow": {
+                    "type": "string"
+                  },
+                  "note": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "assignmentVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "pickupDate",
+                  "pickupWindow",
+                  "note",
+                  "assignmentVersion"
+                ]
               }
             },
             "required": [
@@ -2988,6 +3019,37 @@
                           "occurredAt"
                         ]
                       }
+                    },
+                    "pickupRequest": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "pickupDate": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "pickupWindow": {
+                          "type": "string"
+                        },
+                        "note": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "assignmentVersion": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0
+                        }
+                      },
+                      "required": [
+                        "pickupDate",
+                        "pickupWindow",
+                        "note",
+                        "assignmentVersion"
+                      ]
                     }
                   },
                   "required": [
@@ -10396,6 +10458,178 @@
                     "shipmentId",
                     "status",
                     "reportedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/vendor/orders/{id}/pickup-request": {
+      "post": {
+        "tags": [
+          "Vendor Orders"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pickupDate": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "pickupWindow": {
+                    "type": "string",
+                    "enum": [
+                      "09:00-12:00",
+                      "12:00-16:00",
+                      "16:00-19:00"
+                    ]
+                  },
+                  "note": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 500,
+                    "default": null
+                  }
+                },
+                "required": [
+                  "pickupDate",
+                  "pickupWindow"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Seller pickup schedule requested for operations assignment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pickupDate": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "pickupWindow": {
+                      "type": "string",
+                      "enum": [
+                        "09:00-12:00",
+                        "12:00-16:00",
+                        "16:00-19:00"
+                      ]
+                    },
+                    "note": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 500,
+                      "default": null
+                    },
+                    "vendorOrderId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "shipmentId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "requested"
+                      ]
+                    },
+                    "assignmentVersion": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "requestedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "pickupDate",
+                    "pickupWindow",
+                    "vendorOrderId",
+                    "shipmentId",
+                    "status",
+                    "assignmentVersion",
+                    "requestedAt"
                   ]
                 }
               }

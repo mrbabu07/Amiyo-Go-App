@@ -2,7 +2,7 @@ import { parcelCollectionAmount } from "./collection-amount.js";
 import { loadReturnPolicy, returnWindow } from "../operations/return-policy.js";
 import { createHash } from "node:crypto";
 import { Prisma, type PrismaClient, type VendorOrderStatus } from "@prisma/client";
-import { vendorDeliveryExceptionSchema, type Session, type VendorDeliveryExceptionInput, type VendorOrderTransition } from "@amiyo/contracts";
+import { vendorDeliveryExceptionSchema, vendorPickupRequestSchema, type Session, type VendorDeliveryExceptionInput, type VendorOrderTransition, type VendorPickupRequestInput } from "@amiyo/contracts";
 import { canTransitionVendorOrder, deliveryOutboxKey } from "@amiyo/domain";
 import { withSerializableTransaction } from "../../infrastructure/database/transaction.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
@@ -14,7 +14,7 @@ const vendorOrderInclude = {
   order: { include: { addresses: true, payments: { orderBy: { createdAt: "desc" as const }, take: 1 }, user: { include: { profile: true } } } },
   shop: true,
   items: { include: { product: { select: { media: { orderBy: { displayOrder: "asc" as const }, take: 1, select: { storageKey: true } } } } } },
-  shipments: { orderBy: { createdAt: "desc" as const }, take: 1, include: { events: { orderBy: { occurredAt: "asc" as const } } } },
+  shipments: { orderBy: { createdAt: "desc" as const }, take: 1, include: { assignment: true, events: { orderBy: { occurredAt: "asc" as const } } } },
   dispatches: { orderBy: { createdAt: "desc" as const }, take: 1 }
 } satisfies Prisma.VendorOrderInclude;
 type LoadedVendorOrder = Prisma.VendorOrderGetPayload<{ include: typeof vendorOrderInclude }>;
@@ -37,7 +37,7 @@ export function pendingSslCommerzActionUrl(orderStatus: string, payment: { metho
 
 function shipmentDto(shipment: LoadedVendorOrder["shipments"][number] | undefined) {
   if (!shipment) return null;
-  return { id: shipment.id, status: shipment.status, provider: shipment.provider, trackingNumber: shipment.trackingNumber, events: shipment.events.map((event) => ({ id: event.id, status: event.status, description: event.description, location: event.location, occurredAt: event.occurredAt.toISOString() })) };
+  return { id: shipment.id, status: shipment.status, provider: shipment.provider, trackingNumber: shipment.trackingNumber, pickupRequest: shipment.assignment?.pickupDate && shipment.assignment.pickupWindow ? { pickupDate: shipment.assignment.pickupDate.toISOString(), pickupWindow: shipment.assignment.pickupWindow, note: shipment.assignment.note, assignmentVersion: shipment.assignment.version } : null, events: shipment.events.map((event) => ({ id: event.id, status: event.status, description: event.description, location: event.location, occurredAt: event.occurredAt.toISOString() })) };
 }
 
 function vendorOrderDto(row: LoadedVendorOrder) {
@@ -102,7 +102,7 @@ export class OrderService {
     const orderIds = [...new Set(rows.map((row) => row.orderId))];
     const [orders, shipments, dispatchPackages] = await Promise.all([
       this.client.order.findMany({ where: { id: { in: orderIds } }, include: vendorOrderInclude.order.include }),
-      this.client.shipment.findMany({ where: { vendorOrderId: { in: packageIds } }, include: { events: vendorOrderInclude.shipments.include.events } }),
+      this.client.shipment.findMany({ where: { vendorOrderId: { in: packageIds } }, include: { assignment: true, events: vendorOrderInclude.shipments.include.events } }),
       this.client.vendorOrder.findMany({ where: { id: { in: packageIds } }, select: { id: true, dispatches: vendorOrderInclude.dispatches } })
     ]);
     const ordersById = new Map(orders.map((order) => [order.id, order]));
@@ -164,6 +164,31 @@ export class OrderService {
       const result = { vendorOrderId: row.id, shipmentId: shipment.id, status: "vendor_reported" as const, ...input, reportedAt: reportedAt.toISOString() };
       await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "logistics.delivery_exception.vendor_reported", resourceType: "shipment", resourceId: shipment.id, ...(correlationId ? { correlationId } : {}), before: json({ shipmentStatus: shipment.status }), after: json(result) } });
       await transaction.idempotencyRecord.create({ data: { scope, key: idempotencyKey, requestHash, response: json(result), expiresAt: new Date(Date.now() + 24 * 60 * 60_000) } });
+      return result;
+    });
+  }
+
+  async requestPickup(session: Session, id: string, input: VendorPickupRequestInput, idempotencyKey: string, correlationId?: string) {
+    const scope = `vendor-pickup-request:${session.principal.userId}:${id}`;
+    const requestHash = createHash("sha256").update(JSON.stringify(input)).digest("hex");
+    return withSerializableTransaction(this.client, async (transaction) => {
+      const previous = await transaction.idempotencyRecord.findUnique({ where: { scope_key: { scope, key: idempotencyKey } } });
+      if (previous) { if (previous.requestHash !== requestHash) throw new ApiProblem(409, "IDEMPOTENCY_KEY_REUSED", "Idempotency key was used for a different pickup request"); return vendorPickupRequestSchema.parse(previous.response); }
+      const row = await transaction.vendorOrder.findUnique({ where: { id }, include: { shipments: { orderBy: { createdAt: "desc" }, take: 1, include: { assignment: true } } } });
+      if (!row) throw new ApiProblem(404, "VENDOR_ORDER_NOT_FOUND", "Vendor order not found");
+      if (session.status !== "ACTIVE" || !session.permissions.includes("orders:manage") || !session.principal.vendorIds.includes(row.vendorId)) throw new ApiProblem(403, "VENDOR_ORDER_FORBIDDEN", "Only this order's seller can request pickup");
+      const shipment = row.shipments[0];
+      if (!shipment || shipment.status !== "READY_TO_SHIP") throw new ApiProblem(409, "PICKUP_REQUEST_NOT_ALLOWED", "Pickup can be requested only while the parcel is ready to ship");
+      if (shipment.assignment?.courierPartnerId || shipment.assignment?.pickupStaffId) throw new ApiProblem(409, "PICKUP_ALREADY_ASSIGNED", "Operations already assigned this pickup; report an exception if the schedule needs attention");
+      const pickupDate = new Date(input.pickupDate);
+      const now = Date.now();
+      if (pickupDate.getTime() < now + 30 * 60_000 || pickupDate.getTime() > now + 14 * 24 * 60 * 60_000) throw new ApiProblem(409, "PICKUP_DATE_INVALID", "Pickup must be requested between 30 minutes and 14 days from now");
+      const assignment = await transaction.logisticsAssignment.upsert({ where: { shipmentId: shipment.id }, create: { shipmentId: shipment.id, bookingMode: "manual", pickupDate, pickupWindow: input.pickupWindow, note: input.note }, update: { pickupDate, pickupWindow: input.pickupWindow, note: input.note, version: { increment: 1 } } });
+      const requestedAt = new Date();
+      await transaction.shipmentEvent.create({ data: { shipmentId: shipment.id, status: shipment.status, description: `Seller requested pickup ${input.pickupWindow}`, providerPayload: json({ eventType: "vendor_pickup_requested", pickupDate: input.pickupDate, pickupWindow: input.pickupWindow, note: input.note }), occurredAt: requestedAt } });
+      const result = { vendorOrderId: row.id, shipmentId: shipment.id, status: "requested" as const, ...input, assignmentVersion: assignment.version, requestedAt: requestedAt.toISOString() };
+      await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "logistics.pickup.vendor_requested", resourceType: "shipment", resourceId: shipment.id, ...(correlationId ? { correlationId } : {}), before: json(shipment.assignment ? { pickupDate: shipment.assignment.pickupDate, pickupWindow: shipment.assignment.pickupWindow, version: shipment.assignment.version } : null), after: json(result) } });
+      await transaction.idempotencyRecord.create({ data: { scope, key: idempotencyKey, requestHash, response: json(result), expiresAt: new Date(now + 24 * 60 * 60_000) } });
       return result;
     });
   }
@@ -263,7 +288,7 @@ export class OrderService {
   }
 
   async tracking(session: Session, id: string) {
-    const order = await this.client.order.findFirst({ where: { id, userId: session.principal.userId }, include: { vendorOrders: { include: { shop: true, shipments: { orderBy: { createdAt: "desc" }, take: 1, include: { events: { orderBy: { occurredAt: "asc" } } } } } } } });
+    const order = await this.client.order.findFirst({ where: { id, userId: session.principal.userId }, include: { vendorOrders: { include: { shop: true, shipments: { orderBy: { createdAt: "desc" }, take: 1, include: { assignment: true, events: { orderBy: { occurredAt: "asc" } } } } } } } });
     if (!order) throw new ApiProblem(404, "ORDER_NOT_FOUND", "Order not found");
     return { orderId: order.id, orderNumber: order.orderNumber, status: order.status, shipments: order.vendorOrders.map((vendorOrder) => ({ vendorOrderId: vendorOrder.id, shopName: vendorOrder.shop.name, shipment: shipmentDto(vendorOrder.shipments[0]) })) };
   }

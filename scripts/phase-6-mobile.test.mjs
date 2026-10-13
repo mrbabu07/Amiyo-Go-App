@@ -18,5 +18,9 @@ test("vendor fulfillment and customer tracking expose accessible actions", async
   assert.match(source, /reportVendorDeliveryException/);
   assert.match(source, /Send to operations/);
   assert.match(source, /\["READY_TO_SHIP", "PICKED_UP", "IN_TRANSIT"\]/);
+  assert.match(source, /Request courier pickup/);
+  assert.match(source, /requestVendorOrderPickup/);
+  assert.match(source, /Operations assigns the courier and confirms pickup/);
+  assert.match(source, /item\.shipment\?\.status === "READY_TO_SHIP"/);
   assert.match(source, /const user = useCurrentUser\(\)/);
 });

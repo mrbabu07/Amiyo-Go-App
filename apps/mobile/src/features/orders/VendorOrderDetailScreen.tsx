@@ -1,4 +1,4 @@
-import type { VendorDeliveryExceptionInput, VendorOrderDetail, VendorOrderStatus } from "@amiyo/contracts";
+import type { VendorDeliveryExceptionInput, VendorOrderDetail, VendorOrderStatus, VendorPickupRequestInput } from "@amiyo/contracts";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Crypto from "expo-crypto";
@@ -9,7 +9,7 @@ import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Tex
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
 import { OrderItemImage } from "./OrderItemImage";
-import { getVendorOrder, openVendorOrderCustomerThread, reportVendorDeliveryException, transitionVendorOrder } from "./orders.api";
+import { getVendorOrder, openVendorOrderCustomerThread, reportVendorDeliveryException, requestVendorOrderPickup, transitionVendorOrder } from "./orders.api";
 
 const actions: Partial<Record<VendorOrderStatus, Array<{ status: VendorOrderStatus; label: string; danger?: boolean }>>> = {
   PLACED: [{ status: "ACCEPTED", label: "Accept order" }, { status: "REJECTED", label: "Reject", danger: true }],
@@ -20,6 +20,7 @@ const money = (minor: string, currency = "BDT") => `${currency === "BDT" ? "Tk" 
 const label = (value: string) => value.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 const exceptionCategories: VendorDeliveryExceptionInput["category"][] = ["PICKUP_DELAY", "CARRIER_NO_SHOW", "ADDRESS_ISSUE", "CUSTOMER_UNAVAILABLE", "PARCEL_DAMAGED", "OTHER"];
 const exceptionResolutions: VendorDeliveryExceptionInput["requestedResolution"][] = ["REATTEMPT", "CONTACT_CUSTOMER", "RETURN_TO_SELLER", "INVESTIGATE"];
+const pickupWindows: VendorPickupRequestInput["pickupWindow"][] = ["09:00-12:00", "12:00-16:00", "16:00-19:00"];
 
 export function VendorOrderDetailScreen({ id }: { id: string }) {
   const router = useRouter();
@@ -37,6 +38,12 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
   const [exceptionNotes, setExceptionNotes] = useState("");
   const [exceptionKey, setExceptionKey] = useState<string | null>(null);
   const [exceptionSuccess, setExceptionSuccess] = useState<string | null>(null);
+  const [pickupDay, setPickupDay] = useState(1);
+  const [pickupWindow, setPickupWindow] = useState<VendorPickupRequestInput["pickupWindow"]>("09:00-12:00");
+  const [pickupNote, setPickupNote] = useState("");
+  const [pickupKey, setPickupKey] = useState<string | null>(null);
+  const [pickupBusy, setPickupBusy] = useState(false);
+  const [pickupSuccess, setPickupSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const order = useQuery({ queryKey: ["orders", "vendor", id, user?.uid], queryFn: () => getVendorOrder(user!, id), enabled: Boolean(user) });
 
@@ -91,6 +98,25 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
     }
   }
 
+  async function requestPickup() {
+    if (!user || pickupBusy) return;
+    const key = pickupKey ?? Crypto.randomUUID();
+    setPickupKey(key);
+    setPickupBusy(true);
+    setPickupSuccess(null);
+    setError(null);
+    try {
+      await requestVendorOrderPickup(user, id, { pickupDate: pickupDateFor(pickupDay), pickupWindow, note: pickupNote.trim() || null }, key);
+      setPickupSuccess("Pickup preference sent. Operations will assign and confirm the courier.");
+      setPickupKey(null);
+      await order.refetch();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Pickup request could not be sent");
+    } finally {
+      setPickupBusy(false);
+    }
+  }
+
   if (order.isLoading) return <View style={styles.center}><ActivityIndicator color={colors.primary} size="large" /></View>;
   if (!order.data) return <View style={styles.center}><Text style={styles.error}>{order.error instanceof Error ? order.error.message : "Order not found"}</Text><Pressable onPress={() => router.back()}><Text style={styles.link}>Go back</Text></Pressable></View>;
 
@@ -121,6 +147,14 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
       {item.shipment?.events.map((event, index) => <TimelineEvent key={event.id} status={event.status} description={event.description || "No event note recorded"} location={event.location} occurredAt={event.occurredAt} last={index === item.shipment!.events.length - 1} />)}
       {!item.shipment?.events.length ? <Text style={styles.timelineEmpty}>No courier event has been recorded yet.</Text> : null}
     </Panel>
+    {item.shipment?.status === "READY_TO_SHIP" ? <Panel title="Request courier pickup" meta="Choose a preferred slot. Operations assigns the courier and confirms pickup.">
+      {item.shipment.pickupRequest ? <View style={styles.pickupCurrent}><Ionicons color={colors.success} name="calendar-outline" size={18} /><View style={styles.flex}><Text style={styles.itemName}>Current request: {new Date(item.shipment.pickupRequest.pickupDate).toLocaleDateString("en-BD")} · {item.shipment.pickupRequest.pickupWindow}</Text>{item.shipment.pickupRequest.note ? <Text style={styles.muted}>{item.shipment.pickupRequest.note}</Text> : null}</View></View> : null}
+      {pickupSuccess ? <Text style={styles.success}>{pickupSuccess}</Text> : null}
+      <Text style={styles.detailLabel}>Preferred day</Text><View style={styles.choiceRow}>{[1, 2, 3].map((day) => <Choice key={day} active={pickupDay === day} disabled={pickupBusy} label={pickupDayLabel(day)} onPress={() => { setPickupDay(day); setPickupKey(null); }} />)}</View>
+      <Text style={styles.detailLabel}>Pickup window</Text><View style={styles.choiceRow}>{pickupWindows.map((window) => <Choice key={window} active={pickupWindow === window} disabled={pickupBusy} label={window} onPress={() => { setPickupWindow(window); setPickupKey(null); }} />)}</View>
+      <Text style={styles.detailLabel}>Pickup note (optional)</Text><TextInput accessibilityLabel="Pickup note" editable={!pickupBusy} maxLength={500} onChangeText={(value) => { setPickupNote(value); setPickupKey(null); }} placeholder="Gate, landmark, package count, or contact timing" placeholderTextColor={colors.muted} style={styles.input} value={pickupNote} />
+      <Pressable accessibilityRole="button" disabled={pickupBusy} onPress={requestPickup} style={[styles.primary, pickupBusy && styles.disabled]}>{pickupBusy ? <ActivityIndicator color="#fff" /> : <><Ionicons color="#fff" name="calendar-outline" size={18} /><Text style={styles.primaryText}>{item.shipment.pickupRequest ? "Update pickup request" : "Send pickup request"}</Text></>}</Pressable>
+    </Panel> : null}
     {item.shipment && ["READY_TO_SHIP", "PICKED_UP", "IN_TRANSIT"].includes(item.shipment.status) ? <Panel title="Delivery exception" meta="Report a pickup or transit problem without changing courier status.">
       {exceptionSuccess ? <Text style={styles.success}>{exceptionSuccess}</Text> : null}
       {!exceptionOpen ? <Pressable accessibilityRole="button" onPress={() => setExceptionOpen(true)} style={styles.exceptionTrigger}><Ionicons color={colors.danger} name="warning-outline" size={18} /><Text style={styles.exceptionTriggerText}>Report delivery issue</Text></Pressable> : <View style={styles.exceptionForm}>
@@ -142,6 +176,8 @@ function Metric({ icon, label: title, value }: { icon: string; label: string; va
 function TimelineEvent({ description, first, last, location, occurredAt, status }: { description: string; first?: boolean; last: boolean; location?: string | null; occurredAt: string; status: string }) { return <View style={styles.timelineRow}><View style={styles.timelineRail}><View style={[styles.timelineDot, first && styles.timelineDotFirst]} />{!last ? <View style={styles.timelineLine} /> : null}</View><View style={styles.timelineCopy}><View style={styles.timelineHeading}><Text style={styles.timelineStatus}>{label(status)}</Text><Text style={styles.timelineDate}>{new Date(occurredAt).toLocaleString("en-BD")}</Text></View><Text style={styles.timelineDescription}>{description}</Text>{location ? <Text style={styles.timelineLocation}>{location}</Text> : null}</View></View>; }
 function Choice({ active, disabled, label: text, onPress }: { active: boolean; disabled: boolean; label: string; onPress(): void }) { return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={[styles.choice, active && styles.choiceActive]}><Text style={[styles.choiceText, active && styles.choiceTextActive]}>{text}</Text></Pressable>; }
 function address(value: NonNullable<VendorOrderDetail["deliveryAddress"]>) { return [value.recipientName, value.line1, value.line2, value.unionName, value.upazila, value.district, value.division, value.postalCode].filter(Boolean).join(", "); }
+function pickupDateFor(day: number) { const date = new Date(); date.setDate(date.getDate() + day); date.setHours(9, 0, 0, 0); return date.toISOString(); }
+function pickupDayLabel(day: number) { return day === 1 ? "Tomorrow" : new Date(Date.now() + day * 86_400_000).toLocaleDateString("en-BD", { day: "numeric", month: "short" }); }
 
 const styles = StyleSheet.create({
   safe: { backgroundColor: colors.background, flex: 1 },
@@ -215,6 +251,7 @@ const styles = StyleSheet.create({
   input: { backgroundColor: colors.background, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, minHeight: 46, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   notes: { minHeight: 90, textAlignVertical: "top" },
   success: { backgroundColor: colors.primarySoft, borderRadius: radius.md, color: colors.success, padding: spacing.md },
+  pickupCurrent: { alignItems: "center", backgroundColor: colors.accentSoft, borderRadius: radius.md, flexDirection: "row", gap: spacing.sm, padding: spacing.md },
   error: { backgroundColor: "#fef2f2", borderRadius: radius.md, color: colors.danger, padding: spacing.md },
   center: { alignItems: "center", backgroundColor: colors.background, flex: 1, gap: spacing.md, justifyContent: "center", padding: spacing.xl }
 });

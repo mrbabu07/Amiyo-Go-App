@@ -115,11 +115,40 @@ test("delivery exception rejects another seller and completed parcels", async ()
   await assert.rejects(() => new OrderService(client as never).reportDeliveryException({ ...seller, permissions: ["orders:manage"] }, "package", input, "44444444-4444-4444-8444-444444444444"), (error: unknown) => error instanceof ApiProblem && error.code === "DELIVERY_EXCEPTION_NOT_ALLOWED");
 });
 
+test("seller pickup request is idempotent, audited and leaves courier status unchanged", async () => {
+  const pickupDate = new Date(Date.now() + 86_400_000).toISOString();
+  const input = { pickupDate, pickupWindow: "09:00-12:00" as const, note: "Two cartons" };
+  let eventStatus: string | undefined;
+  let storedResponse: unknown;
+  const client = {
+    $transaction: async (operation: (transaction: unknown) => Promise<unknown>) => operation(client),
+    idempotencyRecord: { findUnique: async () => null, create: async ({ data }: { data: { response: unknown } }) => { storedResponse = data.response; } },
+    vendorOrder: { findUnique: async () => ({ id: "11111111-1111-4111-8111-111111111111", vendorId: "vendor", shipments: [{ id: "22222222-2222-4222-8222-222222222222", status: "READY_TO_SHIP", assignment: null }] }) },
+    logisticsAssignment: { upsert: async () => ({ version: 1 }) },
+    shipmentEvent: { create: async ({ data }: { data: { status: string } }) => { eventStatus = data.status; } },
+    auditLog: { create: async ({ data }: { data: { action: string } }) => { assert.equal(data.action, "logistics.pickup.vendor_requested"); } }
+  };
+  const result = await new OrderService(client as never).requestPickup({ ...seller, permissions: ["orders:manage"] }, "11111111-1111-4111-8111-111111111111", input, "44444444-4444-4444-8444-444444444444");
+  assert.equal(result.status, "requested");
+  assert.equal(eventStatus, "READY_TO_SHIP");
+  assert.deepEqual(storedResponse, result);
+});
+
+test("pickup request rejects another seller, assigned pickups and non-ready parcels", async () => {
+  const input = { pickupDate: new Date(Date.now() + 86_400_000).toISOString(), pickupWindow: "12:00-16:00" as const, note: null };
+  const row = { id: "11111111-1111-4111-8111-111111111111", vendorId: "vendor", shipments: [{ id: "22222222-2222-4222-8222-222222222222", status: "READY_TO_SHIP", assignment: { courierPartnerId: "courier", pickupStaffId: null } }] };
+  const client = { $transaction: async (operation: (transaction: unknown) => Promise<unknown>) => operation(client), idempotencyRecord: { findUnique: async () => null }, vendorOrder: { findUnique: async () => row } };
+  await assert.rejects(() => new OrderService(client as never).requestPickup({ ...seller, permissions: ["orders:manage"], principal: { ...seller.principal, vendorIds: ["other"] } }, row.id, input, "44444444-4444-4444-8444-444444444444"), (error: unknown) => error instanceof ApiProblem && error.status === 403);
+  await assert.rejects(() => new OrderService(client as never).requestPickup({ ...seller, permissions: ["orders:manage"] }, row.id, input, "44444444-4444-4444-8444-444444444444"), (error: unknown) => error instanceof ApiProblem && error.code === "PICKUP_ALREADY_ASSIGNED");
+  row.shipments[0] = { id: "22222222-2222-4222-8222-222222222222", status: "DELIVERED", assignment: null as never };
+  await assert.rejects(() => new OrderService(client as never).requestPickup({ ...seller, permissions: ["orders:manage"] }, row.id, input, "44444444-4444-4444-8444-444444444444"), (error: unknown) => error instanceof ApiProblem && error.code === "PICKUP_REQUEST_NOT_ALLOWED");
+});
+
 test("batched list preserves detail DTOs and starts bounded relation branches concurrently", async () => {
   const createdAt = new Date("2026-10-03T00:00:00Z");
   const parent = { id: "parent", orderNumber: "ORDER", currency: "BDT", addresses: [], payments: [], user: null };
   const rows = ["second", "first"].map((id) => ({ id, orderId: "parent", vendorId: "vendor", shopId: "shop", shop: { name: "Shop" }, status: "PLACED", createdAt, version: 1, subtotalMinor: 100n, discountMinor: 0n, deliveryMinor: 20n, totalMinor: 120n, items: [{ id: `item-${id}`, productId: "product", variantId: null, productNameSnapshot: "Purchased name", skuSnapshot: "SKU", attributesSnapshot: null, quantity: 1, unitPriceMinor: 100n, discountMinor: 0n, lineTotalMinor: 100n, currency: "BDT", product: { media: [{ storageKey: "https://cdn.amiyo.test/products/item.webp" }] } }] }));
-  const shipment = { id: "shipment", vendorOrderId: "second", status: "DELIVERED", provider: "courier", trackingNumber: "TRACK", events: [{ id: "event", status: "DELIVERED", description: "Delivered", location: null, occurredAt: createdAt }] };
+  const shipment = { id: "shipment", vendorOrderId: "second", status: "DELIVERED", provider: "courier", trackingNumber: "TRACK", assignment: null, events: [{ id: "event", status: "DELIVERED", description: "Delivered", location: null, occurredAt: createdAt }] };
   const started: string[] = [];
   let release: () => void = () => {};
   const barrier = new Promise<void>((resolve) => { release = resolve; });
@@ -140,7 +169,7 @@ test("batched list preserves detail DTOs and starts bounded relation branches co
     } },
     shipment: { findMany: async (query: { where: unknown; include: unknown }) => {
       assert.deepEqual(query.where, { vendorOrderId: { in: ["second", "first"] } });
-      assert.deepEqual(query.include, { events: { orderBy: { occurredAt: "asc" } } });
+      assert.deepEqual(query.include, { assignment: true, events: { orderBy: { occurredAt: "asc" } } });
       await branch("shipments"); return [shipment];
     } }
   } as never);

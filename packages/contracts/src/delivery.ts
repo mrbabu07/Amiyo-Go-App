@@ -20,6 +20,12 @@ export const vendorDeliveryExceptionInputSchema = z.object({
   retryAt: timestampSchema.nullable().default(null)
 });
 export const vendorDeliveryExceptionSchema = vendorDeliveryExceptionInputSchema.extend({ vendorOrderId: uuidSchema, shipmentId: uuidSchema, status: z.literal("vendor_reported"), reportedAt: timestampSchema });
+export const vendorPickupRequestInputSchema = z.object({
+  pickupDate: timestampSchema,
+  pickupWindow: z.enum(["09:00-12:00", "12:00-16:00", "16:00-19:00"]),
+  note: z.string().trim().max(500).nullable().default(null)
+});
+export const vendorPickupRequestSchema = vendorPickupRequestInputSchema.extend({ vendorOrderId: uuidSchema, shipmentId: uuidSchema, status: z.literal("requested"), assignmentVersion: versionSchema, requestedAt: timestampSchema });
 
 export const shipmentEventSchema = z.object({
   id: uuidSchema,
@@ -34,7 +40,8 @@ export const shipmentSchema = z.object({
   status: shipmentStatusSchema,
   provider: z.string().nullable(),
   trackingNumber: z.string().nullable(),
-  events: z.array(shipmentEventSchema)
+  events: z.array(shipmentEventSchema),
+  pickupRequest: z.object({ pickupDate: timestampSchema, pickupWindow: z.string(), note: z.string().nullable(), assignmentVersion: versionSchema }).nullable().optional()
 });
 
 export const vendorOrderDetailSchema = z.object({
@@ -122,6 +129,7 @@ export const amiyoDeliveryCallbackSchema = z.object({
 export type VendorOrderDetail = z.infer<typeof vendorOrderDetailSchema>;
 export type VendorOrderTransition = z.infer<typeof vendorOrderTransitionSchema>;
 export type VendorDeliveryExceptionInput = z.infer<typeof vendorDeliveryExceptionInputSchema>;
+export type VendorPickupRequestInput = z.infer<typeof vendorPickupRequestInputSchema>;
 export type CustomerOrderSummary = z.infer<typeof customerOrderSummarySchema>;
 export type OrderTracking = z.infer<typeof orderTrackingSchema>;
 export type FulfillmentDocument = z.infer<typeof fulfillmentDocumentSchema>;
