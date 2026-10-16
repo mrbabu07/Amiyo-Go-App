@@ -47,6 +47,7 @@ export const apiEnvSchema = apiEnvObject.superRefine(validateFirebaseAdmin);
 
 export const workerEnvSchema = apiEnvObject.extend({
   WORKER_CONCURRENCY: z.coerce.number().int().positive().default(5),
+  WORKER_HEALTH_PORT: z.coerce.number().int().positive().max(65_535).default(4_002),
   WORKER_SLOW_JOB_MS: z.coerce.number().int().min(1).max(3_600_000).default(5_000),
   AMIYO_DELIVERY_API_URL: optionalUrlSchema,
   AMIYO_DELIVERY_INTEGRATION_TOKEN: optionalSecretSchema,

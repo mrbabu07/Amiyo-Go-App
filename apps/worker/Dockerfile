@@ -23,4 +23,6 @@ COPY --from=build /app/apps/worker/dist ./apps/worker/dist
 COPY --from=build /app/packages ./packages
 RUN chown -R node:node /app
 USER node
+EXPOSE 4002
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD node -e "fetch('http://127.0.0.1:'+(process.env.WORKER_HEALTH_PORT||4002)+'/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 CMD ["node", "apps/worker/dist/index.js"]
