@@ -3,6 +3,7 @@ import { z } from "zod";
 import { addCartItemSchema, checkoutInputSchema, checkoutQuoteInputSchema, updateCartItemSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
+import { authenticatedWriteLimit } from "../../middleware/authenticated-write-limit.js";
 import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "../identity/identity.middleware.js";
 import { IdentityService } from "../identity/identity.service.js";
@@ -21,6 +22,8 @@ export function createCommerceRouter() {
   for (const outcome of ["success", "fail", "cancel"] as const) router.post(`/api/v2/payments/sslcommerz/${outcome}`, sslcommerzForm, async (req, res, next) => { try { const result = await sslcommerz.receive(req.body); const status = outcome === "success" ? ("pending" in result && !result.pending ? "CAPTURED" : "PENDING") : outcome.toUpperCase(); res.redirect(303, sslcommerz.redirectUrl(result, status)); } catch (error) { next(error); } });
   router.post("/api/v2/payment-webhooks/:provider", async (req, res, next) => { try { const provider = z.string().regex(/^[a-z0-9-]+$/).parse(req.params.provider); webhook.verify(req.rawBody ?? Buffer.alloc(0), req.header("x-payment-signature")); res.json(await webhook.process(provider, req.body)); } catch (error) { next(error); } });
   router.use(["/api/v2/cart", "/api/v2/checkout", "/api/v2/payments"], authenticate);
+  router.use("/api/v2/cart", authenticatedWriteLimit({ code: "CART_RATE_LIMITED", limit: 60 }));
+  router.use("/api/v2/checkout", authenticatedWriteLimit({ code: "CHECKOUT_RATE_LIMITED", limit: 10 }));
   router.get("/api/v2/cart", async (req, res, next) => { try { res.json(await service.cart(requireSession(req).principal.userId)); } catch (error) { next(error); } });
   router.post("/api/v2/cart/items", async (req, res, next) => { try { const input = addCartItemSchema.parse(req.body); const key = req.header("idempotency-key"); if (key && !z.string().uuid().safeParse(key).success) throw new ApiProblem(400, "IDEMPOTENCY_KEY_INVALID", "Idempotency-Key must be a UUID"); res.status(201).json(await service.addItem(requireSession(req).principal.userId, input.variantId, input.quantity, key)); } catch (error) { next(error); } });
   router.put("/api/v2/cart/items/:id", async (req, res, next) => { try { res.json(await service.updateItem(requireSession(req).principal.userId, idSchema.parse(req.params).id, updateCartItemSchema.parse(req.body).quantity)); } catch (error) { next(error); } });

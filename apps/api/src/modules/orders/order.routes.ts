@@ -4,6 +4,7 @@ import { vendorOrderStatusSchema } from "@amiyo/contracts";
 import { documentQrVerificationInputSchema, vendorDeliveryExceptionInputSchema, vendorOrderTransitionSchema, vendorPickupRequestInputSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
+import { authenticatedWriteLimit } from "../../middleware/authenticated-write-limit.js";
 import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "../identity/identity.middleware.js";
 import { IdentityService } from "../identity/identity.service.js";
@@ -27,6 +28,7 @@ export function createOrderRouter() {
   });
 
   router.use(["/api/v2/orders", "/api/v2/vendor/orders", "/api/v2/documents"], authenticate);
+  router.use(["/api/v2/vendor/orders", "/api/v2/documents"], authenticatedWriteLimit({ code: "ORDER_WRITE_RATE_LIMITED", limit: 30 }));
   router.post("/api/v2/documents/verify", async (req, res, next) => { try { res.json(await service.verifyDocument(requireSession(req), documentQrVerificationInputSchema.parse(req.body).payload)); } catch (error) { next(error); } });
   router.get("/api/v2/orders", async (req, res, next) => { try { res.json(await service.customerOrders(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/orders/:id/tracking", async (req, res, next) => { try { res.json(await service.tracking(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
