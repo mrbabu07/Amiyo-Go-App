@@ -7,7 +7,7 @@ import { useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { OrderInvoiceDocument, useInvoicePrintStyles } from "../orders/components/OrderInvoiceDocument";
 import { getAdminOrderDetail, issueAdminOrderInvoice } from "./admin.api";
 
@@ -15,13 +15,15 @@ const printId = "admin-print-invoice";
 
 export function AdminOrderInvoiceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const user = firebaseAuth?.currentUser ?? null;
-  const query = useQuery({ queryKey: ["admin", "order", id], queryFn: () => getAdminOrderDetail(user!, id), enabled: Boolean(user && id) });
+  const user = useCurrentUser();
+  const userId = user?.uid ?? null;
+  const query = useQuery({ queryKey: ["admin", "order", userId, id], queryFn: () => getAdminOrderDetail(user!, id), enabled: Boolean(user && id), retry: false });
   useInvoicePrintStyles(printId);
   const qr = useRef<InvoiceQrRef | null>(null);
   const [exportError, setExportError] = useState("");
   const [exporting, setExporting] = useState(false);
-  const issue = useMutation({ mutationFn: () => issueAdminOrderInvoice(user!, id), onSuccess: () => query.refetch() });
+  const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen the invoice."); return user; };
+  const issue = useMutation({ mutationFn: () => issueAdminOrderInvoice(currentActor(), id), onSuccess: () => query.refetch() });
 
   async function printInvoice() {
     if (!query.data?.invoice) return;

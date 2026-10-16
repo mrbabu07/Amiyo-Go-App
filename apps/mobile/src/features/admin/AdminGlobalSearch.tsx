@@ -2,30 +2,33 @@ import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { getAdminSearchDetail, searchAdminResources, type AdminSearchResult } from "./admin-search.api";
 
 type RouteLink = { label: string; href: string; icon: string };
 
 export function AdminGlobalSearch({ dark, onOpen, routes }: { dark: boolean; onOpen: (href: string) => void; routes: RouteLink[] }) {
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const userId = user?.uid ?? null;
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [selected, setSelected] = useState<AdminSearchResult | null>(null);
   const normalized = query.trim().toLocaleLowerCase();
   const routeResults = normalized ? routes.filter((route) => `${route.label} ${route.href}`.toLocaleLowerCase().includes(normalized)).slice(0, 5) : [];
   const resources = useQuery({
-    queryKey: ["admin", "global-search", normalized],
+    queryKey: ["admin", "global-search", userId, normalized],
     queryFn: () => searchAdminResources(user!, query.trim()),
     enabled: Boolean(user && normalized.length >= 2 && focused),
-    staleTime: 15_000
+    staleTime: 15_000,
+    retry: false
   });
   const detail = useQuery({
-    queryKey: ["admin", "global-search", selected?.type, selected?.id],
+    queryKey: ["admin", "global-search", userId, selected?.type, selected?.id],
     queryFn: () => getAdminSearchDetail(user!, selected!),
     enabled: Boolean(user && selected && focused),
-    staleTime: 30_000
+    staleTime: 30_000,
+    retry: false
   });
   const clear = () => { setQuery(""); setSelected(null); };
   const open = (href: string) => { clear(); setFocused(false); onOpen(href); };

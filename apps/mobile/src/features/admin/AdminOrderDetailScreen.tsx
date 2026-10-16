@@ -8,7 +8,7 @@ import type { AdminOrderDetail } from "@amiyo/contracts";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { cancelCustomerOrder } from "../operations/operations.api";
 import { transitionVendorOrder } from "../orders/orders.api";
 import { getAdminOrderDetail } from "./admin.api";
@@ -26,19 +26,21 @@ const statusIndex = (steps: string[], status: string) => Math.max(0, steps.index
 
 export function AdminOrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const userId = user?.uid ?? null;
   const router = useRouter();
   const cache = useQueryClient();
   const { width } = useWindowDimensions();
   const compact = width < 680;
   const narrow = width < 430;
   const [cancelReason, setCancelReason] = useState("");
-  const order = useQuery({ queryKey: ["admin", "order", id], queryFn: () => getAdminOrderDetail(user!, id), enabled: Boolean(user && id), refetchInterval: 15_000 });
+  const order = useQuery({ queryKey: ["admin", "order", userId, id], queryFn: () => getAdminOrderDetail(user!, id), enabled: Boolean(user && id), refetchInterval: 15_000, retry: false });
+  const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen order details."); return user; };
   const transition = useMutation({
-    mutationFn: ({ vendorOrderId, status, version }: { vendorOrderId: string; status: string; version: number }) => transitionVendorOrder(user!, vendorOrderId, { status: status as never, expectedVersion: version, reason: `Status updated to ${status} by marketplace administrator` }, randomUUID()),
-    onSuccess: async () => { await Promise.all([cache.invalidateQueries({ queryKey: ["admin", "order", id] }), cache.invalidateQueries({ queryKey: ["admin", "commerce"] })]); }
+    mutationFn: ({ vendorOrderId, status, version }: { vendorOrderId: string; status: string; version: number }) => transitionVendorOrder(currentActor(), vendorOrderId, { status: status as never, expectedVersion: version, reason: `Status updated to ${status} by marketplace administrator` }, randomUUID()),
+    onSuccess: async () => { await Promise.all([cache.invalidateQueries({ queryKey: ["admin", "order", userId, id] }), cache.invalidateQueries({ queryKey: ["admin", "commerce", userId] })]); }
   });
-  const cancelOrder = useMutation({ mutationFn: () => cancelCustomerOrder(user!, id, { expectedVersion: order.data!.version, reason: cancelReason.trim() }, randomUUID()), onSuccess: async () => { setCancelReason(""); await Promise.all([cache.invalidateQueries({ queryKey: ["admin", "order", id] }), cache.invalidateQueries({ queryKey: ["admin", "commerce"] }), cache.invalidateQueries({ queryKey: ["notifications"] })]); } });
+  const cancelOrder = useMutation({ mutationFn: () => cancelCustomerOrder(currentActor(), id, { expectedVersion: order.data!.version, reason: cancelReason.trim() }, randomUUID()), onSuccess: async () => { setCancelReason(""); await Promise.all([cache.invalidateQueries({ queryKey: ["admin", "order", userId, id] }), cache.invalidateQueries({ queryKey: ["admin", "commerce", userId] }), cache.invalidateQueries({ queryKey: ["notifications", userId] })]); } });
 
   if (order.isLoading) return <Screen title="Order detail"><ActivityIndicator color={colors.primary} /></Screen>;
   if (!order.data) return <Screen title="Order detail"><Text style={styles.error}>{order.error?.message ?? "Order not found"}</Text></Screen>;

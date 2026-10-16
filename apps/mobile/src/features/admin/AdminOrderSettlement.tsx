@@ -1,12 +1,16 @@
 import type { AdminOrderDetail } from "@amiyo/contracts";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { approveOrderSettlement } from "../operations/operations.api";
 import { colors, spacing } from "../../ui/tokens";
 
 export function AdminOrderSettlement({ order }: { order: AdminOrderDetail }) {
+  const user = useCurrentUser();
+  const userId = user?.uid ?? null;
+  const userIdRef = useRef(userId);
+  userIdRef.current = userId;
   const [selected, setSelected] = useState("");
   const [shipping, setShipping] = useState<"VENDOR" | "PLATFORM" | null>(null);
   const [amount, setAmount] = useState("");
@@ -15,19 +19,21 @@ export function AdminOrderSettlement({ order }: { order: AdminOrderDetail }) {
   const [message, setMessage] = useState("");
   const cache = useQueryClient();
   const approve = async () => {
-    const user = firebaseAuth?.currentUser;
+    const actor = user;
+    const actorId = userId;
     const packageOrder = order.vendorOrders.find((item) => item.id === selected);
-    if (!user || !packageOrder || !shipping || busy) return;
+    if (!actor || !actorId || actor.uid !== actorId || !packageOrder || !shipping || busy) return;
     if (!/^\d+(\.\d{1,2})?$/.test(amount.trim())) { setMessage("Enter the reconciled amount in BDT, with at most two decimals."); return; }
     const [whole, fraction = ""] = amount.trim().split(".");
     const expectedAmountMinor = (BigInt(whole!) * 100n + BigInt(fraction.padEnd(2, "0"))).toString();
     setBusy(true); setMessage("");
     try {
-      const result = await approveOrderSettlement(user, selected, { expectedVersion: packageOrder.version, expectedAmountMinor, shippingRecipient: shipping, reason });
+      const result = await approveOrderSettlement(actor, selected, { expectedVersion: packageOrder.version, expectedAmountMinor, shippingRecipient: shipping, reason });
+      if (userIdRef.current !== actorId) return;
       setMessage(result.alreadySettled ? "This package was already credited. No duplicate credit was created." : "Approved: seller wallet credited. This does not transfer money to the seller's bank.");
-      await cache.invalidateQueries({ queryKey: ["vendor-finance"] });
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Settlement approval failed"); }
-    finally { setBusy(false); }
+      await cache.invalidateQueries({ queryKey: ["vendor-finance", actorId] });
+    } catch (error) { if (userIdRef.current === actorId) setMessage(error instanceof Error ? error.message : "Settlement approval failed"); }
+    finally { if (userIdRef.current === actorId) setBusy(false); }
   };
   return <View style={styles.panel}>
     <Text style={styles.title}>Finance approval: seller settlement</Text>

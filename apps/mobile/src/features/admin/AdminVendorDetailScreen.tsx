@@ -4,23 +4,25 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getAdminCommerce, getAdminWorkspace, updateAdminVendor } from "./admin.api";
 
 export function AdminVendorDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const userId = user?.uid ?? null;
   const router = useRouter();
   const cache = useQueryClient();
-  const workspace = useQuery({ queryKey: ["admin", "workspace"], queryFn: () => getAdminWorkspace(user!), enabled: Boolean(user && id) });
-  const commerce = useQuery({ queryKey: ["admin", "commerce"], queryFn: () => getAdminCommerce(user!), enabled: Boolean(user && id) });
+  const workspace = useQuery({ queryKey: ["admin", "workspace", userId], queryFn: () => getAdminWorkspace(user!), enabled: Boolean(user && id), retry: false });
+  const commerce = useQuery({ queryKey: ["admin", "commerce", userId], queryFn: () => getAdminCommerce(user!), enabled: Boolean(user && id), retry: false });
   const vendor = workspace.data?.vendors.find((item) => item.id === id);
   const activity = commerce.data?.vendorActivity.find((item) => item.id === id);
   const orders = commerce.data?.orders.filter((item) => item.vendorOrders.some((vendorOrder) => vendorOrder.vendorId === id)) ?? [];
   const chats = commerce.data?.chats.filter((item) => item.vendorId === id) ?? [];
+  const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen vendor detail."); return user; };
   const status = useMutation({
-    mutationFn: (next: "APPROVED" | "REJECTED" | "SUSPENDED") => updateAdminVendor(user!, id!, { status: next, reason: `Vendor ${next.toLowerCase()} from vendor detail review` }),
-    onSuccess: () => cache.invalidateQueries({ queryKey: ["admin"] })
+    mutationFn: (next: "APPROVED" | "REJECTED" | "SUSPENDED") => updateAdminVendor(currentActor(), id!, { status: next, reason: `Vendor ${next.toLowerCase()} from vendor detail review` }),
+    onSuccess: async () => { await Promise.all([cache.invalidateQueries({ queryKey: ["admin", "workspace", userId] }), cache.invalidateQueries({ queryKey: ["admin", "commerce", userId] })]); }
   });
 
   if (workspace.isLoading || commerce.isLoading) return <Screen title="Vendor detail"><ActivityIndicator color={colors.primary} /></Screen>;

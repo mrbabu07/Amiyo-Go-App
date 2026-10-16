@@ -4,12 +4,13 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { extendAdminOrderReturnWindow } from "./admin.api";
 
 export function AdminOrderReturnWindow({ order }: { order: AdminOrderDetail }) {
-  const user = firebaseAuth?.currentUser!; const cache = useQueryClient(); const [date, setDate] = useState(order.returnWindowUntil?.slice(0, 10) ?? ""); const [reason, setReason] = useState("");
-  const mutation = useMutation({ mutationFn: () => extendAdminOrderReturnWindow(user, order.id, { expectedVersion: order.version, returnWindowUntil: new Date(`${date}T23:59:59.999Z`).toISOString(), reason: reason.trim() }), onSuccess: () => Promise.all([cache.invalidateQueries({ queryKey: ["admin", "order", order.id] }), cache.invalidateQueries({ queryKey: ["admin", "commerce"] })]) });
+  const user = useCurrentUser(); const userId = user?.uid ?? null; const cache = useQueryClient(); const [date, setDate] = useState(order.returnWindowUntil?.slice(0, 10) ?? ""); const [reason, setReason] = useState("");
+  const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen return-window controls."); return user; };
+  const mutation = useMutation({ mutationFn: () => extendAdminOrderReturnWindow(currentActor(), order.id, { expectedVersion: order.version, returnWindowUntil: new Date(`${date}T23:59:59.999Z`).toISOString(), reason: reason.trim() }), onSuccess: () => Promise.all([cache.invalidateQueries({ queryKey: ["admin", "order", userId, order.id] }), cache.invalidateQueries({ queryKey: ["admin", "commerce", userId] })]) });
   const valid = /^\d{4}-\d{2}-\d{2}$/.test(date) && new Date(`${date}T23:59:59.999Z`).getTime() > Date.now() && reason.trim().length >= 5;
   return <ModuleCard title="Return-window exception" meta={order.returnWindowUntil ? `Current deadline: ${new Date(order.returnWindowUntil).toLocaleString("en-BD")}` : "No custom return deadline is configured."}>{mutation.error ? <Text style={styles.error}>{mutation.error.message}</Text> : null}<View style={styles.grid}><View style={styles.field}><Text style={styles.label}>New deadline (YYYY-MM-DD)</Text><TextInput value={date} onChangeText={setDate} placeholder="2026-09-01" placeholderTextColor={colors.muted} style={styles.input} /></View><View style={styles.field}><Text style={styles.label}>Exception reason</Text><TextInput value={reason} onChangeText={setReason} placeholder="Approved customer-service exception" placeholderTextColor={colors.muted} style={styles.input} /></View></View><Pressable disabled={!valid || mutation.isPending} onPress={() => mutation.mutate()} style={[styles.button, (!valid || mutation.isPending) && styles.disabled]}><Text style={styles.buttonText}>{mutation.isPending ? "Extending..." : "Extend return window"}</Text></Pressable></ModuleCard>;
 }

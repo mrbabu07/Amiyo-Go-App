@@ -5,19 +5,21 @@ import { ActivityIndicator, Alert, Image, Pressable, StyleSheet, Text, TextInput
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { deleteAdminCampaign, getAdminCampaigns, toggleAdminCampaign, type AdminCampaignDto } from "./admin.api";
 
 export function AdminOffersScreen() {
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const userId = user?.uid ?? null;
   const router = useRouter();
   const cache = useQueryClient();
-  const query = useQuery({ queryKey: ["admin", "campaigns"], queryFn: () => getAdminCampaigns(user!), enabled: Boolean(user) });
+  const query = useQuery({ queryKey: ["admin", "campaigns", userId], queryFn: () => getAdminCampaigns(user!), enabled: Boolean(user), retry: false });
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
-  const refresh = async () => { await cache.invalidateQueries({ queryKey: ["admin", "campaigns"] }); };
-  const toggle = useMutation({ mutationFn: ({ id, active }: { id: string; active: boolean }) => toggleAdminCampaign(user!, id, active), onSuccess: refresh });
-  const remove = useMutation({ mutationFn: (id: string) => deleteAdminCampaign(user!, id), onSuccess: refresh });
+  const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen campaign management."); return user; };
+  const refresh = async () => { await cache.invalidateQueries({ queryKey: ["admin", "campaigns", userId] }); };
+  const toggle = useMutation({ mutationFn: ({ id, active }: { id: string; active: boolean }) => toggleAdminCampaign(currentActor(), id, active), onSuccess: refresh });
+  const remove = useMutation({ mutationFn: (id: string) => deleteAdminCampaign(currentActor(), id), onSuccess: refresh });
   const offers = useMemo(() => (query.data?.campaigns || []).filter((item) => `${item.name} ${item.description} ${item.slug}`.toLowerCase().includes(search.toLowerCase()) && (status === "all" || item.status === status)), [query.data, search, status]);
   const confirmDelete = (item: AdminCampaignDto) => Alert.alert("Delete offer?", `${item.name} and its event history will be removed.`, [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => remove.mutate(item.id) }]);
   const error = query.error || toggle.error || remove.error;

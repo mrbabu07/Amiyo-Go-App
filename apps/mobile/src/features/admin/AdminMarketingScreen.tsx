@@ -4,7 +4,7 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, Text, TextInpu
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { createAdminFlashSale, createAdminVoucher, deleteAdminFlashSale, deleteAdminVoucher, getAdminMarketing, updateAdminFlashSale, updateAdminVoucher, type AdminFlashSaleInput, type AdminMarketingDto, type AdminVoucherInput } from "./admin.api";
 
 type Mode = "vouchers" | "flash-sales";
@@ -19,23 +19,25 @@ const taka = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-B
 const voucherRules = (rules: unknown) => (rules && typeof rules === "object" ? rules : {}) as { discountType?: "PERCENT" | "FIXED"; value?: number; minimumSpendMinor?: string; usageLimit?: number | null };
 
 export function AdminMarketingScreen({ mode }: { mode: Mode }) {
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const userId = user?.uid ?? null;
   const cache = useQueryClient();
-  const query = useQuery({ queryKey: ["admin", "marketing"], queryFn: () => getAdminMarketing(user!), enabled: Boolean(user) });
+  const query = useQuery({ queryKey: ["admin", "marketing", userId], queryFn: () => getAdminMarketing(user!), enabled: Boolean(user), retry: false });
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [voucher, setVoucher] = useState<VoucherForm>(voucherInitial);
   const [flash, setFlash] = useState<FlashForm>(flashInitial);
   const [productSearch, setProductSearch] = useState("");
-  const refresh = async () => { await cache.invalidateQueries({ queryKey: ["admin", "marketing"] }); };
+  const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen marketing management."); return user; };
+  const refresh = async () => { await cache.invalidateQueries({ queryKey: ["admin", "marketing", userId] }); };
   const reset = () => { setEditingId(null); setVoucher(voucherInitial()); setFlash(flashInitial()); };
   const voucherPayload = (): AdminVoucherInput => ({ code: voucher.code.trim().toUpperCase(), discountType: voucher.discountType, value: Number(voucher.value), minimumSpendMinor: String(Math.round(Number(voucher.minimumSpend || 0) * 100)), usageLimit: voucher.usageLimit ? Number(voucher.usageLimit) : null, startsAt: new Date(voucher.startsAt).toISOString(), endsAt: new Date(voucher.endsAt).toISOString(), active: voucher.active });
   const flashPayload = (): AdminFlashSaleInput => ({ name: flash.name.trim(), startsAt: new Date(flash.startsAt).toISOString(), endsAt: new Date(flash.endsAt).toISOString(), status: flash.status, products: flash.products.map((item) => ({ productId: item.productId, priceMinor: String(Math.round(Number(item.price) * 100)), quantityLimit: item.quantity ? Number(item.quantity) : null })) });
-  const saveVoucher = useMutation({ mutationFn: () => editingId ? updateAdminVoucher(user!, editingId, voucherPayload()) : createAdminVoucher(user!, voucherPayload()), onSuccess: async () => { reset(); await refresh(); } });
-  const saveFlash = useMutation({ mutationFn: () => editingId ? updateAdminFlashSale(user!, editingId, flashPayload()) : createAdminFlashSale(user!, flashPayload()), onSuccess: async () => { reset(); await refresh(); } });
-  const removeVoucher = useMutation({ mutationFn: (id: string) => deleteAdminVoucher(user!, id), onSuccess: refresh });
-  const removeFlash = useMutation({ mutationFn: (id: string) => deleteAdminFlashSale(user!, id), onSuccess: refresh });
+  const saveVoucher = useMutation({ mutationFn: () => editingId ? updateAdminVoucher(currentActor(), editingId, voucherPayload()) : createAdminVoucher(currentActor(), voucherPayload()), onSuccess: async () => { reset(); await refresh(); } });
+  const saveFlash = useMutation({ mutationFn: () => editingId ? updateAdminFlashSale(currentActor(), editingId, flashPayload()) : createAdminFlashSale(currentActor(), flashPayload()), onSuccess: async () => { reset(); await refresh(); } });
+  const removeVoucher = useMutation({ mutationFn: (id: string) => deleteAdminVoucher(currentActor(), id), onSuccess: refresh });
+  const removeFlash = useMutation({ mutationFn: (id: string) => deleteAdminFlashSale(currentActor(), id), onSuccess: refresh });
   const vouchers = useMemo(() => (query.data?.vouchers || []).filter((item) => item.code.toLowerCase().includes(search.toLowerCase()) && (status === "all" || (status === "active" ? item.active : !item.active))), [query.data, search, status]);
   const flashSales = useMemo(() => (query.data?.flashSales || []).filter((item) => item.name.toLowerCase().includes(search.toLowerCase()) && (status === "all" || item.status === status)), [query.data, search, status]);
   const products = useMemo(() => (query.data?.products || []).filter((item) => item.name.toLowerCase().includes(productSearch.toLowerCase()) && !flash.products.some((row) => row.productId === item.id)).slice(0, 12), [query.data, productSearch, flash.products]);

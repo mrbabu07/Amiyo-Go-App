@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { createCodReconciliation } from "../operations/operations.api";
 import { createAdminCampaign, createAdminCoupon, getAdminCommerce, sendAdminChatMessage, toggleAdminCampaign, toggleAdminCoupon, updateAdminInventory, type AdminCommerceDto } from "./admin.api";
 
@@ -24,7 +24,8 @@ const definitions: Record<AdminCommerceKind, { eyebrow: string; title: string; d
 };
 
 export function AdminCommerceWorkspaceScreen({ kind }: { kind: AdminCommerceKind }) {
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const userId = user?.uid ?? null;
   const router = useRouter();
   const cache = useQueryClient();
   const [search, setSearch] = useState("");
@@ -34,14 +35,15 @@ export function AdminCommerceWorkspaceScreen({ kind }: { kind: AdminCommerceKind
   const [showCreate, setShowCreate] = useState(false);
   const [createName, setCreateName] = useState("");
   const [createValue, setCreateValue] = useState("10");
-  const query = useQuery({ queryKey: ["admin", "commerce"], queryFn: () => getAdminCommerce(user!), enabled: Boolean(user), refetchInterval: kind === "orders" ? 15_000 : false });
-  const done = () => cache.invalidateQueries({ queryKey: ["admin", "commerce"] });
-  const inventory = useMutation({ mutationFn: ({ id, version, onHand, reorderLevel }: { id: string; version: number; onHand: number; reorderLevel: number }) => updateAdminInventory(user!, id, { expectedVersion: version, onHand, reorderLevel }), onSuccess: done });
-  const coupon = useMutation({ mutationFn: ({ id, active }: { id: string; active: boolean }) => toggleAdminCoupon(user!, id, active), onSuccess: done });
-  const campaign = useMutation({ mutationFn: ({ id, active }: { id: string; active: boolean }) => toggleAdminCampaign(user!, id, active), onSuccess: done });
-  const createGrowth = useMutation({ mutationFn: async (): Promise<unknown> => { const startsAt = new Date(); const endsAt = new Date(startsAt.getTime() + 30 * 86_400_000); if (kind === "coupons") return createAdminCoupon(user!, { code: createName.trim(), discountType: "PERCENT", value: Number(createValue), maxDiscountMinor: null, minimumSpendMinor: "0", usageLimit: null, perUserLimit: 1, startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString(), active: true }); const slug = createName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""); return createAdminCampaign(user!, { name: createName.trim(), slug, description: "Marketplace promotional campaign", discountType: "PERCENT", discountValue: Number(createValue), imageUrl: null, startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString(), status: "draft", showAsPopup: false, priority: 0, couponCode: null, productIds: [], buttonText: "Shop now", buttonLink: `/campaign/${slug}` }); }, onSuccess: () => { setCreateName(""); setShowCreate(false); done(); } });
-  const chat = useMutation({ mutationFn: ({ id, body }: { id: string; body: string }) => sendAdminChatMessage(user!, id, body), onSuccess: () => { setReply(""); setReplyThread(null); done(); } });
-  const reconcile = useMutation({ mutationFn: () => { const end = new Date(); const start = new Date(end.getTime() - 30 * 86_400_000); return createCodReconciliation(user!, start.toISOString(), end.toISOString()); }, onSuccess: done });
+  const query = useQuery({ queryKey: ["admin", "commerce", userId], queryFn: () => getAdminCommerce(user!), enabled: Boolean(user), refetchInterval: kind === "orders" ? 15_000 : false, retry: false });
+  const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen commerce operations."); return user; };
+  const done = () => cache.invalidateQueries({ queryKey: ["admin", "commerce", userId] });
+  const inventory = useMutation({ mutationFn: ({ id, version, onHand, reorderLevel }: { id: string; version: number; onHand: number; reorderLevel: number }) => updateAdminInventory(currentActor(), id, { expectedVersion: version, onHand, reorderLevel }), onSuccess: done });
+  const coupon = useMutation({ mutationFn: ({ id, active }: { id: string; active: boolean }) => toggleAdminCoupon(currentActor(), id, active), onSuccess: done });
+  const campaign = useMutation({ mutationFn: ({ id, active }: { id: string; active: boolean }) => toggleAdminCampaign(currentActor(), id, active), onSuccess: done });
+  const createGrowth = useMutation({ mutationFn: async (): Promise<unknown> => { const actor = currentActor(); const startsAt = new Date(); const endsAt = new Date(startsAt.getTime() + 30 * 86_400_000); if (kind === "coupons") return createAdminCoupon(actor, { code: createName.trim(), discountType: "PERCENT", value: Number(createValue), maxDiscountMinor: null, minimumSpendMinor: "0", usageLimit: null, perUserLimit: 1, startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString(), active: true }); const slug = createName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""); return createAdminCampaign(actor, { name: createName.trim(), slug, description: "Marketplace promotional campaign", discountType: "PERCENT", discountValue: Number(createValue), imageUrl: null, startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString(), status: "draft", showAsPopup: false, priority: 0, couponCode: null, productIds: [], buttonText: "Shop now", buttonLink: `/campaign/${slug}` }); }, onSuccess: () => { setCreateName(""); setShowCreate(false); done(); } });
+  const chat = useMutation({ mutationFn: ({ id, body }: { id: string; body: string }) => sendAdminChatMessage(currentActor(), id, body), onSuccess: () => { setReply(""); setReplyThread(null); done(); } });
+  const reconcile = useMutation({ mutationFn: () => { const actor = currentActor(); const end = new Date(); const start = new Date(end.getTime() - 30 * 86_400_000); return createCodReconciliation(actor, start.toISOString(), end.toISOString()); }, onSuccess: done });
   const rows = useMemo(() => makeRows(kind, query.data, { campaign, inventory, coupon, setReplyThread, open: (href) => router.push(href as never) }), [campaign, coupon, inventory, kind, query.data, router]);
   const statuses = ["ALL", ...Array.from(new Set(rows.map((item) => item.status.toUpperCase())))];
   const filtered = rows.filter((item) => (status === "ALL" || item.status.toUpperCase() === status) && `${item.title} ${item.subtitle} ${item.values.join(" ")}`.toLowerCase().includes(search.trim().toLowerCase()));

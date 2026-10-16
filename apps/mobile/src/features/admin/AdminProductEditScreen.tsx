@@ -5,20 +5,22 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getAdminProducts, getCategories, updateAdminProduct } from "../catalog/catalog.api";
 
 export function AdminProductEditScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const userId = user?.uid ?? null;
   const router = useRouter();
   const cache = useQueryClient();
-  const products = useQuery({ queryKey: ["admin", "catalog"], queryFn: () => getAdminProducts(user!), enabled: Boolean(user) });
+  const products = useQuery({ queryKey: ["admin", "catalog", userId], queryFn: () => getAdminProducts(user!), enabled: Boolean(user), retry: false });
   const categories = useQuery({ queryKey: ["categories", "admin-product"], queryFn: getCategories });
   const product = products.data?.find((item) => item.id === id);
   const [form, setForm] = useState({ name: "", brand: "", description: "", categoryId: "" });
   useEffect(() => { if (product) setForm({ name: product.name, brand: product.brand ?? "", description: product.description ?? "", categoryId: product.categoryId }); }, [product]);
-  const save = useMutation({ mutationFn: () => updateAdminProduct(user!, id, { version: product!.version, name: form.name.trim(), brand: form.brand.trim() || null, description: form.description.trim() || null, categoryId: form.categoryId }), onSuccess: async () => { await cache.invalidateQueries({ queryKey: ["admin", "catalog"] }); router.replace("/admin/products"); } });
+  const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen product editor."); return user; };
+  const save = useMutation({ mutationFn: () => updateAdminProduct(currentActor(), id, { version: product!.version, name: form.name.trim(), brand: form.brand.trim() || null, description: form.description.trim() || null, categoryId: form.categoryId }), onSuccess: async () => { await cache.invalidateQueries({ queryKey: ["admin", "catalog", userId] }); router.replace("/admin/products"); } });
   const valid = Boolean(product && form.name.trim().length >= 3 && form.categoryId);
   return <Screen eyebrow="ADMIN CATALOG" title="Edit product" description="Update listing content and marketplace category without changing its moderation status.">
     {products.isLoading || categories.isLoading ? <ActivityIndicator color={colors.primary} /> : null}

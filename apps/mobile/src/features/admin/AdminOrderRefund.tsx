@@ -5,13 +5,14 @@ import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { forceAdminOrderRefund } from "../operations/operations.api";
 
 const money = (minor: bigint) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
 
 export function AdminOrderRefund({ order }: { order: AdminOrderDetail }) {
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const userId = user?.uid ?? null;
   const cache = useQueryClient();
   const paid = BigInt(order.payment?.amount.amountMinor ?? "0");
   const refunded = BigInt(order.payment?.refunded.amountMinor ?? "0");
@@ -24,9 +25,10 @@ export function AdminOrderRefund({ order }: { order: AdminOrderDetail }) {
     return Number.isFinite(parsed) && parsed > 0 ? BigInt(Math.round(parsed * 100)) : 0n;
   }, [amount]);
   const valid = Boolean(user && order.payment && amountMinor > 0n && amountMinor <= remaining && reason.trim().length >= 5 && providerRefundId.trim().length >= 2);
+  const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen refund controls."); return user; };
   const refund = useMutation({
-    mutationFn: () => forceAdminOrderRefund(user!, order.id, { expectedVersion: order.version, amountMinor: amountMinor.toString(), reason: reason.trim(), providerRefundId: providerRefundId.trim() }),
-    onSuccess: async () => { setReason(""); await Promise.all([cache.invalidateQueries({ queryKey: ["admin", "order", order.id] }), cache.invalidateQueries({ queryKey: ["admin", "commerce"] })]); }
+    mutationFn: () => forceAdminOrderRefund(currentActor(), order.id, { expectedVersion: order.version, amountMinor: amountMinor.toString(), reason: reason.trim(), providerRefundId: providerRefundId.trim() }),
+    onSuccess: async () => { setReason(""); await Promise.all([cache.invalidateQueries({ queryKey: ["admin", "order", userId, order.id] }), cache.invalidateQueries({ queryKey: ["admin", "commerce", userId] })]); }
   });
 
   if (!order.payment || remaining <= 0n) return null;

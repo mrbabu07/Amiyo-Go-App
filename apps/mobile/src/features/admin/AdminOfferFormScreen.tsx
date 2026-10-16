@@ -5,24 +5,26 @@ import { ActivityIndicator, Image, Pressable, StyleSheet, Switch, Text, TextInpu
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { createAdminCampaign, getAdminCampaigns, updateAdminCampaign, type AdminCampaignInput } from "./admin.api";
 
 type OfferForm = { name: string; slug: string; description: string; discountType: "PERCENT" | "FIXED"; discountValue: string; imageUrl: string; startsAt: string; endsAt: string; status: "draft" | "active" | "paused"; showAsPopup: boolean; priority: string; couponCode: string; productIds: string[]; buttonText: string; buttonLink: string };
 const defaults = (): OfferForm => ({ name: "", slug: "", description: "", discountType: "PERCENT", discountValue: "10", imageUrl: "", startsAt: new Date().toISOString(), endsAt: new Date(Date.now() + 30 * 86_400_000).toISOString(), status: "draft", showAsPopup: true, priority: "0", couponCode: "", productIds: [], buttonText: "Shop now", buttonLink: "/products" });
 
 export function AdminOfferFormScreen({ id }: { id?: string }) {
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const userId = user?.uid ?? null;
   const router = useRouter();
   const cache = useQueryClient();
-  const workspace = useQuery({ queryKey: ["admin", "campaigns"], queryFn: () => getAdminCampaigns(user!), enabled: Boolean(user) });
+  const workspace = useQuery({ queryKey: ["admin", "campaigns", userId], queryFn: () => getAdminCampaigns(user!), enabled: Boolean(user), retry: false });
   const campaign = workspace.data?.campaigns.find((item) => item.id === id);
   const [form, setForm] = useState<OfferForm>(defaults);
   const [productSearch, setProductSearch] = useState("");
   useEffect(() => { if (campaign) setForm({ name: campaign.name, slug: campaign.slug, description: campaign.description, discountType: campaign.discountType, discountValue: String(campaign.discountValue), imageUrl: campaign.imageUrl || "", startsAt: campaign.startsAt, endsAt: campaign.endsAt, status: campaign.status, showAsPopup: campaign.showAsPopup, priority: String(campaign.priority), couponCode: campaign.couponCode || "", productIds: campaign.products.map((item) => item.id), buttonText: campaign.buttonText, buttonLink: campaign.buttonLink }); }, [campaign]);
   const generatedSlug = form.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
   const payload = (): AdminCampaignInput => ({ name: form.name.trim(), slug: form.slug.trim() || generatedSlug, description: form.description.trim(), discountType: form.discountType, discountValue: Number(form.discountValue), imageUrl: form.imageUrl.trim() || null, startsAt: new Date(form.startsAt).toISOString(), endsAt: new Date(form.endsAt).toISOString(), status: form.status, showAsPopup: form.showAsPopup, priority: Number(form.priority), couponCode: form.couponCode.trim() || null, productIds: form.productIds, buttonText: form.buttonText.trim(), buttonLink: form.buttonLink.trim() });
-  const submit = useMutation({ mutationFn: () => id && campaign ? updateAdminCampaign(user!, id, { ...payload(), expectedVersion: campaign.version }) : createAdminCampaign(user!, payload()), onSuccess: async () => { await cache.invalidateQueries({ queryKey: ["admin", "campaigns"] }); router.replace("/admin/offers"); } });
+  const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen campaign editor."); return user; };
+  const submit = useMutation({ mutationFn: () => id && campaign ? updateAdminCampaign(currentActor(), id, { ...payload(), expectedVersion: campaign.version }) : createAdminCampaign(currentActor(), payload()), onSuccess: async () => { await cache.invalidateQueries({ queryKey: ["admin", "campaigns", userId] }); router.replace("/admin/offers"); } });
   const availableProducts = useMemo(() => (workspace.data?.products || []).filter((item) => `${item.name} ${item.slug}`.toLowerCase().includes(productSearch.toLowerCase())).slice(0, 100), [workspace.data, productSearch]);
   const valid = Boolean(user && form.name.trim().length >= 3 && (form.slug.trim() || generatedSlug).length >= 3 && form.description.trim().length >= 10 && Number(form.discountValue) > 0 && (form.discountType !== "PERCENT" || Number(form.discountValue) <= 100) && Number(form.priority) >= 0 && Date.parse(form.startsAt) < Date.parse(form.endsAt) && form.buttonText.trim().length >= 2 && form.buttonLink.startsWith("/") && (!form.imageUrl || /^https?:\/\//.test(form.imageUrl)));
   if (workspace.isLoading) return <Screen title={id ? "Edit offer" : "Create offer"}><ActivityIndicator color={colors.primary} /></Screen>;

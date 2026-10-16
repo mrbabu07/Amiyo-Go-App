@@ -5,14 +5,14 @@ import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-na
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getAdminCommerce } from "./admin.api";
 
 const taka = (minor: string | number) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
 type Range = "7d" | "30d" | "90d";
 export function AdminVendorActivityScreen() {
-  const user = firebaseAuth?.currentUser ?? null; const router = useRouter(); const [range, setRange] = useState<Range>("30d"); const [search, setSearch] = useState(""); const [status, setStatus] = useState("ALL");
-  const query = useQuery({ queryKey: ["admin", "commerce"], queryFn: () => getAdminCommerce(user!), enabled: Boolean(user), refetchInterval: 30_000, staleTime: 15_000 });
+  const user = useCurrentUser(); const userId = user?.uid ?? null; const router = useRouter(); const [range, setRange] = useState<Range>("30d"); const [search, setSearch] = useState(""); const [status, setStatus] = useState("ALL");
+  const query = useQuery({ queryKey: ["admin", "commerce", userId], queryFn: () => getAdminCommerce(user!), enabled: Boolean(user), refetchInterval: 30_000, staleTime: 15_000, retry: false });
   const cutoff = Date.now() - Number(range.slice(0, -1)) * 86_400_000;
   const orders = (query.data?.orders ?? []).filter((item) => new Date(item.createdAt).getTime() >= cutoff);
   const vendors = useMemo(() => (query.data?.vendorActivity ?? []).filter((item) => status === "ALL" || item.status === status).filter((item) => `${item.vendor} ${item.status}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => Number(b.gmvMinor) - Number(a.gmvMinor)), [query.data, search, status]);

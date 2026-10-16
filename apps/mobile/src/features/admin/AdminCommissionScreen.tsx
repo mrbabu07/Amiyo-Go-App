@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getCategories } from "../catalog/catalog.api";
 import { createCommissionRule, endCommissionRule, getCommissionOptions, getCommissionRules, updateCommissionRule, type CommissionOption } from "./admin.api";
 
@@ -47,20 +47,22 @@ function toInput(form: Form): CommissionRuleInput {
 }
 
 export function AdminCommissionScreen() {
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const userId = user?.uid ?? null;
   const cache = useQueryClient();
   const [form, setForm] = useState<Form>(emptyForm);
   const [editing, setEditing] = useState<CommissionRule | null>(null);
-  const rules = useQuery({ queryKey: ["admin", "commission-rules"], queryFn: () => getCommissionRules(user!), enabled: Boolean(user) });
-  const options = useQuery({ queryKey: ["admin", "commission-options"], queryFn: () => getCommissionOptions(user!), enabled: Boolean(user), staleTime: 60_000 });
+  const rules = useQuery({ queryKey: ["admin", "commission-rules", userId], queryFn: () => getCommissionRules(user!), enabled: Boolean(user), retry: false });
+  const options = useQuery({ queryKey: ["admin", "commission-options", userId], queryFn: () => getCommissionOptions(user!), enabled: Boolean(user), staleTime: 60_000, retry: false });
   const categories = useQuery({ queryKey: ["catalog", "categories"], queryFn: getCategories, staleTime: 5 * 60_000 });
   const vendorOptions = useMemo<Option[]>(() => options.data?.vendors ?? [], [options.data?.vendors]);
   const shopOptions = useMemo<Option[]>(() => options.data?.shops ?? [], [options.data?.shops]);
   const productOptions = useMemo<Option[]>(() => options.data?.products ?? [], [options.data?.products]);
   const categoryOptions = useMemo<Option[]>(() => (categories.data || []).map((category) => ({ id: category.id, label: category.name, detail: category.slug })), [categories.data]);
-  const refresh = async () => cache.invalidateQueries({ queryKey: ["admin", "commission-rules"] });
-  const save = useMutation({ mutationFn: async () => editing ? updateCommissionRule(user!, editing.id, { ...toInput(form), expectedVersion: editing.version }) : createCommissionRule(user!, toInput(form)), onSuccess: async () => { setEditing(null); setForm(emptyForm()); await refresh(); } });
-  const end = useMutation({ mutationFn: (rule: CommissionRule) => endCommissionRule(user!, rule.id, rule.version), onSuccess: refresh });
+  const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen commission management."); return user; };
+  const refresh = async () => cache.invalidateQueries({ queryKey: ["admin", "commission-rules", userId] });
+  const save = useMutation({ mutationFn: async () => editing ? updateCommissionRule(currentActor(), editing.id, { ...toInput(form), expectedVersion: editing.version }) : createCommissionRule(currentActor(), toInput(form)), onSuccess: async () => { setEditing(null); setForm(emptyForm()); await refresh(); } });
+  const end = useMutation({ mutationFn: (rule: CommissionRule) => endCommissionRule(currentActor(), rule.id, rule.version), onSuccess: refresh });
   const needsVendor = ["VENDOR", "VENDOR_CATEGORY"].includes(form.scope);
   const needsShop = form.scope === "SHOP";
   const needsCategory = ["CATEGORY", "VENDOR_CATEGORY"].includes(form.scope);

@@ -3,22 +3,24 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { actOnTrustCase, getAdminWorkspace, reviewAdminKyc, updateAdminUser, updateAdminUserRoles, updateAdminVendor } from "./admin.api";
 
 const platformRoles = ["SUPPORT_AGENT", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "SUPER_ADMIN"] as const;
 type PlatformRole = (typeof platformRoles)[number];
 
 export function AdminTrustScreen() {
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const userId = user?.uid ?? null;
   const queryClient = useQueryClient();
-  const workspace = useQuery({ queryKey: ["admin", "workspace"], queryFn: () => getAdminWorkspace(user!), enabled: Boolean(user) });
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ["admin", "workspace"] });
-  const userStatus = useMutation({ mutationFn: ({ id, status }: { id: string; status: "ACTIVE" | "SUSPENDED" }) => updateAdminUser(user!, id, { status, reason: status === "SUSPENDED" ? "Suspended by trust operations review" : "Restored by trust operations review" }), onSuccess: refresh });
-  const userRoles = useMutation({ mutationFn: ({ id, roles }: { id: string; roles: PlatformRole[] }) => updateAdminUserRoles(user!, id, { roles, reason: "Platform staff access updated by super admin" }), onSuccess: refresh });
-  const vendorStatus = useMutation({ mutationFn: ({ id, status }: { id: string; status: "APPROVED" | "REJECTED" | "SUSPENDED" }) => updateAdminVendor(user!, id, { status, reason: `Vendor ${status.toLowerCase()} after operations review` }), onSuccess: refresh });
-  const kyc = useMutation({ mutationFn: ({ id, status }: { id: string; status: "REVIEWING" | "APPROVED" | "REJECTED" }) => reviewAdminKyc(user!, id, { status, ...(status === "REJECTED" ? { reason: "Documents require correction before approval" } : {}) }), onSuccess: refresh });
-  const trust = useMutation({ mutationFn: ({ id, action }: { id: string; action: "INVESTIGATE" | "RESOLVE" | "CLOSE" }) => actOnTrustCase(user!, id, { action, reason: `${action.toLowerCase()} by trust operations` }), onSuccess: refresh });
+  const workspace = useQuery({ queryKey: ["admin", "workspace", userId], queryFn: () => getAdminWorkspace(user!), enabled: Boolean(user), retry: false });
+  const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen trust operations."); return user; };
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ["admin", "workspace", userId] });
+  const userStatus = useMutation({ mutationFn: ({ id, status }: { id: string; status: "ACTIVE" | "SUSPENDED" }) => updateAdminUser(currentActor(), id, { status, reason: status === "SUSPENDED" ? "Suspended by trust operations review" : "Restored by trust operations review" }), onSuccess: refresh });
+  const userRoles = useMutation({ mutationFn: ({ id, roles }: { id: string; roles: PlatformRole[] }) => updateAdminUserRoles(currentActor(), id, { roles, reason: "Platform staff access updated by super admin" }), onSuccess: refresh });
+  const vendorStatus = useMutation({ mutationFn: ({ id, status }: { id: string; status: "APPROVED" | "REJECTED" | "SUSPENDED" }) => updateAdminVendor(currentActor(), id, { status, reason: `Vendor ${status.toLowerCase()} after operations review` }), onSuccess: refresh });
+  const kyc = useMutation({ mutationFn: ({ id, status }: { id: string; status: "REVIEWING" | "APPROVED" | "REJECTED" }) => reviewAdminKyc(currentActor(), id, { status, ...(status === "REJECTED" ? { reason: "Documents require correction before approval" } : {}) }), onSuccess: refresh });
+  const trust = useMutation({ mutationFn: ({ id, action }: { id: string; action: "INVESTIGATE" | "RESOLVE" | "CLOSE" }) => actOnTrustCase(currentActor(), id, { action, reason: `${action.toLowerCase()} by trust operations` }), onSuccess: refresh });
   const mutationError = userStatus.error || userRoles.error || vendorStatus.error || kyc.error || trust.error;
 
   if (workspace.isLoading) return <Screen title="Trust and safety"><ActivityIndicator color={colors.primary} /></Screen>;

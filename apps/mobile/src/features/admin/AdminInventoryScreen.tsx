@@ -4,7 +4,7 @@ import { Platform, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, 
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { bulkUpdateAdminInventory, getAdminInventory, updateAdminInventoryItem, type AdminInventoryWorkspaceDto } from "./admin.api";
 
 type Filter = "all" | "in_stock" | "low_stock" | "out_of_stock";
@@ -14,12 +14,13 @@ type Item = AdminInventoryWorkspaceDto["items"][number];
 const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
 
 export function AdminInventoryScreen() {
-  const user = firebaseAuth?.currentUser ?? null; const cache = useQueryClient(); const compact = useWindowDimensions().width < 760;
-  const query = useQuery({ queryKey: ["admin", "inventory"], queryFn: () => getAdminInventory(user!), enabled: Boolean(user), staleTime: 15_000 });
+  const user = useCurrentUser(); const userId = user?.uid ?? null; const cache = useQueryClient(); const compact = useWindowDimensions().width < 760;
+  const query = useQuery({ queryKey: ["admin", "inventory", userId], queryFn: () => getAdminInventory(user!), enabled: Boolean(user), staleTime: 15_000, retry: false });
   const [tab, setTab] = useState<Tab>("inventory"); const [filter, setFilter] = useState<Filter>("all"); const [search, setSearch] = useState(""); const [selected, setSelected] = useState<Set<string>>(new Set()); const [editing, setEditing] = useState<Item | null>(null); const [stock, setStock] = useState(""); const [reorder, setReorder] = useState(""); const [reason, setReason] = useState(""); const [bulkMode, setBulkMode] = useState<BulkMode>("add"); const [bulkValue, setBulkValue] = useState("1"); const [bulkReason, setBulkReason] = useState(""); const [csv, setCsv] = useState(""); const [importError, setImportError] = useState<string | null>(null);
-  const refresh = async () => { await cache.invalidateQueries({ queryKey: ["admin", "inventory"] }); };
-  const update = useMutation({ mutationFn: () => updateAdminInventoryItem(user!, editing!.id, { expectedVersion: editing!.version, onHand: Number(stock), reorderLevel: Number(reorder), reason: reason.trim() }), onSuccess: async () => { setEditing(null); setReason(""); await refresh(); } });
-  const bulk = useMutation({ mutationFn: (input: { items: Array<{ id: string; expectedVersion: number; onHand: number; reorderLevel: number }>; reason: string }) => bulkUpdateAdminInventory(user!, input), onSuccess: async () => { setSelected(new Set()); setBulkReason(""); await refresh(); } });
+  const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen inventory management."); return user; };
+  const refresh = async () => { await cache.invalidateQueries({ queryKey: ["admin", "inventory", userId] }); };
+  const update = useMutation({ mutationFn: () => updateAdminInventoryItem(currentActor(), editing!.id, { expectedVersion: editing!.version, onHand: Number(stock), reorderLevel: Number(reorder), reason: reason.trim() }), onSuccess: async () => { setEditing(null); setReason(""); await refresh(); } });
+  const bulk = useMutation({ mutationFn: (input: { items: Array<{ id: string; expectedVersion: number; onHand: number; reorderLevel: number }>; reason: string }) => bulkUpdateAdminInventory(currentActor(), input), onSuccess: async () => { setSelected(new Set()); setBulkReason(""); await refresh(); } });
   const rows = useMemo(() => (query.data?.items ?? []).filter((item) => filter === "all" || item.status === filter).filter((item) => `${item.product} ${item.sku} ${item.variant} ${item.vendor} ${item.shop}`.toLowerCase().includes(search.trim().toLowerCase())).sort((left, right) => left.available - right.available), [filter, query.data, search]);
   const select = (id: string) => setSelected((current) => { const next = new Set(current); next.has(id) ? next.delete(id) : next.add(id); return next; });
   const runBulk = () => { const amount = Number(bulkValue); const items = (query.data?.items ?? []).filter((item) => selected.has(item.id)).map((item) => ({ id: item.id, expectedVersion: item.version, onHand: Math.max(item.reserved, bulkMode === "add" ? item.onHand + amount : bulkMode === "subtract" ? item.onHand - amount : amount), reorderLevel: item.reorderLevel })); bulk.mutate({ items, reason: bulkReason.trim() }); };
