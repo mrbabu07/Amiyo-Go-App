@@ -45,8 +45,10 @@
   "devDependencies": {
     "@electric-sql/pglite": "0.5.4",
     "@types/node": "^20.14.10",
-    "firebase-tools": "15.25.1",
+    "firebase-tools": "15.34.0",
     "prisma": "^5.22.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
     "tsx": "^4.16.2",
     "typescript": "^5.5.4"
   },

@@ -10,7 +10,7 @@
 
 ## Technical debt
 
-- npm audit has moderate transitive findings in mobile/native tooling; critical/high findings are blocked by CI.
+- npm audit has no critical findings, but high/moderate transitive findings remain in Expo/Metro, Firebase/Firestore, and Firebase CLI tooling. Available npm fixes currently require incompatible major-version downgrades or upgrades, so the release audit remains intentionally blocking until supported upstream patches are available and validated.
 - Failed BullMQ jobs are durable and have authenticated API/mobile retry controls, but complete queue metrics and alert dashboards are still required.
 - Expo Push delivery now uses transactional outbox/BullMQ jobs and native token registration; EAS/FCM/APNs credentials remain operator configuration. Provider-specific refunds, promotion/voucher/flash precedence, loyalty mutation, expiry/reversal, and settlement proposals are implemented in `docs/business-rules-approval.md`; live-provider payout/refund evidence still requires finance/operator approval.
 - Firebase Storage signed uploads and worker content validation are implemented; production service-account IAM, bucket CORS/CDN policy, and final Sentry/OTel exporters still require operator configuration.
