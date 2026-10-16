@@ -5,9 +5,10 @@ import { resolveFirebaseAdminConfiguration } from "./modules/identity/firebase-a
 import { createApiApp } from "./server.js";
 import { CatalogService } from "./modules/catalog/catalog.service.js";
 import { EngagementService } from "./modules/engagement/engagement.service.js";
+import { closeHttpServer } from "./infrastructure/http/close-server.js";
 
 const env = parseApiEnv(process.env);
-const app = createApiApp();
+const app = createApiApp({ slowRequestMs: env.API_SLOW_REQUEST_MS });
 const firebaseAdmin = resolveFirebaseAdminConfiguration(process.env);
 if (firebaseAdmin.mode === "unconfigured") app.locals.logger.warn({ provider: "firebase" }, "Firebase Admin authentication is not configured");
 else app.locals.logger.info({ provider: "firebase", mode: firebaseAdmin.mode }, "Firebase Admin authentication configured");
@@ -26,11 +27,11 @@ async function shutdown(signal: string) {
   if (shuttingDown) return;
   shuttingDown = true;
   app.locals.logger.info({ signal }, "API shutting down");
-  server.closeIdleConnections();
-  await new Promise<void>((resolve) => server.close(() => resolve()));
+  const result = await closeHttpServer(server, env.SHUTDOWN_TIMEOUT_MS);
+  if (result.forced) app.locals.logger.warn({ signal, timeoutMs: env.SHUTDOWN_TIMEOUT_MS }, "API shutdown drain timed out; active connections were closed");
   await prisma.$disconnect();
 }
 
 for (const signal of ["SIGTERM", "SIGINT"] as const) {
-  process.on(signal, () => void shutdown(signal).then(() => process.exit(0)));
+  process.on(signal, () => void shutdown(signal).then(() => process.exit(0), (error) => { app.locals.logger.fatal({ error, signal }, "API shutdown failed"); process.exit(1); }));
 }

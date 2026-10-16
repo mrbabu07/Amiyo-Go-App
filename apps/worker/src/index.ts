@@ -21,6 +21,7 @@ import { AbandonedCartScheduler } from "./growth/abandoned-cart.scheduler.js";
 import { ProductAlertScheduler } from "./growth/product-alert.scheduler.js";
 import { FlashAlertScheduler } from "./growth/flash-alert.scheduler.js";
 import { bindWorkerObservability } from "./worker-observability.js";
+import { withShutdownTimeout } from "./shutdown-timeout.js";
 
 const env = parseWorkerEnv(process.env);
 const logger = createLogger("amiyo-worker", env.LOG_LEVEL);
@@ -50,7 +51,7 @@ const loyaltyRelay = new LoyaltyOutboxRelay(prisma, loyaltyQueue, (error) => log
 const abandonedCartScheduler = new AbandonedCartScheduler(prisma, (error) => logger.error({ error }, "Abandoned cart scheduler failed"));
 const productAlertScheduler = new ProductAlertScheduler(prisma, (error) => logger.error({ error }, "Product alert scheduler failed"));
 
-for (const [name, queueWorker] of [[queueName, worker], [mediaQueueName, mediaWorker], [notificationQueueName, notificationWorker], [newsletterQueueName, newsletterWorker], [loyaltyQueueName, loyaltyWorker]] as const) bindWorkerObservability(queueWorker, name, logger);
+for (const [name, queueWorker] of [[queueName, worker], [mediaQueueName, mediaWorker], [notificationQueueName, notificationWorker], [newsletterQueueName, newsletterWorker], [loyaltyQueueName, loyaltyWorker]] as const) bindWorkerObservability(queueWorker, name, logger, { slowJobMs: env.WORKER_SLOW_JOB_MS });
 relay.start();
 mediaRelay.start();
 notificationRelay.start();
@@ -62,11 +63,20 @@ const flashAlertScheduler = new FlashAlertScheduler(prisma, (error) => logger.er
 flashAlertScheduler.start();
 logger.info({ queueName, concurrency: env.WORKER_CONCURRENCY }, "Worker booted");
 
-async function shutdown() {
-  await productAlertScheduler.stop();
-  await flashAlertScheduler.stop();
-  logger.info("Worker shutting down"); relay.stop(); mediaRelay.stop(); notificationRelay.stop(); newsletterRelay.stop(); loyaltyRelay.stop(); abandonedCartScheduler.stop(); await worker.close(); await mediaWorker.close(); await notificationWorker.close(); await newsletterWorker.close(); await loyaltyWorker.close(); await queue.close(); await mediaQueue.close(); await notificationQueue.close(); await newsletterQueue.close(); await loyaltyQueue.close(); await prisma.$disconnect(); await connection.quit();
+let shuttingDown = false;
+async function shutdown(signal: string) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logger.info({ signal }, "Worker shutting down");
+  relay.stop(); mediaRelay.stop(); notificationRelay.stop(); newsletterRelay.stop(); loyaltyRelay.stop(); abandonedCartScheduler.stop();
+  await withShutdownTimeout((async () => {
+    await Promise.all([productAlertScheduler.stop(), flashAlertScheduler.stop()]);
+    await Promise.all([worker.close(), mediaWorker.close(), notificationWorker.close(), newsletterWorker.close(), loyaltyWorker.close()]);
+    await Promise.all([queue.close(), mediaQueue.close(), notificationQueue.close(), newsletterQueue.close(), loyaltyQueue.close()]);
+    await Promise.all([prisma.$disconnect(), connection.quit()]);
+  })(), env.SHUTDOWN_TIMEOUT_MS);
 }
 
-process.on("SIGTERM", () => void shutdown().then(() => process.exit(0)));
-process.on("SIGINT", () => void shutdown().then(() => process.exit(0)));
+for (const signal of ["SIGTERM", "SIGINT"] as const) {
+  process.on(signal, () => void shutdown(signal).then(() => process.exit(0), (error) => { logger.fatal({ error, signal }, "Worker shutdown failed"); process.exit(1); }));
+}

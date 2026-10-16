@@ -19,7 +19,7 @@ import { createAdminRouter } from "./modules/admin/admin.routes.js";
 import { createMediaRouter } from "./modules/media/media.routes.js";
 import type { ReadinessCheck } from "./modules/health/health.routes.js";
 
-export function createApiApp(options: { readinessCheck?: ReadinessCheck } = {}) {
+export function createApiApp(options: { readinessCheck?: ReadinessCheck; slowRequestMs?: number } = {}) {
   const app = express();
   const logger = createLogger("amiyo-api", process.env.LOG_LEVEL || "info");
   const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:8081,http://localhost:19006")
@@ -39,7 +39,7 @@ export function createApiApp(options: { readinessCheck?: ReadinessCheck } = {}) 
   }));
   app.use(express.json({ limit: "1mb", verify(req, _res, buffer) { (req as express.Request).rawBody = Buffer.from(buffer); } }));
   app.use(correlationMiddleware);
-  app.use(requestObservabilityMiddleware());
+  app.use(requestObservabilityMiddleware(options.slowRequestMs === undefined ? {} : { slowRequestMs: options.slowRequestMs }));
   app.use(createHealthRouter(options.readinessCheck));
   app.use(createIdentityRouter());
   app.use(createCatalogRouter());

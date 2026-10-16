@@ -27,6 +27,8 @@ const apiEnvObject = z.object({
   SSLCOMMERZ_SANDBOX: z.enum(["true", "false"]).default("true"),
   PARCEL_QR_SIGNING_SECRET: optionalSigningSecretSchema,
   PARCEL_QR_TTL_SECONDS: z.coerce.number().int().min(60).max(31_536_000).default(7_776_000),
+  API_SLOW_REQUEST_MS: z.coerce.number().int().min(1).max(300_000).default(1_000),
+  SHUTDOWN_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(120_000).default(15_000),
   LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "fatal"]).default("info")
 });
 
@@ -45,6 +47,7 @@ export const apiEnvSchema = apiEnvObject.superRefine(validateFirebaseAdmin);
 
 export const workerEnvSchema = apiEnvObject.extend({
   WORKER_CONCURRENCY: z.coerce.number().int().positive().default(5),
+  WORKER_SLOW_JOB_MS: z.coerce.number().int().min(1).max(3_600_000).default(5_000),
   AMIYO_DELIVERY_API_URL: optionalUrlSchema,
   AMIYO_DELIVERY_INTEGRATION_TOKEN: optionalSecretSchema,
   AMIYO_DELIVERY_WEBHOOK_SECRET: optionalSecretSchema,
