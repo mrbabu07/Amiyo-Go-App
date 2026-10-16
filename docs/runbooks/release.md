@@ -5,7 +5,7 @@
 1. Confirm CI, dependency audit, secret scan, OpenAPI compatibility, container builds, and mobile export pass for the commit SHA.
 2. Build immutable API and worker images and apply `prisma migrate deploy` with the staging direct URL.
 3. Deploy both images, verify `/health` and `/ready`, then run smoke, payment replay, READY_TO_SHIP deduplication, queue retry, and role authorization tests.
-4. Run `LOAD_TARGET_URL=<staging endpoint> npm run smoke:load` and retain the result.
+4. Run `LOAD_TARGET_URL=<staging endpoint> LOAD_REQUESTS=1000 LOAD_CONCURRENCY=25 LOAD_MAX_P95_MS=1500 LOAD_MAX_FAILURE_RATE=0 LOAD_REPORT_PATH=load-smoke.json npm run smoke:load` and retain the immutable JSON result. Use a new report path for every run; the command refuses to overwrite prior evidence.
 5. Build Expo preview binaries from `apps/mobile/eas.json`; verify critical flows, offline/error states, deep links, accessibility, and crash reporting on Android and iOS devices.
 
 ## Production
