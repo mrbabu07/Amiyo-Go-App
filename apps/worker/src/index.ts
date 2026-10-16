@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { Queue, QueueEvents, Worker } from "bullmq";
+import { Queue, Worker } from "bullmq";
 import { Redis } from "ioredis";
 import { parseWorkerEnv } from "@amiyo/config";
 import { createLogger } from "@amiyo/observability";
@@ -20,6 +20,7 @@ import { LoyaltyOutboxRelay } from "./outbox/loyalty-outbox.relay.js";
 import { AbandonedCartScheduler } from "./growth/abandoned-cart.scheduler.js";
 import { ProductAlertScheduler } from "./growth/product-alert.scheduler.js";
 import { FlashAlertScheduler } from "./growth/flash-alert.scheduler.js";
+import { bindWorkerObservability } from "./worker-observability.js";
 
 const env = parseWorkerEnv(process.env);
 const logger = createLogger("amiyo-worker", env.LOG_LEVEL);
@@ -35,7 +36,6 @@ const newsletterQueueName = "email";
 const newsletterQueue = new Queue(newsletterQueueName, { connection });
 const loyaltyQueueName = "loyalty";
 const loyaltyQueue = new Queue(loyaltyQueueName, { connection });
-const queueEvents = new QueueEvents(queueName, { connection });
 const deliveryClient = new AmiyoDeliveryClient({ apiUrl: env.AMIYO_DELIVERY_API_URL || "", integrationToken: env.AMIYO_DELIVERY_INTEGRATION_TOKEN || "", signingSecret: env.AMIYO_DELIVERY_WEBHOOK_SECRET || env.AMIYO_DELIVERY_INTEGRATION_TOKEN || "", timeoutMs: env.AMIYO_DELIVERY_TIMEOUT_MS });
 const worker = new Worker(queueName, createDeliveryProcessor(prisma, deliveryClient), { connection, concurrency: env.WORKER_CONCURRENCY });
 const mediaWorker = new Worker(mediaQueueName, createMediaProcessor(prisma, new FirebaseWorkerMediaStorage()), { connection, concurrency: Math.max(1, Math.floor(env.WORKER_CONCURRENCY / 2)) });
@@ -50,8 +50,7 @@ const loyaltyRelay = new LoyaltyOutboxRelay(prisma, loyaltyQueue, (error) => log
 const abandonedCartScheduler = new AbandonedCartScheduler(prisma, (error) => logger.error({ error }, "Abandoned cart scheduler failed"));
 const productAlertScheduler = new ProductAlertScheduler(prisma, (error) => logger.error({ error }, "Product alert scheduler failed"));
 
-queueEvents.on("failed", ({ jobId, failedReason }) => logger.error({ queueName, jobId, failedReason }, "Delivery job failed"));
-worker.on("completed", (job) => logger.info({ jobId: job.id }, "Delivery job completed"));
+for (const [name, queueWorker] of [[queueName, worker], [mediaQueueName, mediaWorker], [notificationQueueName, notificationWorker], [newsletterQueueName, newsletterWorker], [loyaltyQueueName, loyaltyWorker]] as const) bindWorkerObservability(queueWorker, name, logger);
 relay.start();
 mediaRelay.start();
 notificationRelay.start();
@@ -66,7 +65,7 @@ logger.info({ queueName, concurrency: env.WORKER_CONCURRENCY }, "Worker booted")
 async function shutdown() {
   await productAlertScheduler.stop();
   await flashAlertScheduler.stop();
-  logger.info("Worker shutting down"); relay.stop(); mediaRelay.stop(); notificationRelay.stop(); newsletterRelay.stop(); loyaltyRelay.stop(); abandonedCartScheduler.stop(); await worker.close(); await mediaWorker.close(); await notificationWorker.close(); await newsletterWorker.close(); await loyaltyWorker.close(); await queueEvents.close(); await queue.close(); await mediaQueue.close(); await notificationQueue.close(); await newsletterQueue.close(); await loyaltyQueue.close(); await prisma.$disconnect(); await connection.quit();
+  logger.info("Worker shutting down"); relay.stop(); mediaRelay.stop(); notificationRelay.stop(); newsletterRelay.stop(); loyaltyRelay.stop(); abandonedCartScheduler.stop(); await worker.close(); await mediaWorker.close(); await notificationWorker.close(); await newsletterWorker.close(); await loyaltyWorker.close(); await queue.close(); await mediaQueue.close(); await notificationQueue.close(); await newsletterQueue.close(); await loyaltyQueue.close(); await prisma.$disconnect(); await connection.quit();
 }
 
 process.on("SIGTERM", () => void shutdown().then(() => process.exit(0)));
