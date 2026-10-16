@@ -16,6 +16,11 @@ function requirePermission(session: Session, permission: string) {
 }
 
 function json(value: unknown) { return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue; }
+function mediaUrl(storageKey: string | null) {
+  if (!storageKey) return null;
+  const base = process.env.OBJECT_STORAGE_PUBLIC_URL?.replace(/\/$/, "");
+  return base ? `${base}/${storageKey}` : `https://media.amiyo.local/${storageKey}`;
+}
 function slug(value: string, userId: string) { const base = value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "shop"; return `${base.slice(0, 100)}-${userId.replaceAll("-", "")}`; }
 function mask(value: string) { return `${"•".repeat(Math.max(4, value.length - 4))}${value.slice(-4)}`; }
 function encrypt(value: string) {
@@ -31,7 +36,7 @@ function encrypt(value: string) {
 function workspace(row: Awaited<ReturnType<PrismaClient["vendor"]["findUniqueOrThrow"]>> & { shops: any[]; kycSubmissions: any[]; bankAccounts: any[] }) {
   return {
     id: row.id, legalName: row.legalName, displayName: row.displayName, status: row.status, version: row.version,
-    shops: row.shops.map((shop) => ({ id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, status: shop.status, description: shop.description, settings: shop.settings, version: shop.version })),
+    shops: row.shops.map((shop) => ({ id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, status: shop.status, description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), settings: shop.settings, version: shop.version })),
     kycSubmissions: row.kycSubmissions.map((submission) => ({ id: submission.id, status: submission.status, submittedAt: submission.submittedAt?.toISOString() ?? null, reviewedAt: submission.reviewedAt?.toISOString() ?? null, rejectionReason: submission.rejectionReason, documents: submission.documents.map((document: any) => ({ id: document.id, documentType: document.documentType, mimeType: document.mimeType })) })),
     bankAccounts: row.bankAccounts.map((account) => ({ id: account.id, provider: account.provider, accountName: account.accountName, accountNumberMasked: account.accountNumberMasked, isDefault: account.isDefault, verifiedAt: account.verifiedAt?.toISOString() ?? null }))
   };
@@ -62,9 +67,18 @@ export class VendorService {
   async getWorkspace(session: Session) { const id = vendorId(session); return workspace(await this.client.vendor.findUniqueOrThrow({ where: { id }, include })); }
   async updateShop(session: Session, shopId: string, input: UpdateVendorShop) {
     const id = vendorId(session); requirePermission(session, "vendor:manage");
-    const result = await this.client.vendorShop.updateMany({ where: { id: shopId, vendorId: id, version: input.version }, data: { ...(input.name !== undefined ? { name: input.name } : {}), ...(input.description !== undefined ? { description: input.description } : {}), ...(input.settings !== undefined ? { settings: input.settings === null ? Prisma.JsonNull : json(input.settings) } : {}), version: { increment: 1 } } });
-    if (!result.count) throw new ApiProblem(409, "SHOP_VERSION_CONFLICT", "The shop was changed or is outside your vendor account");
-    await this.client.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "vendor.shop.updated", resourceType: "vendor_shop", resourceId: shopId } });
+    await withSerializableTransaction(this.client, async (transaction) => {
+      const requestedUploads = [input.logoUploadId, input.bannerUploadId].filter((value): value is string => typeof value === "string");
+      const uploads = requestedUploads.length ? await transaction.mediaUpload.findMany({ where: { id: { in: requestedUploads }, userId: session.principal.userId, visibility: "public", status: "ready", mimeType: { startsWith: "image/" } }, select: { id: true, purpose: true, storageKey: true } }) : [];
+      const byId = new Map(uploads.map((upload) => [upload.id, upload]));
+      const logo = typeof input.logoUploadId === "string" ? byId.get(input.logoUploadId) : undefined;
+      const banner = typeof input.bannerUploadId === "string" ? byId.get(input.bannerUploadId) : undefined;
+      if (typeof input.logoUploadId === "string" && logo?.purpose !== "shop") throw new ApiProblem(400, "SHOP_LOGO_UPLOAD_INVALID", "Shop logo must be your completed public shop image upload");
+      if (typeof input.bannerUploadId === "string" && banner?.purpose !== "banner") throw new ApiProblem(400, "SHOP_BANNER_UPLOAD_INVALID", "Shop banner must be your completed public banner image upload");
+      const result = await transaction.vendorShop.updateMany({ where: { id: shopId, vendorId: id, version: input.version }, data: { ...(input.name !== undefined ? { name: input.name } : {}), ...(input.description !== undefined ? { description: input.description } : {}), ...(input.logoUploadId !== undefined ? { logoStorageKey: input.logoUploadId === null ? null : logo!.storageKey } : {}), ...(input.bannerUploadId !== undefined ? { bannerStorageKey: input.bannerUploadId === null ? null : banner!.storageKey } : {}), ...(input.settings !== undefined ? { settings: input.settings === null ? Prisma.JsonNull : json(input.settings) } : {}), version: { increment: 1 } } });
+      if (!result.count) throw new ApiProblem(409, "SHOP_VERSION_CONFLICT", "The shop was changed or is outside your vendor account");
+      await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "vendor.shop.updated", resourceType: "vendor_shop", resourceId: shopId, after: json({ nameChanged: input.name !== undefined, descriptionChanged: input.description !== undefined, logoChanged: input.logoUploadId !== undefined, bannerChanged: input.bannerUploadId !== undefined, settingsChanged: input.settings !== undefined }) } });
+    });
     return this.getWorkspace(session);
   }
   async submitKyc(session: Session, input: SubmitVendorKyc) {

@@ -8,6 +8,8 @@ export const vendorShopSchema = z.object({
   slug: z.string(),
   status: z.enum(["DRAFT", "ACTIVE", "PAUSED", "CLOSED"]),
   description: z.string().nullable(),
+  logoUrl: z.string().url().nullable(),
+  bannerUrl: z.string().url().nullable(),
   settings: z.record(z.unknown()).nullable(),
   version: versionSchema
 });
@@ -62,6 +64,8 @@ export const updateVendorShopSchema = z.object({
   version: versionSchema,
   name: z.string().trim().min(3).max(160).optional(),
   description: z.string().trim().max(3000).nullable().optional(),
+  logoUploadId: uuidSchema.nullable().optional(),
+  bannerUploadId: uuidSchema.nullable().optional(),
   settings: z.record(z.unknown()).nullable().optional()
 }).refine((input) => Object.keys(input).length > 1, "At least one shop field is required");
 

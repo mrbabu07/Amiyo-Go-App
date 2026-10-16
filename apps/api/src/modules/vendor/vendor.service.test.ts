@@ -10,6 +10,7 @@ const session: Session = { principal: { userId, roles: ["CUSTOMER"], vendorIds: 
 const input: VendorRegistration = { legalName: "Seller Commerce", displayName: "Seller Shop", phone: "01700000000", address: { line1: "Road 1", division: "Dhaka", district: "Dhaka", upazila: "Savar" }, categoryIds: [categoryId], acceptedTerms: true, termsVersion: "2026.06", privacyVersion: "2026.06" };
 const vendorId = "33333333-3333-4333-8333-333333333333";
 const kycSession: Session = { ...session, principal: { ...session.principal, roles: ["VENDOR_OWNER"], vendorIds: [vendorId] }, permissions: ["vendor:read", "kyc:manage"], vendorMemberships: [{ vendorId, role: "VENDOR_OWNER", permissions: ["vendor:read", "kyc:manage"] }] };
+const shopSession: Session = { ...kycSession, permissions: ["vendor:read", "vendor:manage"], vendorMemberships: [{ vendorId, role: "VENDOR_OWNER", permissions: ["vendor:read", "vendor:manage"] }] };
 const kycDocument = { documentType: "TRADE_LICENSE" as const, storageKey: `private/kyc/${userId}/license.pdf`, mimeType: "application/pdf", checksum: "a".repeat(64) };
 
 test("vendor registration rejects an existing membership", async () => {
@@ -36,6 +37,31 @@ test("vendor registration creates an owner workspace atomically", async () => {
   assert.equal(roleAssigned, true);
   assert.equal(transactionTimeout, 60_000);
   assert.equal(vendorData?.displayName, input.displayName);
+});
+
+test("shop media accepts only the seller's completed upload with the expected purpose", async () => {
+  const shopId = "44444444-4444-4444-8444-444444444444";
+  const uploadId = "66666666-6666-4666-8666-666666666666";
+  let updateData: Record<string, unknown> | undefined;
+  const workspace = { id: vendorId, legalName: "Seller Commerce", displayName: "Seller Shop", status: "APPROVED", version: 1, shops: [{ id: shopId, vendorId, name: "Seller Shop", slug: "seller-shop", status: "ACTIVE", description: null, logoStorageKey: "public/shop/logo.webp", bannerStorageKey: null, settings: null, version: 2 }], kycSubmissions: [], bankAccounts: [] };
+  const transaction = { mediaUpload: { findMany: async ({ where }: any) => { assert.equal(where.userId, userId); assert.equal(where.visibility, "public"); assert.equal(where.status, "ready"); return [{ id: uploadId, purpose: "shop", storageKey: "public/shop/logo.webp" }]; } }, vendorShop: { updateMany: async ({ data }: any) => { updateData = data; return { count: 1 }; } }, auditLog: { create: async () => ({}) } };
+  const client = { $transaction: async (operation: (value: typeof transaction) => Promise<unknown>) => operation(transaction), vendor: { findUniqueOrThrow: async () => workspace } } as unknown as PrismaClient;
+  const result = await new VendorService(client).updateShop(shopSession, shopId, { version: 1, logoUploadId: uploadId });
+  assert.equal(updateData?.logoStorageKey, "public/shop/logo.webp");
+  assert.equal(result.shops[0]?.logoUrl, "https://media.amiyo.local/public/shop/logo.webp");
+
+  transaction.mediaUpload.findMany = async () => [{ id: uploadId, purpose: "banner", storageKey: "public/banner/wrong.webp" }];
+  await assert.rejects(() => new VendorService(client).updateShop(shopSession, shopId, { version: 1, logoUploadId: uploadId }), /completed public shop image upload/);
+});
+
+test("shop media can be cleared without trusting a client storage key", async () => {
+  const shopId = "44444444-4444-4444-8444-444444444444";
+  let updateData: Record<string, unknown> | undefined;
+  const workspace = { id: vendorId, legalName: "Seller Commerce", displayName: "Seller Shop", status: "APPROVED", version: 1, shops: [], kycSubmissions: [], bankAccounts: [] };
+  const transaction = { mediaUpload: { findMany: async () => { throw new Error("clear must not query uploads"); } }, vendorShop: { updateMany: async ({ data }: any) => { updateData = data; return { count: 1 }; } }, auditLog: { create: async () => ({}) } };
+  const client = { $transaction: async (operation: (value: typeof transaction) => Promise<unknown>) => operation(transaction), vendor: { findUniqueOrThrow: async () => workspace } } as unknown as PrismaClient;
+  await new VendorService(client).updateShop(shopSession, shopId, { version: 3, bannerUploadId: null });
+  assert.equal(updateData?.bannerStorageKey, null);
 });
 
 test("KYC submission accepts only the seller's scanned private uploads", async () => {

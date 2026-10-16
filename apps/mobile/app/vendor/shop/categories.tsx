@@ -1,1 +1,1 @@
-export { VendorShopScreen as default } from "../../../src/features/vendor/VendorShopScreen";
+export { VendorCategoryRequestsScreen as default } from "../../../src/features/vendor/VendorCategoryRequestsScreen";
