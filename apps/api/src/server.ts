@@ -4,6 +4,7 @@ import helmet from "helmet";
 import { createLogger } from "@amiyo/observability";
 import { correlationMiddleware } from "./middleware/correlation.js";
 import { problemMiddleware } from "./middleware/problem.js";
+import { requestObservabilityMiddleware } from "./middleware/request-observability.js";
 import { createHealthRouter } from "./modules/health/health.routes.js";
 import { createIdentityRouter } from "./modules/identity/identity.routes.js";
 import { createOpenApiRouter } from "./modules/openapi/openapi.routes.js";
@@ -38,6 +39,7 @@ export function createApiApp(options: { readinessCheck?: ReadinessCheck } = {}) 
   }));
   app.use(express.json({ limit: "1mb", verify(req, _res, buffer) { (req as express.Request).rawBody = Buffer.from(buffer); } }));
   app.use(correlationMiddleware);
+  app.use(requestObservabilityMiddleware());
   app.use(createHealthRouter(options.readinessCheck));
   app.use(createIdentityRouter());
   app.use(createCatalogRouter());
