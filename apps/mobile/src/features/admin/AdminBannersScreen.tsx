@@ -5,7 +5,7 @@ import { ActivityIndicator, Alert, Image, Pressable, StyleSheet, Switch, Text, T
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { pickAndUploadImage } from "../media/media.api";
 import { createAdminBanner, deleteAdminBanner, getAdminPlatform, toggleAdminResource, updateAdminBanner } from "./admin.api";
 
@@ -15,17 +15,19 @@ const initialForm = (): Form => ({ title: "", subtitle: "", placement: "home_her
 const payload = (form: Form): AdminBannerInput => ({ title: form.title, subtitle: form.subtitle || null, placement: form.placement, storageKey: form.storageKey, mobileStorageKey: form.mobileStorageKey || null, ctaLabel: form.ctaLabel || null, badgeText: form.badgeText || null, targetType: form.targetValue ? (form.targetValue.startsWith("/") ? "route" : "url") : null, targetValue: form.targetValue || null, startsAt: new Date(form.startsAt).toISOString(), endsAt: new Date(form.endsAt).toISOString(), active: form.active, displayOrder: Number(form.displayOrder || 0) });
 
 export function AdminBannersScreen() {
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const userId = user?.uid ?? null;
   const cache = useQueryClient();
-  const query = useQuery({ queryKey: ["admin", "platform"], queryFn: () => getAdminPlatform(user!), enabled: Boolean(user) });
+  const query = useQuery({ queryKey: ["admin", "platform", userId], queryFn: () => getAdminPlatform(user!), enabled: Boolean(user), retry: false });
   const [form, setForm] = useState<Form>(initialForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | Form["placement"]>("all");
-  const refresh = () => cache.invalidateQueries({ queryKey: ["admin", "platform"] });
-  const save = useMutation({ mutationFn: () => editingId ? updateAdminBanner(user!, editingId, payload(form)) : createAdminBanner(user!, payload(form)), onSuccess: async () => { setEditingId(null); setForm(initialForm()); await refresh(); } });
-  const toggle = useMutation({ mutationFn: (banner: AdminBannerDto) => toggleAdminResource(user!, "banners", banner.id, !banner.active), onSuccess: refresh });
-  const remove = useMutation({ mutationFn: (id: string) => deleteAdminBanner(user!, id), onSuccess: refresh });
-  const uploadImage = useMutation({ mutationFn: async (field: "storageKey" | "mobileStorageKey") => ({ field, result: await pickAndUploadImage(user!, "banner") }), onSuccess: ({ field, result }) => { if (result) setForm((current) => ({ ...current, [field]: result.storageKey })); } });
+  const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen banner management."); return user; };
+  const refresh = () => cache.invalidateQueries({ queryKey: ["admin", "platform", userId] });
+  const save = useMutation({ mutationFn: () => editingId ? updateAdminBanner(currentActor(), editingId, payload(form)) : createAdminBanner(currentActor(), payload(form)), onSuccess: async () => { setEditingId(null); setForm(initialForm()); await refresh(); } });
+  const toggle = useMutation({ mutationFn: (banner: AdminBannerDto) => toggleAdminResource(currentActor(), "banners", banner.id, !banner.active), onSuccess: refresh });
+  const remove = useMutation({ mutationFn: (id: string) => deleteAdminBanner(currentActor(), id), onSuccess: refresh });
+  const uploadImage = useMutation({ mutationFn: async (field: "storageKey" | "mobileStorageKey") => ({ field, result: await pickAndUploadImage(currentActor(), "banner") }), onSuccess: ({ field, result }) => { if (result && user?.uid === userId) setForm((current) => ({ ...current, [field]: result.storageKey })); } });
   const banners = useMemo(() => (query.data?.banners || []).filter((banner) => filter === "all" || banner.placement === filter), [filter, query.data?.banners]);
   const edit = (banner: AdminBannerDto) => { setEditingId(banner.id); setForm({ title: banner.title || "", subtitle: banner.subtitle || "", placement: banner.placement, storageKey: banner.storageKey, mobileStorageKey: banner.mobileStorageKey || "", ctaLabel: banner.ctaLabel || "", badgeText: banner.badgeText || "", targetValue: banner.targetValue || "", startsAt: banner.startsAt, endsAt: banner.endsAt, displayOrder: String(banner.displayOrder), active: banner.active }); };
   const confirmDelete = (banner: AdminBannerDto) => Alert.alert("Delete banner?", banner.title || banner.placement, [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => remove.mutate(banner.id) }]);

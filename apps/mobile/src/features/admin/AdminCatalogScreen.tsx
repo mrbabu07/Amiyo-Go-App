@@ -5,15 +5,16 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getAdminProducts, moderateAdminProduct, setAdminProductStatus } from "../catalog/catalog.api";
 
 export function AdminCatalogScreen() {
-  const user = firebaseAuth?.currentUser ?? null; const cache = useQueryClient(); const router = useRouter(); const [search, setSearch] = useState(""); const [status, setStatus] = useState("ALL");
-  const products = useQuery({ queryKey: ["admin", "catalog"], queryFn: () => getAdminProducts(user!), enabled: Boolean(user) });
-  const done = () => cache.invalidateQueries({ queryKey: ["admin", "catalog"] });
-  const moderate = useMutation({ mutationFn: ({ id, next }: { id: string; next: "APPROVED" | "REJECTED" }) => moderateAdminProduct(user!, id, { status: next, reason: next === "APPROVED" ? "Listing meets marketplace requirements" : "Listing requires corrections before publication" }), onSuccess: done });
-  const lifecycle = useMutation({ mutationFn: ({ id, next }: { id: string; next: "APPROVED" | "ARCHIVED" }) => setAdminProductStatus(user!, id, next), onSuccess: done });
+  const user = useCurrentUser(); const userId = user?.uid ?? null; const cache = useQueryClient(); const router = useRouter(); const [search, setSearch] = useState(""); const [status, setStatus] = useState("ALL");
+  const products = useQuery({ queryKey: ["admin", "catalog", userId], queryFn: () => getAdminProducts(user!), enabled: Boolean(user), retry: false });
+  const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen catalog moderation."); return user; };
+  const done = () => cache.invalidateQueries({ queryKey: ["admin", "catalog", userId] });
+  const moderate = useMutation({ mutationFn: ({ id, next }: { id: string; next: "APPROVED" | "REJECTED" }) => moderateAdminProduct(currentActor(), id, { status: next, reason: next === "APPROVED" ? "Listing meets marketplace requirements" : "Listing requires corrections before publication" }), onSuccess: done });
+  const lifecycle = useMutation({ mutationFn: ({ id, next }: { id: string; next: "APPROVED" | "ARCHIVED" }) => setAdminProductStatus(currentActor(), id, next), onSuccess: done });
   const statuses = ["ALL", "SUBMITTED", "APPROVED", "DRAFT", "REJECTED", "ARCHIVED"];
   const filtered = useMemo(() => (products.data ?? []).filter((product) => (status === "ALL" || product.status === status) && `${product.name} ${product.brand ?? ""} ${product.shopName} ${product.variants.map((variant) => variant.sku).join(" ")}`.toLowerCase().includes(search.trim().toLowerCase())), [products.data, search, status]);
   const counts: Record<string, number> = Object.fromEntries(statuses.slice(1).map((item) => [item, products.data?.filter((product) => product.status === item).length ?? 0]));

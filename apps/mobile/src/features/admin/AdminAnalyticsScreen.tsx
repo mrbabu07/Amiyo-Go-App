@@ -5,7 +5,7 @@ import { ActivityIndicator, Platform, Pressable, Share, StyleSheet, Text, TextIn
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getAdminAnalytics } from "./admin.api";
 import { buildAdminAnalyticsCsv } from "./analytics-report";
 import { buildCustomAdminRange } from "./admin-report-range";
@@ -14,14 +14,15 @@ const ranges = ["7d", "30d", "90d"] as const;
 const money = (value: string) => `৳${(Number(value) / 100).toLocaleString("en-BD")}`;
 
 export function AdminAnalyticsScreen() {
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const userId = user?.uid ?? null;
   const [range, setRange] = useState<typeof ranges[number] | "custom">("30d");
   const [selection, setSelection] = useState<AdminAnalyticsQuery>({ range: "30d" });
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [customError, setCustomError] = useState("");
   const [exportError, setExportError] = useState("");
-  const analytics = useQuery({ queryKey: ["admin", "analytics", selection.range, selection.startsAt?.toISOString(), selection.endsAt?.toISOString()], queryFn: () => getAdminAnalytics(user!, selection), enabled: Boolean(user) });
+  const analytics = useQuery({ queryKey: ["admin", "analytics", userId, selection.range, selection.startsAt?.toISOString(), selection.endsAt?.toISOString()], queryFn: () => getAdminAnalytics(user!, selection), enabled: Boolean(user), retry: false });
   const maximumRevenue = Math.max(1, ...(analytics.data?.trend.map((item) => Number(item.revenue.amountMinor)) ?? []));
   const choosePreset = (value: typeof ranges[number]) => { setRange(value); setSelection({ range: value }); setCustomError(""); };
   const applyCustomRange = () => { try { setSelection(buildCustomAdminRange(customStart, customEnd)); setCustomError(""); } catch (error) { setCustomError(error instanceof Error ? error.message : "Choose a valid start and end date."); } };

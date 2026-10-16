@@ -5,24 +5,26 @@ import { useMemo, useState, type ReactNode } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { adjustAdminCustomerLoyalty, getAdminCustomerDetail, getAdminReferralDashboard, getAdminWorkspace, updateAdminUser, type AdminCustomerDetail } from "./admin.api";
 
 type LoyaltyInput = { action: "AWARD" | "DEDUCT"; points: string; reason: string };
 
 export function AdminCustomersScreen() {
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const userId = user?.uid ?? null;
   const params = useLocalSearchParams<{ search?: string }>();
   const router = useRouter();
   const cache = useQueryClient();
   const { width } = useWindowDimensions();
   const [search, setSearch] = useState(typeof params.search === "string" ? params.search : "");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const workspace = useQuery({ queryKey: ["admin", "workspace"], queryFn: () => getAdminWorkspace(user!), enabled: Boolean(user), staleTime: 15_000 });
-  const detail = useQuery({ queryKey: ["admin", "customer", selectedId], queryFn: () => getAdminCustomerDetail(user!, selectedId!), enabled: Boolean(user && selectedId) });
-  const referrals = useQuery({ queryKey: ["admin", "customer-referrals"], queryFn: () => getAdminReferralDashboard(user!), enabled: Boolean(user), staleTime: 15_000 });
-  const status = useMutation({ mutationFn: ({ id, next }: { id: string; next: "ACTIVE" | "SUSPENDED" }) => updateAdminUser(user!, id, { status: next, reason: `Customer ${next.toLowerCase()} after account review` }), onSuccess: () => cache.invalidateQueries({ queryKey: ["admin"] }) });
-  const loyalty = useMutation({ mutationFn: (input: LoyaltyInput) => adjustAdminCustomerLoyalty(user!, selectedId!, input), onSuccess: async (data) => { cache.setQueryData(["admin", "customer", selectedId], data); await Promise.all([cache.invalidateQueries({ queryKey: ["admin", "customer-referrals"] }), cache.invalidateQueries({ queryKey: ["admin", "audit"] })]); } });
+  const workspace = useQuery({ queryKey: ["admin", "workspace", userId], queryFn: () => getAdminWorkspace(user!), enabled: Boolean(user), staleTime: 15_000, retry: false });
+  const detail = useQuery({ queryKey: ["admin", "customer", userId, selectedId], queryFn: () => getAdminCustomerDetail(user!, selectedId!), enabled: Boolean(user && selectedId), retry: false });
+  const referrals = useQuery({ queryKey: ["admin", "customer-referrals", userId], queryFn: () => getAdminReferralDashboard(user!), enabled: Boolean(user), staleTime: 15_000, retry: false });
+  const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen customer management."); return user; };
+  const status = useMutation({ mutationFn: ({ id, next }: { id: string; next: "ACTIVE" | "SUSPENDED" }) => updateAdminUser(currentActor(), id, { status: next, reason: `Customer ${next.toLowerCase()} after account review` }), onSuccess: () => cache.invalidateQueries({ queryKey: ["admin", "workspace", userId] }) });
+  const loyalty = useMutation({ mutationFn: (input: LoyaltyInput) => adjustAdminCustomerLoyalty(currentActor(), selectedId!, input), onSuccess: async (data) => { cache.setQueryData(["admin", "customer", userId, selectedId], data); await Promise.all([cache.invalidateQueries({ queryKey: ["admin", "customer-referrals", userId] }), cache.invalidateQueries({ queryKey: ["admin", "audit", userId] })]); } });
   const customers = (workspace.data?.users ?? []).filter((item) => !item.roles.some((role) => role.includes("ADMIN") || role === "SUPPORT_AGENT"));
   const filtered = useMemo(() => customers.filter((item) => `${item.id} ${item.displayName ?? ""} ${item.email ?? ""} ${item.phone ?? ""}`.toLowerCase().includes(search.trim().toLowerCase())), [customers, search]);
 

@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDim
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getAdminAudit, type AdminAuditDto } from "./admin.api";
 
 type Filters = { search: string; actorType: string; resourceType: string; module: string; severity: string; action: string; from: string; to: string; page: number; limit: number };
@@ -14,8 +14,8 @@ type AuditRow = AdminAuditDto["logs"][number];
 const jsonText = (value: unknown) => { try { return JSON.stringify(value ?? {}, null, 2); } catch { return "{}"; } };
 
 export function AdminAuditScreen() {
-  const user = firebaseAuth?.currentUser ?? null; const { width } = useWindowDimensions(); const mobile = width < 760; const [draft, setDraft] = useState(initial); const [filters, setFilters] = useState(initial); const [selected, setSelected] = useState<AuditRow | null>(null);
-  const query = useQuery({ queryKey: ["admin", "audit", filters], queryFn: () => getAdminAudit(user!, filters), enabled: Boolean(user), staleTime: 10_000 }); const data = query.data;
+  const user = useCurrentUser(); const userId = user?.uid ?? null; const { width } = useWindowDimensions(); const mobile = width < 760; const [draft, setDraft] = useState(initial); const [filters, setFilters] = useState(initial); const [selected, setSelected] = useState<AuditRow | null>(null);
+  const query = useQuery({ queryKey: ["admin", "audit", userId, filters], queryFn: () => getAdminAudit(user!, filters), enabled: Boolean(user), staleTime: 10_000, retry: false }); const data = query.data;
   const actors = useMemo(() => ["all", ...(data?.facets.actorTypes || [])], [data]); const resources = useMemo(() => ["all", ...(data?.facets.resourceTypes || [])], [data]);
   const apply = () => { setSelected(null); setFilters({ ...draft, page: 1 }); }; const clear = () => { setDraft(initial); setFilters(initial); setSelected(null); }; const page = (next: number) => { const value = { ...filters, page: next }; setFilters(value); setDraft(value); setSelected(null); };
   return <Screen eyebrow="GOVERNANCE" title="Audit logs" description="Unified evidence trail for staff actions, moderation, payouts, platform changes and high-risk workflows.">

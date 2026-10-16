@@ -5,19 +5,20 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDim
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useAuthStore } from "../auth/auth.store";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getAdminWorkspace, updateAdminUser, updateAdminUserRoles } from "./admin.api";
 
 const platformRoles = ["SUPPORT_AGENT", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "SUPER_ADMIN"] as const;
 type PlatformRole = (typeof platformRoles)[number];
 
 export function AdminAccessScreen({ staffOnly = false }: { staffOnly?: boolean }) {
-  const user = firebaseAuth?.currentUser ?? null; const session = useAuthStore((state) => state.session); const cache = useQueryClient(); const { width } = useWindowDimensions();
+  const user = useCurrentUser(); const userId = user?.uid ?? null; const session = useAuthStore((state) => state.session); const cache = useQueryClient(); const { width } = useWindowDimensions();
   const [search, setSearch] = useState(""); const [selected, setSelected] = useState<string | null>(null); const [draft, setDraft] = useState<PlatformRole[]>([]); const [error, setError] = useState<string | null>(null);
-  const workspace = useQuery({ queryKey: ["admin", "workspace"], queryFn: () => getAdminWorkspace(user!), enabled: Boolean(user), staleTime: 15_000 });
-  const invalidate = async () => { setSelected(null); setError(null); await cache.invalidateQueries({ queryKey: ["admin"] }); };
-  const roles = useMutation({ mutationFn: ({ id }: { id: string }) => updateAdminUserRoles(user!, id, { roles: draft, reason: "Platform access updated from staff control center" }), onSuccess: invalidate, onError: (value) => setError(value.message) });
-  const status = useMutation({ mutationFn: ({ id, next }: { id: string; next: "ACTIVE" | "SUSPENDED" }) => updateAdminUser(user!, id, { status: next, reason: `Account ${next.toLowerCase()} after access review` }), onSuccess: invalidate, onError: (value) => setError(value.message) });
+  const workspace = useQuery({ queryKey: ["admin", "workspace", userId], queryFn: () => getAdminWorkspace(user!), enabled: Boolean(user), staleTime: 15_000, retry: false });
+  const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen access control."); return user; };
+  const invalidate = async () => { setSelected(null); setError(null); await cache.invalidateQueries({ queryKey: ["admin", "workspace", userId] }); };
+  const roles = useMutation({ mutationFn: ({ id }: { id: string }) => updateAdminUserRoles(currentActor(), id, { roles: draft, reason: "Platform access updated from staff control center" }), onSuccess: invalidate, onError: (value) => setError(value.message) });
+  const status = useMutation({ mutationFn: ({ id, next }: { id: string; next: "ACTIVE" | "SUSPENDED" }) => updateAdminUser(currentActor(), id, { status: next, reason: `Account ${next.toLowerCase()} after access review` }), onSuccess: invalidate, onError: (value) => setError(value.message) });
   const all = workspace.data?.users ?? []; const rows = all.filter((item) => !staffOnly || item.roles.some((role) => platformRoles.includes(role as PlatformRole))).filter((item) => `${item.id} ${item.displayName ?? ""} ${item.email ?? ""} ${item.phone ?? ""} ${item.roles.join(" ")}`.toLowerCase().includes(search.trim().toLowerCase()));
   const manage = (item: (typeof all)[number]) => { setSelected(item.id); setDraft(item.roles.filter((role): role is PlatformRole => platformRoles.includes(role as PlatformRole))); setError(null); };
   const toggle = (role: PlatformRole) => setDraft((current) => current.includes(role) ? current.filter((item) => item !== role) : [...current, role]);

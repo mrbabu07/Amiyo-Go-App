@@ -4,21 +4,22 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getAdminPlatform, replaceAdminCategoryAttributes } from "./admin.api";
 
 const dataTypes = ["text", "number", "boolean", "select", "multiselect"] as const;
 
 export function AdminCategoryAttributesScreen({ initialCategoryId = "" }: { initialCategoryId?: string }) {
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const userId = user?.uid ?? null;
   const queryClient = useQueryClient();
-  const platform = useQuery({ queryKey: ["admin", "platform"], queryFn: () => getAdminPlatform(user!), enabled: Boolean(user) });
+  const platform = useQuery({ queryKey: ["admin", "platform", userId], queryFn: () => getAdminPlatform(user!), enabled: Boolean(user), retry: false });
   const [categoryId, setCategoryId] = useState(initialCategoryId);
   const [form, setForm] = useState({ label: "", key: "", dataType: "text" as typeof dataTypes[number], options: "" });
   const selected = useMemo(() => platform.data?.categories.find((category) => category.id === categoryId), [categoryId, platform.data]);
   const save = useMutation({
-    mutationFn: (attributes: NonNullable<typeof selected>["attributes"]) => replaceAdminCategoryAttributes(user!, categoryId, { attributes: attributes.map((attribute, displayOrder) => ({ key: attribute.key, label: attribute.label, dataType: attribute.dataType, required: attribute.required, filterable: attribute.filterable, displayOrder, options: attribute.options.map((option) => option.label) })) }),
-    onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ["admin", "platform"] }); }
+    mutationFn: (attributes: NonNullable<typeof selected>["attributes"]) => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen category attributes."); return replaceAdminCategoryAttributes(user, categoryId, { attributes: attributes.map((attribute, displayOrder) => ({ key: attribute.key, label: attribute.label, dataType: attribute.dataType, required: attribute.required, filterable: attribute.filterable, displayOrder, options: attribute.options.map((option) => option.label) })) }); },
+    onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ["admin", "platform", userId] }); }
   });
   async function addAttribute() {
     if (!selected || !form.label.trim() || !form.key.trim()) return;

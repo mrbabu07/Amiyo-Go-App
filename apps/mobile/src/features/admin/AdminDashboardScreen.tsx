@@ -2,11 +2,11 @@ import { Ionicons } from "@expo/vector-icons";
 import type { AdminAnalyticsQuery } from "@amiyo/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getAdminQueues } from "../operations/operations.api";
 import { getAdminAnalytics, getAdminPlatform, getAdminWorkspace } from "./admin.api";
 import type { AdminSavedView } from "./admin-saved-views";
@@ -19,7 +19,10 @@ const titleCase = (value: string) => value.replaceAll("_", " ").toLowerCase().re
 
 export function AdminDashboardScreen() {
   const router = useRouter();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const userId = user?.uid ?? null;
+  const userIdRef = useRef(userId);
+  userIdRef.current = userId;
   const [range, setRange] = useState<typeof ranges[number] | "custom">("7d");
   const [analyticsSelection, setAnalyticsSelection] = useState<AdminAnalyticsQuery>({ range: "7d" });
   const [customStart, setCustomStart] = useState("");
@@ -29,10 +32,10 @@ export function AdminDashboardScreen() {
   const [savedViewName, setSavedViewName] = useState("");
   const [savedViewsError, setSavedViewsError] = useState("");
   const [savedViewsBusy, setSavedViewsBusy] = useState(false);
-  const workspace = useQuery({ queryKey: ["admin-workspace"], queryFn: () => getAdminWorkspace(user!), enabled: Boolean(user), refetchInterval: 30_000 });
-  const platform = useQuery({ queryKey: ["admin-platform"], queryFn: () => getAdminPlatform(user!), enabled: Boolean(user), refetchInterval: 30_000 });
-  const analytics = useQuery({ queryKey: ["admin", "analytics", analyticsSelection.range, analyticsSelection.startsAt?.toISOString(), analyticsSelection.endsAt?.toISOString()], queryFn: () => getAdminAnalytics(user!, analyticsSelection), enabled: Boolean(user) });
-  const queues = useQuery({ queryKey: ["admin-operations"], queryFn: () => getAdminQueues(user!), enabled: Boolean(user), refetchInterval: 30_000 });
+  const workspace = useQuery({ queryKey: ["admin", "workspace", userId], queryFn: () => getAdminWorkspace(user!), enabled: Boolean(user), refetchInterval: 30_000, retry: false });
+  const platform = useQuery({ queryKey: ["admin", "platform", userId], queryFn: () => getAdminPlatform(user!), enabled: Boolean(user), refetchInterval: 30_000, retry: false });
+  const analytics = useQuery({ queryKey: ["admin", "analytics", userId, analyticsSelection.range, analyticsSelection.startsAt?.toISOString(), analyticsSelection.endsAt?.toISOString()], queryFn: () => getAdminAnalytics(user!, analyticsSelection), enabled: Boolean(user), retry: false });
+  const queues = useQuery({ queryKey: ["admin", "queues", userId], queryFn: () => getAdminQueues(user!), enabled: Boolean(user), refetchInterval: 30_000, retry: false });
   const loading = workspace.isLoading || platform.isLoading || analytics.isLoading || queues.isLoading;
   const error = workspace.error || platform.error || analytics.error || queues.error;
 
@@ -48,9 +51,9 @@ export function AdminDashboardScreen() {
     try {
       const selection: AdminSavedView["selection"] = analyticsSelection.range === "custom" ? { range: "custom", startsAt: analyticsSelection.startsAt!.toISOString(), endsAt: analyticsSelection.endsAt!.toISOString() } : { range: analyticsSelection.range };
       const views = await adminSavedViews.save(uid, savedViewName, selection);
-      if (firebaseAuth?.currentUser?.uid === uid) { setSavedViews(views); setSavedViewName(""); }
-    } catch (error) { if (firebaseAuth?.currentUser?.uid === uid) setSavedViewsError(error instanceof Error ? error.message : "Could not save this view."); }
-    finally { if (firebaseAuth?.currentUser?.uid === uid) setSavedViewsBusy(false); }
+      if (userIdRef.current === uid) { setSavedViews(views); setSavedViewName(""); }
+    } catch (error) { if (userIdRef.current === uid) setSavedViewsError(error instanceof Error ? error.message : "Could not save this view."); }
+    finally { if (userIdRef.current === uid) setSavedViewsBusy(false); }
   }
   function applySavedView(view: AdminSavedView) {
     setSavedViewsError(""); setRange(view.selection.range);
@@ -59,14 +62,14 @@ export function AdminDashboardScreen() {
   }
   async function removeSavedView(id: string) {
     if (!user || savedViewsBusy) return; setSavedViewsBusy(true); setSavedViewsError(""); const uid = user.uid;
-    try { const views = await adminSavedViews.remove(uid, id); if (firebaseAuth?.currentUser?.uid === uid) setSavedViews(views); }
-    catch (error) { if (firebaseAuth?.currentUser?.uid === uid) setSavedViewsError(error instanceof Error ? error.message : "Could not remove this view."); }
-    finally { if (firebaseAuth?.currentUser?.uid === uid) setSavedViewsBusy(false); }
+    try { const views = await adminSavedViews.remove(uid, id); if (userIdRef.current === uid) setSavedViews(views); }
+    catch (error) { if (userIdRef.current === uid) setSavedViewsError(error instanceof Error ? error.message : "Could not remove this view."); }
+    finally { if (userIdRef.current === uid) setSavedViewsBusy(false); }
   }
   useEffect(() => {
     if (!user) { setSavedViews([]); return; }
     let active = true; const uid = user.uid;
-    void adminSavedViews.load(uid).then((views) => { if (active && firebaseAuth?.currentUser?.uid === uid) { setSavedViews(views); setSavedViewsError(""); } }).catch(() => { if (active) { setSavedViews([]); setSavedViewsError("Saved admin views could not be loaded."); } });
+    void adminSavedViews.load(uid).then((views) => { if (active && userIdRef.current === uid) { setSavedViews(views); setSavedViewsError(""); } }).catch(() => { if (active && userIdRef.current === uid) { setSavedViews([]); setSavedViewsError("Saved admin views could not be loaded."); } });
     return () => { active = false; };
   }, [user?.uid]);
   const open = (href: string) => router.push(href as never);

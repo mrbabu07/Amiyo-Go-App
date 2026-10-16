@@ -4,7 +4,7 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, Text, TextInpu
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { createAdminCoupon, deleteAdminCoupon, getAdminCoupons, updateAdminCoupon, type AdminCouponDto, type AdminCouponInput } from "./admin.api";
 
 type CouponForm = { code: string; discountType: "PERCENT" | "FIXED"; value: string; maxDiscount: string; minimumSpend: string; usageLimit: string; perUserLimit: string; startsAt: string; endsAt: string; active: boolean };
@@ -12,18 +12,20 @@ const initialForm = (): CouponForm => ({ code: "", discountType: "PERCENT", valu
 const taka = (minor: string | null) => minor === null ? "No cap" : `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
 
 export function AdminCouponsScreen() {
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const userId = user?.uid ?? null;
   const cache = useQueryClient();
-  const query = useQuery({ queryKey: ["admin", "coupons"], queryFn: () => getAdminCoupons(user!), enabled: Boolean(user) });
+  const query = useQuery({ queryKey: ["admin", "coupons", userId], queryFn: () => getAdminCoupons(user!), enabled: Boolean(user), retry: false });
   const [form, setForm] = useState<CouponForm>(initialForm);
   const [editing, setEditing] = useState<AdminCouponDto | null>(null);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
-  const refresh = async () => { await cache.invalidateQueries({ queryKey: ["admin", "coupons"] }); };
+  const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen coupon management."); return user; };
+  const refresh = async () => { await cache.invalidateQueries({ queryKey: ["admin", "coupons", userId] }); };
   const reset = () => { setEditing(null); setForm(initialForm()); };
   const payload = (): AdminCouponInput => ({ code: form.code.trim().toUpperCase(), discountType: form.discountType, value: Number(form.value), maxDiscountMinor: form.maxDiscount ? String(Math.round(Number(form.maxDiscount) * 100)) : null, minimumSpendMinor: String(Math.round(Number(form.minimumSpend || 0) * 100)), usageLimit: form.usageLimit ? Number(form.usageLimit) : null, perUserLimit: Number(form.perUserLimit), startsAt: new Date(form.startsAt).toISOString(), endsAt: new Date(form.endsAt).toISOString(), active: form.active });
-  const save = useMutation({ mutationFn: () => editing ? updateAdminCoupon(user!, editing.id, { ...payload(), expectedVersion: editing.version }) : createAdminCoupon(user!, payload()), onSuccess: async () => { reset(); await refresh(); } });
-  const remove = useMutation({ mutationFn: (id: string) => deleteAdminCoupon(user!, id), onSuccess: refresh });
+  const save = useMutation({ mutationFn: () => editing ? updateAdminCoupon(currentActor(), editing.id, { ...payload(), expectedVersion: editing.version }) : createAdminCoupon(currentActor(), payload()), onSuccess: async () => { reset(); await refresh(); } });
+  const remove = useMutation({ mutationFn: (id: string) => deleteAdminCoupon(currentActor(), id), onSuccess: refresh });
   const coupons = useMemo(() => (query.data || []).filter((item) => item.code.toLowerCase().includes(search.trim().toLowerCase()) && (status === "all" || item.status === status)), [query.data, search, status]);
   const valid = form.code.trim().length >= 3 && Number(form.value) > 0 && (form.discountType !== "PERCENT" || Number(form.value) <= 100) && Number(form.perUserLimit) > 0 && (!form.usageLimit || Number(form.perUserLimit) <= Number(form.usageLimit)) && Date.parse(form.startsAt) < Date.parse(form.endsAt);
   const edit = (item: AdminCouponDto) => { setEditing(item); setForm({ code: item.code, discountType: item.discountType, value: String(item.value), maxDiscount: item.maxDiscountMinor === null ? "" : String(Number(item.maxDiscountMinor) / 100), minimumSpend: String(Number(item.minimumSpendMinor) / 100), usageLimit: item.usageLimit === null ? "" : String(item.usageLimit), perUserLimit: String(item.perUserLimit), startsAt: item.startsAt, endsAt: item.endsAt, active: item.active }); };

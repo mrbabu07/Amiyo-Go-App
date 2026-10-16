@@ -4,19 +4,21 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { createAdminCategory, getAdminPlatform, reviewPaymentVerification, toggleAdminResource, updateAdminCategory } from "./admin.api";
 
 export function AdminPlatformScreen() {
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const userId = user?.uid ?? null;
   const queryClient = useQueryClient();
-  const platform = useQuery({ queryKey: ["admin", "platform"], queryFn: () => getAdminPlatform(user!), enabled: Boolean(user) });
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ["admin", "platform"] });
-  const payment = useMutation({ mutationFn: ({ id, status }: { id: string; status: "approved" | "rejected" }) => reviewPaymentVerification(user!, id, { status, reason: status === "approved" ? "Payment evidence verified" : "Payment evidence could not be verified" }), onSuccess: refresh });
-  const toggle = useMutation({ mutationFn: ({ type, id, active }: { type: "banners" | "vouchers" | "flash-sales"; id: string; active: boolean }) => toggleAdminResource(user!, type, id, active), onSuccess: refresh });
+  const platform = useQuery({ queryKey: ["admin", "platform", userId], queryFn: () => getAdminPlatform(user!), enabled: Boolean(user), retry: false });
+  const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen platform operations."); return user; };
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ["admin", "platform", userId] });
+  const payment = useMutation({ mutationFn: ({ id, status }: { id: string; status: "approved" | "rejected" }) => reviewPaymentVerification(currentActor(), id, { status, reason: status === "approved" ? "Payment evidence verified" : "Payment evidence could not be verified" }), onSuccess: refresh });
+  const toggle = useMutation({ mutationFn: ({ type, id, active }: { type: "banners" | "vouchers" | "flash-sales"; id: string; active: boolean }) => toggleAdminResource(currentActor(), type, id, active), onSuccess: refresh });
   const [category, setCategory] = useState<{ name: string; slug: string; parentId: string | null }>({ name: "", slug: "", parentId: null });
-  const createCategory = useMutation({ mutationFn: () => createAdminCategory(user!, { parentId: category.parentId, name: category.name, slug: category.slug, displayOrder: platform.data?.categories.length ?? 0 }), onSuccess: () => { setCategory({ name: "", slug: "", parentId: null }); return refresh(); } });
-  const controlCategory = useMutation({ mutationFn: ({ id, status, displayOrder }: { id: string; status?: "active" | "inactive"; displayOrder?: number }) => updateAdminCategory(user!, id, { status, displayOrder }), onSuccess: refresh });
+  const createCategory = useMutation({ mutationFn: () => createAdminCategory(currentActor(), { parentId: category.parentId, name: category.name, slug: category.slug, displayOrder: platform.data?.categories.length ?? 0 }), onSuccess: () => { setCategory({ name: "", slug: "", parentId: null }); return refresh(); } });
+  const controlCategory = useMutation({ mutationFn: ({ id, status, displayOrder }: { id: string; status?: "active" | "inactive"; displayOrder?: number }) => updateAdminCategory(currentActor(), id, { status, displayOrder }), onSuccess: refresh });
   if (platform.isLoading) return <Screen title="Platform operations"><ActivityIndicator color={colors.primary} /></Screen>;
   const error = platform.error || payment.error || toggle.error || createCategory.error || controlCategory.error;
   return <Screen eyebrow="ADMIN" title="Platform operations" description="Payments, taxonomy, marketing visibility and immutable platform activity.">

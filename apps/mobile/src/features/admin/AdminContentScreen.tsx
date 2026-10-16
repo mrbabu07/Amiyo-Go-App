@@ -3,15 +3,16 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getAdminQuestions, getAdminReviews, moderateAdminQuestion, moderateAdminReview } from "../engagement/engagement.api";
 
 export function AdminContentScreen({ mode = "all" }: { mode?: "all" | "reviews" | "questions" }) {
-  const user = firebaseAuth?.currentUser ?? null; const queryClient = useQueryClient(); const showReviews = mode !== "questions"; const showQuestions = mode !== "reviews";
-  const reviews = useQuery({ queryKey: ["admin", "reviews"], queryFn: () => getAdminReviews(user!), enabled: Boolean(user && showReviews) });
-  const questions = useQuery({ queryKey: ["admin", "questions"], queryFn: () => getAdminQuestions(user!), enabled: Boolean(user && showQuestions) });
-  const reviewAction = useMutation({ mutationFn: ({ id, status }: { id: string; status: "published" | "hidden" }) => moderateAdminReview(user!, id, { status, reason: status === "hidden" ? "Hidden after content policy review" : "Published after content policy review" }), onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "reviews"] }) });
-  const questionAction = useMutation({ mutationFn: ({ id, status }: { id: string; status: "published" | "hidden" }) => moderateAdminQuestion(user!, id, { status, reason: status === "hidden" ? "Hidden after content policy review" : "Published after content policy review" }), onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "questions"] }) });
+  const user = useCurrentUser(); const userId = user?.uid ?? null; const queryClient = useQueryClient(); const showReviews = mode !== "questions"; const showQuestions = mode !== "reviews";
+  const reviews = useQuery({ queryKey: ["admin", "reviews", userId], queryFn: () => getAdminReviews(user!), enabled: Boolean(user && showReviews), retry: false });
+  const questions = useQuery({ queryKey: ["admin", "questions", userId], queryFn: () => getAdminQuestions(user!), enabled: Boolean(user && showQuestions), retry: false });
+  const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen content moderation."); return user; };
+  const reviewAction = useMutation({ mutationFn: ({ id, status }: { id: string; status: "published" | "hidden" }) => moderateAdminReview(currentActor(), id, { status, reason: status === "hidden" ? "Hidden after content policy review" : "Published after content policy review" }), onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "reviews", userId] }) });
+  const questionAction = useMutation({ mutationFn: ({ id, status }: { id: string; status: "published" | "hidden" }) => moderateAdminQuestion(currentActor(), id, { status, reason: status === "hidden" ? "Hidden after content policy review" : "Published after content policy review" }), onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "questions", userId] }) });
   const title = mode === "reviews" ? "Review moderation" : mode === "questions" ? "Product Q&A" : "Content moderation";
   return <Screen eyebrow="ADMIN CONTENT" title={title} description="Moderate marketplace reviews and product questions with immutable audit records.">
     {reviews.isLoading || questions.isLoading ? <ActivityIndicator color={colors.primary} /> : null}
