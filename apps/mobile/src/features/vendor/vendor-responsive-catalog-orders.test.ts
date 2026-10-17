@@ -15,6 +15,7 @@ const kyc = readFileSync(resolve(root, "src/features/vendor/VendorKycScreen.tsx"
 const staff = readFileSync(resolve(root, "src/features/vendor/VendorStaffScreen.tsx"), "utf8");
 const returns = readFileSync(resolve(root, "src/features/vendor/VendorReturnsScreen.tsx"), "utf8");
 const reports = readFileSync(resolve(root, "src/features/vendor/VendorReportsScreen.tsx"), "utf8");
+const inventory = readFileSync(resolve(root, "src/features/vendor/VendorInventoryScreen.tsx"), "utf8");
 
 test("seller catalog becomes a full-width mobile workspace", () => {
   assert.match(products, /useWindowDimensions\(\)\.width < 620/);
@@ -97,4 +98,12 @@ test("seller reports preserve exports and readable mobile rows", () => {
   assert.match(reports, /compact && styles\.exportCompact/);
   assert.match(reports, /compact && styles\.metricCompact/);
   assert.match(reports, /compact && styles\.orderCompact/);
+});
+
+test("seller inventory is mobile friendly and account safe", () => {
+  assert.match(inventory, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(inventory, /activeUid\.current !== variables\.owner\.uid/);
+  assert.match(inventory, /useEffect\(\(\) => \{ setValues\(\{\}\); \}, \[user\?\.uid\]\)/);
+  assert.match(inventory, /compact && styles\.rowCompact/);
+  assert.match(inventory, /compact && styles\.buttonCompact/);
 });
