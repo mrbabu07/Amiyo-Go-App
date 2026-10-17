@@ -2,10 +2,10 @@ import { Ionicons } from "@expo/vector-icons";
 import type { ProductSummaryDto } from "@amiyo/contracts";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { createThread } from "../engagement/engagement.api";
 import { ProductCard } from "../home/components/ProductCard";
 import { StoreHeader } from "../home/components/StoreHeader";
@@ -25,6 +25,8 @@ function sortProducts(products: ProductSummaryDto[], sort: ShopSortMode) {
 
 export function ShopScreen({ identifier }: { identifier: string }) {
   const router = useRouter();
+  const user = useCurrentUser();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const { width } = useWindowDimensions();
   const desktop = width >= 900;
   const columns = width >= 1180 ? 4 : width >= 760 ? 3 : width < 360 ? 1 : 2;
@@ -40,8 +42,8 @@ export function ShopScreen({ identifier }: { identifier: string }) {
     return (categories.data || []).filter((category) => counts.has(category.id)).map((category) => ({ count: counts.get(category.id) || 0, id: category.id, name: category.name })).sort((left, right) => left.name.localeCompare(right.name));
   }, [categories.data, products]);
   const filteredProducts = useMemo(() => sortProducts(selectedCategory === "all" ? products : products.filter((product) => product.categoryId === selectedCategory), sort), [products, selectedCategory, sort]);
-  const chat = useMutation({ mutationFn: async () => { const user = firebaseAuth?.currentUser; if (!user || !result.data) throw new Error("Sign in to message this seller"); return createThread(user, result.data.vendorId, `Question about ${result.data.name}`); }, onSuccess: (thread) => router.push(`/messages/${thread.id}` as never) });
-  function startChat() { if (!firebaseAuth?.currentUser) { router.push("/auth"); return; } chat.mutate(); }
+  const chat = useMutation({ mutationFn: async () => { if (!user || activeUid.current !== user.uid || !result.data) throw new Error("Sign in to message this seller"); return { thread: await createThread(user, result.data.vendorId, `Question about ${result.data.name}`), uid: user.uid }; }, onSuccess: ({ thread, uid }) => { if (activeUid.current === uid) router.push(`/messages/${thread.id}` as never); } });
+  function startChat() { if (!user) { router.push("/auth"); return; } chat.mutate(); }
   function resetFilters() { setSelectedCategory("all"); setSort("newest"); }
   const filters = <ShopFilters categories={categoryOptions} onCategory={setSelectedCategory} onReset={resetFilters} onSort={setSort} productCount={products.length} selectedCategory={selectedCategory} sort={sort} />;
 

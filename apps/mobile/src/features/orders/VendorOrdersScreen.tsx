@@ -6,7 +6,7 @@ import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View 
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useAuthStore } from "../auth/auth.store";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { fallbackProductImage } from "../catalog/catalog.view-model";
 import { BatchDocuments } from "./BatchDocuments";
 import { batchDocumentLimit } from "./batch-documents";
@@ -20,7 +20,7 @@ export function VendorOrdersScreen() {
   const [filter, setFilter] = useState<(typeof filters)[number]>("ALL");
   const [search, setSearch] = useState("");
   const router = useRouter();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
   const session = useAuthStore((state) => state.session);
   const allowed = Boolean(session?.permissions.includes("orders:read") && session.principal.vendorIds.length);
   const orders = useQuery({ queryKey: ["orders", "vendor", user?.uid], queryFn: () => getVendorOrders(user!), enabled: Boolean(user && allowed) });

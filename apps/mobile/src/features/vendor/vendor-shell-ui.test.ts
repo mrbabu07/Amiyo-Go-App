@@ -33,5 +33,7 @@ test("seller orders stay inside the workspace with reference controls", () => {
   assert.match(orders, /<Screen eyebrow="FULFILLMENT"/);
   for (const control of ["Search seller orders", "Batch print", "Documents", "View order"]) assert.match(orders, new RegExp(control));
   assert.match(orders, /thumbnailUrl/);
+  assert.match(orders, /useCurrentUser/);
+  assert.doesNotMatch(orders, /firebaseAuth/);
   assert.doesNotMatch(orders, /Â|Ã|à§|â†|â€œ|â€/);
 });
