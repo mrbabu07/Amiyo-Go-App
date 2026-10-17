@@ -93,6 +93,7 @@ export const shopSummarySchema = z.object({
   description: z.string().nullable(),
   logoUrl: z.string().url().nullable(),
   bannerUrl: z.string().url().nullable(),
+  storefront: z.object({ tagline: z.string().nullable(), announcement: z.string().nullable(), trustMessage: z.string().nullable() }).nullable(),
   productCount: z.number().int().nonnegative(),
   version: versionSchema
 });

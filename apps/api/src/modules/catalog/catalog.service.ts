@@ -17,6 +17,16 @@ function mediaUrl(storageKey: string | null) {
   return base ? `${base}/${storageKey.replace(/^\//, "")}` : null;
 }
 
+function publicStorefront(settings: Prisma.JsonValue | null) {
+  if (!settings || typeof settings !== "object" || Array.isArray(settings)) return null;
+  const raw = (settings as Record<string, unknown>).storefront;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const value = raw as Record<string, unknown>;
+  const text = (key: string, max: number) => typeof value[key] === "string" && value[key].trim() ? value[key].trim().slice(0, max) : null;
+  const storefront = { tagline: text("tagline", 120), announcement: text("announcement", 180), trustMessage: text("trustMessage", 180) };
+  return Object.values(storefront).some(Boolean) ? storefront : null;
+}
+
 function productSummary(product: PublicProduct | PublicProductSummary) {
   const variant = product.variants[0];
   return {
@@ -248,7 +258,7 @@ export class CatalogService {
   async shops(cursor: string | undefined, limit: number) {
     return this.publicCache.getOrCreate(`shops:${cursor ?? "first"}:${limit}`, 60_000, async () => {
       const result = await this.repository.listShops(cursor, limit);
-      return { data: result.data.map((shop) => ({ id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), productCount: shop._count.products, version: shop.version })), pageInfo: result.pageInfo };
+      return { data: result.data.map((shop) => ({ id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, version: shop.version })), pageInfo: result.pageInfo };
     }, 5 * 60_000);
   }
 
@@ -262,7 +272,7 @@ export class CatalogService {
     const shop = await this.repository.getShop(identifier);
     if (!shop) throw new ApiProblem(404, "SHOP_NOT_FOUND", "Shop not found");
     const products = await this.products({ ...query, shop: shop.id });
-    return { id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), productCount: shop._count.products, version: shop.version, products };
+    return { id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, version: shop.version, products };
   }
 
   async createProduct(session: Session, input: CreateProductInput, correlationId?: string) {
