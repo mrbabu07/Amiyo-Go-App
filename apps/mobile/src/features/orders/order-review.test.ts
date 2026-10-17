@@ -18,10 +18,11 @@ test("order review payload validates purchased item, rating and optional text", 
 test("inline reviews retain explicit submission and account guards without mutation retry", () => {
   const source = readFileSync(new URL("./OrderReviewForm.tsx", import.meta.url), "utf8");
   assert.match(source, /retry: false/);
-  assert.match(source, /firebaseAuth\?\.currentUser\?\.uid === user.uid/);
+  assert.match(source, /activeUid\.current === ownerUid/);
+  assert.match(source, /\["reviews", "mine", ownerUid\]/);
+  assert.doesNotMatch(source, /firebaseAuth/);
   assert.match(source, /if \(lock.current\)/);
   assert.match(source, /Submit review/);
-  assert.match(source, /queryKey: \["reviews", "mine", user\?\.uid\]/);
   assert.match(source, /queryKey: \["reviews", "mine", user\?\.uid, orderItemId\]/);
   assert.match(source, /getMyReviews\(user!, orderItemId\)/);
   assert.match(source, /pickAndUploadImage\(user!, "review"\)/);

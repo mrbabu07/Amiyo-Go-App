@@ -7,7 +7,6 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
 import { pickAndUploadDocument } from "../media/media.api";
 import { createTicket, getMyTickets } from "./support.api";
 import { useCurrentUser } from "../auth/use-current-user";
@@ -24,8 +23,10 @@ export function SupportScreen({ returnId, orderId }: { returnId?: string; orderI
 function SupportForm({ user, returnId, contextOrderId }: { user: User | null; returnId?: string; contextOrderId?: string }) {
   const router = useRouter(); const cache = useQueryClient();
   const mounted = useRef(true);
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
-  const current = () => mounted.current && Boolean(user) && firebaseAuth?.currentUser?.uid === user?.uid;
+  const ownerUid = user?.uid;
+  const current = () => mounted.current && Boolean(ownerUid) && activeUid.current === ownerUid;
   const [orderId, setOrderId] = useState<string | undefined>();
   const [linkedReturnId, setLinkedReturnId] = useState<string | undefined>();
   const [priority, setPriority] = useState<"normal" | "high">("normal");
@@ -38,7 +39,7 @@ function SupportForm({ user, returnId, contextOrderId }: { user: User | null; re
   }, onSuccess: async (ticket) => {
     if (!current()) return;
     setSubject(""); setMessage(""); setFiles([]); setOrderId(undefined); setLinkedReturnId(undefined); setPriority("normal");
-    await cache.invalidateQueries({ queryKey: ["support", "mine", user!.uid] });
+    await cache.invalidateQueries({ queryKey: ["support", "mine", ownerUid] });
     if (current()) router.push(`/support/${ticket.id}` as never);
   } });
   const addFile = async () => {

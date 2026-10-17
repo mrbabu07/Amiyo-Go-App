@@ -3,7 +3,6 @@ import type { User } from "firebase/auth";
 import { useEffect, useRef, useState } from "react";
 import { Image, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { useCurrentUser } from "../auth/use-current-user";
-import { firebaseAuth } from "../auth/firebase";
 import { accessReturnEvidence, getReturnEvidence, type ReturnEvidenceFile } from "../operations/operations.api";
 import { colors, radius, spacing } from "../../ui/tokens";
 
@@ -18,6 +17,7 @@ function EvidencePanel({ user, returnId, scope }: { user: User | null; returnId:
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const active = useRef(true);
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   useEffect(() => {
     if (!preview) return;
@@ -25,17 +25,17 @@ function EvidencePanel({ user, returnId, scope }: { user: User | null; returnId:
     return () => clearTimeout(timer);
   }, [preview]);
   const open = async (file: ReturnEvidenceFile, download: boolean) => {
-    if (!user || busy || firebaseAuth?.currentUser?.uid !== user.uid) return;
+    if (!user || busy || activeUid.current !== user.uid) return;
     const uid = user.uid;
     setBusy(true); setError(""); setPreview(null);
     try {
       const result = await accessReturnEvidence(user, returnId, file.id, download, scope);
-      if (!active.current || firebaseAuth?.currentUser?.uid !== uid) return;
+      if (!active.current || activeUid.current !== uid) return;
       if (!result.url.startsWith("https://") || !Number.isFinite(Date.parse(result.expiresAt)) || Date.parse(result.expiresAt) <= Date.now()) throw new Error("Evidence link is unavailable. Try again.");
       if (download || file.mimeType === "application/pdf") await Linking.openURL(result.url);
       else setPreview(result);
-    } catch (failure) { if (active.current && firebaseAuth?.currentUser?.uid === uid) setError(failure instanceof Error ? failure.message : "Could not open evidence."); }
-    finally { if (active.current && firebaseAuth?.currentUser?.uid === uid) setBusy(false); }
+    } catch (failure) { if (active.current && activeUid.current === uid) setError(failure instanceof Error ? failure.message : "Could not open evidence."); }
+    finally { if (active.current && activeUid.current === uid) setBusy(false); }
   };
   return <View style={styles.panel}>
     <Text accessibilityRole="header" style={styles.title}>{scope === "customer" ? "Your return evidence" : "Private return evidence"}</Text>

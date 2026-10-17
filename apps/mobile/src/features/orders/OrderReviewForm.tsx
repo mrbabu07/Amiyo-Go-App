@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
 import { useCurrentUser } from "../auth/use-current-user";
 import { getMyReviews, submitOrderReview } from "../engagement/engagement.api";
 import { getMediaUploadStatus, pickAndUploadImage } from "../media/media.api";
@@ -21,9 +20,11 @@ export function OrderReviewForm({ orderItemId, productName }: { orderItemId: str
   const [uploadError, setUploadError] = useState("");
   const uploadLock = useRef(false);
   const mounted = useRef(true);
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const lock = useRef(false);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
-  const current = () => mounted.current && user && firebaseAuth?.currentUser?.uid === user.uid;
+  const ownerUid = user?.uid;
+  const current = () => mounted.current && Boolean(ownerUid) && activeUid.current === ownerUid;
   const attach = async () => {
     if (!current() || uploadLock.current || lock.current || photos.length >= 5) return;
     uploadLock.current = true; setUploading(true); setUploadError("");
@@ -51,7 +52,8 @@ export function OrderReviewForm({ orderItemId, productName }: { orderItemId: str
     lock.current = true;
     try { return await submitOrderReview(user!, input); } finally { lock.current = false; }
   }, onSuccess: async () => {
-    await cache.invalidateQueries({ queryKey: ["reviews", "mine", user?.uid] });
+    if (!ownerUid || !current()) return;
+    await cache.invalidateQueries({ queryKey: ["reviews", "mine", ownerUid] });
     if (current()) setOpen(false);
   } });
   if (!user) return null;

@@ -7,7 +7,8 @@ import { returnEvidenceAccessSchema, returnEvidenceFileSchema } from "@amiyo/con
 test("private evidence links are requested on action, account guarded and previews expire", async () => {
   const source = await readFile(new URL("../operations/ReturnEvidencePanel.tsx", import.meta.url), "utf8");
   assert.ok(source.includes('["return-evidence", user?.uid, returnId, scope]'));
-  assert.ok(source.includes("firebaseAuth?.currentUser?.uid !== uid"));
+  assert.ok(source.includes("activeUid.current !== uid"));
+  assert.doesNotMatch(source, /firebaseAuth/);
   assert.ok(source.includes("setTimeout(() => setPreview(null)"));
   assert.ok(source.includes('result.url.startsWith("https://")'));
   assert.ok(source.includes("accessReturnEvidence(user, returnId, file.id, download, scope)"));
