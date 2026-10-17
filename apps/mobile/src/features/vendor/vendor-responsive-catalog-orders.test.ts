@@ -11,6 +11,7 @@ const shop = readFileSync(resolve(root, "src/features/vendor/VendorShopScreen.ts
 const productForm = readFileSync(resolve(root, "src/features/vendor/VendorProductFormScreen.tsx"), "utf8");
 const payoutSettings = readFileSync(resolve(root, "src/features/vendor/VendorPayoutSettingsScreen.tsx"), "utf8");
 const messages = readFileSync(resolve(root, "src/features/engagement/MessagesScreen.tsx"), "utf8");
+const kyc = readFileSync(resolve(root, "src/features/vendor/VendorKycScreen.tsx"), "utf8");
 
 test("seller catalog becomes a full-width mobile workspace", () => {
   assert.match(products, /useWindowDimensions\(\)\.width < 620/);
@@ -61,4 +62,12 @@ test("seller and customer inbox cards adapt to narrow screens", () => {
   assert.match(messages, /compact && styles\.summaryCompact/);
   assert.match(messages, /compact && styles\.cardCompact/);
   assert.match(messages, /numberOfLines=\{compact \? 2 : 1\}/);
+});
+
+test("seller verification documents stack safely on mobile", () => {
+  assert.match(kyc, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(kyc, /compact && compactStyles\.statusCard/);
+  assert.match(kyc, /compact && compactStyles\.document/);
+  assert.match(kyc, /compact && compactStyles\.upload/);
+  assert.match(kyc, /numberOfLines=\{compact \? 2 : 1\}/);
 });
