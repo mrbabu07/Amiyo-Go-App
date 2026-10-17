@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
@@ -11,6 +11,7 @@ import { getThreads } from "./engagement.api";
 export function MessagesScreen({ basePath = "/messages" }: { basePath?: "/messages" | "/vendor/messages" }) {
   const router = useRouter();
   const user = useCurrentUser();
+  const compact = useWindowDimensions().width < 620;
   const query = useQuery({ queryKey: ["chat-threads", user?.uid], queryFn: () => getThreads(user!), enabled: Boolean(user), refetchInterval: 15_000 });
 
   if (!user) return <EngagementState eyebrow="INBOX" icon="chatbubbles-outline" title="Your marketplace inbox" copy="Sign in to continue secure conversations with sellers." action="Sign in" onPress={() => router.replace("/auth")} />;
@@ -19,9 +20,49 @@ export function MessagesScreen({ basePath = "/messages" }: { basePath?: "/messag
 
   const unread = query.data?.reduce((total, thread) => total + thread.unreadCount, 0) ?? 0;
   return <Screen eyebrow="INBOX" title="Messages" description="Private customer and seller conversations, refreshed automatically.">
-    <View style={styles.summary}><View style={styles.summaryIcon}><Ionicons color={colors.surface} name="chatbubbles" size={24} /></View><View style={styles.flex}><Text accessibilityRole="header" style={styles.summaryTitle}>{query.data?.length ?? 0} conversation{query.data?.length === 1 ? "" : "s"}</Text><Text style={styles.summaryCopy}>{unread ? `${unread} unread message${unread === 1 ? "" : "s"}` : "No unread messages"}</Text></View><View style={styles.live}><View style={styles.dot} /><Text style={styles.liveText}>LIVE</Text></View></View>
-    {query.data?.length ? <View style={styles.list}>{query.data.map((thread) => <Pressable accessibilityLabel={`Open conversation ${thread.subject || "Conversation"}`} accessibilityRole="button" key={thread.id} onPress={() => router.push(`${basePath}/${thread.id}` as never)} style={[styles.card, thread.unreadCount > 0 && styles.cardUnread]}><View style={[styles.avatar, thread.unreadCount > 0 && styles.avatarUnread]}><Ionicons color={colors.primary} name="storefront-outline" size={22} /></View><View style={styles.flex}><View style={styles.titleRow}><Text numberOfLines={1} style={styles.title}>{thread.subject || "Conversation"}</Text><Text style={styles.time}>{new Date(thread.updatedAt).toLocaleDateString("en-BD", { day: "numeric", month: "short" })}</Text></View><View style={styles.previewRow}><Text numberOfLines={1} style={[styles.preview, thread.unreadCount > 0 && styles.previewUnread]}>{thread.messages.at(-1)?.body || "No messages yet"}</Text>{thread.unreadCount ? <View style={styles.badge}><Text style={styles.badgeText}>{thread.unreadCount > 99 ? "99+" : thread.unreadCount}</Text></View> : <Ionicons color={colors.muted} name="chevron-forward" size={18} />}</View><Text style={styles.status}>{thread.status.replaceAll("_", " ")}</Text></View></Pressable>)}</View> : <View style={styles.empty}><Ionicons color={colors.primary} name="chatbubble-ellipses-outline" size={52} /><Text style={styles.emptyTitle}>No conversations yet</Text><Text style={styles.muted}>{basePath.startsWith("/vendor") ? "Customer conversations will appear here." : "Start a conversation from any seller shop or product page."}</Text>{!basePath.startsWith("/vendor") ? <Pressable onPress={() => router.replace("/shops")} style={styles.primary}><Text style={styles.primaryText}>Browse shops</Text></Pressable> : null}</View>}
+    <View style={[styles.summary, compact && styles.summaryCompact]}>
+      <View style={styles.summaryIcon}><Ionicons color={colors.surface} name="chatbubbles" size={24} /></View>
+      <View style={styles.flex}><Text accessibilityRole="header" style={[styles.summaryTitle, compact && styles.summaryTitleCompact]}>{query.data?.length ?? 0} conversation{query.data?.length === 1 ? "" : "s"}</Text><Text style={styles.summaryCopy}>{unread ? `${unread} unread message${unread === 1 ? "" : "s"}` : "No unread messages"}</Text></View>
+      <View style={[styles.live, compact && styles.liveCompact]}><View style={styles.dot} /><Text style={styles.liveText}>LIVE</Text></View>
+    </View>
+    {query.data?.length ? <View style={styles.list}>{query.data.map((thread) => <Pressable accessibilityLabel={`Open conversation ${thread.subject || "Conversation"}`} accessibilityRole="button" key={thread.id} onPress={() => router.push(`${basePath}/${thread.id}` as never)} style={({ pressed }) => [styles.card, compact && styles.cardCompact, thread.unreadCount > 0 && styles.cardUnread, pressed && styles.pressed]}>
+      <View style={[styles.avatar, thread.unreadCount > 0 && styles.avatarUnread]}><Ionicons color={colors.primary} name="storefront-outline" size={22} /></View>
+      <View style={styles.flex}><View style={styles.titleRow}><Text numberOfLines={1} style={styles.title}>{thread.subject || "Conversation"}</Text><Text style={styles.time}>{new Date(thread.updatedAt).toLocaleDateString("en-BD", { day: "numeric", month: "short" })}</Text></View><View style={styles.previewRow}><Text numberOfLines={compact ? 2 : 1} style={[styles.preview, thread.unreadCount > 0 && styles.previewUnread]}>{thread.messages.at(-1)?.body || "No messages yet"}</Text>{thread.unreadCount ? <View style={styles.badge}><Text style={styles.badgeText}>{thread.unreadCount > 99 ? "99+" : thread.unreadCount}</Text></View> : <Ionicons color={colors.muted} name="chevron-forward" size={18} />}</View><Text style={styles.status}>{thread.status.replaceAll("_", " ")}</Text></View>
+    </Pressable>)}</View> : <View style={styles.empty}><Ionicons color={colors.primary} name="chatbubble-ellipses-outline" size={52} /><Text style={styles.emptyTitle}>No conversations yet</Text><Text style={styles.muted}>{basePath.startsWith("/vendor") ? "Customer conversations will appear here." : "Start a conversation from any seller shop or product page."}</Text>{!basePath.startsWith("/vendor") ? <Pressable onPress={() => router.replace("/shops")} style={styles.primary}><Text style={styles.primaryText}>Browse shops</Text></Pressable> : null}</View>}
   </Screen>;
 }
 
-const styles = StyleSheet.create({ flex: { flex: 1 }, summary: { alignItems: "center", backgroundColor: colors.navy, borderRadius: radius.lg, flexDirection: "row", gap: spacing.md, padding: spacing.lg }, summaryIcon: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, height: 46, justifyContent: "center", width: 46 }, summaryTitle: { color: colors.surface, fontSize: 19, fontWeight: "700" }, summaryCopy: { color: "#cbd5e1", marginTop: 3 }, live: { alignItems: "center", backgroundColor: "#334155", borderRadius: radius.pill, flexDirection: "row", gap: 5, paddingHorizontal: 10, paddingVertical: 6 }, dot: { backgroundColor: colors.success, borderRadius: radius.pill, height: 7, width: 7 }, liveText: { color: "#a7f3d0", fontSize: 9, fontWeight: "700" }, list: { gap: spacing.sm }, card: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: "row", gap: spacing.md, padding: spacing.md }, cardUnread: { backgroundColor: "#f8fdff", borderColor: "#bae6fd" }, avatar: { alignItems: "center", backgroundColor: colors.background, borderRadius: radius.pill, height: 48, justifyContent: "center", width: 48 }, avatarUnread: { backgroundColor: colors.primarySoft }, titleRow: { alignItems: "center", flexDirection: "row", gap: spacing.sm }, title: { color: colors.text, flex: 1, fontWeight: "700" }, time: { color: colors.muted, fontSize: 10 }, previewRow: { alignItems: "center", flexDirection: "row", gap: spacing.sm, marginTop: 4 }, preview: { color: colors.muted, flex: 1 }, previewUnread: { color: colors.text, fontWeight: "700" }, badge: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.pill, justifyContent: "center", minHeight: 23, minWidth: 23, paddingHorizontal: 7 }, badgeText: { color: colors.surface, fontSize: 10, fontWeight: "700" }, status: { color: colors.muted, fontSize: 9, fontWeight: "600", marginTop: 6, textTransform: "uppercase" }, empty: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl, borderStyle: "dashed", borderWidth: 1, gap: spacing.md, padding: 44 }, emptyTitle: { color: colors.text, fontSize: 22, fontWeight: "700" }, muted: { color: colors.muted, lineHeight: 20, textAlign: "center" }, primary: { backgroundColor: colors.primary, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: 13 }, primaryText: { color: colors.surface, fontWeight: "700" } });
+const styles = StyleSheet.create({
+  flex: { flex: 1, minWidth: 0 },
+  summary: { alignItems: "center", backgroundColor: colors.navy, borderRadius: radius.lg, flexDirection: "row", gap: spacing.md, padding: spacing.lg },
+  summaryCompact: { alignItems: "flex-start", flexWrap: "wrap" },
+  summaryIcon: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, height: 46, justifyContent: "center", width: 46 },
+  summaryTitle: { color: colors.surface, fontSize: 19, fontWeight: "700" },
+  summaryTitleCompact: { fontSize: 17 },
+  summaryCopy: { color: "#cbd5e1", marginTop: 3 },
+  live: { alignItems: "center", backgroundColor: "#334155", borderRadius: radius.pill, flexDirection: "row", gap: 5, paddingHorizontal: 10, paddingVertical: 6 },
+  liveCompact: { marginLeft: 62 },
+  dot: { backgroundColor: colors.success, borderRadius: radius.pill, height: 7, width: 7 },
+  liveText: { color: "#a7f3d0", fontSize: 9, fontWeight: "700" },
+  list: { gap: spacing.sm },
+  card: { alignItems: "center", backgroundColor: colors.surface, borderRadius: radius.lg, boxShadow: "0 7px 22px rgba(11,31,58,.05)", flexDirection: "row", gap: spacing.md, padding: spacing.md },
+  cardCompact: { alignItems: "flex-start", gap: spacing.sm },
+  cardUnread: { backgroundColor: colors.primarySoft },
+  pressed: { opacity: .78, transform: [{ scale: .995 }] },
+  avatar: { alignItems: "center", backgroundColor: colors.background, borderRadius: radius.pill, height: 48, justifyContent: "center", width: 48 },
+  avatarUnread: { backgroundColor: colors.accentSoft },
+  titleRow: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
+  title: { color: colors.text, flex: 1, fontWeight: "700" },
+  time: { color: colors.muted, fontSize: 10 },
+  previewRow: { alignItems: "center", flexDirection: "row", gap: spacing.sm, marginTop: 4 },
+  preview: { color: colors.muted, flex: 1 },
+  previewUnread: { color: colors.text, fontWeight: "700" },
+  badge: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.pill, justifyContent: "center", minHeight: 23, minWidth: 23, paddingHorizontal: 7 },
+  badgeText: { color: colors.surface, fontSize: 10, fontWeight: "700" },
+  status: { color: colors.muted, fontSize: 9, fontWeight: "600", marginTop: 6, textTransform: "uppercase" },
+  empty: { alignItems: "center", backgroundColor: colors.surface, borderRadius: radius.xl, boxShadow: "0 8px 24px rgba(11,31,58,.06)", gap: spacing.md, padding: 44 },
+  emptyTitle: { color: colors.text, fontSize: 22, fontWeight: "700" },
+  muted: { color: colors.muted, lineHeight: 20, textAlign: "center" },
+  primary: { backgroundColor: colors.primary, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: 13 },
+  primaryText: { color: colors.surface, fontWeight: "700" }
+});

@@ -10,6 +10,7 @@ const finance = readFileSync(resolve(root, "src/features/operations/VendorFinanc
 const shop = readFileSync(resolve(root, "src/features/vendor/VendorShopScreen.tsx"), "utf8");
 const productForm = readFileSync(resolve(root, "src/features/vendor/VendorProductFormScreen.tsx"), "utf8");
 const payoutSettings = readFileSync(resolve(root, "src/features/vendor/VendorPayoutSettingsScreen.tsx"), "utf8");
+const messages = readFileSync(resolve(root, "src/features/engagement/MessagesScreen.tsx"), "utf8");
 
 test("seller catalog becomes a full-width mobile workspace", () => {
   assert.match(products, /useWindowDimensions\(\)\.width < 620/);
@@ -52,4 +53,12 @@ test("payout destinations remain readable and account scoped on mobile", () => {
   assert.match(payoutSettings, /useWindowDimensions\(\)\.width < 620/);
   assert.match(payoutSettings, /activeUid\.current !== variables\.owner\.uid/);
   assert.match(payoutSettings, /compact && compactStyles\.account/);
+});
+
+test("seller and customer inbox cards adapt to narrow screens", () => {
+  assert.match(messages, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(messages, /\["chat-threads", user\?\.uid\]/);
+  assert.match(messages, /compact && styles\.summaryCompact/);
+  assert.match(messages, /compact && styles\.cardCompact/);
+  assert.match(messages, /numberOfLines=\{compact \? 2 : 1\}/);
 });
