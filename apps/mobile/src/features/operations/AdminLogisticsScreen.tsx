@@ -1,11 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getLogisticsManifest, getLogisticsOverview, saveLogisticsResource, type LogisticsManifest, type LogisticsOverview, type LogisticsShipment } from "./logistics.api";
 
 const tabs = [
@@ -18,12 +18,13 @@ const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-
 function bdtMinor(value: string) { const match = value.trim().match(/^(\d+)(?:\.(\d{1,2}))?$/); return match ? (BigInt(match[1]!) * 100n + BigInt((match[2] ?? "").padEnd(2, "0") || "0")).toString() : null; }
 
 export function AdminLogisticsScreen() {
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const router = useRouter(); const params = useLocalSearchParams<{ tab?: string }>(); const width = useWindowDimensions().width; const compact = width < 720;
   const selected = tabs.some(([key]) => key === params.tab) ? params.tab as Tab : "work";
-  const cache = useQueryClient(); const query = useQuery({ queryKey: ["admin", "logistics"], queryFn: () => getLogisticsOverview(user!), enabled: Boolean(user), refetchInterval: selected === "work" ? 15_000 : false });
-  const manifest = useQuery({ queryKey: ["admin", "logistics", "manifest"], queryFn: () => getLogisticsManifest(user!), enabled: Boolean(user) && selected === "manifest" });
-  const write = useMutation({ mutationFn: ({ path, body }: { path: string; body: unknown }) => saveLogisticsResource(user!, path, body), onSuccess: () => cache.invalidateQueries({ queryKey: ["admin", "logistics"] }) });
+  const cache = useQueryClient(); const query = useQuery({ queryKey: ["admin", "logistics", user?.uid], queryFn: () => getLogisticsOverview(user!), enabled: Boolean(user), refetchInterval: selected === "work" ? 15_000 : false });
+  const manifest = useQuery({ queryKey: ["admin", "logistics", "manifest", user?.uid], queryFn: () => getLogisticsManifest(user!), enabled: Boolean(user) && selected === "manifest" });
+  const write = useMutation({ mutationFn: async ({ path, body }: { path: string; body: unknown }) => { const ownerUid = user!.uid; await saveLogisticsResource(user!, path, body); return ownerUid; }, onSuccess: (ownerUid) => activeUid.current === ownerUid ? cache.invalidateQueries({ queryKey: ["admin", "logistics", ownerUid] }) : undefined });
   const setTab = (tab: Tab) => router.replace({ pathname: "/admin/logistics", params: { tab } });
   return <Screen eyebrow="LOGISTICS CONTROL" title="Logistics workspace" description="Zones, courier allocation, manifests, parcel state, COD float and failed delivery operations.">
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>{tabs.map(([key, label, icon]) => <Pressable key={key} onPress={() => setTab(key)} style={[styles.tab, selected === key && styles.tabActive]}><Ionicons color={selected === key ? "#fff" : colors.muted} name={icon} size={17} /><Text style={[styles.tabText, selected === key && styles.tabTextActive]}>{label}</Text></Pressable>)}</ScrollView>

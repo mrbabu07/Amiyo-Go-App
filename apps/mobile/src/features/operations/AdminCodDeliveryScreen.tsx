@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { confirmAdminCodPayment, createCodReconciliation, getAdminCodWorkspace, markAdminCodDelivered, type AdminCodWorkspaceDto } from "./operations.api";
 
 type Filter = "all" | "waiting" | "delivery" | "confirmed" | "discrepancy" | "remitted";
@@ -15,13 +15,14 @@ const taka = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-B
 const iso = (date: Date) => date.toISOString();
 
 export function AdminCodDeliveryScreen({ reconciliationOpen = false }: { reconciliationOpen?: boolean }) {
-  const user = firebaseAuth?.currentUser ?? null; const router = useRouter(); const cache = useQueryClient();
-  const query = useQuery({ queryKey: ["admin", "cod"], queryFn: () => getAdminCodWorkspace(user!), enabled: Boolean(user), refetchInterval: 20_000 });
+  const user = useCurrentUser(); const router = useRouter(); const cache = useQueryClient();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
+  const query = useQuery({ queryKey: ["admin", "cod", user?.uid], queryFn: () => getAdminCodWorkspace(user!), enabled: Boolean(user), refetchInterval: 20_000 });
   const [filter, setFilter] = useState<Filter>(reconciliationOpen ? "confirmed" : "waiting"); const [search, setSearch] = useState(""); const [deliveryId, setDeliveryId] = useState<string | null>(null); const [confirmId, setConfirmId] = useState<string | null>(null); const [delivery, setDelivery] = useState<DeliveryForm>({ courierName: "Amiyo Delivery", note: "" }); const [confirm, setConfirm] = useState<ConfirmForm>({ collectedAmount: "", reference: "", courierName: "Amiyo Delivery", note: "" }); const [periodStart, setPeriodStart] = useState(iso(new Date(Date.now() - 30 * 86_400_000))); const [periodEnd, setPeriodEnd] = useState(iso(new Date()));
-  const refresh = async () => { await cache.invalidateQueries({ queryKey: ["admin", "cod"] }); };
-  const delivered = useMutation({ mutationFn: (order: AdminCodWorkspaceDto["orders"][number]) => markAdminCodDelivered(user!, order.orderId, { expectedVersion: order.version, courierName: delivery.courierName.trim(), note: delivery.note.trim() || null }), onSuccess: async () => { setDeliveryId(null); await refresh(); } });
-  const confirmed = useMutation({ mutationFn: (order: AdminCodWorkspaceDto["orders"][number]) => confirmAdminCodPayment(user!, order.orderId, { expectedVersion: order.version, collectedAmountMinor: String(Math.round(Number(confirm.collectedAmount) * 100)), reference: confirm.reference.trim(), courierName: confirm.courierName.trim(), note: confirm.note.trim() || null }), onSuccess: async () => { setConfirmId(null); await refresh(); } });
-  const reconcile = useMutation({ mutationFn: () => createCodReconciliation(user!, new Date(periodStart).toISOString(), new Date(periodEnd).toISOString()), onSuccess: refresh });
+  const refresh = async (ownerUid = user?.uid) => { if (!ownerUid || activeUid.current !== ownerUid) return; await cache.invalidateQueries({ queryKey: ["admin", "cod", ownerUid] }); };
+  const delivered = useMutation({ mutationFn: async (order: AdminCodWorkspaceDto["orders"][number]) => { const ownerUid = user!.uid; await markAdminCodDelivered(user!, order.orderId, { expectedVersion: order.version, courierName: delivery.courierName.trim(), note: delivery.note.trim() || null }); return ownerUid; }, onSuccess: async (ownerUid) => { if (activeUid.current !== ownerUid) return; setDeliveryId(null); await refresh(ownerUid); } });
+  const confirmed = useMutation({ mutationFn: async (order: AdminCodWorkspaceDto["orders"][number]) => { const ownerUid = user!.uid; await confirmAdminCodPayment(user!, order.orderId, { expectedVersion: order.version, collectedAmountMinor: String(Math.round(Number(confirm.collectedAmount) * 100)), reference: confirm.reference.trim(), courierName: confirm.courierName.trim(), note: confirm.note.trim() || null }); return ownerUid; }, onSuccess: async (ownerUid) => { if (activeUid.current !== ownerUid) return; setConfirmId(null); await refresh(ownerUid); } });
+  const reconcile = useMutation({ mutationFn: async () => { const ownerUid = user!.uid; await createCodReconciliation(user!, new Date(periodStart).toISOString(), new Date(periodEnd).toISOString()); return ownerUid; }, onSuccess: refresh });
   const rows = useMemo(() => (query.data?.orders || []).filter((item) => filter === "all" || (filter === "waiting" ? item.awaitingConfirmation : filter === "delivery" ? item.waitingDelivery : filter === "confirmed" ? item.paymentConfirmed : filter === "discrepancy" ? item.hasDiscrepancy : item.reconciliationStatus === "remitted")).filter((item) => `${item.orderNumber} ${item.customerName} ${item.customerPhone || ""} ${item.vendorNames.join(" ")} ${item.courierName || ""}`.toLowerCase().includes(search.toLowerCase())), [filter, query.data, search]);
   const exportCsv = () => { if (Platform.OS !== "web" || !query.data) return; const header = ["Order", "Customer", "Vendors", "Delivery", "Payment", "Expected", "Collected", "Variance", "Reference"]; const lines = query.data.orders.map((item) => [item.orderNumber, item.customerName, item.vendorNames.join("; "), item.shipmentStatus, item.reconciliationStatus, item.totalMinor, item.collectedMinor || "", item.discrepancyMinor, item.collectorRef || ""].map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")); const blob = new Blob([[header.join(","), ...lines].join("\n")], { type: "text/csv" }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `amiyo-cod-${new Date().toISOString().slice(0, 10)}.csv`; link.click(); URL.revokeObjectURL(link.href); };
   const error = query.error || delivered.error || confirmed.error || reconcile.error;

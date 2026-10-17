@@ -1,22 +1,23 @@
 import { randomUUID } from "expo-crypto";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getAdminQueues, getDeliveryQueue, retryDelivery } from "./operations.api";
 
 export function AdminOperationsScreen() {
-  const user = firebaseAuth?.currentUser;
+  const user = useCurrentUser();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const queryClient = useQueryClient();
   const [reasons, setReasons] = useState<Record<string, string>>({});
-  const queues = useQuery({ queryKey: ["admin-operations"], queryFn: () => getAdminQueues(user!), enabled: Boolean(user) });
-  const delivery = useQuery({ queryKey: ["admin-delivery-queue"], queryFn: () => getDeliveryQueue(user!), enabled: Boolean(user), refetchInterval: 15_000 });
+  const queues = useQuery({ queryKey: ["admin-operations", user?.uid], queryFn: () => getAdminQueues(user!), enabled: Boolean(user) });
+  const delivery = useQuery({ queryKey: ["admin-delivery-queue", user?.uid], queryFn: () => getDeliveryQueue(user!), enabled: Boolean(user), refetchInterval: 15_000 });
   const retry = useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason: string }) => retryDelivery(user!, id, { reason }, randomUUID()),
-    onSuccess: async () => queryClient.invalidateQueries({ queryKey: ["admin-delivery-queue"] })
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => { const ownerUid = user!.uid; await retryDelivery(user!, id, { reason }, randomUUID()); return ownerUid; },
+    onSuccess: async (ownerUid) => activeUid.current === ownerUid ? queryClient.invalidateQueries({ queryKey: ["admin-delivery-queue", ownerUid] }) : undefined
   });
 
   const loading = queues.isLoading || delivery.isLoading;
