@@ -18,6 +18,10 @@ test("seller workspace uses responsive grouped navigation", () => {
 
 test("seller dashboard exposes live operational hierarchy", () => {
   for (const section of ["Seller action center", "Business setup", "Fulfillment control", "Recent orders", "Seller University"]) assert.match(dashboard, new RegExp(section));
+  for (const action of ["Quick actions", "Add product", "Inventory", "Finance", "Storefront", "Messages"]) assert.match(dashboard, new RegExp(action));
+  assert.match(dashboard, /horizontal showsHorizontalScrollIndicator=\{false\}/);
+  assert.match(dashboard, /compact && styles\.heroCompact/);
+  assert.match(dashboard, /compact && styles\.orderActionCompact/);
   assert.match(dashboard, /getVendorWorkspace/);
   assert.match(dashboard, /getVendorReport/);
   assert.match(dashboard, /getVendorOrders/);
