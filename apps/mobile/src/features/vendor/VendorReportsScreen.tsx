@@ -4,16 +4,16 @@ import { ActivityIndicator, Platform, Pressable, Share, StyleSheet, Text, View }
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getVendorReport } from "./vendor.api";
 
 const periods = [7, 30, 90, 365] as const;
 const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD", { maximumFractionDigits: 0 })}`;
 
 export function VendorReportsScreen() {
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
   const [days, setDays] = useState<(typeof periods)[number]>(30);
-  const report = useQuery({ queryKey: ["vendor", "report", days], queryFn: () => getVendorReport(user!, days), enabled: Boolean(user) });
+  const report = useQuery({ queryKey: ["vendor", "report", user?.uid, days], queryFn: () => getVendorReport(user!, days), enabled: Boolean(user) });
 
   const exportCsv = async () => {
     if (!report.data) return;

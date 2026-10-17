@@ -1,14 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import type { User } from "firebase/auth";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { createSession } from "../auth/auth.api";
 import { useAuthStore } from "../auth/auth.store";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getCategories } from "../catalog/catalog.api";
 import { LocationSelect } from "./components/LocationSelect";
 import { VendorCategorySelector } from "./components/VendorCategorySelector";
@@ -27,13 +28,17 @@ const initial = {
 
 export function VendorRegistrationScreen() {
   const router = useRouter();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const activeUid = useRef(user?.uid);
+  activeUid.current = user?.uid;
   const session = useAuthStore((state) => state.session);
   const setSession = useAuthStore((state) => state.setSession);
   const categories = useQuery({ queryKey: ["catalog", "categories"], queryFn: getCategories });
   const [form, setForm] = useState(initial);
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [accepted, setAccepted] = useState(false);
+
+  useEffect(() => { setForm(initial); setCategoryIds([]); setAccepted(false); }, [user?.uid]);
 
   const districtOptions = useMemo(() => districts.filter((item) => item.parentId === form.divisionId), [form.divisionId]);
   const upazilaOptions = useMemo(() => upazilas.filter((item) => item.parentId === form.districtId), [form.districtId]);
@@ -45,7 +50,8 @@ export function VendorRegistrationScreen() {
     && accepted;
 
   const submit = useMutation({
-    mutationFn: () => registerVendor(user!, {
+    retry: false,
+    mutationFn: (owner: User) => registerVendor(owner, {
       legalName: form.shopName,
       displayName: form.shopName,
       phone: form.phone,
@@ -62,8 +68,10 @@ export function VendorRegistrationScreen() {
       termsVersion: "2026.06",
       privacyVersion: "2026.06"
     }),
-    onSuccess: async () => {
-      setSession(await createSession(user!));
+    onSuccess: async (_data, owner) => {
+      if (activeUid.current !== owner.uid) return;
+      setSession(await createSession(owner));
+      if (activeUid.current !== owner.uid) return;
       router.replace("/vendor/settings");
     }
   });
@@ -155,7 +163,7 @@ export function VendorRegistrationScreen() {
         <Text style={styles.consentText}>I agree to the Amiyo-Go Terms and Conditions, vendor rules, category policy, payout rules, and Privacy Policy.</Text>
       </Pressable>
       {submit.error ? <Text style={styles.submitError}>{submit.error.message}</Text> : null}
-      <Action busy={submit.isPending} disabled={!valid} label="Register as Vendor" onPress={() => submit.mutate()} />
+      <Action busy={submit.isPending} disabled={!user || !valid} label="Register as Vendor" onPress={() => user && submit.mutate(user)} />
     </Screen>
   );
 }

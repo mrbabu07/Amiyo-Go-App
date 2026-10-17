@@ -1,25 +1,31 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import type { User } from "firebase/auth";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getVendorReviews, replyToVendorReview } from "../engagement/engagement.api";
 
 type ReviewFilter = "all" | "pending" | "replied" | "5" | "4" | "3" | "2" | "1";
 
 export function VendorReviewsScreen() {
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const activeUid = useRef(user?.uid);
+  activeUid.current = user?.uid;
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<ReviewFilter>("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [reply, setReply] = useState("");
-  const reviews = useQuery({ queryKey: ["vendor", "reviews"], queryFn: () => getVendorReviews(user!), enabled: Boolean(user) });
+  useEffect(() => { setEditingId(null); setReply(""); }, [user?.uid]);
+  const reviews = useQuery({ queryKey: ["vendor", "reviews", user?.uid], queryFn: () => getVendorReviews(user!), enabled: Boolean(user) });
   const saveReply = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: string }) => replyToVendorReview(user!, id, body),
-    onSuccess: (data) => {
-      queryClient.setQueryData(["vendor", "reviews"], data);
+    retry: false,
+    mutationFn: ({ owner, id, body }: { owner: User; id: string; body: string }) => replyToVendorReview(owner, id, body),
+    onSuccess: (data, variables) => {
+      if (activeUid.current !== variables.owner.uid) return;
+      queryClient.setQueryData(["vendor", "reviews", variables.owner.uid], data);
       setEditingId(null);
       setReply("");
     }
@@ -42,7 +48,7 @@ export function VendorReviewsScreen() {
       <View style={styles.reviewTop}><Text style={styles.stars}>{"★".repeat(review.rating)}<Text style={styles.emptyStars}>{"★".repeat(5 - review.rating)}</Text></Text><Text style={[styles.badge, review.vendorReply ? styles.replied : styles.pending]}>{review.vendorReply ? "Replied" : "Needs reply"}</Text></View>
       <Text style={styles.author}>{review.authorName}</Text>{review.title ? <Text style={styles.reviewTitle}>{review.title}</Text> : null}<Text style={styles.body}>{review.body || "No written comment"}</Text>
       {review.vendorReply ? <View style={styles.replyBox}><Text style={styles.replyLabel}>Your reply</Text><Text style={styles.body}>{review.vendorReply}</Text></View> : null}
-      {editingId === review.id ? <View style={styles.editor}><TextInput multiline onChangeText={setReply} placeholder="Write a clear, professional seller reply..." placeholderTextColor={colors.muted} style={styles.input} value={reply} /><View style={styles.actions}><Pressable disabled={saveReply.isPending || reply.trim().length < 2} onPress={() => saveReply.mutate({ id: review.id, body: reply.trim() })} style={[styles.button, reply.trim().length < 2 && styles.disabled]}><Text style={styles.buttonText}>{saveReply.isPending ? "Posting..." : "Post reply"}</Text></Pressable><Pressable onPress={() => { setEditingId(null); setReply(""); }} style={styles.outline}><Text style={styles.outlineText}>Cancel</Text></Pressable></View>{saveReply.error ? <Text style={styles.error}>{saveReply.error.message}</Text> : null}</View> : <Pressable onPress={() => { setEditingId(review.id); setReply(review.vendorReply ?? ""); }} style={styles.outline}><Text style={styles.outlineText}>{review.vendorReply ? "Edit reply" : "Reply to review"}</Text></Pressable>}
+      {editingId === review.id ? <View style={styles.editor}><TextInput multiline onChangeText={setReply} placeholder="Write a clear, professional seller reply..." placeholderTextColor={colors.muted} style={styles.input} value={reply} /><View style={styles.actions}><Pressable disabled={!user || saveReply.isPending || reply.trim().length < 2} onPress={() => user && saveReply.mutate({ owner: user, id: review.id, body: reply.trim() })} style={[styles.button, reply.trim().length < 2 && styles.disabled]}><Text style={styles.buttonText}>{saveReply.isPending ? "Posting..." : "Post reply"}</Text></Pressable><Pressable onPress={() => { setEditingId(null); setReply(""); }} style={styles.outline}><Text style={styles.outlineText}>Cancel</Text></Pressable></View>{saveReply.error ? <Text accessibilityRole="alert" style={styles.error}>{saveReply.error.message}</Text> : null}</View> : <Pressable onPress={() => { setEditingId(review.id); setReply(review.vendorReply ?? ""); }} style={styles.outline}><Text style={styles.outlineText}>{review.vendorReply ? "Edit reply" : "Reply to review"}</Text></Pressable>}
     </ModuleCard>)}
     {!reviews.isLoading && filtered.length === 0 ? <ModuleCard title="No matching reviews" meta="New customer feedback will appear here." /> : null}
   </Screen>;

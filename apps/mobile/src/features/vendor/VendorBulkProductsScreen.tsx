@@ -1,21 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import type { User } from "firebase/auth";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Platform, Pressable, Share, StyleSheet, Text, TextInput } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { exportVendorProducts, getCategories, importVendorProducts } from "../catalog/catalog.api";
 import { getVendorWorkspace } from "./vendor.api";
 
 const template = "name,slug,sku,variantTitle,priceMinor,compareAtMinor,stock,description,brand\nClassic T-Shirt,classic-t-shirt,TSHIRT-001,Default,129900,,25,Soft cotton t-shirt,Amiyo";
 
 export function VendorBulkProductsScreen() {
-  const user = firebaseAuth?.currentUser ?? null; const queryClient = useQueryClient(); const [csv, setCsv] = useState(template); const [exported, setExported] = useState("");
-  const workspace = useQuery({ queryKey: ["vendor", "workspace"], queryFn: () => getVendorWorkspace(user!), enabled: Boolean(user) });
+  const user = useCurrentUser(); const activeUid = useRef(user?.uid); activeUid.current = user?.uid; const queryClient = useQueryClient(); const [csv, setCsv] = useState(template); const [exported, setExported] = useState("");
+  const workspace = useQuery({ queryKey: ["vendor", "workspace", user?.uid], queryFn: () => getVendorWorkspace(user!), enabled: Boolean(user) });
   const categories = useQuery({ queryKey: ["catalog", "categories"], queryFn: getCategories });
-  const bulkImport = useMutation({ mutationFn: () => importVendorProducts(user!, { shopId: workspace.data!.shops[0]!.id, categoryId: categories.data![0]!.id, csv }), onSuccess: () => queryClient.invalidateQueries({ queryKey: ["vendor", "products"] }) });
-  const bulkExport = useMutation({ mutationFn: () => exportVendorProducts(user!), onSuccess: async (content) => { setExported(content); if (Platform.OS === "web") { const url = URL.createObjectURL(new Blob([content], { type: "text/csv;charset=utf-8" })); const link = document.createElement("a"); link.href = url; link.download = "amiyo-products.csv"; link.click(); URL.revokeObjectURL(url); } else await Share.share({ title: "Amiyo product export", message: content }); } });
+  useEffect(() => { setCsv(template); setExported(""); }, [user?.uid]);
+  const bulkImport = useMutation({ retry: false, mutationFn: (owner: User) => importVendorProducts(owner, { shopId: workspace.data!.shops[0]!.id, categoryId: categories.data![0]!.id, csv }), onSuccess: async (_data, owner) => { if (activeUid.current !== owner.uid) return; await queryClient.invalidateQueries({ queryKey: ["vendor", "products", owner.uid] }); } });
+  const bulkExport = useMutation({ retry: false, mutationFn: (owner: User) => exportVendorProducts(owner), onSuccess: async (content, owner) => { if (activeUid.current !== owner.uid) return; setExported(content); if (Platform.OS === "web") { const url = URL.createObjectURL(new Blob([content], { type: "text/csv;charset=utf-8" })); const link = document.createElement("a"); link.href = url; link.download = "amiyo-products.csv"; link.click(); URL.revokeObjectURL(url); } else await Share.share({ title: "Amiyo product export", message: content }); } });
   const ready = Boolean(workspace.data?.shops[0] && categories.data?.[0]);
   return <Screen eyebrow="SELLER CATALOG" title="Bulk product import/export" description="Create up to 100 draft products in one validated transaction or export the current catalog as CSV.">
     <ModuleCard title="CSV import" meta={ready ? `${workspace.data!.shops[0]!.name} · ${categories.data![0]!.name}` : "Loading shop and category…"}>
@@ -23,11 +25,11 @@ export function VendorBulkProductsScreen() {
       <TextInput multiline onChangeText={setCsv} style={styles.editor} value={csv} />
       {bulkImport.error ? <Text style={styles.error}>{bulkImport.error.message}</Text> : null}
       {bulkImport.data ? <Text style={styles.success}>{bulkImport.data.created} draft products imported successfully.</Text> : null}
-      <Pressable disabled={!ready || bulkImport.isPending} onPress={() => bulkImport.mutate()} style={styles.primary}>{bulkImport.isPending ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>Validate and import CSV</Text>}</Pressable>
+      <Pressable disabled={!user || !ready || bulkImport.isPending} onPress={() => user && bulkImport.mutate(user)} style={styles.primary}>{bulkImport.isPending ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>Validate and import CSV</Text>}</Pressable>
     </ModuleCard>
     <ModuleCard title="Catalog export" meta="Includes every product variant and current opening stock.">
       {bulkExport.error ? <Text style={styles.error}>{bulkExport.error.message}</Text> : null}
-      <Pressable disabled={bulkExport.isPending} onPress={() => bulkExport.mutate()} style={styles.secondary}><Text style={styles.secondaryText}>{bulkExport.isPending ? "Preparing…" : Platform.OS === "web" ? "Download products CSV" : "Share products CSV"}</Text></Pressable>
+      <Pressable disabled={!user || bulkExport.isPending} onPress={() => user && bulkExport.mutate(user)} style={styles.secondary}><Text style={styles.secondaryText}>{bulkExport.isPending ? "Preparing…" : Platform.OS === "web" ? "Download products CSV" : "Share products CSV"}</Text></Pressable>
       {exported ? <Text selectable numberOfLines={8} style={styles.preview}>{exported}</Text> : null}
     </ModuleCard>
   </Screen>;
