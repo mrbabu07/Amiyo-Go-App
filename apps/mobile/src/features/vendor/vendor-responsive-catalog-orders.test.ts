@@ -24,6 +24,7 @@ const shopLocation = readFileSync(resolve(root, "src/features/vendor/VendorShopL
 const settings = readFileSync(resolve(root, "src/features/vendor/VendorSettingsScreen.tsx"), "utf8");
 const decoration = readFileSync(resolve(root, "src/features/vendor/VendorShopDecorationScreen.tsx"), "utf8");
 const engagement = readFileSync(resolve(root, "src/features/vendor/VendorEngagementScreen.tsx"), "utf8");
+const operations = readFileSync(resolve(root, "src/features/vendor/VendorOperationsScreen.tsx"), "utf8");
 
 test("seller catalog becomes a full-width mobile workspace", () => {
   assert.match(products, /useWindowDimensions\(\)\.width < 620/);
@@ -180,4 +181,13 @@ test("seller engagement overview uses full-width mobile cards", () => {
   assert.match(engagement, /\["vendor", "questions", user\?\.uid\]/);
   assert.match(engagement, /compact && styles\.metricCompact/);
   assert.match(engagement, /compact && styles\.cardCompact/);
+});
+
+test("seller operations command center stacks cleanly on mobile", () => {
+  assert.match(operations, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(operations, /\["vendor", "report", user\?\.uid, 30\]/);
+  assert.match(operations, /compact && styles\.metricCompact/);
+  assert.match(operations, /compact && styles\.moduleCompact/);
+  assert.match(operations, /adjustsFontSizeToFit numberOfLines=\{1\}/);
+  assert.doesNotMatch(operations, /à§³|Â·/);
 });
