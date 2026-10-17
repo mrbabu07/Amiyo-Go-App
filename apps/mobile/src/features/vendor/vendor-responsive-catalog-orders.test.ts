@@ -20,6 +20,7 @@ const reviews = readFileSync(resolve(root, "src/features/vendor/VendorReviewsScr
 const questions = readFileSync(resolve(root, "src/features/vendor/VendorQuestionsScreen.tsx"), "utf8");
 const categorySelector = readFileSync(resolve(root, "src/features/vendor/components/VendorCategorySelector.tsx"), "utf8");
 const shopMedia = readFileSync(resolve(root, "src/features/vendor/VendorShopMediaScreen.tsx"), "utf8");
+const shopLocation = readFileSync(resolve(root, "src/features/vendor/VendorShopLocationScreen.tsx"), "utf8");
 
 test("seller catalog becomes a full-width mobile workspace", () => {
   assert.match(products, /useWindowDimensions\(\)\.width < 620/);
@@ -142,4 +143,13 @@ test("seller shop media stacks controls and guards late writes", () => {
   assert.match(shopMedia, /compact && styles\.previewCompact/);
   assert.match(shopMedia, /compact && styles\.mediaRowCompact/);
   assert.match(shopMedia, /compact && styles\.actionCompact/);
+});
+
+test("seller pickup form is responsive and mutation scoped", () => {
+  assert.match(shopLocation, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(shopLocation, /activeUid\.current !== variables\.owner\.uid/);
+  assert.match(shopLocation, /compact && styles\.heroCompact/);
+  assert.match(shopLocation, /compact && styles\.gridCompact/);
+  assert.match(shopLocation, /compact && styles\.fieldCompact/);
+  assert.match(shopLocation, /save\.mutate\(\{ owner: user, shopId: shop\.id, version: shop\.version \}\)/);
 });
