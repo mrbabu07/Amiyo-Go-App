@@ -23,6 +23,7 @@ const shopMedia = readFileSync(resolve(root, "src/features/vendor/VendorShopMedi
 const shopLocation = readFileSync(resolve(root, "src/features/vendor/VendorShopLocationScreen.tsx"), "utf8");
 const settings = readFileSync(resolve(root, "src/features/vendor/VendorSettingsScreen.tsx"), "utf8");
 const decoration = readFileSync(resolve(root, "src/features/vendor/VendorShopDecorationScreen.tsx"), "utf8");
+const engagement = readFileSync(resolve(root, "src/features/vendor/VendorEngagementScreen.tsx"), "utf8");
 
 test("seller catalog becomes a full-width mobile workspace", () => {
   assert.match(products, /useWindowDimensions\(\)\.width < 620/);
@@ -171,4 +172,12 @@ test("seller decoration preview and publish remain mobile and account safe", () 
   assert.match(decoration, /compact && styles\.previewCompact/);
   assert.match(decoration, /save\.mutate\(\{ owner: user, shopId: shop\.id, version: shop\.version \}\)/);
   assert.match(decoration, /numberOfLines=\{compact \? 2 : 1\}/);
+});
+
+test("seller engagement overview uses full-width mobile cards", () => {
+  assert.match(engagement, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(engagement, /\["vendor", "reviews", user\?\.uid\]/);
+  assert.match(engagement, /\["vendor", "questions", user\?\.uid\]/);
+  assert.match(engagement, /compact && styles\.metricCompact/);
+  assert.match(engagement, /compact && styles\.cardCompact/);
 });
