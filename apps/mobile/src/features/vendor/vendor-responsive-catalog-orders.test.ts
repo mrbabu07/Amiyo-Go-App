@@ -14,6 +14,7 @@ const messages = readFileSync(resolve(root, "src/features/engagement/MessagesScr
 const kyc = readFileSync(resolve(root, "src/features/vendor/VendorKycScreen.tsx"), "utf8");
 const staff = readFileSync(resolve(root, "src/features/vendor/VendorStaffScreen.tsx"), "utf8");
 const returns = readFileSync(resolve(root, "src/features/vendor/VendorReturnsScreen.tsx"), "utf8");
+const reports = readFileSync(resolve(root, "src/features/vendor/VendorReportsScreen.tsx"), "utf8");
 
 test("seller catalog becomes a full-width mobile workspace", () => {
   assert.match(products, /useWindowDimensions\(\)\.width < 620/);
@@ -88,4 +89,12 @@ test("seller returns summary and toolbar fit narrow screens", () => {
   assert.match(returns, /compact && compactStyles\.exposure/);
   assert.match(returns, /compact && compactStyles\.toolbar/);
   assert.match(returns, /compact && compactStyles\.refresh/);
+});
+
+test("seller reports preserve exports and readable mobile rows", () => {
+  assert.match(reports, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(reports, /\["vendor", "report", user\?\.uid, days\]/);
+  assert.match(reports, /compact && styles\.exportCompact/);
+  assert.match(reports, /compact && styles\.metricCompact/);
+  assert.match(reports, /compact && styles\.orderCompact/);
 });
