@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Crypto from "expo-crypto";
 import { useRouter } from "expo-router";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
@@ -26,6 +26,8 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const user = useCurrentUser();
+  const activeUid = useRef(user?.uid);
+  activeUid.current = user?.uid;
   const { width } = useWindowDimensions();
   const compact = width < 640;
   const [busy, setBusy] = useState<VendorOrderStatus | null>(null);
@@ -53,8 +55,9 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
     setError(null);
     try {
       const updated = await transitionVendorOrder(user, id, { status, expectedVersion: order.data.version }, Crypto.randomUUID());
+      if (activeUid.current !== user.uid) return;
       queryClient.setQueryData(["orders", "vendor", id, user.uid], updated);
-      await queryClient.invalidateQueries({ queryKey: ["orders", "vendor"] });
+      await queryClient.invalidateQueries({ queryKey: ["orders", "vendor", user.uid] });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Order update failed");
     } finally {

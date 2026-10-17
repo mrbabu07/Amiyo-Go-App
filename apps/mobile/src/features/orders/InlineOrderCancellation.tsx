@@ -47,7 +47,7 @@ export function InlineOrderCancellation({ order }: { order: OrderDto }) {
       await pendingOrderActions.complete(user!.uid, order.id, saved.key);
       if (current()) { setUncertain(false); setOpen(false); }
     } finally { lock.current = false; }
-  }, onSuccess: async () => { await cache.invalidateQueries({ queryKey: ["orders"] }); await recovery.refetch(); } });
+  }, onSuccess: async () => { if (!user || !current()) return; await cache.invalidateQueries({ queryKey: ["orders", "customer", user.uid] }); await recovery.refetch(); } });
   if (!user) return null;
   const policy = cancellationState(order, now);
   if (!policy.statusAllowsCancel && !blocked) return null;
