@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
+import { useRef } from "react";
 import type { GestureResponderEvent } from "react-native";
 import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, radius, spacing } from "../../../ui/tokens";
@@ -23,6 +24,7 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
   const router = useRouter();
   const queryClient = useQueryClient();
   const user = useCurrentUser();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const discount = productDiscount(product.price, product.originalPrice);
   const wishlist = useQuery({ queryKey: ["wishlist", user?.uid ?? null], queryFn: () => getWishlist(user!), enabled: Boolean(user), staleTime: 30_000 });
   const saved = Boolean(wishlist.data?.items.some((item) => item.productId === product.id));
@@ -47,7 +49,7 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
     mutationFn: () => saved ? removeWishlistItem(user!, product.id) : addWishlistItem(user!, product.id),
     onMutate: () => user?.uid,
     onSuccess: (data, _variables, uid) => {
-      if (!uid || firebaseAuth?.currentUser?.uid !== uid) return;
+      if (!uid || activeUid.current !== uid) return;
       queryClient.setQueryData(["wishlist", uid], data);
       void queryClient.invalidateQueries({ queryKey: ["wishlist-collections", uid] });
       if (!saved) void getDiscoverySessionId().then((sessionId) => safelyRecordDiscoveryEvent({ sessionId, eventType: "WISHLIST", productId: product.id }));

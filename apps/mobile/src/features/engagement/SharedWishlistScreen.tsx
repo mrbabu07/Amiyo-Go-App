@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { sharedWishlistSchema } from "@amiyo/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import type { z } from "zod";
 import { Screen } from "../../ui/Screen";
@@ -33,12 +33,13 @@ function SharedWishlistCard({ item }: { item: SharedItem }) {
   const router = useRouter();
   const cache = useQueryClient();
   const user = useCurrentUser();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const [failedImage, setFailedImage] = useState(false);
   const stockLabel = item.availableQuantity === 0 ? "Out of stock" : item.availableQuantity <= 5 ? `Only ${item.availableQuantity} left` : "In stock";
   const wishlist = useQuery({ queryKey: ["wishlist", user?.uid ?? null], queryFn: () => getWishlist(user!), enabled: Boolean(user), staleTime: 30_000 });
   const saved = Boolean(wishlist.data?.items.some((entry) => entry.productId === item.productId));
   const toggleWishlist = useMutation({ retry: false, mutationFn: () => saved ? removeWishlistItem(user!, item.productId) : addWishlistItem(user!, item.productId), onMutate: () => user?.uid, onSuccess: (data, _variables, uid) => {
-    if (!uid || firebaseAuth?.currentUser?.uid !== uid) return;
+    if (!uid || activeUid.current !== uid) return;
     cache.setQueryData(["wishlist", uid], data);
     void cache.invalidateQueries({ queryKey: ["wishlist-collections", uid] });
   } });
