@@ -17,6 +17,7 @@ const returns = readFileSync(resolve(root, "src/features/vendor/VendorReturnsScr
 const reports = readFileSync(resolve(root, "src/features/vendor/VendorReportsScreen.tsx"), "utf8");
 const inventory = readFileSync(resolve(root, "src/features/vendor/VendorInventoryScreen.tsx"), "utf8");
 const reviews = readFileSync(resolve(root, "src/features/vendor/VendorReviewsScreen.tsx"), "utf8");
+const questions = readFileSync(resolve(root, "src/features/vendor/VendorQuestionsScreen.tsx"), "utf8");
 
 test("seller catalog becomes a full-width mobile workspace", () => {
   assert.match(products, /useWindowDimensions\(\)\.width < 620/);
@@ -114,4 +115,12 @@ test("seller review replies retain identity guards and mobile actions", () => {
   assert.match(reviews, /activeUid\.current !== variables\.owner\.uid/);
   assert.match(reviews, /compact && compactStyles\.actions/);
   assert.match(reviews, /compact && compactStyles\.action/);
+});
+
+test("seller question replies stack safely and remain account scoped", () => {
+  assert.match(questions, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(questions, /activeUid\.current !== variables\.owner\.uid/);
+  assert.match(questions, /compact && styles\.questionTopCompact/);
+  assert.match(questions, /compact && styles\.actionsCompact/);
+  assert.match(questions, /compact && styles\.actionCompact/);
 });
