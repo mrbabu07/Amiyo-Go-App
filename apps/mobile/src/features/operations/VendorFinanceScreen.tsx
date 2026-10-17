@@ -2,11 +2,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Crypto from "expo-crypto";
 import { usePathname, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getVendorWorkspace } from "../vendor/vendor.api";
 import { getVendorFinance, requestVendorPayout } from "./operations.api";
 import { VendorStatementExport } from "./VendorStatementExport";
@@ -20,14 +20,15 @@ const tabs = [
 export function VendorFinanceScreen() {
   const router = useRouter();
   const pathname = usePathname();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const cache = useQueryClient();
   const query = useQuery({ queryKey: ["vendor-finance", user?.uid], queryFn: () => getVendorFinance(user!), enabled: Boolean(user) });
   const workspace = useQuery({ queryKey: ["vendor", "workspace", user?.uid], queryFn: () => getVendorWorkspace(user!), enabled: Boolean(user) });
   const [amount, setAmount] = useState("");
   const [bankAccountId, setBankAccountId] = useState("");
   const selectedBank = bankAccountId || workspace.data?.bankAccounts.find((account) => account.isDefault)?.id || workspace.data?.bankAccounts[0]?.id || "";
-  const payout = useMutation({ mutationFn: () => requestVendorPayout(user!, { bankAccountId: selectedBank, amountMinor: String(Math.round(Number(amount) * 100)) }, Crypto.randomUUID()), onSuccess: async () => { setAmount(""); await cache.invalidateQueries({ queryKey: ["vendor-finance", user?.uid] }); } });
+  const payout = useMutation({ mutationFn: async () => { const ownerUid = user!.uid; await requestVendorPayout(user!, { bankAccountId: selectedBank, amountMinor: String(Math.round(Number(amount) * 100)) }, Crypto.randomUUID()); return ownerUid; }, onSuccess: async (ownerUid) => { if (activeUid.current !== ownerUid) return; setAmount(""); await cache.invalidateQueries({ queryKey: ["vendor-finance", ownerUid] }); } });
 
   if (query.isLoading) return <Screen eyebrow="SELLER FINANCE" title="Loading finance" description="Calculating your current ledger balance."><View style={styles.empty}><ActivityIndicator color={colors.primary} /></View></Screen>;
   if (query.error || !query.data) return <Screen eyebrow="SELLER FINANCE" title="Finance unavailable" description={query.error instanceof Error ? query.error.message : "Sign in with a vendor account to continue."}><View style={styles.empty}><Ionicons color={colors.primary} name="alert-circle-outline" size={48} /></View></Screen>;

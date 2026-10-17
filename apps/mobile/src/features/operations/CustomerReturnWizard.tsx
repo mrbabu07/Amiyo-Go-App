@@ -5,7 +5,6 @@ import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
 import { useCurrentUser } from "../auth/use-current-user";
 import { CustomerReturnForm } from "../orders/CustomerReturnForm";
 import { OrderItemImage } from "../orders/OrderItemImage";
@@ -20,9 +19,11 @@ export function CustomerReturnWizard({ onClose, initialOrderId = "" }: { onClose
   const router = useRouter();
   const cache = useQueryClient();
   const mounted = useRef(true);
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const lock = useRef(false);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
-  const current = () => mounted.current && Boolean(user) && firebaseAuth?.currentUser?.uid === user?.uid;
+  const ownerUid = user?.uid;
+  const current = () => mounted.current && Boolean(ownerUid) && activeUid.current === ownerUid;
   const [orderId, setOrderId] = useState(initialOrderId);
   const [packageId, setPackageId] = useState("");
   const [savedRequest, setSavedRequest] = useState(false);
@@ -52,8 +53,9 @@ export function CustomerReturnWizard({ onClose, initialOrderId = "" }: { onClose
       }
     } finally { lock.current = false; }
   }, onSuccess: async () => {
-    await cache.invalidateQueries({ queryKey: ["returns"] });
-    await cache.invalidateQueries({ queryKey: ["orders"] });
+    if (!ownerUid || !current()) return;
+    await cache.invalidateQueries({ queryKey: ["returns", ownerUid] });
+    await cache.invalidateQueries({ queryKey: ["orders", "customer", ownerUid] });
     if (current()) onClose();
   } });
   if (!user) return null;

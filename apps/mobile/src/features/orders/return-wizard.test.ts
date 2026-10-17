@@ -13,7 +13,10 @@ test("inline return wizard loads owned order details and uses the durable comman
   assert.match(source, /retry: false/);
   assert.match(source, /Open order recovery/);
   assert.match(source, /returnEligibilityMessage\(item.returnEligibility, Date.now\(\)\)/);
-  assert.match(source, /firebaseAuth\?\.currentUser\?\.uid === user\?\.uid/);
+  assert.match(source, /activeUid\.current === ownerUid/);
+  assert.match(source, /\["returns", ownerUid\]/);
+  assert.match(source, /\["orders", "customer", ownerUid\]/);
+  assert.doesNotMatch(source, /firebaseAuth/);
 });
 
 test("return wizard stages preserve final explicit review and policy checks", () => {

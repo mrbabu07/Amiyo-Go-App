@@ -8,7 +8,6 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
 import { pickAndUploadDocument } from "../media/media.api";
 import { useCurrentUser } from "../auth/use-current-user";
 import { confirmVendorReturnReceipt, getOwnReturn, respondToVendorReturn } from "./operations.api";
@@ -24,14 +23,15 @@ export function ReturnDetailScreen({ id, vendor = false }: { id: string; vendor?
 
 function ScopedReturnDetail({ id, vendor }: { id: string; vendor: boolean }) {
   const router = useRouter(); const user = useCurrentUser(); const cache = useQueryClient();
-  const mounted = useRef(true);
+  const mounted = useRef(true); const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
-  const current = () => mounted.current && Boolean(user) && firebaseAuth?.currentUser?.uid === user?.uid;
+  const ownerUid = user?.uid;
+  const current = () => mounted.current && Boolean(ownerUid) && activeUid.current === ownerUid;
   const [action, setAction] = useState<(typeof actions)[number]["id"]>("APPROVE"); const [reason, setReason] = useState(""); const [notes, setNotes] = useState(""); const [evidence, setEvidence] = useState<Array<{ storageKey: string; name: string }>>([]); const [uploading, setUploading] = useState(false);
   const [condition, setCondition] = useState<"received" | "damaged" | "incomplete">("received"); const [receiptQuantity, setReceiptQuantity] = useState(""); const [receiptNotes, setReceiptNotes] = useState("");
   const query = useQuery({ queryKey: [vendor ? "vendor" : "customer", "return", id, user?.uid], queryFn: () => getOwnReturn(user!, id, vendor), enabled: Boolean(user), retry: false, refetchInterval: 30_000 });
   const item = query.data;
-  const refresh = async () => { await Promise.all([cache.invalidateQueries({ queryKey: ["vendor", "return", id] }), cache.invalidateQueries({ queryKey: ["vendor", "returns"] })]); };
+  const refresh = async () => { if (!ownerUid || !current()) return; await Promise.all([cache.invalidateQueries({ queryKey: ["vendor", "return", id, ownerUid] }), cache.invalidateQueries({ queryKey: ["vendor", "returns", ownerUid] })]); };
   const response = useMutation({ mutationFn: () => { if (!current()) throw new Error("Account changed. Reopen this return."); return respondToVendorReturn(user!, id, { expectedVersion: item!.version, action, reason: action === "APPROVE" ? null : reason.trim(), notes: notes.trim() || null, evidenceStorageKeys: evidence.map((file) => file.storageKey) }); }, onSuccess: async () => { if (!current()) return; setReason(""); setNotes(""); setEvidence([]); await refresh(); } });
   const receipt = useMutation({ mutationFn: () => { if (!current()) throw new Error("Account changed. Reopen this return."); return confirmVendorReturnReceipt(user!, id, { expectedVersion: item!.version, condition, receivedQuantity: Number(receiptQuantity), notes: receiptNotes.trim() || null }); }, onSuccess: async () => { if (!current()) return; setReceiptQuantity(""); setReceiptNotes(""); await refresh(); } });
   const addEvidence = async () => { if (!current()) return; setUploading(true); try { const result = await pickAndUploadDocument(user!, "return_evidence"); if (result && current()) setEvidence((files) => files.length < 5 ? [...files, { storageKey: result.storageKey, name: result.originalName }] : files); } finally { if (current()) setUploading(false); } };
