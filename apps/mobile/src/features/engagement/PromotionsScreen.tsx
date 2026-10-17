@@ -4,15 +4,15 @@ import { useRouter } from "expo-router";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getPromotions } from "./engagement.api";
 
 const formatStatus = (status: string) => status.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 export function PromotionsScreen() {
   const router = useRouter();
-  const user = firebaseAuth?.currentUser ?? null;
-  const query = useQuery({ queryKey: ["admin-promotions"], queryFn: () => getPromotions(user!), enabled: Boolean(user) });
+  const user = useCurrentUser();
+  const query = useQuery({ queryKey: ["admin-promotions", user?.uid], queryFn: () => getPromotions(user!), enabled: Boolean(user) });
   if (!user) return <AdminState title="Promotion workspace" copy="Sign in with an administrator account to continue." action="Sign in" onPress={() => router.replace("/auth")} />;
   if (query.isLoading) return <AdminState loading title="Loading promotions" copy="Fetching campaign rules and schedules." />;
   if (query.error) return <AdminState title="Could not load promotions" copy={query.error.message} action="Try again" onPress={() => query.refetch()} />;

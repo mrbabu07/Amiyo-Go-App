@@ -1,10 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
+import { useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { EngagementState } from "./components/EngagementState";
 import { getNotifications, readNotification } from "./engagement.api";
 
@@ -18,12 +19,17 @@ function notificationIcon(type: string) {
 export function NotificationsScreen() {
   const router = useRouter();
   const cache = useQueryClient();
-  const user = firebaseAuth?.currentUser ?? null;
-  const query = useQuery({ queryKey: ["notifications"], queryFn: () => getNotifications(user!), enabled: Boolean(user), refetchInterval: 30_000 });
+  const user = useCurrentUser();
+  const activeUid = useRef(user?.uid);
+  activeUid.current = user?.uid;
+  const query = useQuery({ queryKey: ["notifications", user?.uid], queryFn: () => getNotifications(user!), enabled: Boolean(user), refetchInterval: 30_000 });
 
   async function open(id: string, href: string | null) {
-    await readNotification(user!, id);
-    await cache.invalidateQueries({ queryKey: ["notifications"] });
+    if (!user) return;
+    const ownerUid = user.uid;
+    await readNotification(user, id);
+    if (activeUid.current !== ownerUid) return;
+    await cache.invalidateQueries({ queryKey: ["notifications", ownerUid] });
     if (href) router.push(href as never);
   }
 

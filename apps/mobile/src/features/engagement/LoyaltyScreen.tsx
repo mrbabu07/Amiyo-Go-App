@@ -1,11 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, Share, StyleSheet, Text, TextInput, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { EngagementState } from "./components/EngagementState";
 import { applyReferral, getLoyalty, getReferral } from "./engagement.api";
 
@@ -14,11 +14,14 @@ const label = (value: string) => value.replaceAll("_", " ").toLowerCase().replac
 export function LoyaltyScreen() {
   const router = useRouter();
   const cache = useQueryClient();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const activeUid = useRef(user?.uid);
+  activeUid.current = user?.uid;
   const [code, setCode] = useState("");
-  const query = useQuery({ queryKey: ["loyalty"], queryFn: () => getLoyalty(user!), enabled: Boolean(user) });
-  const referral = useQuery({ queryKey: ["loyalty", "referral"], queryFn: () => getReferral(user!), enabled: Boolean(user) });
-  const apply = useMutation({ mutationFn: () => applyReferral(user!, code), onSuccess: async () => { setCode(""); await Promise.all([cache.invalidateQueries({ queryKey: ["loyalty"] }), cache.invalidateQueries({ queryKey: ["loyalty", "referral"] })]); } });
+  useEffect(() => { setCode(""); }, [user?.uid]);
+  const query = useQuery({ queryKey: ["loyalty", user?.uid], queryFn: () => getLoyalty(user!), enabled: Boolean(user) });
+  const referral = useQuery({ queryKey: ["loyalty", "referral", user?.uid], queryFn: () => getReferral(user!), enabled: Boolean(user) });
+  const apply = useMutation({ retry: false, mutationFn: async () => { const ownerUid = user!.uid; await applyReferral(user!, code); return ownerUid; }, onSuccess: async (ownerUid) => { if (activeUid.current !== ownerUid) return; setCode(""); await Promise.all([cache.invalidateQueries({ queryKey: ["loyalty", ownerUid] }), cache.invalidateQueries({ queryKey: ["loyalty", "referral", ownerUid] })]); } });
 
   if (!user) return <EngagementState eyebrow="AMIYO REWARDS" icon="gift-outline" title="Rewards made simple" copy="Sign in to see your points balance and complete earning history." action="Sign in" onPress={() => router.replace("/auth")} />;
   if (query.isLoading) return <EngagementState loading eyebrow="AMIYO REWARDS" icon="gift-outline" title="Loading rewards" copy="Checking your current points ledger." />;
