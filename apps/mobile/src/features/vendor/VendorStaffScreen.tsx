@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { User } from "firebase/auth";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
@@ -12,13 +12,16 @@ const permissions = ["orders:read", "orders:manage", "products:manage", "invento
 type Permission = typeof permissions[number];
 
 export function VendorStaffScreen() {
+  const compact = useWindowDimensions().width < 620;
   const user = useCurrentUser();
   const activeUid = useRef(user?.uid);
   activeUid.current = user?.uid;
   const cache = useQueryClient();
   const query = useQuery({ queryKey: ["vendor", "staff", user?.uid], queryFn: () => getVendorStaff(user!), enabled: Boolean(user) });
   const [drafts, setDrafts] = useState<Record<string, Permission[]>>({});
+
   useEffect(() => { setDrafts({}); }, [user?.uid]);
+
   const save = useMutation({
     retry: false,
     mutationFn: ({ owner, id, status, selected }: { owner: User; id: string; status: "active" | "suspended"; selected: Permission[] }) => updateVendorStaff(owner, id, { status, permissions: selected }),
@@ -27,16 +30,87 @@ export function VendorStaffScreen() {
       await cache.invalidateQueries({ queryKey: ["vendor", "staff", variables.owner.uid] });
     }
   });
+
   const selectedFor = (id: string, current: string[]) => drafts[id] ?? current.filter((item): item is Permission => permissions.includes(item as Permission));
-  const toggle = (id: string, current: string[], permission: Permission) => { const selected = selectedFor(id, current); setDrafts((value) => ({ ...value, [id]: selected.includes(permission) ? selected.filter((item) => item !== permission) : [...selected, permission] })); };
+  const toggle = (id: string, current: string[], permission: Permission) => {
+    const selected = selectedFor(id, current);
+    setDrafts((value) => ({ ...value, [id]: selected.includes(permission) ? selected.filter((item) => item !== permission) : [...selected, permission] }));
+  };
 
   return <Screen eyebrow="TEAM ACCESS" title="Staff and permissions" description="Control who can operate your seller workspace and what each member can do.">
-    <View style={styles.summary}><View style={styles.summaryIcon}><Ionicons color={colors.surface} name="people" size={25} /></View><View><Text style={styles.summaryValue}>{query.data?.length ?? 0} team member{query.data?.length === 1 ? "" : "s"}</Text><Text style={styles.summaryMeta}>{query.data?.filter((item) => item.status === "active").length ?? 0} active accounts</Text></View></View>
+    <View style={[styles.summary, compact && styles.summaryCompact]}>
+      <View style={styles.summaryIcon}><Ionicons color={colors.surface} name="people" size={25} /></View>
+      <View style={styles.flex}>
+        <Text adjustsFontSizeToFit numberOfLines={1} style={styles.summaryValue}>{query.data?.length ?? 0} team member{query.data?.length === 1 ? "" : "s"}</Text>
+        <Text style={styles.summaryMeta}>{query.data?.filter((item) => item.status === "active").length ?? 0} active accounts</Text>
+      </View>
+    </View>
     {query.isLoading ? <ActivityIndicator color={colors.primary} /> : null}
-    <View style={styles.list}>{query.data?.map((member) => { const owner = member.role === "VENDOR_OWNER"; const selected = selectedFor(member.id, member.permissions); return <View key={member.id} style={styles.card}><View style={styles.cardHeader}><View style={styles.avatar}><Text style={styles.avatarText}>{(member.displayName || member.email || "S").slice(0, 1).toUpperCase()}</Text></View><View style={styles.flex}><Text style={styles.name}>{member.displayName || "Seller staff"}</Text><Text style={styles.email}>{member.email || member.userId}</Text></View><View style={[styles.badge, member.status !== "active" && styles.badgeSuspended]}><Text style={styles.badgeText}>{member.status.toUpperCase()}</Text></View></View><Text style={styles.role}>{member.role.replaceAll("_", " ")}</Text>{owner ? <View style={styles.owner}><Ionicons color={colors.success} name="shield-checkmark" size={17} /><Text style={styles.ownerText}>Owner has full seller workspace access.</Text></View> : <><Text style={styles.label}>PERMISSIONS</Text><View style={styles.permissions}>{permissions.map((permission) => { const active = selected.includes(permission); return <Pressable key={permission} onPress={() => toggle(member.id, member.permissions, permission)} style={[styles.permission, active && styles.permissionActive]}><Ionicons color={active ? colors.surface : colors.muted} name={active ? "checkmark-circle" : "ellipse-outline"} size={16} /><Text style={[styles.permissionText, active && styles.permissionTextActive]}>{permissionLabel(permission)}</Text></Pressable>; })}</View><View style={styles.actions}><Pressable disabled={!user || save.isPending} onPress={() => user && save.mutate({ owner: user, id: member.id, status: member.status === "active" ? "suspended" : "active", selected })} style={styles.secondary}><Text style={styles.secondaryText}>{member.status === "active" ? "Suspend access" : "Restore access"}</Text></Pressable><Pressable disabled={!user || save.isPending} onPress={() => user && save.mutate({ owner: user, id: member.id, status: member.status as "active" | "suspended", selected })} style={styles.primary}><Text style={styles.primaryText}>Save permissions</Text></Pressable></View></>}</View>; })}</View>
-    {query.data?.length === 0 ? <View style={styles.empty}><Ionicons color={colors.primary} name="person-add-outline" size={42} /><Text style={styles.emptyTitle}>No staff members yet</Text><Text style={styles.email}>Staff invited to your workspace will appear here.</Text></View> : null}{query.error || save.error ? <Text style={styles.error}>{(query.error || save.error)?.message}</Text> : null}
+    <View style={styles.list}>{query.data?.map((member) => {
+      const owner = member.role === "VENDOR_OWNER";
+      const selected = selectedFor(member.id, member.permissions);
+      return <View key={member.id} style={styles.card}>
+        <View style={[styles.cardHeader, compact && styles.cardHeaderCompact]}>
+          <View style={styles.avatar}><Text style={styles.avatarText}>{(member.displayName || member.email || "S").slice(0, 1).toUpperCase()}</Text></View>
+          <View style={styles.flex}><Text style={styles.name}>{member.displayName || "Seller staff"}</Text><Text numberOfLines={compact ? 2 : 1} style={styles.email}>{member.email || member.userId}</Text></View>
+          <View style={[styles.badge, member.status !== "active" && styles.badgeSuspended]}><Text style={styles.badgeText}>{member.status.toUpperCase()}</Text></View>
+        </View>
+        <Text style={styles.role}>{member.role.replaceAll("_", " ")}</Text>
+        {owner ? <View style={styles.owner}><Ionicons color={colors.success} name="shield-checkmark" size={17} /><Text style={styles.ownerText}>Owner has full seller workspace access.</Text></View> : <>
+          <Text style={styles.label}>PERMISSIONS</Text>
+          <View style={styles.permissions}>{permissions.map((permission) => {
+            const active = selected.includes(permission);
+            return <Pressable key={permission} onPress={() => toggle(member.id, member.permissions, permission)} style={[styles.permission, active && styles.permissionActive]}><Ionicons color={active ? colors.surface : colors.muted} name={active ? "checkmark-circle" : "ellipse-outline"} size={16} /><Text style={[styles.permissionText, active && styles.permissionTextActive]}>{permissionLabel(permission)}</Text></Pressable>;
+          })}</View>
+          <View style={[styles.actions, compact && styles.actionsCompact]}>
+            <Pressable disabled={!user || save.isPending} onPress={() => user && save.mutate({ owner: user, id: member.id, status: member.status === "active" ? "suspended" : "active", selected })} style={[styles.secondary, compact && styles.actionCompact]}><Text style={styles.secondaryText}>{member.status === "active" ? "Suspend access" : "Restore access"}</Text></Pressable>
+            <Pressable disabled={!user || save.isPending} onPress={() => user && save.mutate({ owner: user, id: member.id, status: member.status as "active" | "suspended", selected })} style={[styles.primary, compact && styles.actionCompact]}><Text style={styles.primaryText}>Save permissions</Text></Pressable>
+          </View>
+        </>}
+      </View>;
+    })}</View>
+    {query.data?.length === 0 ? <View style={styles.empty}><Ionicons color={colors.primary} name="person-add-outline" size={42} /><Text style={styles.emptyTitle}>No staff members yet</Text><Text style={styles.email}>Staff invited to your workspace will appear here.</Text></View> : null}
+    {query.error || save.error ? <Text style={styles.error}>{(query.error || save.error)?.message}</Text> : null}
   </Screen>;
 }
 
 function permissionLabel(value: Permission) { return value.replace(":", " · ").replaceAll("_", " "); }
-const styles = StyleSheet.create({ flex: { flex: 1 }, summary: { alignItems: "center", backgroundColor: colors.navy, borderRadius: radius.xl, flexDirection: "row", gap: spacing.md, padding: spacing.xl }, summaryIcon: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.lg, height: 52, justifyContent: "center", width: 52 }, summaryValue: { color: colors.surface, fontSize: 21, fontWeight: "700" }, summaryMeta: { color: "#cbd5e1", marginTop: 4 }, list: { gap: spacing.md }, card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, gap: spacing.md, padding: spacing.lg }, cardHeader: { alignItems: "center", flexDirection: "row", gap: spacing.sm }, avatar: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.pill, height: 46, justifyContent: "center", width: 46 }, avatarText: { color: colors.primary, fontSize: 17, fontWeight: "700" }, name: { color: colors.text, fontWeight: "700" }, email: { color: colors.muted, fontSize: 11, marginTop: 3 }, badge: { backgroundColor: "#dcfce7", borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 6 }, badgeSuspended: { backgroundColor: "#fee2e2" }, badgeText: { color: colors.text, fontSize: 8, fontWeight: "700" }, role: { color: colors.primary, fontSize: 10, fontWeight: "700" }, label: { color: colors.muted, fontSize: 9, fontWeight: "700", letterSpacing: .8 }, permissions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }, permission: { alignItems: "center", borderColor: colors.border, borderRadius: radius.pill, borderWidth: 1, flexDirection: "row", gap: 5, paddingHorizontal: 10, paddingVertical: 8 }, permissionActive: { backgroundColor: colors.primary, borderColor: colors.primary }, permissionText: { color: colors.muted, fontSize: 9, fontWeight: "600", textTransform: "capitalize" }, permissionTextActive: { color: colors.surface }, owner: { alignItems: "center", backgroundColor: "#ecfdf5", borderRadius: radius.md, flexDirection: "row", gap: 7, padding: spacing.md }, ownerText: { color: colors.success, fontSize: 11, fontWeight: "600" }, actions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, justifyContent: "flex-end" }, secondary: { borderColor: colors.danger, borderRadius: radius.md, borderWidth: 1, paddingHorizontal: spacing.md, paddingVertical: 11 }, secondaryText: { color: colors.danger, fontWeight: "700" }, primary: { backgroundColor: colors.primary, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 11 }, primaryText: { color: colors.surface, fontWeight: "700" }, empty: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl, borderStyle: "dashed", borderWidth: 1, gap: spacing.sm, padding: 40 }, emptyTitle: { color: colors.text, fontSize: 18, fontWeight: "700" }, error: { color: colors.danger } });
+
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  summary: { alignItems: "center", backgroundColor: colors.navy, borderRadius: radius.xl, flexDirection: "row", gap: spacing.md, padding: spacing.xl },
+  summaryCompact: { padding: spacing.lg },
+  summaryIcon: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.lg, height: 52, justifyContent: "center", width: 52 },
+  summaryValue: { color: colors.surface, fontSize: 21, fontWeight: "700" },
+  summaryMeta: { color: "#C9C2B6", marginTop: 4 },
+  list: { gap: spacing.md },
+  card: { backgroundColor: colors.surface, borderRadius: radius.lg, boxShadow: "0 8px 24px rgba(11,31,58,.07)", gap: spacing.md, padding: spacing.lg },
+  cardHeader: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
+  cardHeaderCompact: { alignItems: "flex-start", flexWrap: "wrap" },
+  avatar: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.pill, height: 46, justifyContent: "center", width: 46 },
+  avatarText: { color: colors.primary, fontSize: 17, fontWeight: "700" },
+  name: { color: colors.text, fontWeight: "700" },
+  email: { color: colors.muted, fontSize: 11, marginTop: 3 },
+  badge: { backgroundColor: colors.accentSoft, borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 6 },
+  badgeSuspended: { backgroundColor: colors.primarySoft },
+  badgeText: { color: colors.text, fontSize: 8, fontWeight: "700" },
+  role: { color: colors.primary, fontSize: 10, fontWeight: "700" },
+  label: { color: colors.muted, fontSize: 9, fontWeight: "700", letterSpacing: .8 },
+  permissions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  permission: { alignItems: "center", borderColor: colors.border, borderRadius: radius.pill, borderWidth: 1, flexDirection: "row", gap: 5, paddingHorizontal: 10, paddingVertical: 8 },
+  permissionActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  permissionText: { color: colors.muted, fontSize: 9, fontWeight: "600", textTransform: "capitalize" },
+  permissionTextActive: { color: colors.surface },
+  owner: { alignItems: "center", backgroundColor: colors.accentSoft, borderRadius: radius.md, flexDirection: "row", gap: 7, padding: spacing.md },
+  ownerText: { color: colors.success, flex: 1, fontSize: 11, fontWeight: "600" },
+  actions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, justifyContent: "flex-end" },
+  actionsCompact: { alignItems: "stretch", flexDirection: "column" },
+  actionCompact: { alignItems: "center", width: "100%" },
+  secondary: { borderColor: colors.danger, borderRadius: radius.md, borderWidth: 1, paddingHorizontal: spacing.md, paddingVertical: 11 },
+  secondaryText: { color: colors.danger, fontWeight: "700" },
+  primary: { backgroundColor: colors.primary, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 11 },
+  primaryText: { color: colors.surface, fontWeight: "700" },
+  empty: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl, borderStyle: "dashed", borderWidth: 1, gap: spacing.sm, padding: 40 },
+  emptyTitle: { color: colors.text, fontSize: 18, fontWeight: "700" },
+  error: { color: colors.danger }
+});

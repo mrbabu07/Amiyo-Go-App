@@ -12,6 +12,8 @@ const productForm = readFileSync(resolve(root, "src/features/vendor/VendorProduc
 const payoutSettings = readFileSync(resolve(root, "src/features/vendor/VendorPayoutSettingsScreen.tsx"), "utf8");
 const messages = readFileSync(resolve(root, "src/features/engagement/MessagesScreen.tsx"), "utf8");
 const kyc = readFileSync(resolve(root, "src/features/vendor/VendorKycScreen.tsx"), "utf8");
+const staff = readFileSync(resolve(root, "src/features/vendor/VendorStaffScreen.tsx"), "utf8");
+const returns = readFileSync(resolve(root, "src/features/vendor/VendorReturnsScreen.tsx"), "utf8");
 
 test("seller catalog becomes a full-width mobile workspace", () => {
   assert.match(products, /useWindowDimensions\(\)\.width < 620/);
@@ -70,4 +72,20 @@ test("seller verification documents stack safely on mobile", () => {
   assert.match(kyc, /compact && compactStyles\.document/);
   assert.match(kyc, /compact && compactStyles\.upload/);
   assert.match(kyc, /numberOfLines=\{compact \? 2 : 1\}/);
+});
+
+test("seller staff controls keep identity guards and stack actions", () => {
+  assert.match(staff, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(staff, /activeUid\.current !== variables\.owner\.uid/);
+  assert.match(staff, /compact && styles\.cardHeaderCompact/);
+  assert.match(staff, /compact && styles\.actionsCompact/);
+  assert.match(staff, /compact && styles\.actionCompact/);
+});
+
+test("seller returns summary and toolbar fit narrow screens", () => {
+  assert.match(returns, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(returns, /\["vendor", "returns", user\?\.uid\]/);
+  assert.match(returns, /compact && compactStyles\.exposure/);
+  assert.match(returns, /compact && compactStyles\.toolbar/);
+  assert.match(returns, /compact && compactStyles\.refresh/);
 });
