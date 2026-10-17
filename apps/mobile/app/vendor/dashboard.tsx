@@ -2,8 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { ActivityIndicator, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import { firebaseAuth } from "../../src/features/auth/firebase";
 import { useAuthStore } from "../../src/features/auth/auth.store";
+import { useCurrentUser } from "../../src/features/auth/use-current-user";
 import { getVendorOrders } from "../../src/features/orders/orders.api";
 import { getVendorReport, getVendorWorkspace } from "../../src/features/vendor/vendor.api";
 import { Screen } from "../../src/ui/Screen";
@@ -15,7 +15,7 @@ const completedStatuses = new Set(["DELIVERED", "REJECTED", "CANCELLED", "REFUND
 export default function VendorDashboardScreen() {
   const router = useRouter();
   const compact = useWindowDimensions().width < 720;
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
   const session = useAuthStore((state) => state.session);
   const enabled = Boolean(user && session?.vendorMemberships.length);
   const workspace = useQuery({ queryKey: ["vendor", "workspace", user?.uid], queryFn: () => getVendorWorkspace(user!), enabled });
