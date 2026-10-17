@@ -22,6 +22,7 @@ const categorySelector = readFileSync(resolve(root, "src/features/vendor/compone
 const shopMedia = readFileSync(resolve(root, "src/features/vendor/VendorShopMediaScreen.tsx"), "utf8");
 const shopLocation = readFileSync(resolve(root, "src/features/vendor/VendorShopLocationScreen.tsx"), "utf8");
 const settings = readFileSync(resolve(root, "src/features/vendor/VendorSettingsScreen.tsx"), "utf8");
+const decoration = readFileSync(resolve(root, "src/features/vendor/VendorShopDecorationScreen.tsx"), "utf8");
 
 test("seller catalog becomes a full-width mobile workspace", () => {
   assert.match(products, /useWindowDimensions\(\)\.width < 620/);
@@ -162,4 +163,12 @@ test("legacy seller settings scopes every mutation to its owner", () => {
   assert.match(settings, /saveBank\.mutate\(\{ owner: user \}\)/);
   assert.match(settings, /saveKyc\.mutate\(\{ owner: user \}\)/);
   assert.match(settings, /\[user\?\.uid\]/);
+});
+
+test("seller decoration preview and publish remain mobile and account safe", () => {
+  assert.match(decoration, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(decoration, /activeUid\.current !== variables\.owner\.uid/);
+  assert.match(decoration, /compact && styles\.previewCompact/);
+  assert.match(decoration, /save\.mutate\(\{ owner: user, shopId: shop\.id, version: shop\.version \}\)/);
+  assert.match(decoration, /numberOfLines=\{compact \? 2 : 1\}/);
 });
