@@ -4,14 +4,14 @@ import { useRouter } from "expo-router";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getOrderTracking } from "./orders.api";
 
 const formatStatus = (status: string) => status.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 export function OrderTrackingScreen({ id }: { id: string }) {
   const router = useRouter();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
   const tracking = useQuery({ queryKey: ["orders", id, "tracking", user?.uid], queryFn: () => getOrderTracking(user!, id), enabled: Boolean(user), refetchInterval: 30_000 });
 
   if (!user) return <TrackingState title="Sign in to track this order" copy="Delivery information is available securely from your account." action="Sign in" onPress={() => router.replace("/auth")} />;

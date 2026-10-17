@@ -5,7 +5,7 @@ import { Link } from "expo-router";
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, spacing, radius } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { verifyDocumentQr } from "./orders.api";
 
 export function DocumentVerificationScreen() {
@@ -14,12 +14,14 @@ export function DocumentVerificationScreen() {
   const [cameraError, setCameraError] = useState("");
   const [permission, requestPermission] = useCameraPermissions();
   const scanned = useRef(false);
-  const user = firebaseAuth?.currentUser;
-  const verification = useMutation({ mutationFn: (value: string) => {
+  const user = useCurrentUser();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
+  const verification = useMutation({ mutationFn: async (value: string) => {
     if (!user) throw new Error("Sign in to verify a document.");
-    return verifyDocumentQr(user, value.trim());
+    const result = await verifyDocumentQr(user, value.trim());
+    return { result, uid: user.uid };
   } });
-  const result = verification.data;
+  const result = verification.data?.uid === activeUid.current ? verification.data.result : undefined;
   return <Screen title="Verify invoice or parcel" description="Paste the complete code from your QR reader to check its authenticity and current order record.">
     {!user ? <Link href="/login">Sign in to verify</Link> : <>
       {Platform.OS !== "web" ? <Pressable accessibilityRole="button" disabled={verification.isPending} style={styles.button} onPress={async () => {

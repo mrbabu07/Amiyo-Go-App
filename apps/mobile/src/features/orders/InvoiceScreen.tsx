@@ -7,7 +7,7 @@ import { useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { OrderInvoiceDocument, useInvoicePrintStyles } from "./components/OrderInvoiceDocument";
 import { getInvoice } from "./orders.api";
 
@@ -15,7 +15,7 @@ const printId = "customer-print-invoice";
 
 export function InvoiceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
   const invoice = useQuery({ queryKey: ["invoice", id, user?.uid], queryFn: () => getInvoice(user!, id), enabled: Boolean(user && id) });
   useInvoicePrintStyles(printId);
   const qr = useRef<InvoiceQrRef | null>(null);

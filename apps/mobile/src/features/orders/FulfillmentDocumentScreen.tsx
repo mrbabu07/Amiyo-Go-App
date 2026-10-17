@@ -6,7 +6,7 @@ import { DocumentQrCode } from "../../ui/DocumentQrCode";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing, typography } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { getFulfillmentDocument } from "./orders.api";
 import { captureDocumentQr, shareDocumentPdf, type DocumentQrRef } from "./document-export";
 import { fulfillmentHtml } from "./fulfillment-html";
@@ -16,7 +16,7 @@ const money = (value: { amountMinor: string; currency: string }) => `${value.cur
 
 export function FulfillmentDocumentScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
   const document = useQuery({ queryKey: ["vendor", "fulfillment-document", id, user?.uid], queryFn: () => getFulfillmentDocument(user!, id), enabled: Boolean(user && id) });
   const qr = useRef<DocumentQrRef | null>(null);
   const [exporting, setExporting] = useState(false);
