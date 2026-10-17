@@ -1,8 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
 import { useCurrentUser } from "../auth/use-current-user";
 import { alertMinorToPrice, alertPriceToMinor } from "./alert-price";
 import { getAlerts, removeAlert, saveAlert } from "./engagement.api";
@@ -10,6 +9,7 @@ import { FlashAlertToggle } from "./FlashAlerts";
 
 export function ProductAlertControls({ productId, productName }: { productId: string; productName: string }) {
   const user = useCurrentUser();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   return user ? <AlertEditor key={`${user.uid}:${productId}`} productId={productId} productName={productName} /> : null;
 }
 
@@ -26,18 +26,18 @@ function AlertEditor({ productId, productName }: { productId: string; productNam
   const mutation = useMutation({
     retry: false,
     mutationFn: async (action: "price" | "stock" | "off-price" | "off-stock") => {
-      if (!user || firebaseAuth?.currentUser?.uid !== user.uid) throw new Error("Your account changed. Sign in again.");
+      if (!user || activeUid.current !== user.uid) throw new Error("Your account changed. Sign in again.");
       const target = action === "price" ? alertPriceToMinor(value) : null;
       const data = action === "off-price" || action === "off-stock" ? await removeAlert(user, productId, action === "off-price" ? "price" : "stock") : await saveAlert(user, productId, target);
       return { uid: user.uid, data };
     },
     onSuccess: ({ uid, data }) => {
-      if (firebaseAuth?.currentUser?.uid !== uid) return;
+      if (activeUid.current !== uid) return;
       cache.setQueryData(["alerts", uid], data);
       setDraft(null);
     },
-    onSettled: () => {
-      if (user && firebaseAuth?.currentUser?.uid === user.uid) void cache.invalidateQueries({ queryKey: ["alerts", user.uid] });
+    onSettled: (result) => {
+      if (result && activeUid.current === result.uid) void cache.invalidateQueries({ queryKey: ["alerts", result.uid] });
     }
   });
   const disabled = query.isLoading || Boolean(query.error) || mutation.isPending;

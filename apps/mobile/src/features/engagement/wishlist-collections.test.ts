@@ -6,7 +6,7 @@ import { URL } from "node:url";
 test("catalog heart mutations invalidate the collection counts for their initiating account", () => {
   for (const path of ["../home/components/ProductCard.tsx", "../catalog/ProductDetailScreen.tsx"]) {
     const source = readFileSync(new URL(path, import.meta.url), "utf8");
-    assert.match(source, /firebaseAuth\?\.currentUser\?\.uid !== uid/);
+    assert.match(source, /(?:firebaseAuth\?\.currentUser\?\.uid|activeUid\.current) !== uid/);
     assert.match(source, /invalidateQueries\(\{ queryKey: \["wishlist-collections", uid\] \}\)/);
   }
 });

@@ -19,10 +19,11 @@ for (const path of ["./AlertsScreen.tsx", "../catalog/ProductDetailScreen.tsx"])
     const source = readFileSync(new URL(path, import.meta.url), "utf8");
     assert.match(source, /const user = useCurrentUser\(\)/);
     assert.match(source, /queryKey: \["alerts", user\?\.uid \?\? null\]/);
-    assert.match(source, /firebaseAuth\?\.currentUser\?\.uid !== user.uid/);
+    assert.match(source, /activeUid\.current !== user.uid/);
     assert.match(source, /return \{ data, uid: user.uid \}/);
-    assert.match(source, /if \(firebaseAuth\?\.currentUser\?\.uid !== uid\) return/);
+    assert.match(source, /if \(activeUid\.current !== uid\) return/);
     assert.match(source, /setQueryData\(\["alerts", uid\], data\)/);
     assert.doesNotMatch(source, /\["alerts"\]/);
+    if (path === "./AlertsScreen.tsx") assert.doesNotMatch(source, /firebaseAuth/);
   });
 }

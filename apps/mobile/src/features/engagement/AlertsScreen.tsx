@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
+import { useRef } from "react";
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
 import { useCurrentUser } from "../auth/use-current-user";
 import { EngagementState } from "./components/EngagementState";
 import { getAlerts, removeAlert, type ProductAlert } from "./engagement.api";
@@ -17,14 +17,15 @@ export function AlertsScreen() {
   const compact = useWindowDimensions().width < 600;
   const router = useRouter();
   const user = useCurrentUser();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const cache = useQueryClient();
   const query = useQuery({ queryKey: ["alerts", user?.uid ?? null], queryFn: () => getAlerts(user!), enabled: Boolean(user) });
   const remove = useMutation({ mutationFn: async (item: ProductAlert) => {
-    if (!user || firebaseAuth?.currentUser?.uid !== user.uid) throw new Error("Sign in to manage alerts");
+    if (!user || activeUid.current !== user.uid) throw new Error("Sign in to manage alerts");
     const data = await removeAlert(user, item.productId, item.target ? "price" : "stock");
     return { data, uid: user.uid };
   }, onSuccess: ({ data, uid }) => {
-    if (firebaseAuth?.currentUser?.uid !== uid) return;
+    if (activeUid.current !== uid) return;
     cache.setQueryData(["alerts", uid], data);
   } });
 

@@ -22,8 +22,9 @@ test("wishlist alert editor exposes labeled controls outside product navigation"
   const wishlist = readFileSync(new URL("./WishlistScreen.tsx", import.meta.url), "utf8");
   assert.match(editor, /key=\{`\$\{user.uid\}:\$\{productId\}`\}/);
   assert.match(editor, /queryKey: \["alerts", user\?\.uid \?\? null\]/);
-  assert.match(editor, /firebaseAuth\?\.currentUser\?\.uid !== user.uid/);
-  assert.match(editor, /firebaseAuth\?\.currentUser\?\.uid !== uid/);
+  assert.match(editor, /activeUid\.current !== user.uid/);
+  assert.match(editor, /activeUid\.current !== uid/);
+  assert.doesNotMatch(editor, /firebaseAuth/);
   assert.match(editor, /retry: false/);
   assert.match(editor, /alertPriceToMinor\(value\)/);
   assert.match(editor, /Stock and price alerts work independently/);

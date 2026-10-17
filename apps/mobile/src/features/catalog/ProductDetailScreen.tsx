@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query";
 import type { ProductDetailDto, ProductReportInput } from "@amiyo/contracts";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Image, Platform, Pressable, SafeAreaView, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { firebaseAuth } from "../auth/firebase";
@@ -31,6 +31,7 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
   const related = useQuery({ queryKey: ["catalog", "related", item?.categoryId], queryFn: () => getProducts({ category: item!.categoryId, limit: 8 }), enabled: Boolean(item?.categoryId) });
   const productId = item?.id;
   const user = useCurrentUser();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const [selectedVariantId, setSelectedVariantId] = useState("");
   const [selectedMediaId, setSelectedMediaId] = useState("");
   const [discoverySessionId, setDiscoverySessionId] = useState("");
@@ -51,16 +52,16 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
   const alerts = useQuery({ queryKey: ["alerts", user?.uid ?? null], queryFn: () => getAlerts(user!), enabled: Boolean(user) });
   const reviews = useQuery({ queryKey: ["catalog", "reviews", productId], queryFn: () => getProductReviews(productId!), enabled: Boolean(productId) });
   const questions = useQuery({ queryKey: ["catalog", "questions", productId], queryFn: () => getProductQuestions(productId!), enabled: Boolean(productId) });
-  const ask = useMutation({ mutationFn: async () => { const currentUser = firebaseAuth?.currentUser; if (!currentUser || !productId) throw new Error("Sign in to ask a question"); return createProductQuestion(currentUser, productId, questionBody.trim()); }, onSuccess: async () => { setQuestionBody(""); await queryClient.invalidateQueries({ queryKey: ["catalog", "questions", productId] }); } });
+  const ask = useMutation({ mutationFn: async () => { if (!user || !productId || activeUid.current !== user.uid) throw new Error("Sign in to ask a question"); await createProductQuestion(user, productId, questionBody.trim()); return user.uid; }, onSuccess: async (uid) => { if (activeUid.current !== uid) return; setQuestionBody(""); await queryClient.invalidateQueries({ queryKey: ["catalog", "questions", productId] }); } });
   const saved = Boolean(productId && wishlist.data?.items.some((entry) => entry.productId === productId));
   const alerted = Boolean(productId && alerts.data?.some((entry) => entry.productId === productId && entry.target === null));
-  const saveProduct = useMutation({ mutationFn: () => saved ? removeWishlistItem(user!, productId!) : addWishlistItem(user!, productId!), onMutate: () => user?.uid, onSuccess: (data, _variables, uid) => { if (!uid || firebaseAuth?.currentUser?.uid !== uid) return; queryClient.setQueryData(["wishlist", uid], data); void queryClient.invalidateQueries({ queryKey: ["wishlist-collections", uid] }); if (!saved && discoverySessionId && productId) safelyRecordDiscoveryEvent({ sessionId: discoverySessionId, eventType: "WISHLIST", productId }); } });
+  const saveProduct = useMutation({ mutationFn: () => saved ? removeWishlistItem(user!, productId!) : addWishlistItem(user!, productId!), onMutate: () => user?.uid, onSuccess: (data, _variables, uid) => { if (!uid || activeUid.current !== uid) return; queryClient.setQueryData(["wishlist", uid], data); void queryClient.invalidateQueries({ queryKey: ["wishlist-collections", uid] }); if (!saved && discoverySessionId && productId) safelyRecordDiscoveryEvent({ sessionId: discoverySessionId, eventType: "WISHLIST", productId }); } });
   const toggleAlert = useMutation({ mutationFn: async () => {
-    if (!user || !productId || firebaseAuth?.currentUser?.uid !== user.uid) throw new Error("Sign in to manage alerts");
+    if (!user || !productId || activeUid.current !== user.uid) throw new Error("Sign in to manage alerts");
     const data = await (alerted ? removeAlert(user, productId, "stock") : saveAlert(user, productId));
     return { data, uid: user.uid };
   }, onSuccess: ({ data, uid }) => {
-    if (firebaseAuth?.currentUser?.uid !== uid) return;
+    if (activeUid.current !== uid) return;
     queryClient.setQueryData(["alerts", uid], data);
   } });
   const report = useMutation({ mutationFn: () => reportProduct(user!, productId!, { reason: reportReason, details: reportDetails }), onSuccess: () => { setShowReport(false); setReportDetails(""); } });

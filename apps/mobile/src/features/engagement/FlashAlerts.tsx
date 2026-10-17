@@ -1,24 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
+import { useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
 import { useCurrentUser } from "../auth/use-current-user";
 import { getFlashAlerts, removeFlashAlert, saveFlashAlert } from "./engagement.api";
 
 function useFlashAlerts() {
   const user = useCurrentUser();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const cache = useQueryClient();
   const query = useQuery({ queryKey: ["flash-alerts", user?.uid ?? null], queryFn: () => getFlashAlerts(user!), enabled: Boolean(user), staleTime: 30_000 });
   const mutation = useMutation({ retry: false, mutationFn: async ({ productId, enabled }: { productId: string; enabled: boolean }) => {
-    if (!user || firebaseAuth?.currentUser?.uid !== user.uid) throw new Error("Sign in to manage flash alerts");
+    if (!user || activeUid.current !== user.uid) throw new Error("Sign in to manage flash alerts");
     const data = enabled ? await saveFlashAlert(user, productId) : await removeFlashAlert(user, productId);
     return { data, uid: user.uid };
   }, onSuccess: ({ data, uid }) => {
-    if (firebaseAuth?.currentUser?.uid !== uid) return;
+    if (activeUid.current !== uid) return;
     cache.setQueryData(["flash-alerts", uid], data);
-  }, onSettled: () => {
-    if (user && firebaseAuth?.currentUser?.uid === user.uid) void cache.invalidateQueries({ queryKey: ["flash-alerts", user.uid] });
+  }, onSettled: (result) => {
+    if (result && activeUid.current === result.uid) void cache.invalidateQueries({ queryKey: ["flash-alerts", result.uid] });
   } });
   return { user, query, mutation };
 }
