@@ -18,6 +18,7 @@ const reports = readFileSync(resolve(root, "src/features/vendor/VendorReportsScr
 const inventory = readFileSync(resolve(root, "src/features/vendor/VendorInventoryScreen.tsx"), "utf8");
 const reviews = readFileSync(resolve(root, "src/features/vendor/VendorReviewsScreen.tsx"), "utf8");
 const questions = readFileSync(resolve(root, "src/features/vendor/VendorQuestionsScreen.tsx"), "utf8");
+const categorySelector = readFileSync(resolve(root, "src/features/vendor/components/VendorCategorySelector.tsx"), "utf8");
 
 test("seller catalog becomes a full-width mobile workspace", () => {
   assert.match(products, /useWindowDimensions\(\)\.width < 620/);
@@ -123,4 +124,13 @@ test("seller question replies stack safely and remain account scoped", () => {
   assert.match(questions, /compact && styles\.questionTopCompact/);
   assert.match(questions, /compact && styles\.actionsCompact/);
   assert.match(questions, /compact && styles\.actionCompact/);
+});
+
+test("seller category selector replaces fixed panes on mobile", () => {
+  assert.match(categorySelector, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(categorySelector, /horizontal=\{compact\}/);
+  assert.match(categorySelector, /compact && styles\.workspaceCompact/);
+  assert.match(categorySelector, /compact && styles\.groupsCompact/);
+  assert.match(categorySelector, /compact && styles\.optionsCompact/);
+  assert.match(categorySelector, /compact && styles\.searchCompact/);
 });
