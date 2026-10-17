@@ -19,6 +19,7 @@ const inventory = readFileSync(resolve(root, "src/features/vendor/VendorInventor
 const reviews = readFileSync(resolve(root, "src/features/vendor/VendorReviewsScreen.tsx"), "utf8");
 const questions = readFileSync(resolve(root, "src/features/vendor/VendorQuestionsScreen.tsx"), "utf8");
 const categorySelector = readFileSync(resolve(root, "src/features/vendor/components/VendorCategorySelector.tsx"), "utf8");
+const shopMedia = readFileSync(resolve(root, "src/features/vendor/VendorShopMediaScreen.tsx"), "utf8");
 
 test("seller catalog becomes a full-width mobile workspace", () => {
   assert.match(products, /useWindowDimensions\(\)\.width < 620/);
@@ -133,4 +134,12 @@ test("seller category selector replaces fixed panes on mobile", () => {
   assert.match(categorySelector, /compact && styles\.groupsCompact/);
   assert.match(categorySelector, /compact && styles\.optionsCompact/);
   assert.match(categorySelector, /compact && styles\.searchCompact/);
+});
+
+test("seller shop media stacks controls and guards late writes", () => {
+  assert.match(shopMedia, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(shopMedia, /activeUid\.current !== variables\.owner\.uid/);
+  assert.match(shopMedia, /compact && styles\.previewCompact/);
+  assert.match(shopMedia, /compact && styles\.mediaRowCompact/);
+  assert.match(shopMedia, /compact && styles\.actionCompact/);
 });
