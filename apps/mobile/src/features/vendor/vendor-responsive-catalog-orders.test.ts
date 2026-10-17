@@ -8,6 +8,8 @@ const products = readFileSync(resolve(root, "src/features/vendor/VendorProductsS
 const orders = readFileSync(resolve(root, "src/features/orders/VendorOrdersScreen.tsx"), "utf8");
 const finance = readFileSync(resolve(root, "src/features/operations/VendorFinanceScreen.tsx"), "utf8");
 const shop = readFileSync(resolve(root, "src/features/vendor/VendorShopScreen.tsx"), "utf8");
+const productForm = readFileSync(resolve(root, "src/features/vendor/VendorProductFormScreen.tsx"), "utf8");
+const payoutSettings = readFileSync(resolve(root, "src/features/vendor/VendorPayoutSettingsScreen.tsx"), "utf8");
 
 test("seller catalog becomes a full-width mobile workspace", () => {
   assert.match(products, /useWindowDimensions\(\)\.width < 620/);
@@ -37,4 +39,17 @@ test("storefront manager stacks preview tools on mobile", () => {
   assert.match(shop, /compact && styles\.toolCompact/);
   assert.match(shop, /toolCompact: \{ width: "100%" \}/);
   assert.match(shop, /activeUid\.current === variables\.owner\.uid/);
+});
+
+test("product editor exposes mobile steps and full-width footer actions", () => {
+  assert.match(productForm, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(productForm, /compact && compactStyles\.steps/);
+  assert.match(productForm, /compact && compactStyles\.footer/);
+  assert.match(productForm, /compact && compactStyles\.footerButton/);
+});
+
+test("payout destinations remain readable and account scoped on mobile", () => {
+  assert.match(payoutSettings, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(payoutSettings, /activeUid\.current !== variables\.owner\.uid/);
+  assert.match(payoutSettings, /compact && compactStyles\.account/);
 });
