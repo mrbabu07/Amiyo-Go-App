@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
 import { useCurrentUser } from "../auth/use-current-user";
 import { addWishlistItem, createWishlistCollection, deleteWishlistCollection, getWishlistCollections, renameWishlistCollection } from "./engagement.api";
 
 export function WishlistCollections({ selectedId, onSelect }: { selectedId?: string; onSelect: (id?: string) => void }) {
   const user = useCurrentUser();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const cache = useQueryClient();
   const [name, setName] = useState("");
   const [rename, setRename] = useState("");
@@ -24,7 +24,7 @@ export function WishlistCollections({ selectedId, onSelect }: { selectedId?: str
       return { uid: user.uid, id: action === "delete" ? undefined : selected.id, action };
     },
     onSuccess: (result) => {
-      if (firebaseAuth?.currentUser?.uid !== result.uid) return;
+      if (activeUid.current !== result.uid) return;
       void cache.invalidateQueries({ queryKey: ["wishlist-collections", result.uid] });
       void cache.invalidateQueries({ queryKey: ["wishlist", result.uid] });
       setName(""); setRename(""); setConfirmDelete(false);
@@ -54,6 +54,7 @@ export function WishlistCollections({ selectedId, onSelect }: { selectedId?: str
 
 export function WishlistCollectionPicker({ productId, selectedId }: { productId: string; selectedId?: string }) {
   const user = useCurrentUser();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const cache = useQueryClient();
   const [open, setOpen] = useState(false);
   const query = useQuery({ queryKey: ["wishlist-collections", user?.uid], queryFn: () => getWishlistCollections(user!), enabled: Boolean(user) && open });
@@ -64,7 +65,7 @@ export function WishlistCollectionPicker({ productId, selectedId }: { productId:
       return user.uid;
     },
     onSuccess: (uid) => {
-      if (firebaseAuth?.currentUser?.uid !== uid) return;
+      if (activeUid.current !== uid) return;
       void cache.invalidateQueries({ queryKey: ["wishlist", uid] });
       void cache.invalidateQueries({ queryKey: ["wishlist-collections", uid] });
       setOpen(false);

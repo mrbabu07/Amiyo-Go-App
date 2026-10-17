@@ -1,11 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ActivityIndicator, Image, Pressable, Share, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
 import { useCurrentUser } from "../auth/use-current-user";
 import { getProduct } from "../catalog/catalog.api";
 import { quickCartVariant } from "../catalog/product-card-policy";
@@ -23,6 +22,7 @@ export function WishlistScreen() {
   const router = useRouter();
   const cache = useQueryClient();
   const user = useCurrentUser();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const [selection, setSelection] = useState<{ uid: string; id?: string } | null>(null);
   const collectionId = selection?.uid === user?.uid ? selection?.id : undefined;
   const wishlistKey = collectionId ? ["wishlist", user?.uid ?? null, collectionId] : ["wishlist", user?.uid ?? null];
@@ -32,8 +32,8 @@ export function WishlistScreen() {
   const [shareError, setShareError] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
   const query = useQuery({ queryKey: wishlistKey, queryFn: () => getWishlist(user!, collectionId), enabled: Boolean(user), retry: false });
-  const updateShare = useMutation({ mutationFn: () => query.data?.shareUrl ? unshareWishlist(user!, collectionId) : shareWishlist(user!, collectionId), onMutate: () => ({ uid: user?.uid, key: wishlistKey }), onSuccess: (data, _variables, context) => { if (context?.uid && firebaseAuth?.currentUser?.uid === context.uid) { cache.setQueryData(context.key, data); void cache.invalidateQueries({ queryKey: ["wishlist-collections", context.uid] }); } } });
-  const remove = useMutation({ mutationFn: (productId: string) => removeWishlistItem(user!, productId, collectionId), onMutate: () => ({ uid: user?.uid, key: wishlistKey }), onSuccess: (data, _variables, context) => { if (context?.uid && firebaseAuth?.currentUser?.uid === context.uid) { cache.setQueryData(context.key, data); void cache.invalidateQueries({ queryKey: ["wishlist-collections", context.uid] }); } } });
+  const updateShare = useMutation({ mutationFn: () => query.data?.shareUrl ? unshareWishlist(user!, collectionId) : shareWishlist(user!, collectionId), onMutate: () => ({ uid: user?.uid, key: wishlistKey }), onSuccess: (data, _variables, context) => { if (context?.uid && activeUid.current === context.uid) { cache.setQueryData(context.key, data); void cache.invalidateQueries({ queryKey: ["wishlist-collections", context.uid] }); } } });
+  const remove = useMutation({ mutationFn: (productId: string) => removeWishlistItem(user!, productId, collectionId), onMutate: () => ({ uid: user?.uid, key: wishlistKey }), onSuccess: (data, _variables, context) => { if (context?.uid && activeUid.current === context.uid) { cache.setQueryData(context.key, data); void cache.invalidateQueries({ queryKey: ["wishlist-collections", context.uid] }); } } });
 
   async function openShare() {
     if (!query.data?.shareUrl) return;
@@ -80,6 +80,7 @@ export function WishlistScreen() {
 function WishlistCard({ busy, collectionId, item, onOpen, onRemove }: { busy: boolean; collectionId: string; item: WishlistItem; onOpen: () => void; onRemove: () => void }) {
   const cache = useQueryClient();
   const user = useCurrentUser();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const [failedImage, setFailedImage] = useState<string | null>(null);
   const stockLabel = item.availableQuantity === 0 ? "Out of stock" : item.availableQuantity <= 5 ? `Only ${item.availableQuantity} left` : "In stock";
   const addToCart = useMutation({
@@ -87,12 +88,12 @@ function WishlistCard({ busy, collectionId, item, onOpen, onRemove }: { busy: bo
       if (!user) throw new Error("Sign in to add products to your cart.");
       const detail = await getProduct(item.slug || item.productId);
       const variantId = quickCartVariant(detail.variants);
-      if (firebaseAuth?.currentUser?.uid !== user.uid) throw new Error("Your account changed. Please try again.");
+      if (activeUid.current !== user.uid) throw new Error("Your account changed. Please try again.");
       if (!variantId) { onOpen(); return null; }
       return { cart: await addCartItem(user, variantId, 1), uid: user.uid };
     },
     onSuccess: (result) => {
-      if (result && firebaseAuth?.currentUser?.uid === result.uid) cache.setQueryData(["cart", result.uid], result.cart);
+      if (result && activeUid.current === result.uid) cache.setQueryData(["cart", result.uid], result.cart);
     }
   });
 

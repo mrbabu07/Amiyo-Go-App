@@ -1,9 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
 import { useCurrentUser } from "../auth/use-current-user";
 import { getProduct } from "../catalog/catalog.api";
 import { addCartItem } from "../commerce/commerce.api";
@@ -22,6 +21,7 @@ const statusLabels = {
 
 export function WishlistToCart({ collectionId, products, busy, onBusyChange }: { collectionId: string; products: WishlistCartProduct[]; busy: boolean; onBusyChange: (busy: boolean) => void }) {
   const user = useCurrentUser();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const cache = useQueryClient();
   const router = useRouter();
   const [receipt, setReceipt] = useState<WishlistCartReceipt | null | undefined>(undefined);
@@ -30,7 +30,7 @@ export function WishlistToCart({ collectionId, products, busy, onBusyChange }: {
   useEffect(() => {
     let active = true;
     if (!user) { setReceipt(null); return () => { active = false; }; }
-    void wishlistCartRecovery.load(user.uid, collectionId).then((value) => { if (active && firebaseAuth?.currentUser?.uid === user.uid) { setRecoveryError(""); setReceipt(value); } }).catch((error) => { if (active) { setRecoveryError(error instanceof Error ? error.message : "Could not read saved wishlist progress."); setReceipt(null); } });
+    void wishlistCartRecovery.load(user.uid, collectionId).then((value) => { if (active && activeUid.current === user.uid) { setRecoveryError(""); setReceipt(value); } }).catch((error) => { if (active && activeUid.current === user.uid) { setRecoveryError(error instanceof Error ? error.message : "Could not read saved wishlist progress."); setReceipt(null); } });
     return () => { active = false; };
   }, [collectionId, user]);
   const mutation = useMutation({
@@ -41,12 +41,12 @@ export function WishlistToCart({ collectionId, products, busy, onBusyChange }: {
       const saved = await wishlistCartRecovery.prepare(uid, collectionId, productIds);
       if (saved.completed) throw new Error("This wishlist copy already completed. Start another copy explicitly if you want to add one more of each item.");
       const result = await wishlistToCart(uid, [...products], {
-        isCurrentAccount: () => firebaseAuth?.currentUser?.uid === uid,
+        isCurrentAccount: () => activeUid.current === uid,
         loadProduct: getProduct,
         addVariant: async (variantId, productId) => {
-          if (firebaseAuth?.currentUser?.uid !== uid) throw new Error("Your account changed.");
+          if (activeUid.current !== uid) throw new Error("Your account changed.");
           const cart = await addCartItem(user, variantId, 1, saved.keys[productId]);
-          if (firebaseAuth?.currentUser?.uid === uid) cache.setQueryData(["cart", uid], cart);
+          if (activeUid.current === uid) cache.setQueryData(["cart", uid], cart);
         }
       });
       if (!result.accountChanged && !result.items.some((item) => ["unconfirmed", "not-attempted"].includes(item.status))) setReceipt(await wishlistCartRecovery.complete(uid, collectionId, productIds));
@@ -54,7 +54,7 @@ export function WishlistToCart({ collectionId, products, busy, onBusyChange }: {
       return { uid, ...result };
     },
     onSuccess: (result) => {
-      if (firebaseAuth?.currentUser?.uid === result.uid) void cache.invalidateQueries({ queryKey: ["cart", result.uid] });
+      if (activeUid.current === result.uid) void cache.invalidateQueries({ queryKey: ["cart", result.uid] });
     },
     onMutate: () => onBusyChange(true),
     onSettled: () => onBusyChange(false)
@@ -65,7 +65,7 @@ export function WishlistToCart({ collectionId, products, busy, onBusyChange }: {
     if (!user) return;
     try {
       const next = await wishlistCartRecovery.restartCompleted(user.uid, collectionId, productIds);
-      if (firebaseAuth?.currentUser?.uid === user.uid) { setRecoveryError(""); setReceipt(next); mutation.reset(); }
+      if (activeUid.current === user.uid) { setRecoveryError(""); setReceipt(next); mutation.reset(); }
     } catch (error) {
       setRecoveryError(error instanceof Error ? error.message : "Could not restart wishlist-to-cart.");
     }

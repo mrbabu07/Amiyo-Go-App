@@ -17,8 +17,9 @@ test("wishlist quick cart requires a current sellable variant, never guesses opt
 });
 
 test("wishlist cart cache and card state stay scoped to the signed-in account", () => {
-  assert.match(source, /firebaseAuth\?\.currentUser\?\.uid !== user.uid/);
-  assert.match(source, /firebaseAuth\?\.currentUser\?\.uid === result.uid/);
+  assert.match(source, /activeUid\.current !== user.uid/);
+  assert.match(source, /activeUid\.current === result.uid/);
+  assert.doesNotMatch(source, /firebaseAuth/);
   assert.match(source, /cache.setQueryData\(\["cart", result.uid\], result.cart\)/);
   assert.ok(source.includes('key={`${user.uid}:${item.productId}`}'));
   assert.match(source, /addToCart.isPending \|\| !item.price \|\| item.availableQuantity === 0/);

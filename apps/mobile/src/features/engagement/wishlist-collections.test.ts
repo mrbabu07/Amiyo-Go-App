@@ -19,9 +19,10 @@ test("collection selection, cache writes and picker state are account scoped", (
   assert.match(screen, /getWishlist\(user!, collectionId\)/);
   for (const operation of ["shareWishlist", "unshareWishlist"]) assert.ok(screen.includes(operation + "(user!, collectionId)"));
   const panel = readFileSync(new URL("./WishlistCollections.tsx", import.meta.url), "utf8");
-  assert.match(panel, /firebaseAuth\?\.currentUser\?\.uid !== result.uid/);
+  assert.match(panel, /activeUid\.current !== result.uid/);
   assert.match(panel, /Confirm delete collection/);
   assert.match(panel, /selected && !selected.isDefault/);
   assert.match(panel, /addWishlistItem\(user, productId, id\)/);
+  assert.doesNotMatch(panel, /firebaseAuth/);
   assert.doesNotMatch(panel, /#[0-9a-f]{3,8}/i);
 });

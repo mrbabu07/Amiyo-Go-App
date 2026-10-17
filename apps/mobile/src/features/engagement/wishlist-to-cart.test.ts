@@ -15,7 +15,8 @@ test("bulk UI disables replay, updates scoped carts and offers explicit option s
   assert.match(source, /wishlistCartRecovery\.complete\(uid, collectionId, productIds\)/);
   assert.match(source, /Resume safely/);
   assert.match(source, /Start another copy/);
-  assert.match(source, /firebaseAuth\?\.currentUser\?\.uid === result.uid/);
+  assert.match(source, /activeUid\.current === result.uid/);
+  assert.doesNotMatch(source, /firebaseAuth/);
   assert.match(source, /invalidateQueries\(\{ queryKey: \["cart", result.uid\] \}\)/);
   assert.match(source, /disabled=\{!products.length \|\| busy \|\| mutation.isPending \|\| receipt === undefined \|\| Boolean\(recoveryError\)/);
   assert.match(source, /Boolean\(receipt\?\.completed\)/);
