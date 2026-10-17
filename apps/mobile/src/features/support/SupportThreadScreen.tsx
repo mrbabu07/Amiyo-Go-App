@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import type { User } from "firebase/auth";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
@@ -16,24 +17,28 @@ export function SupportThreadScreen({ id }: { id: string }) {
   const router = useRouter();
   const cache = useQueryClient();
   const user = useCurrentUser();
+  const activeUid = useRef(user?.uid);
+  activeUid.current = user?.uid;
   const [body, setBody] = useState("");
   const [files, setFiles] = useState<Attachment[]>([]);
   const [uploading, setUploading] = useState(false);
   const [openingAttachment, setOpeningAttachment] = useState<string | null>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  useEffect(() => { setBody(""); setFiles([]); setUploading(false); setOpeningAttachment(null); setAttachmentError(null); }, [id, user?.uid]);
   const tickets = useQuery({ queryKey: ["support", "mine", user?.uid], queryFn: () => getMyTickets(user!), enabled: Boolean(user), retry: false });
   const ticket = tickets.data?.find((item) => item.id === id);
-  const reply = useMutation({ retry: false, mutationFn: () => replyToTicket(user!, id, body.trim(), files), onSuccess: async () => {
+  const reply = useMutation({ retry: false, mutationFn: (owner: User) => replyToTicket(owner, id, body.trim(), files), onSuccess: async (_data, owner) => {
+    if (activeUid.current !== owner.uid) return;
     setBody(""); setFiles([]);
-    await cache.invalidateQueries({ queryKey: ["support", "mine", user!.uid] });
+    await cache.invalidateQueries({ queryKey: ["support", "mine", owner.uid] });
   } });
   const addFile = async () => {
     if (!user) return;
     setUploading(true);
     try {
       const result = await pickAndUploadDocument(user, "support");
-      if (result) setFiles((current) => current.length < 5 ? [...current, { storageKey: result.storageKey, name: result.originalName, mimeType: result.mimeType as Attachment["mimeType"] }] : current);
-    } finally { setUploading(false); }
+      if (result && activeUid.current === user.uid) setFiles((current) => current.length < 5 ? [...current, { storageKey: result.storageKey, name: result.originalName, mimeType: result.mimeType as Attachment["mimeType"] }] : current);
+    } finally { if (activeUid.current === user.uid) setUploading(false); }
   };
   const openAttachment = async (file: SavedAttachment) => {
     if (!user || openingAttachment) return;
@@ -41,11 +46,11 @@ export function SupportThreadScreen({ id }: { id: string }) {
     setAttachmentError(null);
     try {
       const signed = await accessSupportAttachment(user, id, file.id, file.mimeType === "application/pdf");
-      await Linking.openURL(signed.url);
+      if (activeUid.current === user.uid) await Linking.openURL(signed.url);
     } catch (error) {
-      setAttachmentError(error instanceof Error ? error.message : "Could not open this attachment");
+      if (activeUid.current === user.uid) setAttachmentError(error instanceof Error ? error.message : "Could not open this attachment");
     } finally {
-      setOpeningAttachment(null);
+      if (activeUid.current === user.uid) setOpeningAttachment(null);
     }
   };
   if (tickets.isLoading) return <Screen title="Support conversation"><ActivityIndicator color={colors.primary} /></Screen>;
@@ -55,7 +60,7 @@ export function SupportThreadScreen({ id }: { id: string }) {
     {ticket.orderId || ticket.returnId ? <View style={styles.context}><View style={styles.contextCopy}><Text style={styles.contextTitle}>Linked case context</Text><Text style={styles.date}>{ticket.returnId ? `Return #${ticket.returnId.slice(0, 8).toUpperCase()}` : "Order support"}</Text></View><View style={styles.contextActions}>{ticket.orderId ? <Pressable accessibilityRole="link" onPress={() => router.push(`/orders/${ticket.orderId}` as never)} style={styles.contextButton}><Text style={styles.contextButtonText}>View order</Text></Pressable> : null}{ticket.returnId ? <Pressable accessibilityRole="link" onPress={() => router.push(`/return/${ticket.returnId}` as never)} style={styles.contextButton}><Text style={styles.contextButtonText}>Track return</Text></Pressable> : null}</View></View> : null}
     <View style={styles.thread}>{ticket.messages.map((message, index) => <View key={message.id} style={[styles.message, index === 0 && styles.opening]}><Text style={styles.sender}>{index === 0 ? "Request opened" : "Conversation update"}</Text><Text style={styles.body}>{message.body}</Text>{message.attachments.map((file) => <SavedAttachmentRow busy={openingAttachment === file.id} disabled={Boolean(openingAttachment)} file={file} key={file.id} open={() => void openAttachment(file)} />)}<Text style={styles.date}>{new Date(message.createdAt).toLocaleString("en-BD")}</Text></View>)}</View>
     {attachmentError ? <Text accessibilityRole="alert" style={styles.error}>{attachmentError}</Text> : null}
-    {ticket.status !== "closed" ? <View style={styles.composer}><TextInput multiline onChangeText={setBody} placeholder="Write a reply" placeholderTextColor={colors.muted} style={styles.input} value={body} /><View style={styles.attachRow}><Pressable disabled={uploading || files.length >= 5} onPress={() => void addFile()} style={styles.attach}>{uploading ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.attachText}>Attach image or PDF ({files.length}/5)</Text>}</Pressable></View>{files.map((file) => <AttachmentRow file={file} key={file.storageKey} remove={() => setFiles((current) => current.filter((item) => item.storageKey !== file.storageKey))} />)}<Pressable disabled={reply.isPending || !body.trim()} onPress={() => reply.mutate()} style={[styles.primary, (reply.isPending || !body.trim()) && styles.disabled]}>{reply.isPending ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>Send reply</Text>}</Pressable></View> : <Text style={styles.closed}>This ticket is closed. Create a new ticket if you need more help.</Text>}
+    {ticket.status !== "closed" ? <View style={styles.composer}><TextInput multiline onChangeText={setBody} placeholder="Write a reply" placeholderTextColor={colors.muted} style={styles.input} value={body} /><View style={styles.attachRow}><Pressable disabled={uploading || files.length >= 5} onPress={() => void addFile()} style={styles.attach}>{uploading ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.attachText}>Attach image or PDF ({files.length}/5)</Text>}</Pressable></View>{files.map((file) => <AttachmentRow file={file} key={file.storageKey} remove={() => setFiles((current) => current.filter((item) => item.storageKey !== file.storageKey))} />)}<Pressable disabled={!user || reply.isPending || !body.trim()} onPress={() => user && reply.mutate(user)} style={[styles.primary, (reply.isPending || !body.trim()) && styles.disabled]}>{reply.isPending ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>Send reply</Text>}</Pressable></View> : <Text style={styles.closed}>This ticket is closed. Create a new ticket if you need more help.</Text>}
     {reply.error ? <Text style={styles.error}>{reply.error.message}</Text> : null}
   </Screen>;
 }
