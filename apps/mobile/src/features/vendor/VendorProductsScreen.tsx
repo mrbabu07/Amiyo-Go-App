@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import type { User } from "firebase/auth";
+import { useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { fallbackProductImage } from "../catalog/catalog.view-model";
 import { getVendorProducts, submitVendorProduct } from "../catalog/catalog.api";
 
@@ -13,12 +14,13 @@ const statuses = ["ALL", "DRAFT", "SUBMITTED", "APPROVED", "REJECTED", "ARCHIVED
 
 export function VendorProductsScreen() {
   const router = useRouter();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const cache = useQueryClient();
-  const products = useQuery({ queryKey: ["vendor", "products"], queryFn: () => getVendorProducts(user!), enabled: Boolean(user) });
+  const products = useQuery({ queryKey: ["vendor", "products", user?.uid], queryFn: () => getVendorProducts(user!), enabled: Boolean(user), retry: false });
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<typeof statuses[number]>("ALL");
-  const submit = useMutation({ mutationFn: (id: string) => submitVendorProduct(user!, id), onSuccess: () => cache.invalidateQueries({ queryKey: ["vendor", "products"] }) });
+  const submit = useMutation({ retry: false, mutationFn: ({ id, owner }: { id: string; owner: User }) => submitVendorProduct(owner, id), onSuccess: async (_data, variables) => { if (activeUid.current === variables.owner.uid) await cache.invalidateQueries({ queryKey: ["vendor", "products", variables.owner.uid] }); } });
   const visible = useMemo(() => (products.data ?? []).filter((product) => status === "ALL" || product.status === status).filter((product) => `${product.name} ${product.brand || ""} ${product.slug} ${product.variants.map((item) => item.sku).join(" ")}`.toLowerCase().includes(search.trim().toLowerCase())), [products.data, search, status]);
   const approved = products.data?.filter((item) => item.status === "APPROVED").length ?? 0;
   const pending = products.data?.filter((item) => item.status === "SUBMITTED").length ?? 0;
@@ -29,7 +31,7 @@ export function VendorProductsScreen() {
     <View style={styles.filters}>{statuses.map((item) => { const active = item === status; const count = item === "ALL" ? products.data?.length ?? 0 : products.data?.filter((product) => product.status === item).length ?? 0; return <Pressable key={item} onPress={() => setStatus(item)} style={[styles.filter, active && styles.filterActive]}><Text style={[styles.filterText, active && styles.filterTextActive]}>{item === "ALL" ? "All" : item.toLowerCase().replace(/^./, (letter) => letter.toUpperCase())}</Text><Text style={[styles.filterCount, active && styles.filterCountActive]}>{count}</Text></Pressable>; })}</View>
     {products.isLoading ? <ActivityIndicator color={colors.primary} /> : null}{products.error ? <Text style={styles.error}>{products.error.message}</Text> : null}
     <View style={styles.resultsHeader}><Text style={styles.resultCount}>{visible.length} product{visible.length === 1 ? "" : "s"}</Text><Text style={styles.resultMeta}>Most recently updated first</Text></View>
-    <View style={styles.grid}>{visible.map((product) => { const editable = ["DRAFT", "REJECTED"].includes(product.status); const stock = product.variants.reduce((sum, item) => sum + item.availableQuantity, 0); return <View key={product.id} style={styles.card}><Pressable onPress={() => router.push(`/vendor/products/${product.id}` as never)}><View style={styles.media}><Image source={{ uri: product.media[0]?.url || product.thumbnailUrl || fallbackProductImage }} style={styles.image} /><Text style={[styles.status, product.status === "REJECTED" && styles.rejected]}>{product.status}</Text></View><View style={styles.cardBody}><Text numberOfLines={2} style={styles.name}>{product.name}</Text><Text style={styles.brand}>{product.brand || "Unbranded"}</Text><View style={styles.priceRow}><Text style={styles.price}>৳{(Number(product.minimumPrice.amountMinor) / 100).toLocaleString("en-BD")}</Text><Text style={[styles.stock, stock === 0 && styles.outOfStock]}>{stock} in stock</Text></View><Text style={styles.sku}>{product.variants.map((item) => item.sku).slice(0, 2).join(" · ")}</Text></View></Pressable><View style={styles.cardActions}><Pressable onPress={() => router.push(`/vendor/products/${product.id}` as never)} style={styles.cardAction}><Ionicons color={colors.primary} name="eye-outline" size={17} /><Text style={styles.cardActionText}>View</Text></Pressable>{editable ? <Pressable onPress={() => router.push(`/vendor/products/edit/${product.id}` as never)} style={styles.cardAction}><Ionicons color={colors.primary} name="create-outline" size={17} /><Text style={styles.cardActionText}>Edit</Text></Pressable> : null}{editable ? <Pressable disabled={submit.isPending} onPress={() => submit.mutate(product.id)} style={styles.submit}><Text style={styles.submitText}>Submit</Text></Pressable> : null}</View></View>; })}</View>
+    <View style={styles.grid}>{visible.map((product) => { const editable = ["DRAFT", "REJECTED"].includes(product.status); const stock = product.variants.reduce((sum, item) => sum + item.availableQuantity, 0); return <View key={product.id} style={styles.card}><Pressable onPress={() => router.push(`/vendor/products/${product.id}` as never)}><View style={styles.media}><Image source={{ uri: product.media[0]?.url || product.thumbnailUrl || fallbackProductImage }} style={styles.image} /><Text style={[styles.status, product.status === "REJECTED" && styles.rejected]}>{product.status}</Text></View><View style={styles.cardBody}><Text numberOfLines={2} style={styles.name}>{product.name}</Text><Text style={styles.brand}>{product.brand || "Unbranded"}</Text><View style={styles.priceRow}><Text style={styles.price}>৳{(Number(product.minimumPrice.amountMinor) / 100).toLocaleString("en-BD")}</Text><Text style={[styles.stock, stock === 0 && styles.outOfStock]}>{stock} in stock</Text></View><Text style={styles.sku}>{product.variants.map((item) => item.sku).slice(0, 2).join(" · ")}</Text></View></Pressable><View style={styles.cardActions}><Pressable onPress={() => router.push(`/vendor/products/${product.id}` as never)} style={styles.cardAction}><Ionicons color={colors.primary} name="eye-outline" size={17} /><Text style={styles.cardActionText}>View</Text></Pressable>{editable ? <Pressable onPress={() => router.push(`/vendor/products/edit/${product.id}` as never)} style={styles.cardAction}><Ionicons color={colors.primary} name="create-outline" size={17} /><Text style={styles.cardActionText}>Edit</Text></Pressable> : null}{editable ? <Pressable disabled={submit.isPending || !user} onPress={() => submit.mutate({ id: product.id, owner: user! })} style={styles.submit}><Text style={styles.submitText}>Submit</Text></Pressable> : null}</View></View>; })}</View>
     {!products.isLoading && !visible.length ? <View style={styles.empty}><Ionicons color={colors.primary} name="cube-outline" size={48} /><Text style={styles.emptyTitle}>{products.data?.length ? "No matching products" : "Create your first product"}</Text><Text style={styles.emptyCopy}>{products.data?.length ? "Try another search or status filter." : "Add a listing with category, pricing and opening stock."}</Text><Pressable onPress={() => router.push("/vendor/products/add")} style={styles.primary}><Text style={styles.primaryText}>Add product</Text></Pressable></View> : null}{submit.error ? <Text style={styles.error}>{submit.error.message}</Text> : null}
   </Screen>;
 }
