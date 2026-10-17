@@ -2,12 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import type { CategoryDto } from "@amiyo/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import type { User } from "firebase/auth";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { createVendorProduct, getCategories, getVendorProducts, replaceVendorProductMedia, replaceVendorProductVariants, updateVendorProduct } from "../catalog/catalog.api";
 import { pickAndUploadImage } from "../media/media.api";
 import { ProductCategorySelect } from "./components/ProductCategorySelect";
@@ -21,11 +22,12 @@ const emptyVariant = (): VariantDraft => ({ color: "", size: "", sku: "", title:
 export function VendorProductFormScreen({ id }: { id?: string }) {
   const editing = Boolean(id);
   const router = useRouter();
-  const user = firebaseAuth?.currentUser ?? null;
+  const user = useCurrentUser();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const cache = useQueryClient();
-  const products = useQuery({ queryKey: ["vendor", "products"], queryFn: () => getVendorProducts(user!), enabled: Boolean(user && editing) });
+  const products = useQuery({ queryKey: ["vendor", "products", user?.uid], queryFn: () => getVendorProducts(user!), enabled: Boolean(user && editing), retry: false });
   const categories = useQuery({ queryKey: ["catalog", "categories"], queryFn: getCategories });
-  const workspace = useQuery({ queryKey: ["vendor", "workspace"], queryFn: () => getVendorWorkspace(user!), enabled: Boolean(user && !editing) });
+  const workspace = useQuery({ queryKey: ["vendor", "workspace", user?.uid], queryFn: () => getVendorWorkspace(user!), enabled: Boolean(user && !editing), retry: false });
   const product = products.data?.find((item) => item.id === id);
   const [form, setForm] = useState(initial);
   const [variants, setVariants] = useState<VariantDraft[]>([emptyVariant()]);
@@ -34,6 +36,8 @@ export function VendorProductFormScreen({ id }: { id?: string }) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [formError, setFormError] = useState("");
+
+  useEffect(() => { setForm(initial); setVariants([emptyVariant()]); setMedia([]); setAttributeValues({}); setUploading(false); setUploadError(""); setFormError(""); }, [user?.uid, id]);
 
   useEffect(() => {
     if (!product) return;
@@ -50,22 +54,23 @@ export function VendorProductFormScreen({ id }: { id?: string }) {
   const validVariants = variants.every((variant) => variant.sku.trim().length >= 3 && variant.title.trim().length > 0 && Number.isFinite(Number(variant.price)) && Number(variant.price) > 0 && Number.isInteger(Number(variant.stock)) && Number(variant.stock) >= 0 && (!variant.compareAt || Number(variant.compareAt) >= Number(variant.price)));
   const workspaceReady = editing ? Boolean(product) : Boolean(workspace.data?.shops[0]);
   const valid = form.name.trim().length >= 3 && Boolean(form.categoryId) && variants.length > 0 && variants.length <= 100 && validVariants && uniqueSkus && requiredAttributesValid && workspaceReady;
-  const save = useMutation({ mutationFn: async () => {
+  const save = useMutation({ retry: false, mutationFn: async (owner: User) => {
     const payload = variants.map((variant) => ({ ...(variant.id ? { id: variant.id } : {}), sku: variant.sku.trim().toUpperCase(), title: variant.title.trim(), attributes: { ...(variant.color ? { color: variant.color } : {}), ...(variant.size ? { size: variant.size } : {}) }, priceMinor: minor(variant.price), compareAtMinor: variant.compareAt ? minor(variant.compareAt) : null, currency: "BDT", onHand: Number(variant.stock), active: variant.active }));
     let current = editing
-      ? await updateVendorProduct(user!, id!, { version: product!.version, name: form.name, brand: form.brand.trim() || null, categoryId: form.categoryId, description: form.description.trim() || null, dynamicAttributes: attributeValues })
-      : await createVendorProduct(user!, { shopId: workspace.data!.shops[0]!.id, categoryId: form.categoryId, name: form.name, slug: slug(form.name), brand: form.brand.trim() || null, description: form.description.trim() || null, dynamicAttributes: attributeValues, variants: payload.map(({ id: _id, active: _active, ...variant }) => variant) });
-    if (editing) current = await replaceVendorProductVariants(user!, current.id, { version: current.version, variants: payload });
-    if (editing || media.length) current = await replaceVendorProductMedia(user!, current.id, { version: current.version, items: media.map((item, index) => ({ ...(item.id ? { id: item.id } : { uploadId: item.uploadId! }), variantId: current.variants.find((variant) => variant.sku === item.variantSku)?.id ?? null, altText: item.altText.trim() || null, displayOrder: index })) });
+      ? await updateVendorProduct(owner, id!, { version: product!.version, name: form.name, brand: form.brand.trim() || null, categoryId: form.categoryId, description: form.description.trim() || null, dynamicAttributes: attributeValues })
+      : await createVendorProduct(owner, { shopId: workspace.data!.shops[0]!.id, categoryId: form.categoryId, name: form.name, slug: slug(form.name), brand: form.brand.trim() || null, description: form.description.trim() || null, dynamicAttributes: attributeValues, variants: payload.map(({ id: _id, active: _active, ...variant }) => variant) });
+    if (editing) current = await replaceVendorProductVariants(owner, current.id, { version: current.version, variants: payload });
+    if (editing || media.length) current = await replaceVendorProductMedia(owner, current.id, { version: current.version, items: media.map((item, index) => ({ ...(item.id ? { id: item.id } : { uploadId: item.uploadId! }), variantId: current.variants.find((variant) => variant.sku === item.variantSku)?.id ?? null, altText: item.altText.trim() || null, displayOrder: index })) });
     return current;
-  }, onSuccess: async (saved) => { await cache.invalidateQueries({ queryKey: ["vendor", "products"] }); router.replace(`/vendor/products/${saved.id}` as never); } });
+  }, onSuccess: async (saved, owner) => { if (activeUid.current === owner.uid) { await cache.invalidateQueries({ queryKey: ["vendor", "products", owner.uid] }); router.replace(`/vendor/products/${saved.id}` as never); } } });
 
   const uploadImage = async () => {
-    if (media.length >= 12) return;
+    if (!user || media.length >= 12) return;
     setUploadError(""); setUploading(true);
-    try { const result = await pickAndUploadImage(user!, "product"); if (result) setMedia((items) => [...items, { uploadId: result.id, uri: result.localUri || result.publicUrl || "", altText: form.name, variantSku: "" }]); }
-    catch (error) { setUploadError(error instanceof Error ? error.message : "Image upload failed"); }
-    finally { setUploading(false); }
+    const owner = user!;
+    try { const result = await pickAndUploadImage(owner, "product"); if (result && activeUid.current === owner.uid) setMedia((items) => [...items, { uploadId: result.id, uri: result.localUri || result.publicUrl || "", altText: form.name, variantSku: "" }]); }
+    catch (error) { if (activeUid.current === owner.uid) setUploadError(error instanceof Error ? error.message : "Image upload failed"); }
+    finally { if (activeUid.current === owner.uid) setUploading(false); }
   };
   const generateVariants = () => {
     const colors = values(form.colors); const sizes = values(form.sizes);
@@ -86,7 +91,7 @@ export function VendorProductFormScreen({ id }: { id?: string }) {
     <ModuleCard title="Product media" meta={`${media.length}/12 images · JPG, PNG or WebP`}><View style={styles.gallery}>{media.map((item, index) => <View key={item.id ?? item.uploadId} style={styles.mediaCard}>{item.uri ? <Image source={{ uri: item.uri }} style={styles.mediaImage} /> : <View style={styles.mediaImageFallback}><Ionicons color={colors.muted} name="image-outline" size={28} /></View>}<Pressable accessibilityLabel="Remove image" onPress={() => setMedia((items) => items.filter((_, itemIndex) => itemIndex !== index))} style={styles.removeMedia}><Ionicons color={colors.surface} name="close" size={16} /></Pressable><TextInput onChangeText={(altText) => setMedia((items) => items.map((entry, itemIndex) => itemIndex === index ? { ...entry, altText } : entry))} placeholder="Image alt text" placeholderTextColor={colors.muted} style={styles.altInput} value={item.altText} /><View style={styles.mediaVariants}><Pressable onPress={() => setMedia((items) => items.map((entry, itemIndex) => itemIndex === index ? { ...entry, variantSku: "" } : entry))} style={[styles.mediaVariant, !item.variantSku && styles.mediaVariantActive]}><Text style={[styles.mediaVariantText, !item.variantSku && styles.mediaVariantTextActive]}>All</Text></Pressable>{variants.slice(0, 4).map((variant) => <Pressable key={variant.sku || variant.title} onPress={() => setMedia((items) => items.map((entry, itemIndex) => itemIndex === index ? { ...entry, variantSku: variant.sku } : entry))} style={[styles.mediaVariant, item.variantSku === variant.sku && styles.mediaVariantActive]}><Text numberOfLines={1} style={[styles.mediaVariantText, item.variantSku === variant.sku && styles.mediaVariantTextActive]}>{variant.sku || variant.title}</Text></Pressable>)}</View><Text style={styles.mediaOrder}>IMAGE {index + 1}{index === 0 ? " · COVER" : ""}</Text></View>)}{media.length < 12 ? <Pressable disabled={uploading} onPress={() => void uploadImage()} style={styles.addMedia}>{uploading ? <ActivityIndicator color={colors.primary} /> : <><Ionicons color={colors.primary} name="cloud-upload-outline" size={27} /><Text style={styles.addMediaTitle}>Add image</Text><Text style={styles.addMediaMeta}>Up to 10 MB</Text></>}</Pressable> : null}</View>{uploadError ? <Text style={styles.error}>{uploadError}</Text> : null}</ModuleCard>
     <ModuleCard title="Variant generator" meta="Choose common colors, add custom colors or sizes, then generate the matrix."><ColorOptions onChange={(colorsValue) => setForm({ ...form, colors: colorsValue })} value={form.colors} /><Field label="Sizes (comma separated)" onChangeText={(sizes) => setForm({ ...form, sizes })} placeholder="S, M, L, XL" value={form.sizes} /><Pressable onPress={generateVariants} style={styles.outline}><Ionicons color={colors.primary} name="git-branch-outline" size={18} /><Text style={styles.outlineText}>Generate color and size variants</Text></Pressable></ModuleCard>
     <ModuleCard title={`Variant matrix · ${variants.length}`} meta={`${variants.reduce((sum, variant) => sum + (Number(variant.stock) || 0), 0)} total opening stock`}><View style={styles.variantList}>{variants.map((variant, index) => <View key={variant.id ?? `${index}-${variant.color}-${variant.size}`} style={styles.variantCard}><View style={styles.variantHeader}><View style={styles.variantNumber}><Text style={styles.variantNumberText}>{index + 1}</Text></View><Text style={styles.variantHeading}>{variant.title || `Variant ${index + 1}`}</Text><Pressable disabled={variants.length === 1} onPress={() => setVariants((items) => items.filter((_, itemIndex) => itemIndex !== index))}><Ionicons color={variants.length === 1 ? colors.border : colors.danger} name="trash-outline" size={19} /></Pressable></View><View style={styles.row}><Field label="Color" onChangeText={(color) => updateVariant(index, { color, title: [color, variant.size].filter(Boolean).join(" / ") || "Default" })} value={variant.color} /><Field label="Size" onChangeText={(size) => updateVariant(index, { size, title: [variant.color, size].filter(Boolean).join(" / ") || "Default" })} value={variant.size} /><Field label="SKU *" onChangeText={(sku) => updateVariant(index, { sku: sku.toUpperCase() })} value={variant.sku} /></View><View style={styles.row}><Field keyboardType="decimal-pad" label="Price *" onChangeText={(price) => updateVariant(index, { price })} value={variant.price} /><Field keyboardType="decimal-pad" label="Compare at" onChangeText={(compareAt) => updateVariant(index, { compareAt })} value={variant.compareAt} /><Field keyboardType="numeric" label="Stock *" onChangeText={(stock) => updateVariant(index, { stock })} value={variant.stock} /></View><Pressable onPress={() => updateVariant(index, { active: !variant.active })} style={styles.activeRow}><Ionicons color={variant.active ? colors.success : colors.muted} name={variant.active ? "checkbox" : "square-outline"} size={20} /><Text style={styles.activeText}>Variant is active and sellable</Text></Pressable></View>)}</View><Pressable onPress={() => setVariants((items) => [...items, emptyVariant()])} style={styles.outline}><Ionicons color={colors.primary} name="add" size={18} /><Text style={styles.outlineText}>Add another variant</Text></Pressable></ModuleCard>
-    {!uniqueSkus ? <Text style={styles.error}>Every variant needs a unique SKU.</Text> : null}{!requiredAttributesValid ? <Text style={styles.error}>Complete every required category field.</Text> : null}{formError ? <Text style={styles.error}>{formError}</Text> : null}{save.error ? <Text style={styles.error}>{save.error.message}</Text> : null}<View style={styles.footer}><Pressable onPress={() => router.back()} style={styles.cancel}><Text style={styles.cancelText}>Cancel</Text></Pressable><Pressable disabled={!valid || save.isPending || uploading} onPress={() => save.mutate()} style={[styles.primary, (!valid || save.isPending || uploading) && styles.disabled]}>{save.isPending ? <ActivityIndicator color={colors.surface} /> : <Text style={styles.primaryText}>{editing ? "Save product and variants" : "Create draft product"}</Text>}</Pressable></View>
+    {!uniqueSkus ? <Text style={styles.error}>Every variant needs a unique SKU.</Text> : null}{!requiredAttributesValid ? <Text style={styles.error}>Complete every required category field.</Text> : null}{formError ? <Text style={styles.error}>{formError}</Text> : null}{save.error ? <Text style={styles.error}>{save.error.message}</Text> : null}<View style={styles.footer}><Pressable onPress={() => router.back()} style={styles.cancel}><Text style={styles.cancelText}>Cancel</Text></Pressable><Pressable disabled={!valid || save.isPending || uploading || !user} onPress={() => save.mutate(user!)} style={[styles.primary, (!valid || save.isPending || uploading || !user) && styles.disabled]}>{save.isPending ? <ActivityIndicator color={colors.surface} /> : <Text style={styles.primaryText}>{editing ? "Save product and variants" : "Create draft product"}</Text>}</Pressable></View>
   </Screen>;
 }
 
