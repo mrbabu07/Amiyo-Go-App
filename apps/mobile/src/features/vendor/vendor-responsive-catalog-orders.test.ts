@@ -25,6 +25,7 @@ const settings = readFileSync(resolve(root, "src/features/vendor/VendorSettingsS
 const decoration = readFileSync(resolve(root, "src/features/vendor/VendorShopDecorationScreen.tsx"), "utf8");
 const engagement = readFileSync(resolve(root, "src/features/vendor/VendorEngagementScreen.tsx"), "utf8");
 const operations = readFileSync(resolve(root, "src/features/vendor/VendorOperationsScreen.tsx"), "utf8");
+const categoryRequests = readFileSync(resolve(root, "src/features/vendor/VendorCategoryRequestsScreen.tsx"), "utf8");
 
 test("seller catalog becomes a full-width mobile workspace", () => {
   assert.match(products, /useWindowDimensions\(\)\.width < 620/);
@@ -190,4 +191,12 @@ test("seller operations command center stacks cleanly on mobile", () => {
   assert.match(operations, /compact && styles\.moduleCompact/);
   assert.match(operations, /adjustsFontSizeToFit numberOfLines=\{1\}/);
   assert.doesNotMatch(operations, /à§³|Â·/);
+});
+
+test("seller category requests stay usable on narrow screens", () => {
+  assert.match(categoryRequests, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(categoryRequests, /\["vendor", "category-requests", user\?\.uid\]/);
+  assert.match(categoryRequests, /horizontal=\{compact\}/);
+  assert.match(categoryRequests, /compact && styles\.primaryCompact/);
+  assert.match(categoryRequests, /activeUid\.current !== owner\.uid/);
 });
