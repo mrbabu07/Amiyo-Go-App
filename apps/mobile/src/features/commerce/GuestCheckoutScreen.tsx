@@ -8,7 +8,6 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDim
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { createMyAddress } from "../auth/auth.api";
-import { firebaseAuth } from "../auth/firebase";
 import { useCurrentUser } from "../auth/use-current-user";
 import { createCheckoutAttempt } from "./checkout-attempt";
 import { ensureGuestUser } from "../auth/guest-auth";
@@ -28,6 +27,8 @@ export function GuestCheckoutScreen() {
   const params = useLocalSearchParams<{ couponCode?: string }>();
   const queryClient = useQueryClient();
   const user = useCurrentUser();
+  const activeUid = useRef(user?.uid);
+  activeUid.current = user?.uid;
   const recovery = useQuery({ queryKey: ["checkout-recovery", user?.uid], queryFn: () => getPendingCheckout(user!), enabled: Boolean(user), staleTime: 0, retry: false });
   const submitLock = useRef(false);
   const attempt = useRef(createCheckoutAttempt<Awaited<ReturnType<typeof placeOrder>>>(() => Crypto.randomUUID()));
@@ -47,19 +48,21 @@ export function GuestCheckoutScreen() {
   const quote = useQuery({ queryKey: ["checkout", "guest-quote", couponCode, user?.uid], queryFn: () => getCheckoutQuote(user!, couponCode), enabled: Boolean(user) });
 
   useEffect(() => {
-    if (user) return;
-    void ensureGuestUser().catch((caught: unknown) => setError(caught instanceof Error ? caught.message : "Guest checkout is unavailable")).finally(() => setStarting(false));
+    if (user) { setStarting(false); return; }
+    setStarting(true);
+    void ensureGuestUser().catch((caught: unknown) => { if (!activeUid.current) setError(caught instanceof Error ? caught.message : "Guest checkout is unavailable"); }).finally(() => { if (!activeUid.current) setStarting(false); });
   }, [user]);
-  useEffect(() => { setCodPhoneConfirmed(false); }, [user?.uid]);
+  useEffect(() => { setCodPhoneConfirmed(false); setCouponCode(params.couponCode?.toUpperCase() || null); setError(null); submitLock.current = false; deliveryAddresses.current.clear(); }, [user?.uid]);
 
   function update(key: keyof typeof form, value: string) { if (key === "phone") setCodPhoneConfirmed(false); setForm((current) => ({ ...current, [key]: value })); }
-  async function applyCoupon(code: string) { const next = await getCheckoutQuote(user!, code); if (firebaseAuth?.currentUser?.uid !== user?.uid) return; queryClient.setQueryData(["checkout", "guest-quote", code, user?.uid], next); setCouponCode(code); }
+  async function applyCoupon(code: string) { if (!user) return; const ownerUid = user.uid; const next = await getCheckoutQuote(user, code); if (activeUid.current !== ownerUid) return; queryClient.setQueryData(["checkout", "guest-quote", code, ownerUid], next); setCouponCode(code); }
   async function submit() {
     if (submitLock.current) return;
     if (policyError) { setError(policyError); return; }
     if (!user || !form.name.trim() || !form.email.trim() || !form.phone.trim() || !form.line1.trim() || !form.district.trim()) { setError("Complete all required contact and delivery fields"); return; }
     submitLock.current = true;
     setBusy(true); setError(null);
+    const ownerUid = user.uid;
     try {
       const addressIdentity = JSON.stringify([user.uid, form]);
       const result = await attempt.current(JSON.stringify([addressIdentity, paymentMethod, couponCode, codPhoneConfirmed]), async (key) => {
@@ -69,15 +72,15 @@ export function GuestCheckoutScreen() {
           addressId = address.id;
           deliveryAddresses.current.set(addressIdentity, addressId);
         }
-        if (firebaseAuth?.currentUser?.uid !== user.uid) throw new Error("Account changed. Reopen checkout before continuing.");
+        if (activeUid.current !== ownerUid) throw new Error("Account changed. Reopen checkout before continuing.");
         return placeOrder(user, { addressId, paymentMethod, couponCode, loyaltyPoints: "0", codPhoneConfirmed }, key);
       });
-      if (firebaseAuth?.currentUser?.uid !== user.uid) return;
-      queryClient.removeQueries({ queryKey: ["cart", user.uid] });
-      queryClient.removeQueries({ queryKey: ["checkout"] });
+      if (activeUid.current !== ownerUid) return;
+      queryClient.removeQueries({ queryKey: ["cart", ownerUid] });
+      queryClient.removeQueries({ queryKey: ["checkout", "guest-quote"] });
       router.replace({ pathname: "/order-confirmation", params: { orderId: result.order.id, orderNumber: result.order.orderNumber, totalMinor: result.order.total.amountMinor, payment: result.payment.status, invoice: result.invoiceNumber, actionUrl: result.actionUrl || "", instructions: result.instructions || `Guest receipt for ${form.email}` } });
-    } catch (caught) { setError(caught instanceof Error ? caught.message : "Guest checkout could not be completed"); }
-    finally { submitLock.current = false; setBusy(false); }
+    } catch (caught) { if (activeUid.current === ownerUid) setError(caught instanceof Error ? caught.message : "Guest checkout could not be completed"); }
+    finally { submitLock.current = false; if (activeUid.current === ownerUid) setBusy(false); }
   }
 
   if (user && recovery.error) return <Screen eyebrow="CHECKOUT RECOVERY" title="Check your orders first" description={recovery.error.message}><Pressable onPress={() => router.push("/orders")} style={styles.primary}><Text style={styles.primaryText}>View my orders</Text></Pressable></Screen>;

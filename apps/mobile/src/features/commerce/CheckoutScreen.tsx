@@ -8,7 +8,6 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, useWindowDimensions, Vi
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { getMyAddresses } from "../auth/auth.api";
-import { firebaseAuth } from "../auth/firebase";
 import { useCurrentUser } from "../auth/use-current-user";
 import { createCheckoutAttempt } from "./checkout-attempt";
 import { getCheckoutQuote, getPendingCheckout, placeOrder } from "./commerce.api";
@@ -32,6 +31,8 @@ export function CheckoutScreen() {
   const params = useLocalSearchParams<{ couponCode?: string }>();
   const queryClient = useQueryClient();
   const user = useCurrentUser();
+  const activeUid = useRef(user?.uid);
+  activeUid.current = user?.uid;
   const recovery = useQuery({ queryKey: ["checkout-recovery", user?.uid], queryFn: () => getPendingCheckout(user!), enabled: Boolean(user), staleTime: 0, retry: false });
   const submitLock = useRef(false);
   const attempt = useRef(createCheckoutAttempt<Awaited<ReturnType<typeof placeOrder>>>(() => Crypto.randomUUID()));
@@ -51,25 +52,27 @@ export function CheckoutScreen() {
   const policyError = checkoutPolicyError(platform.error ? undefined : platform.data, paymentMethod, codPhoneConfirmed, selectedAddress);
   const submitDisabled = busy || !selectedAddress || Boolean(policyError);
 
+  useEffect(() => { setAddressId(null); setPaymentMethod("COD"); setCouponCode(params.couponCode?.toUpperCase() || null); setLoyaltyPoints("0"); setCodPhoneConfirmed(false); setError(null); submitLock.current = false; }, [user?.uid]);
   useEffect(() => { if (!addressId && addresses.data?.length) setAddressId((addresses.data.find((item) => item.isDefault) || addresses.data[0]!).id); }, [addressId, addresses.data]);
   useEffect(() => { setCodPhoneConfirmed(false); }, [addressId, user?.uid]);
-  async function applyCoupon(code: string) { const next = await getCheckoutQuote(user!, code, loyaltyPoints); if (firebaseAuth?.currentUser?.uid !== user?.uid) return; queryClient.setQueryData(["checkout", user?.uid, "quote", code, loyaltyPoints], next); setCouponCode(code); }
+  async function applyCoupon(code: string) { if (!user) return; const ownerUid = user.uid; const next = await getCheckoutQuote(user, code, loyaltyPoints); if (activeUid.current !== ownerUid) return; queryClient.setQueryData(["checkout", ownerUid, "quote", code, loyaltyPoints], next); setCouponCode(code); }
   async function toggleRewards() { const nextPoints = Number(quote.data?.loyalty.redeemedPoints || 0) > 0 ? "0" : quote.data?.loyalty.availablePoints || "0"; setLoyaltyPoints(nextPoints); }
   async function submit() {
     if (!user || !addressId || submitLock.current) return;
     if (policyError || !selectedAddress) { setError(policyError || "Select your delivery address."); return; }
     submitLock.current = true;
     setBusy(true); setError(null);
+    const ownerUid = user.uid;
     try {
       const input = { addressId, paymentMethod, couponCode, loyaltyPoints, codPhoneConfirmed };
       const result = await attempt.current(JSON.stringify([user.uid, input]), (key) => placeOrder(user, input, key));
-      if (firebaseAuth?.currentUser?.uid !== user.uid) return;
-      queryClient.removeQueries({ queryKey: ["cart", user.uid] });
-      queryClient.removeQueries({ queryKey: ["checkout", user.uid] });
+      if (activeUid.current !== ownerUid) return;
+      queryClient.removeQueries({ queryKey: ["cart", ownerUid] });
+      queryClient.removeQueries({ queryKey: ["checkout", ownerUid] });
       router.replace({ pathname: "/order-confirmation", params: { orderId: result.order.id, orderNumber: result.order.orderNumber, totalMinor: result.order.total.amountMinor, payment: result.payment.status, invoice: result.invoiceNumber, actionUrl: result.actionUrl || "", instructions: result.instructions || "" } });
     }
-    catch (caught) { setError(caught instanceof Error ? caught.message : "Checkout could not be completed"); }
-    finally { submitLock.current = false; setBusy(false); }
+    catch (caught) { if (activeUid.current === ownerUid) setError(caught instanceof Error ? caught.message : "Checkout could not be completed"); }
+    finally { submitLock.current = false; if (activeUid.current === ownerUid) setBusy(false); }
   }
 
   if (!user) return <Centered title="Sign in to checkout" copy="Checkout is currently available to authenticated customers." action="Sign in" onPress={() => router.replace("/auth")} />;

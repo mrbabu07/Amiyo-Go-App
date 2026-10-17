@@ -5,13 +5,16 @@ import { useRef, useState } from "react";
 import { Pressable, StyleSheet, Text } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
+import { useCurrentUser } from "../auth/use-current-user";
 import { placeOrder } from "./commerce.api";
 import { recoveryWindowMs, type PendingCheckout } from "./pending-checkout";
 
 export function CheckoutRecovery({ user, pending }: { user: User; pending: PendingCheckout }) {
   const router = useRouter();
   const cache = useQueryClient();
+  const currentUser = useCurrentUser();
+  const activeUid = useRef(currentUser?.uid);
+  activeUid.current = currentUser?.uid;
   const lock = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,14 +23,14 @@ export function CheckoutRecovery({ user, pending }: { user: User; pending: Pendi
     if (lock.current || expired) return;
     lock.current = true; setBusy(true); setError(null);
     try {
-      if (firebaseAuth?.currentUser?.uid !== user.uid) throw new Error("Your account changed. Reopen checkout.");
+      if (activeUid.current !== user.uid) throw new Error("Your account changed. Reopen checkout.");
       const result = await placeOrder(user, pending.input, pending.key);
-      if (firebaseAuth?.currentUser?.uid !== user.uid) return;
+      if (activeUid.current !== user.uid) return;
       cache.removeQueries({ queryKey: ["cart", user.uid] });
       cache.removeQueries({ queryKey: ["checkout-recovery", user.uid] });
       router.replace({ pathname: "/order-confirmation", params: { orderId: result.order.id, orderNumber: result.order.orderNumber, totalMinor: result.order.total.amountMinor, payment: result.payment.status, invoice: result.invoiceNumber, actionUrl: result.actionUrl || "", instructions: result.instructions || "" } });
-    } catch (caught) { setError(caught instanceof Error ? caught.message : "Recovery failed. Please try again."); }
-    finally { lock.current = false; setBusy(false); }
+    } catch (caught) { if (activeUid.current === user.uid) setError(caught instanceof Error ? caught.message : "Recovery failed. Please try again."); }
+    finally { lock.current = false; if (activeUid.current === user.uid) setBusy(false); }
   }
   return <Screen eyebrow="CHECKOUT RECOVERY" title="Check your previous checkout" description={expired ? "The safe retry window has expired. Check order history and contact support before placing another order." : "Your previous request may already have created an order. Retry its original details safely instead of submitting a new order."}>
     <Pressable accessibilityRole="button" disabled={busy || expired} onPress={() => void recover()} style={[styles.button, (busy || expired) && styles.disabled]}><Text style={styles.label}>{busy ? "Recovering…" : "Retry original checkout"}</Text></Pressable>
