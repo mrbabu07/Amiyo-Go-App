@@ -60,5 +60,6 @@ test("return form requires delivered package and explicit review of selected ite
   assert.ok(form.includes("submitting.current"));
   assert.ok(form.includes('pickAndUploadDocument(user, "return_evidence")'));
   assert.ok(form.includes("evidenceStorageKeys: review.evidenceStorageKeys"));
-  assert.ok(form.includes("firebaseAuth?.currentUser?.uid === accountId"));
+  assert.ok(form.includes("activeUid.current === accountId"));
+  assert.ok(!form.includes("firebaseAuth"));
 });

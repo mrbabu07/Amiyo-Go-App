@@ -11,7 +11,8 @@ test("inline cancellation retains explicit confirmation, current policy and dura
   assert.match(source, /expectedVersion: order.version/);
   assert.match(source, /cancelCustomerOrder\(user!, order.id, saved.command.input, saved.key\)/);
   assert.match(source, /mayDiscardOrderRejection\(saved.fresh, error.status, error.code\)/);
-  assert.match(source, /firebaseAuth\?\.currentUser\?\.uid === user.uid/);
+  assert.match(source, /activeUid\.current === ownerUid/);
+  assert.doesNotMatch(source, /firebaseAuth/);
   assert.match(source, /retry: false/);
   assert.match(source, /Check saved order request/);
   const expansion = readFileSync(new URL("./CustomerOrderExpansion.tsx", import.meta.url), "utf8");

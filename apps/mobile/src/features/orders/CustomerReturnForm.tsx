@@ -4,7 +4,6 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { buildReturnSelection, remainingReturnQuantity } from "./return-selection";
 import { useCurrentUser } from "../auth/use-current-user";
-import { firebaseAuth } from "../auth/firebase";
 import { pickAndUploadDocument } from "../media/media.api";
 import { returnEligibilityMessage } from "./return-eligibility";
 
@@ -21,6 +20,8 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
   const submitting = useRef(false);
   const [sending, setSending] = useState(false);
   const user = useCurrentUser();
+  const activeUid = useRef(user?.uid);
+  activeUid.current = user?.uid;
   const [files, setFiles] = useState<Array<{ key: string; name: string }>>([]);
   const [uploading, setUploading] = useState(false);
   const uploadLock = useRef(false);
@@ -40,7 +41,7 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
     uploadLock.current = true; setUploading(true); setError("");
     try {
       const uploaded = await pickAndUploadDocument(user, "return_evidence");
-      if (uploaded && firebaseAuth?.currentUser?.uid === accountId) setFiles((current) => current.length < 5 ? [...current, { key: uploaded.storageKey, name: uploaded.originalName }] : current);
+      if (uploaded && activeUid.current === accountId) setFiles((current) => current.length < 5 ? [...current, { key: uploaded.storageKey, name: uploaded.originalName }] : current);
     } catch (failure) { setError(failure instanceof Error ? failure.message : "Could not attach evidence."); }
     finally { uploadLock.current = false; setUploading(false); }
   };

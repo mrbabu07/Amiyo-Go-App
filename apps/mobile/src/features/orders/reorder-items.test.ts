@@ -63,7 +63,8 @@ test("order UI offers per-item and multi-item actions with account-scoped cart w
   const source = readFileSync(new URL("./OrderReorder.tsx", import.meta.url), "utf8");
   assert.match(source, /retry: false/);
   assert.match(source, /cache.setQueryData\(\["cart", user.uid\], cart\)/);
-  assert.match(source, /mounted.current && Boolean\(user\)/);
+  assert.match(source, /mounted.current && Boolean\(ownerUid\) && activeUid.current === ownerUid/);
+  assert.doesNotMatch(source, /firebaseAuth/);
   assert.match(source, /Retry product checks/);
   assert.match(expansion, /Delivery rescheduling/);
   assert.match(expansion, /accessibilityState=\{\{ disabled: true \}\} disabled/);

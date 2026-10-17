@@ -5,7 +5,6 @@ import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { colors, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
 import { useCurrentUser } from "../auth/use-current-user";
 import { cancelCustomerOrder, OperationsRequestError } from "../operations/operations.api";
 import { CancelOrderConfirmation } from "./CancelOrderConfirmation";
@@ -22,8 +21,11 @@ export function InlineOrderCancellation({ order }: { order: OrderDto }) {
   const [uncertain, setUncertain] = useState(false);
   const mounted = useRef(true);
   const lock = useRef(false);
+  const activeUid = useRef(user?.uid);
+  activeUid.current = user?.uid;
+  const ownerUid = user?.uid;
   useEffect(() => { mounted.current = true; const timer = setInterval(() => setNow(Date.now()), 1000); return () => { mounted.current = false; clearInterval(timer); }; }, []);
-  const current = () => mounted.current && user && firebaseAuth?.currentUser?.uid === user.uid;
+  const current = () => mounted.current && Boolean(ownerUid) && activeUid.current === ownerUid;
   const recovery = useQuery({ queryKey: ["return-order-recovery", user?.uid, order.id], queryFn: () => pendingOrderActions.load(user!.uid, order.id), enabled: Boolean(user), retry: false, staleTime: 0 });
   const blocked = uncertain || Boolean(recovery.data) || recovery.isLoading || Boolean(recovery.error);
   const mutation = useMutation({ retry: false, mutationFn: async (reason: string) => {

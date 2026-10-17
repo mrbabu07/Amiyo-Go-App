@@ -8,7 +8,8 @@ const source = readFileSync(new URL("./CustomerOrderDetailScreen.tsx", import.me
 test("order action state remounts for account and route changes", () => {
   assert.match(source, /ScopedOrderDetailScreen key=\{`\$\{id\}:\$\{user\?\.uid/);
   assert.match(source, /mounted\.current = false/);
-  assert.match(source, /firebaseAuth\?\.currentUser\?\.uid === user\?\.uid/);
+  assert.match(source, /activeUid\.current === ownerUid/);
+  assert.doesNotMatch(source, /firebaseAuth/);
 });
 
 test("cancel and return gate submission and completion on the current account", () => {

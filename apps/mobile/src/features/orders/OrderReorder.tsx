@@ -4,7 +4,6 @@ import { randomUUID } from "expo-crypto";
 import { useEffect, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { colors, spacing } from "../../ui/tokens";
-import { firebaseAuth } from "../auth/firebase";
 import { useCurrentUser } from "../auth/use-current-user";
 import { getProduct } from "../catalog/catalog.api";
 import { addCartItem } from "../commerce/commerce.api";
@@ -18,8 +17,11 @@ export function OrderReorder({ items }: { items: ReorderItem[] }) {
   const [repeatConfirmation, setRepeatConfirmation] = useState(false);
   const operationLock = useRef(false);
   const mounted = useRef(true);
+  const activeUid = useRef(user?.uid);
+  activeUid.current = user?.uid;
+  const ownerUid = user?.uid;
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
-  const current = () => mounted.current && Boolean(user) && firebaseAuth?.currentUser?.uid === user?.uid;
+  const current = () => mounted.current && Boolean(ownerUid) && activeUid.current === ownerUid;
   const mutation = useMutation({ retry: false, mutationFn: async (repeat: boolean) => {
     if (!user || !current()) throw new Error("Sign in again to reorder.");
     if (operationLock.current) throw new Error("A reorder is already running.");
