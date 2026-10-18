@@ -14,6 +14,10 @@ test("loyalty data and referral mutations stay scoped to the active account", ()
   assert.match(source, /compact && styles\.stack/);
   assert.match(source, /compact && styles\.fullWidth/);
   assert.match(source, /accessibilityLabel="Referral code"/);
+  assert.match(source, /accessibilityState=\{\{ busy: apply\.isPending, disabled: !referralReady \}\}/);
+  assert.match(source, /compact && styles\.entryCompact/);
+  assert.match(source, /Redeemed/);
+  assert.doesNotMatch(source, /#fff|#cbd5e1|#334155|#94a3b8/);
   assert.doesNotMatch(source, /Ã‚Â·|Ã¢â‚¬Â¦/);
   assert.doesNotMatch(source, /firebaseAuth/);
 });
