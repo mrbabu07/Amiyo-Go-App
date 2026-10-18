@@ -69,10 +69,10 @@ function OrderCard({ compact, order }: { compact: boolean; order: CustomerOrderS
       <View style={styles.totalBox}><Text style={styles.totalLabel}>Total</Text><Text style={styles.total}>{money(order.total.amountMinor)}</Text><Ionicons color={colors.muted} name={expanded ? "chevron-up" : "chevron-down"} size={18} /><Text style={styles.muted}>{expanded ? "Hide details" : "Show details"}</Text></View>
     </Pressable>
     {expanded ? <CustomerOrderExpansion id={order.id} compact={compact} /> : null}
-    <View style={styles.actions}>
-      <Link href={`/order/${order.id}` as never} asChild><Pressable accessibilityRole="link" accessibilityLabel={`View details for ${order.orderNumber}`} style={styles.primarySmall}><Text style={styles.primaryText}>View details</Text></Pressable></Link>
-      {orderStatusGroup(order.status) !== "RETURN" && !isCancelled && !isDelivered ? <Link href={`/order/${order.id}/tracking` as never} asChild><Pressable accessibilityRole="link" accessibilityLabel={`Track order ${order.orderNumber}`} style={styles.secondary}><Ionicons color={colors.primary} name="navigate-outline" size={16} /><Text style={styles.secondaryText}>Track order</Text></Pressable></Link> : null}
-      <Link href={`/order/${order.id}/invoice` as never} asChild><Pressable accessibilityRole="link" accessibilityLabel={`Invoice for ${order.orderNumber}`} style={styles.secondary}><Ionicons color={colors.primary} name="document-text-outline" size={16} /><Text style={styles.secondaryText}>Invoice</Text></Pressable></Link>
+    <View style={[styles.actions, compact && styles.actionsCompact]}>
+      <Link href={`/order/${order.id}` as never} asChild><Pressable accessibilityRole="link" accessibilityLabel={`View details for ${order.orderNumber}`} style={[styles.primarySmall, compact && styles.actionCompact]}><Text style={styles.primaryText}>View details</Text></Pressable></Link>
+      {orderStatusGroup(order.status) !== "RETURN" && !isCancelled && !isDelivered ? <Link href={`/order/${order.id}/tracking` as never} asChild><Pressable accessibilityRole="link" accessibilityLabel={`Track order ${order.orderNumber}`} style={[styles.secondary, compact && styles.actionCompact]}><Ionicons color={colors.primary} name="navigate-outline" size={16} /><Text style={styles.secondaryText}>Track order</Text></Pressable></Link> : null}
+      <Link href={`/order/${order.id}/invoice` as never} asChild><Pressable accessibilityRole="link" accessibilityLabel={`Invoice for ${order.orderNumber}`} style={[styles.secondary, compact && styles.actionCompact]}><Ionicons color={colors.primary} name="document-text-outline" size={16} /><Text style={styles.secondaryText}>Invoice</Text></Pressable></Link>
     </View>
   </View>;
 }
@@ -110,13 +110,13 @@ const styles = StyleSheet.create({
   countBadge: { backgroundColor: colors.surface, borderRadius: radius.pill, paddingHorizontal: 7, paddingVertical: 2 },
   countText: { color: colors.primary, fontSize: 11, fontWeight: "600" },
   productCopyCompact: { flexGrow: 0, flexShrink: 0, flexBasis: "auto", width: "100%" },
-  filters: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl, borderWidth: 1, flexDirection: "row", flexWrap: "wrap", gap: 7, padding: 7 },
+  filters: { backgroundColor: colors.surface, borderRadius: radius.xl, boxShadow: "0 7px 22px rgba(11,31,58,.06)", flexDirection: "row", flexWrap: "wrap", gap: 7, padding: 7 },
   filter: { flexDirection: "row", alignItems: "center", gap: spacing.sm, minHeight: 44, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 10 },
   filterActive: { backgroundColor: colors.primary },
   filterText: { color: colors.muted, fontSize: 12, fontWeight: "700" },
   filterTextActive: { color: colors.surface },
   list: { gap: spacing.md },
-  card: { backgroundColor: colors.surface, borderRadius: radius.xl, overflow: "hidden" },
+  card: { backgroundColor: colors.surface, borderRadius: radius.xl, boxShadow: "0 10px 30px rgba(11,31,58,.08)", overflow: "hidden" },
   cardTop: { alignItems: "center", borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: "row", gap: spacing.md, justifyContent: "space-between", padding: spacing.md },
   orderNumber: { color: colors.text, fontSize: 16, fontWeight: "700" },
   muted: { color: colors.muted, flexShrink: 1, fontSize: 11, lineHeight: 18, marginTop: 3 },
@@ -147,11 +147,13 @@ const styles = StyleSheet.create({
   stepTextActive: { color: colors.text, fontWeight: "700" },
   stepTextDanger: { color: colors.danger },
   actions: { backgroundColor: colors.background, borderTopColor: colors.border, borderTopWidth: 1, flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, justifyContent: "flex-end", padding: spacing.md },
+  actionsCompact: { alignItems: "stretch" },
+  actionCompact: { flex: 1, minWidth: 132 },
   primary: { backgroundColor: colors.primary, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: 13 },
   primarySmall: { backgroundColor: colors.primary, borderRadius: radius.md, justifyContent: "center", minHeight: 44, paddingHorizontal: spacing.md, paddingVertical: 10 },
   primaryText: { color: colors.surface, fontWeight: "700" },
   secondary: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flexDirection: "row", gap: 6, minHeight: 44, paddingHorizontal: spacing.md, paddingVertical: 10 },
   secondaryText: { color: colors.primary, fontWeight: "700" },
-  empty: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl, borderStyle: "dashed", borderWidth: 1, gap: spacing.md, padding: 44 },
+  empty: { alignItems: "center", backgroundColor: colors.surface, borderRadius: radius.xl, boxShadow: "0 10px 30px rgba(11,31,58,.08)", gap: spacing.md, padding: 44 },
   emptyTitle: { color: colors.text, fontSize: 22, fontWeight: "700", textAlign: "center" }
 });
