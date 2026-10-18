@@ -32,11 +32,16 @@ const registration = readFileSync(resolve(root, "src/features/vendor/VendorRegis
 const bulkProducts = readFileSync(resolve(root, "src/features/vendor/VendorBulkProductsScreen.tsx"), "utf8");
 
 test("seller catalog becomes a full-width mobile workspace", () => {
-  assert.match(products, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(products, /const \{ width \} = useWindowDimensions\(\)/);
+  assert.match(products, /const compact = width < 620/);
+  assert.match(products, /const tablet = width < 1024/);
   assert.match(products, /compact && styles\.searchCompact/);
   assert.match(products, /compact && styles\.toolbarButtonCompact/);
+  assert.match(products, /tablet && responsiveStyles\.cardTablet/);
+  assert.match(products, /cardTablet: \{ minWidth: 240, width: "48\.5%" \}/);
   assert.match(products, /compact && styles\.cardCompact/);
   assert.match(products, /cardCompact: \{ minWidth: 0, width: "100%" \}/);
+  assert.match(products, /Submit for review/);
 });
 
 test("seller orders preserve readable mobile cards and actions", () => {
