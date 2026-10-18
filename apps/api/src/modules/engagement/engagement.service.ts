@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { Prisma, type PrismaClient } from "@prisma/client";
-import type { AnswerInput, ChatMessageInput, ChatThreadInput, ContentModerationInput, CreatePromotion, NewsletterBroadcastInput, NewsletterSubscribeInput, ProductReportInput, QuestionInput, ReferralCodeInput, ReviewInput, Session, VendorReviewReplyInput } from "@amiyo/contracts";
+import { Prisma, type PrismaClient, type RoleName } from "@prisma/client";
+import type { AdminNotificationBroadcastInput, AnswerInput, ChatMessageInput, ChatThreadInput, ContentModerationInput, CreatePromotion, NewsletterBroadcastInput, NewsletterSubscribeInput, ProductReportInput, QuestionInput, ReferralCodeInput, ReviewInput, Session, VendorReviewReplyInput } from "@amiyo/contracts";
 import { loyaltyExpiresAt, notificationChannels } from "@amiyo/domain";
 import { TtlCache } from "../../infrastructure/cache/ttl-cache.js";
 import { withSerializableTransaction } from "../../infrastructure/database/transaction.js";
@@ -124,6 +124,37 @@ export class EngagementService {
 
   async notifications(userId: string) { const rows = await this.client.notification.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: 100 }); return rows.map((row) => { const data = row.data && typeof row.data === "object" && !Array.isArray(row.data) ? row.data as Record<string, unknown> : {}; return { id: row.id, type: row.type, title: row.title, body: row.body, href: typeof data.href === "string" ? data.href : null, readAt: row.readAt?.toISOString() ?? null, createdAt: row.createdAt.toISOString() }; }); }
   async readNotification(userId: string, id: string) { const result = await this.client.notification.updateMany({ where: { id, userId }, data: { readAt: new Date() } }); if (!result.count) throw new ApiProblem(404, "NOTIFICATION_NOT_FOUND", "Notification not found"); return this.notifications(userId); }
+  async adminNotificationWorkspace(session: Session) {
+    if (!session.permissions.includes("admin:manage")) throw new ApiProblem(403, "ADMIN_REQUIRED", "Admin management access is required");
+    const rows = await this.client.auditLog.findMany({ where: { action: "notification.broadcast.created", resourceType: "notification_broadcast" }, orderBy: { createdAt: "desc" }, take: 100 });
+    const seen = new Set<string>();
+    const broadcasts = rows.flatMap((row) => {
+      if (seen.has(row.resourceId)) return [];
+      seen.add(row.resourceId);
+      const data = row.after && typeof row.after === "object" && !Array.isArray(row.after) ? row.after as Record<string, unknown> : {};
+      const audience = ["all", "customers", "vendors", "admins"].includes(String(data.audience)) ? data.audience as "all" | "customers" | "vendors" | "admins" : "all";
+      const channels = Array.isArray(data.channels) ? data.channels.filter((channel): channel is "in_app" | "push" => channel === "in_app" || channel === "push") : [];
+      return [{ id: row.resourceId, audience, title: String(data.title || "Marketplace update"), body: String(data.body || ""), href: typeof data.href === "string" ? data.href : null, channels, recipientCount: Number(data.recipientCount || 0), createdBy: row.actorUserId, createdAt: row.createdAt.toISOString() }];
+    });
+    return { supportedChannels: ["in_app", "push"] as const, broadcasts };
+  }
+  async createAdminNotificationBroadcast(session: Session, input: AdminNotificationBroadcastInput) {
+    if (!session.permissions.includes("admin:manage")) throw new ApiProblem(403, "ADMIN_REQUIRED", "Admin management access is required");
+    const existing = await this.client.auditLog.findFirst({ where: { action: "notification.broadcast.created", resourceType: "notification_broadcast", resourceId: input.idempotencyKey } });
+    if (existing) return this.adminNotificationWorkspace(session);
+    const roleNames: RoleName[] | null = input.audience === "customers" ? ["CUSTOMER"] : input.audience === "vendors" ? ["VENDOR_OWNER", "VENDOR_MANAGER", "VENDOR_STAFF"] : input.audience === "admins" ? ["SUPPORT_AGENT", "FINANCE_ADMIN", "OPERATIONS_ADMIN", "SUPER_ADMIN"] : null;
+    const recipients = await this.client.user.findMany({ where: { status: "ACTIVE", deletedAt: null, ...(roleNames ? { roles: { some: { role: { name: { in: roleNames } } } } } : {}) }, select: { id: true }, distinct: ["id"], take: 5001 });
+    if (recipients.length > 5000) throw new ApiProblem(409, "NOTIFICATION_AUDIENCE_TOO_LARGE", "This audience exceeds the safe 5,000-recipient broadcast limit");
+    const now = new Date();
+    await this.client.$transaction(async (transaction) => {
+      for (const recipient of recipients) {
+        const notification = await transaction.notification.upsert({ where: { idempotencyKey: `admin-broadcast:${input.idempotencyKey}:${recipient.id}` }, update: {}, create: { userId: recipient.id, type: "admin.broadcast", title: input.title, body: input.body, data: json({ href: input.href ?? null, broadcastId: input.idempotencyKey }), idempotencyKey: `admin-broadcast:${input.idempotencyKey}:${recipient.id}`, deliveries: { create: input.channels.map((channel) => ({ channel, status: channel === "in_app" ? "DELIVERED" : "PENDING", ...(channel === "in_app" ? { deliveredAt: now } : {}) })) } }, include: { deliveries: true } });
+        for (const delivery of notification.deliveries.filter((item) => item.status === "PENDING")) await transaction.outboxEvent.upsert({ where: { idempotencyKey: `notification-delivery:${delivery.id}` }, update: {}, create: { aggregateType: "notification_delivery", aggregateId: delivery.id, eventType: "notification.delivery.requested", idempotencyKey: `notification-delivery:${delivery.id}`, payload: { notificationDeliveryId: delivery.id } } });
+      }
+      await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "admin", action: "notification.broadcast.created", resourceType: "notification_broadcast", resourceId: input.idempotencyKey, after: json({ ...input, href: input.href ?? null, recipientCount: recipients.length }) } });
+    }, { timeout: 30_000 });
+    return this.adminNotificationWorkspace(session);
+  }
 
   async createThread(session: Session, input: ChatThreadInput) { const existing = await this.client.chatThread.findFirst({ where: { vendorId: input.vendorId, status: "open", participants: { some: { userId: session.principal.userId } } }, orderBy: { updatedAt: "desc" }, select: { id: true } }); if (existing) return existing; const vendor = await this.client.vendor.findFirst({ where: { id: input.vendorId, status: "APPROVED" }, include: { members: { where: { status: "active" } } } }); if (!vendor) throw new ApiProblem(404, "VENDOR_NOT_FOUND", "Vendor not found"); const recipients = vendor.members.filter((member) => member.userId !== session.principal.userId); if (!recipients.length) throw new ApiProblem(409, "VENDOR_CHAT_UNAVAILABLE", "This seller is not available for chat"); const thread = await this.client.chatThread.create({ data: { vendorId: vendor.id, subject: input.subject, participants: { create: [{ userId: session.principal.userId, role: "customer" }, ...recipients.map((member) => ({ userId: member.userId, role: "vendor" }))] } }, select: { id: true } }); return thread; }
   async threads(userId: string) { const rows = await this.client.chatThread.findMany({ where: { participants: { some: { userId } } }, include: { participants: { where: { userId }, select: { joinedAt: true, lastReadAt: true } }, messages: { orderBy: { createdAt: "desc" }, take: 30 } }, orderBy: { updatedAt: "desc" }, take: 100 }); return Promise.all(rows.map(async (row) => { const participant = row.participants[0]; const unreadCount = participant ? await this.client.chatMessage.count({ where: { threadId: row.id, senderId: { not: userId }, createdAt: { gt: participant.lastReadAt ?? participant.joinedAt } } }) : 0; return { id: row.id, vendorId: row.vendorId, subject: row.subject, status: row.status, updatedAt: row.updatedAt.toISOString(), lastReadAt: participant?.lastReadAt?.toISOString() ?? null, unreadCount, messages: [...row.messages].reverse().map((message) => ({ id: message.id, senderId: message.senderId, body: message.body, createdAt: message.createdAt.toISOString() })) }; })); }

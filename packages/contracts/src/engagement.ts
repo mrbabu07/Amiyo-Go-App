@@ -28,6 +28,9 @@ export const productReportInputSchema = z.object({ reason: z.enum(["counterfeit"
 export const productReportResultSchema = z.object({ id: uuidSchema, status: z.string() });
 
 export const notificationSchema = z.object({ id: uuidSchema, type: z.string(), title: z.string(), body: z.string(), href: z.string().nullable(), readAt: timestampSchema.nullable(), createdAt: timestampSchema });
+export const adminNotificationBroadcastInputSchema = z.object({ idempotencyKey: uuidSchema, audience: z.enum(["all", "customers", "vendors", "admins"]), title: z.string().trim().min(3).max(160), body: z.string().trim().min(5).max(2000), href: z.string().trim().regex(/^\/[a-zA-Z0-9/_?=&.-]*$/).nullable().optional(), channels: z.array(z.enum(["in_app", "push"])).min(1).max(2).refine((channels) => new Set(channels).size === channels.length, "Duplicate channels are not allowed") }).strict();
+export const adminNotificationBroadcastSchema = z.object({ id: uuidSchema, audience: z.enum(["all", "customers", "vendors", "admins"]), title: z.string(), body: z.string(), href: z.string().nullable(), channels: z.array(z.enum(["in_app", "push"])), recipientCount: z.number().int().nonnegative(), createdBy: uuidSchema.nullable(), createdAt: timestampSchema });
+export const adminNotificationWorkspaceSchema = z.object({ supportedChannels: z.array(z.enum(["in_app", "push"])), broadcasts: z.array(adminNotificationBroadcastSchema) });
 export const notificationDeliveryJobSchema = z.object({ notificationDeliveryId: uuidSchema });
 export const newsletterDeliveryJobSchema = z.object({ newsletterDeliveryId: uuidSchema });
 export const loyaltyAwardJobSchema = z.object({ orderId: uuidSchema });
@@ -60,5 +63,6 @@ export type NewsletterSubscribeInput = z.infer<typeof newsletterSubscribeInputSc
 export type NewsletterBroadcastInput = z.infer<typeof newsletterBroadcastInputSchema>;
 export type GrowthFeedDto = z.infer<typeof growthFeedSchema>;
 export type NotificationDeliveryJob = z.infer<typeof notificationDeliveryJobSchema>;
+export type AdminNotificationBroadcastInput = z.infer<typeof adminNotificationBroadcastInputSchema>;
 export type NewsletterDeliveryJob = z.infer<typeof newsletterDeliveryJobSchema>;
 export type LoyaltyAwardJob = z.infer<typeof loyaltyAwardJobSchema>;

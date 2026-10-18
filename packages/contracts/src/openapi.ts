@@ -1,7 +1,7 @@
 import { OpenAPIRegistry, OpenApiGeneratorV31, extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
 import { z } from "zod";
 import { adminKycDocumentAccessSchema, paymentVerificationEvidenceAccessSchema } from "./admin.js";
-import { flashAlertSchema } from "./engagement.js";
+import { adminNotificationBroadcastInputSchema, adminNotificationWorkspaceSchema, flashAlertSchema } from "./engagement.js";
 import { returnEvidenceFileSchema, returnEvidenceAccessSchema } from "./returns.js";
 import { archiveProductSchema, bulkProductCsvInputSchema, bulkProductImportResultSchema, catalogQuerySchema, categorySchema, createProductSchema, discoveryEventInputSchema, inventoryAdjustmentSchema, moderationInputSchema, productDetailSchema, productListResponseSchema, replaceProductMediaSchema, replaceProductVariantsSchema, shopDetailSchema, shopListResponseSchema, trendingSearchSchema, updateProductSchema, vendorInventorySchema } from "./catalog.js";
 import { addCartItemSchema, cartSchema, checkoutInputSchema, checkoutQuoteInputSchema, checkoutQuoteSchema, checkoutResultSchema, updateCartItemSchema } from "./commerce.js";
@@ -61,6 +61,8 @@ const errorResponses = {
 };
 
 registry.registerPath({ method: "post", path: "/api/v2/admin/workspace/orders/{id}/invoice", tags: ["Admin Orders"], security: firebaseSecurity, request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: { description: "Issue or retrieve the stable invoice identity with an audit record", content: { "application/json": { schema: adminOrderDetail } } }, ...errorResponses } });
+registry.registerPath({ method: "get", path: "/api/v2/admin/notifications", tags: ["Admin Communications"], security: firebaseSecurity, responses: { 200: { description: "Audited notification broadcast workspace", content: { "application/json": { schema: adminNotificationWorkspaceSchema } } }, ...errorResponses } });
+registry.registerPath({ method: "post", path: "/api/v2/admin/notifications/broadcasts", tags: ["Admin Communications"], security: firebaseSecurity, request: { body: { required: true, content: { "application/json": { schema: adminNotificationBroadcastInputSchema } } } }, responses: { 201: { description: "Audience notification broadcast created", content: { "application/json": { schema: adminNotificationWorkspaceSchema } } }, ...errorResponses } });
 
 registry.registerPath({
   method: "get",

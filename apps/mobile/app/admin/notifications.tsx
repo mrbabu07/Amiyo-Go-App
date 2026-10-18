@@ -1,2 +1,2 @@
-import { NotificationsScreen } from "../../src/features/engagement/NotificationsScreen";
-export default NotificationsScreen;
+import { AdminNotificationsScreen } from "../../src/features/admin/AdminNotificationsScreen";
+export default AdminNotificationsScreen;

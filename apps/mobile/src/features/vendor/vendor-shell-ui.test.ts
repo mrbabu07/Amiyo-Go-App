@@ -23,6 +23,11 @@ test("seller workspace uses responsive grouped navigation", () => {
   assert.match(shell, /vendorBack: \{[^}]*height: 44[^}]*width: 44/);
   for (const group of ["Products", "Orders", "Finance", "Growth", "Shop", "Support"]) assert.match(shell, new RegExp(`label: "${group}"`));
   assert.match(shell, /accessibilityLabel="Seller navigation"/);
+  assert.match(shell, /function VendorRouteSearch/);
+  assert.match(shell, /accessibilityLabel="Search seller tools"/);
+  assert.match(shell, /placeholder="Search products, orders, finance\.\.\."/);
+  assert.match(shell, /accessibilityLabel="Add product"/);
+  assert.match(shell, /mobileSearchOpen/);
 });
 
 test("seller dashboard exposes live operational hierarchy", () => {

@@ -1,4 +1,4 @@
-import { flashAlertSchema, chatThreadCreatedSchema, chatThreadSchema, growthFeedSchema, newsletterWorkspaceSchema, notificationSchema, productReportResultSchema, questionSchema, reviewSchema, sharedWishlistSchema, wishlistSchema, wishlistCollectionSchema, type ContentModerationInput, type NewsletterBroadcastInput, type ProductReportInput } from "@amiyo/contracts";
+import { adminNotificationWorkspaceSchema, flashAlertSchema, chatThreadCreatedSchema, chatThreadSchema, growthFeedSchema, newsletterWorkspaceSchema, notificationSchema, productReportResultSchema, questionSchema, reviewSchema, sharedWishlistSchema, wishlistSchema, wishlistCollectionSchema, type AdminNotificationBroadcastInput, type ContentModerationInput, type NewsletterBroadcastInput, type ProductReportInput } from "@amiyo/contracts";
 import type { User } from "firebase/auth";
 import { withRequestDeadline } from "./request-deadline";
 
@@ -18,6 +18,8 @@ export async function getNotifications(user: User) { return notificationSchema.a
 export async function getMyReviews(user: User, orderItemId?: string) { return reviewSchema.array().parse(await request(user, `/api/v2/reviews${orderItemId ? `?orderItemId=${encodeURIComponent(orderItemId)}` : ""}`)); }
 export async function submitOrderReview(user: User, input: import("@amiyo/contracts").ReviewInput) { return reviewSchema.parse(await request(user, "/api/v2/reviews", { method: "POST", body: JSON.stringify(input) })); }
 export async function readNotification(user: User, id: string) { return notificationSchema.array().parse(await request(user, `/api/v2/notifications/${id}/read`, { method: "POST" })); }
+export async function getAdminNotificationWorkspace(user: User) { return adminNotificationWorkspaceSchema.parse(await request(user, "/api/v2/admin/notifications")); }
+export async function createAdminNotificationBroadcast(user: User, input: AdminNotificationBroadcastInput) { return adminNotificationWorkspaceSchema.parse(await request(user, "/api/v2/admin/notifications/broadcasts", { method: "POST", body: JSON.stringify(input) })); }
 export async function getLoyalty(user: User) { return await request(user, "/api/v2/loyalty") as { id: string; pointsBalance: string; version: number; transactions: Array<{ id: string; points: string; entryType: string; createdAt: string }> }; }
 export type ReferralSummary = { code: string; shareUrl: string; referralCount: number; convertedCount: number; rewardPoints: string; appliedCode: string | null };
 export async function getReferral(user: User) { return await request(user, "/api/v2/loyalty/referral") as ReferralSummary; }
