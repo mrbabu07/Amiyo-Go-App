@@ -265,6 +265,10 @@ test("seller marketing form and vouchers stack safely on mobile", () => {
   assert.match(marketing, /compact && styles\.fieldCompact/);
   assert.match(marketing, /compact && styles\.primaryCompact/);
   assert.match(marketing, /compact && styles\.voucherCompact/);
+  assert.match(marketing, /form\.type === "PERCENT" && discountValue > 100/);
+  assert.match(marketing, /validDays > 365/);
+  assert.match(marketing, /compact && styles\.previewCompact/);
+  assert.match(marketing, /CUSTOMER OFFER/);
   assert.doesNotMatch(marketing, /à§³|Â·|â€“/);
 });
 
