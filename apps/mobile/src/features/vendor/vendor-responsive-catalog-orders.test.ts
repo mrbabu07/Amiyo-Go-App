@@ -154,6 +154,9 @@ test("seller category selector replaces fixed panes on mobile", () => {
   assert.match(categorySelector, /compact && styles\.groupsCompact/);
   assert.match(categorySelector, /compact && styles\.optionsCompact/);
   assert.match(categorySelector, /compact && styles\.searchCompact/);
+  assert.doesNotMatch(categorySelector, /#fed7aa|#fdba74|#f8fafc|#f1f5f9/);
+  assert.match(categorySelector, /groupActive: \{ backgroundColor: colors\.surface, borderColor: colors\.accent \}/);
+  assert.match(categorySelector, /categorySelected: \{ backgroundColor: colors\.accentSoft, borderColor: colors\.accent \}/);
 });
 
 test("seller shop media stacks controls and guards late writes", () => {
