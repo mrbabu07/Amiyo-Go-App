@@ -28,6 +28,14 @@ export function VendorShopScreen() {
   const shop = workspace.data?.shops[0];
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const storefrontSettings = shop?.settings?.storefront && typeof shop.settings.storefront === "object" && !Array.isArray(shop.settings.storefront) ? shop.settings.storefront as Record<string, unknown> : {};
+  const readinessChecks = shop ? [
+    { label: "Shop profile", complete: shop.name.trim().length >= 3 && Boolean(shop.description?.trim()), href: "/vendor/shop/profile" },
+    { label: "Logo", complete: Boolean(shop.logoUrl), href: "/vendor/shop/media" },
+    { label: "Cover image", complete: Boolean(shop.bannerUrl), href: "/vendor/shop/media" },
+    { label: "Store tagline", complete: Boolean(String(storefrontSettings.tagline || "").trim()), href: "/vendor/shop/decoration" }
+  ] : [];
+  const readiness = readinessChecks.length ? Math.round((readinessChecks.filter((item) => item.complete).length / readinessChecks.length) * 100) : 0;
 
   useEffect(() => {
     if (shop) {
@@ -55,8 +63,9 @@ export function VendorShopScreen() {
         <View style={styles.overlay} />
         {shop.logoUrl ? <Image source={{ uri: shop.logoUrl }} style={styles.logoImage} /> : <View style={styles.logo}><Ionicons color={colors.surface} name="storefront" size={30} /></View>}
         <View style={styles.flex}><Text style={styles.previewLabel}>STOREFRONT PREVIEW</Text><Text numberOfLines={2} style={[styles.previewTitle, compact && styles.previewTitleCompact]}>{name || shop.name}</Text><Text numberOfLines={1} style={styles.previewMeta}>amiyo-go.com/shop/{shop.slug}</Text></View>
-        <Text style={[styles.status, compact && styles.statusCompact]}>{shop.status}</Text>
+        <View style={[styles.previewActions, compact && styles.previewActionsCompact]}><Text style={styles.status}>{shop.status}</Text><Pressable accessibilityRole="link" onPress={() => router.push(`/shop/${shop.slug}` as never)} style={styles.publicButton}><Ionicons color={colors.surface} name="open-outline" size={16} /><Text style={styles.publicButtonText}>View public shop</Text></Pressable></View>
       </View>
+      <View style={[styles.readiness, compact && styles.readinessCompact]}><View style={styles.readinessSummary}><Text style={styles.readinessEyebrow}>STOREFRONT READINESS</Text><View style={styles.readinessTitleRow}><Text accessibilityRole="header" style={styles.readinessTitle}>{readiness}% complete</Text><Text style={[styles.readinessState, readiness === 100 && styles.readinessStateReady]}>{readiness === 100 ? "READY" : "SETUP"}</Text></View><View style={styles.track}><View style={[styles.fill, { width: `${readiness}%` }]} /></View><Text style={styles.readinessCopy}>{readiness === 100 ? "Your storefront has the essential brand content customers expect." : "Complete your shop identity before promoting the storefront."}</Text></View><View style={[styles.readinessList, compact && styles.readinessListCompact]}>{readinessChecks.map((item) => <Pressable key={item.label} onPress={() => router.push(item.href as never)} style={styles.readinessItem}><Ionicons color={item.complete ? colors.success : colors.warning} name={item.complete ? "checkmark-circle" : "ellipse-outline"} size={18} /><Text style={[styles.readinessItemText, item.complete && styles.readinessItemComplete]}>{item.label}</Text><Ionicons color={colors.muted} name="chevron-forward" size={15} /></Pressable>)}</View></View>
       <View style={styles.toolGrid}>{tools.map((tool) => <Pressable accessibilityRole="link" key={tool.href} onPress={() => router.push(tool.href as never)} style={({ pressed }) => [styles.tool, compact && styles.toolCompact, pressed && styles.pressed]}><View style={styles.toolIcon}><Ionicons color={colors.primary} name={tool.icon} size={22} /></View><View style={styles.flex}><Text style={styles.toolTitle}>{tool.label}</Text><Text style={styles.toolCopy}>{tool.copy}</Text></View><Ionicons color={colors.muted} name="chevron-forward" size={18} /></Pressable>)}</View>
       <ModuleCard title="Shop profile" meta="Customers see this information on products, orders and your shop page.">
         <Field label="Shop name" maxLength={160} onChangeText={setName} value={name} />
@@ -98,7 +107,26 @@ const styles = StyleSheet.create({
   previewTitleCompact: { fontSize: 20 },
   previewMeta: { color: "#cbd5e1", fontSize: 11, marginTop: 4 },
   status: { backgroundColor: "rgba(107,122,58,.35)", borderRadius: radius.pill, color: "#eef1e4", fontSize: 9, fontWeight: "700", overflow: "hidden", paddingHorizontal: 10, paddingVertical: 7 },
-  statusCompact: { marginLeft: 84 },
+  previewActions: { alignItems: "flex-end", gap: spacing.sm },
+  previewActionsCompact: { alignItems: "flex-start", marginLeft: 84, width: "100%" },
+  publicButton: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, flexDirection: "row", gap: 6, minHeight: 40, paddingHorizontal: 12 },
+  publicButtonText: { color: colors.surface, fontSize: 10, fontWeight: "700" },
+  readiness: { alignItems: "stretch", backgroundColor: colors.surface, borderRadius: radius.xl, boxShadow: "0 10px 28px rgba(11,31,58,.08)", flexDirection: "row", gap: spacing.xl, padding: spacing.lg },
+  readinessCompact: { flexDirection: "column", gap: spacing.md },
+  readinessSummary: { flex: 1.2, minWidth: 0 },
+  readinessEyebrow: { color: colors.accent, fontSize: 9, fontWeight: "700", letterSpacing: 1 },
+  readinessTitleRow: { alignItems: "center", flexDirection: "row", gap: spacing.sm, justifyContent: "space-between", marginTop: 5 },
+  readinessTitle: { color: colors.text, fontSize: 20, fontWeight: "700" },
+  readinessState: { backgroundColor: colors.primarySoft, borderRadius: radius.pill, color: colors.primary, fontSize: 8, fontWeight: "700", overflow: "hidden", paddingHorizontal: 8, paddingVertical: 5 },
+  readinessStateReady: { backgroundColor: colors.accentSoft, color: colors.success },
+  track: { backgroundColor: colors.border, borderRadius: radius.pill, height: 7, marginTop: spacing.md, overflow: "hidden" },
+  fill: { backgroundColor: colors.accent, borderRadius: radius.pill, height: 7 },
+  readinessCopy: { color: colors.muted, fontSize: 11, lineHeight: 17, marginTop: spacing.sm },
+  readinessList: { flex: 1, minWidth: 260 },
+  readinessListCompact: { minWidth: 0, width: "100%" },
+  readinessItem: { alignItems: "center", borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: "row", gap: spacing.sm, minHeight: 42 },
+  readinessItemText: { color: colors.muted, flex: 1, fontSize: 11, fontWeight: "600" },
+  readinessItemComplete: { color: colors.text },
   toolGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   tool: { alignItems: "center", backgroundColor: colors.surface, borderRadius: radius.lg, boxShadow: "0 7px 22px rgba(11,31,58,.06)", flexDirection: "row", gap: spacing.sm, minHeight: 78, padding: spacing.md, width: "48%" },
   toolCompact: { width: "100%" },

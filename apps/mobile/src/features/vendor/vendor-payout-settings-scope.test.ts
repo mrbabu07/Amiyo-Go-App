@@ -20,3 +20,14 @@ test("vendor payout form uses the shared contract and explicit confirmation", ()
   assert.match(source, /secureTextEntry/);
   assert.match(source, /retry: false/);
 });
+
+test("vendor payout setup presents finance readiness and explicit account states", () => {
+  assert.match(source, /PAYOUT READINESS/);
+  assert.match(source, /verifiedCount/);
+  assert.match(source, /defaultAccount/);
+  assert.match(source, /Pending review/);
+  assert.match(source, /styles\.default/);
+  assert.match(source, /compact && styles\.securityHeroCompact/);
+  assert.match(source, /compact && styles\.securityMetricsCompact/);
+  assert.match(source, /compact && styles\.accountBadgesCompact/);
+});
