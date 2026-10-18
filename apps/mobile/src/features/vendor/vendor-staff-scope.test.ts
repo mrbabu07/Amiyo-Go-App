@@ -12,3 +12,13 @@ test("seller staff access stays scoped to the active account", () => {
   assert.match(source, /setDrafts\(\{\}\)/);
   assert.doesNotMatch(source, /firebaseAuth\?\.currentUser/);
 });
+
+test("seller staff UI exposes least-privilege presets and clean save state", () => {
+  for (const preset of ["Order desk", "Catalog", "Support", "Manager"]) assert.match(source, new RegExp(preset));
+  assert.match(source, /TEAM SECURITY/);
+  assert.match(source, /currentPermissions/);
+  assert.match(source, /Permissions saved/);
+  assert.match(source, /delete next\[variables\.id\]/);
+  assert.match(source, /compact && styles\.summaryMetricsCompact/);
+  assert.match(source, /accessibilityState=\{\{ disabled:/);
+});
