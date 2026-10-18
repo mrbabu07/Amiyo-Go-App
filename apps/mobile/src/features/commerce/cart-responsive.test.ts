@@ -10,5 +10,11 @@ test("cart keeps checkout controls readable on narrow screens", () => {
   assert.match(source, /compact && styles\.columnsCompact/);
   assert.match(source, /compact && styles\.itemCompact/);
   assert.match(source, /compact && styles\.summaryCompact/);
+  assert.match(source, /fallbackProductImage/);
+  assert.match(source, /premiumStyles\.item/);
+  assert.match(source, /premiumStyles\.summary/);
+  assert.match(source, /quantityButton: \{ height: 44, width: 44 \}/);
+  assert.match(source, /lineTotalCompact: \{ alignSelf: "flex-end", paddingLeft: 0/);
+  assert.doesNotMatch(source, /placehold\.co/);
   assert.doesNotMatch(source, /à§³|Â·|â€¦/);
 });
