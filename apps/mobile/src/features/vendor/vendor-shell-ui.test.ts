@@ -52,4 +52,7 @@ test("seller orders stay inside the workspace with reference controls", () => {
   assert.match(orderDetail, /<Screen hideHeading title="Vendor order detail">/);
   assert.match(orderDetail, /<Screen eyebrow="FULFILLMENT" title="Loading seller order">/);
   assert.doesNotMatch(orderDetail, /<SafeAreaView|<ScrollView/);
+  assert.match(orderDetail, /card: \{ backgroundColor: colors\.surface, borderRadius: radius\.lg, boxShadow:/);
+  assert.match(orderDetail, /metric: \{[^}]*boxShadow:/);
+  assert.doesNotMatch(orderDetail, /card: \{[^}]*borderWidth|metric: \{[^}]*borderWidth/);
 });
