@@ -22,3 +22,13 @@ test("marketplace product cards use shadow without an outline", async () => {
   assert.doesNotMatch(style, /borderWidth|borderColor/);
   assert.match(card, /cardShadow/);
 });
+
+test("store header keeps compact actions touchable and on-brand", async () => {
+  const header = await read("apps/mobile/src/features/home/components/StoreHeader.tsx");
+  assert.match(header, /compact && styles\.compactTopRow/);
+  assert.match(header, /compact && styles\.compactActions/);
+  assert.match(header, /compact && styles\.compactIconButton/);
+  assert.match(header, /iconButton: \{[^}]*height: 44[^}]*width: 44/);
+  assert.match(header, /shadowColor: colors\.navy/);
+  assert.doesNotMatch(header, /#edf1f5|rgba\(245,114,36|shadowColor: "#0f172a"/);
+});
