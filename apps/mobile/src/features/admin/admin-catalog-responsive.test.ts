@@ -10,4 +10,10 @@ test("admin catalog metrics and moderation actions remain usable on mobile", () 
   assert.match(source, /adjustsFontSizeToFit numberOfLines=\{1\}/);
   assert.match(source, /flexGrow: 1, justifyContent: "center", minHeight: 44/);
   assert.match(source, /minWidth: 300/);
+  assert.match(source, /compact && styles\.searchCompact/);
+  assert.match(source, /compact && styles\.toolbarActionCompact/);
+  assert.match(source, /compact && styles\.cardCompact/);
+  assert.match(source, /cardCompact: \{ maxWidth: "100%", minWidth: 0, width: "100%" \}/);
+  assert.match(source, /boxShadow: "0 10px 30px rgba\(11,31,58,\.08\)"/);
+  assert.doesNotMatch(source, /#f1f5f9|#f8fafc|#94a3b8/);
 });
