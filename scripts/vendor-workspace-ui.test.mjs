@@ -71,4 +71,7 @@ test("seller university mirrors the bilingual reference learning center", async 
   for (const capability of ["EN \\+ বাংলা", "Choose learning mode", "sellerUniversityQuickGuides", "modeTabs", "LessonCard"]) assert.match(screen, new RegExp(capability));
   for (const moduleId of ["vendor-onboarding", "vendor-catalog", "vendor-fulfillment", "vendor-finance-marketing"]) assert.match(data, new RegExp(moduleId));
   for (const route of ["/vendor/kyc", "/vendor/products/add", "/vendor/orders", "/vendor/finance", "/vendor/reviews", "/vendor/questions"]) assert.match(data, new RegExp(route));
+  for (const token of ["colors.primary", "colors.navy", "colors.accent", "colors.accentSoft", "colors.surface"]) assert.match(screen, new RegExp(token.replace(".", "\\.")));
+  assert.doesNotMatch(screen, /#12516f|#1e7098|#eef8fb|#c9e8f2/);
+  assert.match(screen, /minHeight: 44/);
 });
