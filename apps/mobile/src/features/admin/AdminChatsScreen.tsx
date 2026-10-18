@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
@@ -25,5 +25,5 @@ export function AdminChatsScreen() {
   </Screen>;
 }
 
-function Stat({ label, value }: { label: string; value: number }) { return <View style={styles.stat}><Text style={styles.statValue}>{value}</Text><Text style={styles.statLabel}>{label}</Text></View>; }
+function Stat({ label, value }: { label: string; value: number }) { const compact = useWindowDimensions().width < 620; return <View style={[styles.stat, compact && { flexBasis: "100%", minWidth: 0 }]}><Text adjustsFontSizeToFit numberOfLines={1} style={styles.statValue}>{value}</Text><Text numberOfLines={1} style={styles.statLabel}>{label}</Text></View>; }
 const styles = StyleSheet.create({ stats: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }, stat: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flex: 1, minWidth: 120, padding: spacing.md }, statValue: { color: colors.text, fontSize: 24, fontWeight: "700" }, statLabel: { color: colors.muted, fontSize: 11 }, toolbar: { alignItems: "center", flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }, search: { borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, flex: 1, minHeight: 44, minWidth: 220, paddingHorizontal: spacing.md }, filter: { borderColor: colors.border, borderRadius: radius.pill, borderWidth: 1, paddingHorizontal: 13, paddingVertical: 9 }, activeFilter: { backgroundColor: colors.primary, borderColor: colors.primary }, filterText: { color: colors.muted, fontSize: 11, fontWeight: "700" }, activeFilterText: { color: colors.surface }, row: { alignItems: "flex-start", flexDirection: "row", flexWrap: "wrap", gap: spacing.md }, flex: { flex: 1, minWidth: 210 }, right: { alignItems: "flex-end", gap: spacing.xs }, sender: { color: colors.text, fontSize: 11, fontWeight: "700" }, message: { color: colors.text, fontSize: 13, lineHeight: 19, marginTop: 3 }, muted: { color: colors.muted, fontSize: 10 }, unread: { backgroundColor: colors.danger, borderRadius: radius.pill, color: colors.surface, fontSize: 9, fontWeight: "700", overflow: "hidden", paddingHorizontal: 8, paddingVertical: 5 }, read: { color: colors.success, fontSize: 9, fontWeight: "700" }, error: { color: colors.danger }, empty: { color: colors.muted, padding: spacing.xl, textAlign: "center" } });

@@ -1,13 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
 import { getAdminChat, readAdminChat, sendAdminChatMessage } from "./admin.api";
 
 export function AdminChatDetailScreen({ threadId }: { threadId?: string }) {
+  const compact = useWindowDimensions().width < 620;
   const user = useCurrentUser();
   const router = useRouter();
   const cache = useQueryClient();
@@ -24,7 +25,7 @@ export function AdminChatDetailScreen({ threadId }: { threadId?: string }) {
     <View style={styles.header}><Pressable accessibilityRole="link" onPress={() => router.replace("/admin/chats")} style={styles.secondary}><Text style={styles.secondaryText}>← Inbox</Text></Pressable>{thread?.vendorId ? <Pressable accessibilityRole="link" onPress={() => router.push(`/admin/vendors/${thread.vendorId}`)} style={styles.secondary}><Text style={styles.secondaryText}>View vendor</Text></Pressable> : null}</View>
     {query.error || send.error || markRead.error ? <Text accessibilityRole="alert" style={styles.error}>{(query.error || send.error || markRead.error)?.message}</Text> : null}
     <ScrollView contentContainerStyle={styles.messages}>{thread?.messages.map((message) => { const mine = message.senderId === user?.uid || message.senderRole === "admin"; return <View key={message.id} style={[styles.messageRow, mine && styles.mineRow]}><View style={[styles.bubble, mine && styles.mineBubble]}><Text style={[styles.sender, mine && styles.mineText]}>{mine ? "You (Admin)" : message.senderName}</Text><Text style={[styles.body, mine && styles.mineText]}>{message.body}</Text><Text style={[styles.time, mine && styles.mineTime]}>{new Date(message.createdAt).toLocaleString()}</Text></View></View>; })}{!thread?.messages.length ? <Text style={styles.empty}>No messages yet. Start the conversation with this seller.</Text> : null}</ScrollView>
-    <View style={styles.composer}><TextInput accessibilityLabel="Message to seller" value={body} onChangeText={setBody} multiline placeholder="Write a message to this seller..." placeholderTextColor={colors.muted} style={styles.input} /><Pressable accessibilityRole="button" disabled={!user || !threadId || !body.trim() || send.isPending} onPress={() => send.mutate()} style={[styles.send, (!user || !threadId || !body.trim() || send.isPending) && styles.disabled]}><Text style={styles.sendText}>{send.isPending ? "Sending..." : "Send message"}</Text></Pressable></View>
+    <View style={[styles.composer, compact && { alignItems: "stretch", flexDirection: "column" }]}><TextInput accessibilityLabel="Message to seller" value={body} onChangeText={setBody} multiline placeholder="Write a message to this seller..." placeholderTextColor={colors.muted} style={[styles.input, compact && { minWidth: 0, width: "100%" }]} /><Pressable accessibilityRole="button" disabled={!user || !threadId || !body.trim() || send.isPending} onPress={() => send.mutate()} style={[styles.send, compact && { alignItems: "center", minHeight: 44, width: "100%" }, (!user || !threadId || !body.trim() || send.isPending) && styles.disabled]}><Text style={styles.sendText}>{send.isPending ? "Sending..." : "Send message"}</Text></Pressable></View>
   </Screen>;
 }
 
