@@ -205,6 +205,11 @@ test("legacy seller settings scopes every mutation to its owner", () => {
   assert.match(settings, /saveBank\.mutate\(\{ owner: user \}\)/);
   assert.match(settings, /saveKyc\.mutate\(\{ owner: user \}\)/);
   assert.match(settings, /\[user\?\.uid\]/);
+  assert.match(settings, /SELLER READINESS/);
+  assert.match(settings, /compact && styles\.heroCompact/);
+  assert.match(settings, /router\.push\("\/vendor\/shop\/profile"\)/);
+  assert.match(settings, /router\.push\("\/vendor\/kyc"\)/);
+  assert.match(settings, /router\.push\("\/vendor\/payout-settings"\)/);
 });
 
 test("bulk catalog workflow provides mobile guidance and full-width actions", () => {
