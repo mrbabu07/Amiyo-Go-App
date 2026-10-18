@@ -60,7 +60,12 @@ test("seller orders preserve readable mobile cards and actions", () => {
 test("seller finance protects the balance hero on narrow screens", () => {
   assert.match(finance, /useWindowDimensions\(\)\.width < 620/);
   assert.match(finance, /compact && styles\.heroCompact/);
+  assert.match(finance, /compact && styles\.columnCompact/);
   assert.match(finance, /adjustsFontSizeToFit numberOfLines=\{1\}/);
+  assert.match(finance, /payoutPresentation\(item\.status\)/);
+  assert.match(finance, /processingPill/);
+  assert.match(finance, /successPill/);
+  assert.match(finance, /dangerPill/);
 });
 
 test("storefront manager stacks preview tools on mobile", () => {
