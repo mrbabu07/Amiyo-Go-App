@@ -212,6 +212,10 @@ test("bulk catalog workflow provides mobile guidance and full-width actions", ()
   assert.match(bulkProducts, /compact && styles\.guideCompact/);
   assert.match(bulkProducts, /Imported products remain drafts until submitted/);
   assert.match(bulkProducts, /width: "100%"/);
+  assert.match(bulkProducts, /ProductCategorySelect/);
+  assert.match(bulkProducts, /shopId && categoryId && rowCount > 0 && rowCount <= 100/);
+  assert.match(bulkProducts, /BATCH READINESS/);
+  assert.doesNotMatch(bulkProducts, /shops\[0\]!\.id, categoryId: categories\.data!\[0\]!\.id/);
 });
 
 test("seller decoration preview and publish remain mobile and account safe", () => {
