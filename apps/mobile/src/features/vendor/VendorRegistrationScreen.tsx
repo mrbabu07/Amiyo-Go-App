@@ -73,7 +73,7 @@ export function VendorRegistrationScreen() {
       if (activeUid.current !== owner.uid) return;
       setSession(await createSession(owner));
       if (activeUid.current !== owner.uid) return;
-      router.replace("/vendor/settings");
+      router.replace("/vendor/kyc");
     }
   });
 
@@ -88,11 +88,14 @@ export function VendorRegistrationScreen() {
   return (
     <Screen eyebrow="SELL ON AMIYO-GO" title="Become a Vendor" description="Open your shop and reach customers across Bangladesh.">
       <View style={[styles.steps, compact && styles.stepsCompact]}>
-        <Step active icon="storefront-outline" label="Shop" />
-        <Step active={Boolean(form.upazilaId)} icon="location-outline" label="Location" />
+        <Step active icon="person-circle-outline" label="Account" />
+        <Step active={form.shopName.trim().length >= 3 && form.phone.trim().length >= 8 && Boolean(form.upazilaId)} icon="storefront-outline" label="Shop" />
         <Step active={categoryIds.length > 0} icon="grid-outline" label="Categories" />
+        <Step icon="document-text-outline" label="Documents" />
+        <Step icon="wallet-outline" label="Payout" />
         <Step active={accepted} icon="checkmark-circle-outline" label="Review" />
       </View>
+      <View style={styles.journeyNote}><View style={styles.journeyIcon}><Ionicons color={colors.accent} name="shield-checkmark-outline" size={21} /></View><View style={styles.flex}><Text style={styles.journeyTitle}>Guided seller onboarding</Text><Text style={styles.journeyCopy}>Create your seller workspace first. We will then take you directly to document verification, followed by bank or MFS payout setup.</Text></View></View>
       <ModuleCard title="Vendor Registration" meta="Complete the information below to submit your shop for approval.">
         <Field label="Shop Name *" onChangeText={(shopName) => setForm({ ...form, shopName })} placeholder="Enter your shop name" value={form.shopName} />
         <Field keyboardType="phone-pad" label="Phone Number *" onChangeText={(phone) => setForm({ ...form, phone })} placeholder="01XXXXXXXXX" value={form.phone} />
@@ -170,7 +173,7 @@ export function VendorRegistrationScreen() {
         <Text style={styles.consentText}>I agree to the Amiyo-Go Terms and Conditions, vendor rules, category policy, payout rules, and Privacy Policy.</Text>
       </Pressable>
       {submit.error ? <Text style={styles.submitError}>{submit.error.message}</Text> : null}
-      <Action busy={submit.isPending} disabled={!user || !valid} label="Register as Vendor" onPress={() => user && submit.mutate(user)} />
+      <Action busy={submit.isPending} disabled={!user || !valid} label="Create workspace & continue KYC" onPress={() => user && submit.mutate(user)} />
     </Screen>
   );
 }
@@ -185,7 +188,7 @@ function Field(props: React.ComponentProps<typeof TextInput> & { label: string }
 }
 
 function Action({ busy, disabled, label, onPress }: { busy?: boolean; disabled?: boolean; label: string; onPress(): void }) {
-  return <Pressable disabled={busy || disabled} onPress={onPress} style={[styles.action, (busy || disabled) && styles.disabled]}>{busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionText}>{label}</Text>}</Pressable>;
+  return <Pressable disabled={busy || disabled} onPress={onPress} style={[styles.action, (busy || disabled) && styles.disabled]}>{busy ? <ActivityIndicator color={colors.surface} /> : <Text style={styles.actionText}>{label}</Text>}</Pressable>;
 }
 
 const styles = StyleSheet.create({
@@ -195,9 +198,13 @@ const styles = StyleSheet.create({
   stepActive: { backgroundColor: colors.primary },
   stepText: { color: colors.muted, fontSize: 11, fontWeight: "700" },
   stepTextActive: { color: colors.surface },
+  journeyNote: { alignItems: "center", backgroundColor: colors.accentSoft, borderRadius: radius.lg, flexDirection: "row", gap: spacing.sm, padding: spacing.md },
+  journeyIcon: { alignItems: "center", backgroundColor: colors.surface, borderRadius: radius.md, height: 42, justifyContent: "center", width: 42 },
+  journeyTitle: { color: colors.text, fontSize: 13, fontWeight: "700" },
+  journeyCopy: { color: colors.muted, fontSize: 11, lineHeight: 17, marginTop: 3 },
   field: { gap: 6 },
   label: { color: colors.text, fontSize: 13, fontWeight: "700" },
-  input: { backgroundColor: colors.surface, borderColor: "#d1d5db", borderRadius: radius.md, borderWidth: 1, color: colors.text, minHeight: 48, paddingHorizontal: 14 },
+  input: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, minHeight: 48, paddingHorizontal: 14 },
   multiline: { minHeight: 94, paddingVertical: 12, textAlignVertical: "top" },
   sectionHeading: { alignItems: "center", borderTopColor: colors.border, borderTopWidth: 1, flexDirection: "row", gap: spacing.sm, marginTop: spacing.xs, paddingTop: spacing.md },
   sectionIcon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.md, height: 40, justifyContent: "center", width: 40 },

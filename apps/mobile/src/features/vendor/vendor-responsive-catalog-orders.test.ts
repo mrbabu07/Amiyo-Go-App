@@ -87,6 +87,8 @@ test("payout destinations remain readable and account scoped on mobile", () => {
   assert.match(payoutSettings, /useWindowDimensions\(\)\.width < 620/);
   assert.match(payoutSettings, /activeUid\.current !== variables\.owner\.uid/);
   assert.match(payoutSettings, /compact && compactStyles\.account/);
+  assert.match(payoutSettings, /Open seller dashboard/);
+  assert.match(payoutSettings, /router\.replace\("\/vendor"\)/);
 });
 
 test("seller and customer inbox cards adapt to narrow screens", () => {
@@ -103,6 +105,8 @@ test("seller verification documents stack safely on mobile", () => {
   assert.match(kyc, /compact && compactStyles\.document/);
   assert.match(kyc, /compact && compactStyles\.upload/);
   assert.match(kyc, /numberOfLines=\{compact \? 2 : 1\}/);
+  assert.match(kyc, /Continue to payout setup/);
+  assert.match(kyc, /router\.push\("\/vendor\/payout-settings"\)/);
 });
 
 test("seller staff controls keep identity guards and stack actions", () => {
@@ -261,4 +265,11 @@ test("seller registration presents a mobile guided onboarding flow", () => {
   assert.match(registration, /compact && styles\.columnsCompact/);
   assert.match(registration, /compact && styles\.flexCompact/);
   assert.match(registration, /backgroundColor: colors\.primary/);
+  assert.match(registration, /label="Account"/);
+  assert.match(registration, /label="Documents"/);
+  assert.match(registration, /label="Payout"/);
+  assert.match(registration, /Guided seller onboarding/);
+  assert.match(registration, /Create workspace & continue KYC/);
+  assert.match(registration, /router\.replace\("\/vendor\/kyc"\)/);
+  assert.doesNotMatch(registration, /borderColor: "#d1d5db"/);
 });
