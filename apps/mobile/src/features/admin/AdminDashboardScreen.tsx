@@ -155,7 +155,7 @@ function QueueRow({ color, label, value }: { color: string; label: string; value
 const responsive = StyleSheet.create({ controlGroup: { minWidth: 0, width: "100%" }, exceptionLane: { minWidth: 0, width: "100%" }, metric: { minWidth: "45%", padding: spacing.md }, priorityCard: { minWidth: 0, width: "100%" } });
 
 const styles = StyleSheet.create({
-  exceptionInbox: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, gap: spacing.lg, padding: spacing.lg },
+  exceptionInbox: { backgroundColor: colors.surface, borderRadius: radius.xl, boxShadow: "0 10px 30px rgba(11,31,58,.08)", gap: spacing.lg, padding: spacing.lg },
   exceptionHeader: { alignItems: "flex-start", flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
   exceptionEyebrow: { color: colors.primary, fontSize: 9, fontWeight: "700", letterSpacing: 1 },
   exceptionTitle: { color: colors.text, fontSize: 21, fontWeight: "700", marginTop: 4 },
