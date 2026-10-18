@@ -7,6 +7,7 @@ const root = resolve(import.meta.dirname, "../../..");
 const finance = readFileSync(resolve(root, "src/features/operations/VendorFinanceScreen.tsx"), "utf8");
 const operationsApi = readFileSync(resolve(root, "src/features/operations/operations.api.ts"), "utf8");
 const returns = readFileSync(resolve(root, "src/features/vendor/VendorReturnsScreen.tsx"), "utf8");
+const returnDetail = readFileSync(resolve(root, "src/features/operations/ReturnDetailScreen.tsx"), "utf8");
 
 test("seller finance wires a real idempotent payout workflow", () => {
   assert.match(operationsApi, /requestVendorPayout/);
@@ -30,4 +31,13 @@ test("seller returns exposes searchable operational workflow", () => {
   for (const label of ["Need attention", "APPROVED DEDUCTIONS", "Review and respond"]) assert.match(returns, new RegExp(label));
   assert.match(returns, /queryKey: \["vendor", "returns", user\?\.uid\]/);
   assert.doesNotMatch(returns, /Â|Ã|à§|â†|â€œ|â€/);
+});
+
+test("seller return detail is responsive and uses the marketplace palette", () => {
+  assert.match(returnDetail, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(returnDetail, /compact && styles\.columnsCompact/);
+  assert.match(returnDetail, /compact && styles\.metricCompact/);
+  assert.match(returnDetail, /compact && styles\.actionCardCompact/);
+  assert.match(returnDetail, /compact && styles\.evidenceHeaderCompact/);
+  assert.doesNotMatch(returnDetail, /#fff\b|#f8fafc|#ffedd5/i);
 });
