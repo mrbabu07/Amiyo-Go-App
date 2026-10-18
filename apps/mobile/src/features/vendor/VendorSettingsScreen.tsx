@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Ionicons } from "@expo/vector-icons";
 import type { User } from "firebase/auth";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
@@ -13,6 +14,7 @@ const emptyBank = { provider: "BANK" as "BANK" | "BKASH" | "NAGAD" | "ROCKET", a
 const emptyDocument = { storageKey: "", checksum: "", mimeType: "application/pdf", originalName: "" };
 
 export function VendorSettingsScreen() {
+  const compact = useWindowDimensions().width < 620;
   const user = useCurrentUser();
   const queryClient = useQueryClient();
   const activeUid = useRef(user?.uid);
@@ -64,6 +66,11 @@ export function VendorSettingsScreen() {
   if (workspace.isLoading) return <Screen title="Vendor settings"><ActivityIndicator color={colors.primary} /></Screen>;
   const error = [workspace.error, saveShop.error, saveBank.error, uploadKyc.error, saveKyc.error].find(Boolean);
   return <Screen eyebrow="SELLER CENTER" title={workspace.data?.displayName || "Vendor settings"} description={`Account status: ${workspace.data?.status || "UNKNOWN"}`}>
+    <View style={[styles.summary, compact && styles.summaryCompact]}>
+      <Summary icon="storefront-outline" label="Storefront" value={shop?.status || "Draft"} ready={shop?.status === "ACTIVE"} />
+      <Summary icon="shield-checkmark-outline" label="KYC" value={workspace.data?.kycSubmissions[0]?.status || "Required"} ready={workspace.data?.kycSubmissions[0]?.status === "APPROVED"} />
+      <Summary icon="wallet-outline" label="Payout" value={workspace.data?.bankAccounts.length ? "Configured" : "Required"} ready={Boolean(workspace.data?.bankAccounts.length)} />
+    </View>
     <ModuleCard title="Shop profile" meta={shop?.slug}>
       <Field label="Shop name" value={shopName} onChangeText={setShopName} />
       <Field label="Description" multiline value={description} onChangeText={setDescription} />
@@ -88,10 +95,12 @@ export function VendorSettingsScreen() {
 
 function Field(props: React.ComponentProps<typeof TextInput> & { label: string }) { const { label, ...rest } = props; return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput placeholderTextColor={colors.muted} style={[styles.input, rest.multiline && styles.multiline]} {...rest} /></View>; }
 function Action({ busy, disabled, label, onPress }: { busy: boolean; disabled?: boolean; label: string; onPress(): void }) { return <Pressable disabled={busy || disabled} onPress={onPress} style={[styles.button, (busy || disabled) && styles.disabled]}>{busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{label}</Text>}</Pressable>; }
+function Summary({ icon, label, ready, value }: { icon: React.ComponentProps<typeof Ionicons>["name"]; label: string; ready: boolean; value: string }) { return <View style={styles.summaryCard}><View style={[styles.summaryIcon, ready && styles.summaryIconReady]}><Ionicons color={ready ? colors.success : colors.primary} name={icon} size={20} /></View><View style={styles.summaryCopy}><Text style={styles.summaryLabel}>{label}</Text><Text numberOfLines={1} style={[styles.summaryValue, ready && styles.summaryValueReady]}>{value.replaceAll("_", " ")}</Text></View></View>; }
 
 const styles = StyleSheet.create({
+  summary: { flexDirection: "row", gap: spacing.md }, summaryCompact: { flexDirection: "column" }, summaryCard: { alignItems: "center", backgroundColor: colors.surface, borderRadius: radius.lg, boxShadow: "0 8px 24px rgba(11,31,58,.06)", flex: 1, flexDirection: "row", gap: spacing.sm, minHeight: 78, padding: spacing.md }, summaryIcon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.md, height: 42, justifyContent: "center", width: 42 }, summaryIconReady: { backgroundColor: colors.accentSoft }, summaryCopy: { flex: 1, minWidth: 0 }, summaryLabel: { color: colors.muted, fontSize: 10, fontWeight: "600" }, summaryValue: { color: colors.primary, fontSize: 12, fontWeight: "700", marginTop: 3, textTransform: "capitalize" }, summaryValueReady: { color: colors.success },
   field: { gap: 5 }, label: { color: colors.text, fontSize: 12, fontWeight: "600" }, input: { backgroundColor: colors.background, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, minHeight: 46, paddingHorizontal: 12 }, multiline: { minHeight: 90, paddingVertical: 10, textAlignVertical: "top" },
   button: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, justifyContent: "center", minHeight: 46 }, disabled: { opacity: 0.45 }, buttonText: { color: "#fff", fontWeight: "700" }, muted: { color: colors.muted, lineHeight: 20 }, file: { color: colors.success, fontSize: 12, fontWeight: "600" },
-  providers: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }, chip: { borderColor: colors.border, borderRadius: radius.pill, borderWidth: 1, paddingHorizontal: 11, paddingVertical: 7 }, active: { backgroundColor: colors.primary }, chipText: { color: colors.text, fontSize: 10, fontWeight: "700" }, activeText: { color: "#fff" },
-  account: { borderBottomColor: colors.border, borderBottomWidth: 1, paddingBottom: spacing.sm }, accountName: { color: colors.text, fontWeight: "700" }, error: { color: colors.danger }
+  providers: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }, chip: { alignItems: "center", borderColor: colors.border, borderRadius: radius.pill, borderWidth: 1, flexGrow: 1, justifyContent: "center", minHeight: 44, paddingHorizontal: 11, paddingVertical: 7 }, active: { backgroundColor: colors.primary, borderColor: colors.primary }, chipText: { color: colors.text, fontSize: 10, fontWeight: "700" }, activeText: { color: "#fff" },
+  account: { backgroundColor: colors.background, borderRadius: radius.md, padding: spacing.md }, accountName: { color: colors.text, fontWeight: "700" }, error: { color: colors.danger }
 });

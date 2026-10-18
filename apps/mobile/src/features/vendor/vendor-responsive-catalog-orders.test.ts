@@ -29,6 +29,7 @@ const categoryRequests = readFileSync(resolve(root, "src/features/vendor/VendorC
 const productDetail = readFileSync(resolve(root, "src/features/vendor/VendorProductDetailScreen.tsx"), "utf8");
 const marketing = readFileSync(resolve(root, "src/features/vendor/VendorMarketingScreen.tsx"), "utf8");
 const registration = readFileSync(resolve(root, "src/features/vendor/VendorRegistrationScreen.tsx"), "utf8");
+const bulkProducts = readFileSync(resolve(root, "src/features/vendor/VendorBulkProductsScreen.tsx"), "utf8");
 
 test("seller catalog becomes a full-width mobile workspace", () => {
   assert.match(products, /useWindowDimensions\(\)\.width < 620/);
@@ -163,12 +164,22 @@ test("seller pickup form is responsive and mutation scoped", () => {
 });
 
 test("legacy seller settings scopes every mutation to its owner", () => {
+  assert.match(settings, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(settings, /compact && styles\.summaryCompact/);
+  assert.match(settings, /minHeight: 44/);
   assert.match(settings, /activeUid\.current === variables\.owner\.uid/);
   assert.match(settings, /activeUid\.current !== variables\.owner\.uid/);
   assert.match(settings, /saveShop\.mutate\(\{ owner: user, shopId: shop\.id, version: shop\.version \}\)/);
   assert.match(settings, /saveBank\.mutate\(\{ owner: user \}\)/);
   assert.match(settings, /saveKyc\.mutate\(\{ owner: user \}\)/);
   assert.match(settings, /\[user\?\.uid\]/);
+});
+
+test("bulk catalog workflow provides mobile guidance and full-width actions", () => {
+  assert.match(bulkProducts, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(bulkProducts, /compact && styles\.guideCompact/);
+  assert.match(bulkProducts, /Imported products remain drafts until submitted/);
+  assert.match(bulkProducts, /width: "100%"/);
 });
 
 test("seller decoration preview and publish remain mobile and account safe", () => {
