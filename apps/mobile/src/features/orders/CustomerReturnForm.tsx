@@ -1,4 +1,5 @@
 import { createReturnSchema, type CreateReturn, type OrderDto } from "@amiyo/contracts";
+import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
@@ -70,9 +71,8 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
     finally { submitting.current = false; setSending(false); }
   };
   return <View style={styles.panel}>
-    <Text accessibilityRole="header" style={styles.title}>Request a return</Text>
-    <Text style={styles.copy}>Select the items and quantities to return. Eligibility is checked again by the server when you submit.</Text>
-    <View style={styles.steps}>{["Items", "Reason", "Evidence & refund", "Review"].map((title, index) => <View key={title} style={[styles.stage, (review ? 3 : step) === index && styles.selected]}><Text accessibilityLabel={`Step ${index + 1}: ${title}${(review ? 3 : step) === index ? ", current step" : ""}`} style={styles.copy}>{index + 1}. {title}</Text></View>)}</View>
+    <View style={styles.heading}><View style={styles.headingIcon}><Ionicons color={colors.primary} name="document-text-outline" size={23} /></View><View style={styles.headingCopy}><Text accessibilityRole="header" style={styles.title}>Request a return</Text><Text style={styles.copy}>Select the items and quantities to return. Eligibility is checked again by the server when you submit.</Text></View></View>
+    <View style={styles.steps}>{["Items", "Reason", "Evidence & refund", "Review"].map((title, index) => { const active = (review ? 3 : step) === index; const complete = (review ? 3 : step) > index; return <View key={title} style={[styles.stage, active && styles.stageActive, complete && styles.stageComplete]}><View style={[styles.stageIndex, (active || complete) && styles.stageIndexActive]}>{complete ? <Ionicons color={colors.surface} name="checkmark" size={14} /> : <Text style={[styles.stageIndexText, active && styles.stageIndexTextActive]}>{index + 1}</Text>}</View><Text accessibilityLabel={`Step ${index + 1}: ${title}${active ? ", current step" : ""}`} numberOfLines={1} style={[styles.stageText, active && styles.stageTextActive]}>{title}</Text></View>; })}</View>
     {eligibility?.deadline ? <Text style={styles.copy}>Return before: {new Date(eligibility.deadline).toLocaleString()} (your local time)</Text> : null}
     {unavailable ? <Text accessibilityRole="alert" style={styles.error}>{unavailable}</Text> : null}
     {review ? <>
@@ -121,19 +121,30 @@ export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrde
 }
 
 const styles = StyleSheet.create({
+  panel: { backgroundColor: colors.background, borderRadius: radius.lg, gap: spacing.md, marginTop: spacing.sm, minWidth: 0, padding: spacing.md },
+  heading: { alignItems: "flex-start", flexDirection: "row", gap: spacing.sm },
+  headingIcon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.pill, height: 42, justifyContent: "center", width: 42 },
+  headingCopy: { flex: 1, gap: 3 },
   steps: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  stage: { padding: spacing.sm, borderRadius: radius.md, backgroundColor: colors.surface, minWidth: 0 },
-  panel: { gap: spacing.sm, marginTop: spacing.md, minWidth: 0 },
-  title: { color: colors.text, fontWeight: "600", fontSize: 16 },
+  stage: { alignItems: "center", backgroundColor: colors.surface, borderRadius: radius.pill, flexDirection: "row", gap: 6, minHeight: 38, minWidth: 0, paddingHorizontal: spacing.sm },
+  stageActive: { backgroundColor: colors.primarySoft },
+  stageComplete: { backgroundColor: colors.accentSoft },
+  stageIndex: { alignItems: "center", backgroundColor: colors.border, borderRadius: radius.pill, height: 22, justifyContent: "center", width: 22 },
+  stageIndexActive: { backgroundColor: colors.primary },
+  stageIndexText: { color: colors.muted, fontSize: 10, fontWeight: "700" },
+  stageIndexTextActive: { color: colors.surface },
+  stageText: { color: colors.muted, fontSize: 11, fontWeight: "600", maxWidth: 120 },
+  stageTextActive: { color: colors.primary, fontWeight: "700" },
+  title: { color: colors.text, fontSize: 17, fontWeight: "700" },
   copy: { color: colors.text, lineHeight: 20, flexShrink: 1 },
-  item: { gap: spacing.sm, paddingVertical: spacing.sm },
+  item: { backgroundColor: colors.surface, borderRadius: radius.md, gap: spacing.sm, padding: spacing.md },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   step: { minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center", backgroundColor: colors.primarySoft, borderRadius: radius.md },
-  option: { padding: spacing.md, minHeight: 44, borderRadius: radius.md, backgroundColor: colors.surface },
-  selected: { backgroundColor: colors.primarySoft },
-  primary: { padding: spacing.md, minHeight: 44, borderRadius: radius.md, backgroundColor: colors.primary, alignItems: "center" },
-  light: { color: "#fff", fontWeight: "600" },
-  input: { minHeight: 80, padding: spacing.md, color: colors.text, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md },
-  error: { color: colors.danger },
+  option: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, justifyContent: "center", minHeight: 50, padding: spacing.md },
+  selected: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
+  primary: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, justifyContent: "center", minHeight: 50, padding: spacing.md },
+  light: { color: colors.surface, fontWeight: "700" },
+  input: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, minHeight: 104, padding: spacing.md, textAlignVertical: "top" },
+  error: { backgroundColor: colors.primarySoft, borderRadius: radius.md, color: colors.danger, lineHeight: 19, padding: spacing.md },
   disabled: { opacity: 0.5 }
 });

@@ -36,7 +36,7 @@ test("expanded orders open the shared return wizard without loading the order pi
   const wizard = readFileSync(new URL("../operations/CustomerReturnWizard.tsx", import.meta.url), "utf8");
   assert.match(wizard, /useState\(initialOrderId\)/);
   assert.match(wizard, /enabled: Boolean\(user && !initialOrderId\)/);
-  assert.match(wizard, /!initialOrderId \? <>/);
+  assert.match(wizard, /!initialOrderId \? <View style=\{styles\.step\}>/);
   const expansion = readFileSync(new URL("./CustomerOrderExpansion.tsx", import.meta.url), "utf8");
   assert.match(expansion, /key=\{`\$\{user.uid\}:\$\{id\}`\} initialOrderId=\{id\}/);
   assert.match(expansion, /Request return/);
