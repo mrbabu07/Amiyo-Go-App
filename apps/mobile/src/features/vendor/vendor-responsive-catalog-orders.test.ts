@@ -138,9 +138,13 @@ test("seller reports preserve exports and readable mobile rows", () => {
 test("seller inventory is mobile friendly and account safe", () => {
   assert.match(inventory, /useWindowDimensions\(\)\.width < 620/);
   assert.match(inventory, /activeUid\.current !== variables\.owner\.uid/);
-  assert.match(inventory, /useEffect\(\(\) => \{ setValues\(\{\}\); \}, \[user\?\.uid\]\)/);
+  assert.match(inventory, /useEffect\(\(\) => \{ setValues\(\{\}\); setFilter\("all"\); \}, \[user\?\.uid\]\)/);
   assert.match(inventory, /compact && styles\.rowCompact/);
   assert.match(inventory, /compact && styles\.buttonCompact/);
+  assert.match(inventory, /STOCK CONTROL/);
+  assert.match(inventory, /compact && styles\.heroCompact/);
+  assert.match(inventory, /type StockFilter = "all" \| "low" \| "out"/);
+  assert.doesNotMatch(inventory, /#fff|Â|â/);
 });
 
 test("seller review replies retain identity guards and mobile actions", () => {
