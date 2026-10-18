@@ -133,6 +133,10 @@ test("seller reports preserve exports and readable mobile rows", () => {
   assert.match(reports, /compact && styles\.exportCompact/);
   assert.match(reports, /compact && styles\.metricCompact/);
   assert.match(reports, /compact && styles\.orderCompact/);
+  assert.match(reports, /DELIVERED REVENUE/);
+  assert.match(reports, /compact && styles\.heroCompact/);
+  assert.match(reports, /compact && styles\.gridCompact/);
+  assert.doesNotMatch(reports, /#fff|#e2e8f0|Â|â|à§/);
 });
 
 test("seller inventory is mobile friendly and account safe", () => {
