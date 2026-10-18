@@ -36,7 +36,7 @@ function FilterOption({ count, label, onPress, selected }: { count: number; labe
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, padding: spacing.md },
+  card: { backgroundColor: colors.surface, borderRadius: radius.xl, boxShadow: "0 10px 30px rgba(11,31,58,.08)", padding: spacing.md },
   headingRow: { alignItems: "center", borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: "row", justifyContent: "space-between", paddingBottom: 13 },
   headingCopy: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
   heading: { color: colors.text, fontSize: 18, fontWeight: "700" },
@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
   optionTextActive: { color: colors.accent, fontWeight: "600" },
   empty: { color: colors.muted, fontSize: 13, fontStyle: "italic" },
   sortOptions: { gap: 7 },
-  sortOption: { alignItems: "center", backgroundColor: colors.background, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flexDirection: "row", justifyContent: "space-between", minHeight: 38, paddingHorizontal: 11 },
+  sortOption: { alignItems: "center", backgroundColor: colors.background, borderRadius: radius.md, flexDirection: "row", justifyContent: "space-between", minHeight: 42, paddingHorizontal: 11 },
   sortOptionActive: { backgroundColor: colors.accentSoft, borderColor: colors.accent },
   sortText: { color: colors.muted, fontSize: 12, fontWeight: "700" },
   sortTextActive: { color: colors.accent },
