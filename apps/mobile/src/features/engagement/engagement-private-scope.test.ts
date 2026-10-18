@@ -9,6 +9,12 @@ test("loyalty data and referral mutations stay scoped to the active account", ()
   assert.match(source, /queryKey: \["loyalty", user\?\.uid\]/);
   assert.match(source, /queryKey: \["loyalty", "referral", user\?\.uid\]/);
   assert.match(source, /activeUid\.current !== ownerUid/);
+  assert.match(source, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(source, /compact && styles\.heroStatsCompact/);
+  assert.match(source, /compact && styles\.stack/);
+  assert.match(source, /compact && styles\.fullWidth/);
+  assert.match(source, /accessibilityLabel="Referral code"/);
+  assert.doesNotMatch(source, /Ã‚Â·|Ã¢â‚¬Â¦/);
   assert.doesNotMatch(source, /firebaseAuth/);
 });
 
