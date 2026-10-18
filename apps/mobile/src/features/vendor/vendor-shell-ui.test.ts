@@ -12,6 +12,14 @@ test("seller workspace uses responsive grouped navigation", () => {
   assert.match(shell, /function VendorScreen/);
   assert.match(shell, /function VendorSidebar/);
   assert.match(shell, /mobileSidebarOpen/);
+  assert.match(shell, /vendorMobileLinks/);
+  assert.match(shell, /accessibilityLabel="Seller quick navigation"/);
+  assert.match(shell, /!desktop \? <ScrollView/);
+  assert.match(shell, /compact=\{!desktop\}/);
+  assert.match(shell, /compact && styles\.vendorHeadingCompact/);
+  assert.match(shell, /compact && styles\.vendorPageTitleCompact/);
+  assert.match(shell, /vendorMobileNavItem: \{[^}]*minHeight: 40/);
+  assert.match(shell, /vendorBack: \{[^}]*height: 44[^}]*width: 44/);
   for (const group of ["Products", "Orders", "Finance", "Growth", "Shop", "Support"]) assert.match(shell, new RegExp(`label: "${group}"`));
   assert.match(shell, /accessibilityLabel="Seller navigation"/);
 });
