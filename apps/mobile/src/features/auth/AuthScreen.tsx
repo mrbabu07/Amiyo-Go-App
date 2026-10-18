@@ -99,7 +99,7 @@ export function AuthScreen() {
 
 function Field(props: React.ComponentProps<typeof TextInput> & { label: string }) {
   const { label, ...inputProps } = props;
-  return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput accessibilityLabel={label} placeholderTextColor="#94a3b8" style={styles.input} {...inputProps} /></View>;
+  return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput accessibilityLabel={label} placeholderTextColor={colors.muted} style={styles.input} {...inputProps} /></View>;
 }
 
 const styles = StyleSheet.create({
@@ -107,16 +107,16 @@ const styles = StyleSheet.create({
   content: { alignSelf: "center", justifyContent: "center", minHeight: "100%", padding: spacing.lg, width: "100%", maxWidth: 520 },
   contentCompact: { padding: spacing.md },
   back: { color: colors.primary, fontWeight: "600", marginBottom: spacing.md },
-  card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl, borderWidth: 1, padding: spacing.xl, ...Platform.select({ web: { boxShadow: "0 10px 24px rgba(26,26,46,0.08)" }, default: { shadowColor: colors.navy, shadowOpacity: 0.08, shadowRadius: 20 } }) },
+  card: { backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.xl, ...Platform.select({ web: { boxShadow: "0 18px 50px rgba(11,31,58,0.12)" }, default: { elevation: 4, shadowColor: colors.navy, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.12, shadowRadius: 22 } }) },
   cardCompact: { padding: spacing.lg },
   brand: { color: colors.primary, fontSize: 20, fontWeight: "700" },
   title: { color: colors.text, fontSize: 28, fontWeight: "700", marginTop: spacing.lg },
   titleCompact: { fontSize: 24 },
   subtitle: { color: colors.muted, lineHeight: 21, marginBottom: spacing.lg, marginTop: spacing.sm },
-  configError: { backgroundColor: "#fef2f2", borderRadius: radius.md, color: colors.danger, marginBottom: spacing.md, padding: spacing.md },
+  configError: { backgroundColor: colors.primarySoft, borderRadius: radius.md, color: colors.danger, marginBottom: spacing.md, padding: spacing.md },
   googleButton: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flexDirection: "row", justifyContent: "center", minHeight: 50, paddingHorizontal: spacing.md },
   googleMark: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.pill, borderWidth: 1, height: 28, justifyContent: "center", marginRight: spacing.sm, width: 28 },
-  googleMarkText: { color: "#4285f4", fontSize: 16, fontWeight: "700" },
+  googleMarkText: { color: colors.primary, fontSize: 16, fontWeight: "700" },
   googleText: { color: colors.text, fontSize: 14, fontWeight: "700" },
   divider: { alignItems: "center", flexDirection: "row", gap: spacing.sm, marginVertical: spacing.lg },
   dividerLine: { backgroundColor: colors.border, flex: 1, height: 1 },
@@ -125,9 +125,9 @@ const styles = StyleSheet.create({
   label: { color: colors.text, fontSize: 12, fontWeight: "600" },
   input: { backgroundColor: colors.background, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, fontSize: 15, minHeight: 48, paddingHorizontal: 14 },
   error: { color: colors.danger, marginBottom: spacing.md },
-  demoPanel: { backgroundColor: colors.primarySoft, borderRadius: radius.md, marginBottom: spacing.md, padding: spacing.md }, demoTitle: { color: colors.text, fontSize: 12, fontWeight: "700" }, demoRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: spacing.sm }, demoButton: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.primary, borderRadius: radius.sm, borderWidth: 1, justifyContent: "center", minHeight: 44, paddingHorizontal: 12, paddingVertical: 8 }, demoButtonCompact: { flex: 1, minWidth: 84 }, demoButtonText: { color: colors.primary, fontSize: 11, fontWeight: "700" }, demoHint: { color: colors.muted, fontSize: 10, marginTop: spacing.sm },
+  demoPanel: { backgroundColor: colors.accentSoft, borderRadius: radius.lg, marginBottom: spacing.md, padding: spacing.md }, demoTitle: { color: colors.text, fontSize: 12, fontWeight: "700" }, demoRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: spacing.sm }, demoButton: { alignItems: "center", backgroundColor: colors.surface, borderRadius: radius.sm, justifyContent: "center", minHeight: 44, paddingHorizontal: 12, paddingVertical: 8 }, demoButtonCompact: { flex: 1, minWidth: 84 }, demoButtonText: { color: colors.primary, fontSize: 11, fontWeight: "700" }, demoHint: { color: colors.muted, fontSize: 10, marginTop: spacing.sm },
   primary: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, justifyContent: "center", minHeight: 50 },
   pressed: { opacity: 0.7 },
-  primaryText: { color: "#fff", fontSize: 15, fontWeight: "700" },
+  primaryText: { color: colors.surface, fontSize: 15, fontWeight: "700" },
   switchText: { color: colors.primary, fontWeight: "600", marginTop: spacing.lg, textAlign: "center" }
 });
