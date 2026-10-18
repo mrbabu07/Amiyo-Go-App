@@ -93,18 +93,18 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
   );
 }
 
-const cardShadow = Platform.select({ web: { boxShadow: "0 10px 24px rgba(15,23,42,0.08)" }, default: { elevation: 4, shadowColor: "#0f172a", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 14 } });
+const cardShadow = Platform.select({ web: { boxShadow: "0 12px 30px rgba(11,31,58,0.10)" }, default: { elevation: 4, shadowColor: colors.navy, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.1, shadowRadius: 16 } });
 const styles = StyleSheet.create({
   card: { backgroundColor: colors.surface, borderRadius: radius.md, flex: 1, overflow: "hidden", position: "relative", ...cardShadow },
   openArea: { flex: 1 },
   pressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
-  imageWrap: { aspectRatio: 1, backgroundColor: "#f5f7fb", position: "relative", width: "100%" },
+  imageWrap: { aspectRatio: 1, backgroundColor: colors.primarySoft, position: "relative", width: "100%" },
   image: { height: "100%", width: "100%" },
   topBadge: { backgroundColor: colors.accent, borderRadius: 4, left: 7, paddingHorizontal: 7, paddingVertical: 5, position: "absolute", top: 7 },
   discountText: { color: colors.surface, fontSize: 9, fontWeight: "700" },
   verifiedText: { color: colors.surface, fontSize: 8, fontWeight: "700" },
-  heart: { alignItems: "center", backgroundColor: "rgba(255,255,255,0.96)", borderColor: "#fff", borderRadius: radius.pill, borderWidth: 1, height: 32, justifyContent: "center", position: "absolute", right: 7, top: 7, width: 32 },
-  heartActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  heart: { alignItems: "center", backgroundColor: "rgba(255,255,255,0.96)", borderRadius: radius.pill, height: 36, justifyContent: "center", position: "absolute", right: 7, top: 7, width: 36 },
+  heartActive: { backgroundColor: colors.accent },
   heartBusy: { opacity: 0.65 },
   body: { flex: 1, padding: spacing.sm },
   badge: { alignSelf: "flex-start", backgroundColor: colors.accentSoft, borderRadius: 3, color: colors.accent, fontSize: 8, fontWeight: "700", marginBottom: 6, paddingHorizontal: 5, paddingVertical: 3, textTransform: "uppercase" },
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   priceRow: { alignItems: "baseline", flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 8 },
   price: { color: colors.accent, fontSize: 18, fontWeight: "700" },
   original: { color: "#94a3b8", fontSize: 10, textDecorationLine: "line-through" },
-  metaRow: { alignItems: "center", borderTopColor: "#f1f5f9", borderTopWidth: 1, flexDirection: "row", marginTop: 8, paddingTop: 8 },
+  metaRow: { alignItems: "center", flexDirection: "row", marginTop: 8, paddingTop: 4 },
   rating: { color: colors.text, fontSize: 10, fontWeight: "600", marginLeft: 3 },
   sold: { color: colors.muted, fontSize: 9, marginLeft: 6 },
   cart: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.sm, minHeight: 44, justifyContent: "center", flexDirection: "row", gap: 6, marginHorizontal: spacing.sm, marginBottom: spacing.sm, paddingHorizontal: 6, paddingVertical: 10 },
