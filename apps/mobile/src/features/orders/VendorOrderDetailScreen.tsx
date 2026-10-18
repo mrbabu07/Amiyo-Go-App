@@ -5,7 +5,8 @@ import * as Crypto from "expo-crypto";
 import { useRouter } from "expo-router";
 import type { ReactNode } from "react";
 import { useRef, useState } from "react";
-import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
 import { OrderItemImage } from "./OrderItemImage";
@@ -120,12 +121,12 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
     }
   }
 
-  if (order.isLoading) return <View style={styles.center}><ActivityIndicator color={colors.primary} size="large" /></View>;
-  if (!order.data) return <View style={styles.center}><Text style={styles.error}>{order.error instanceof Error ? order.error.message : "Order not found"}</Text><Pressable onPress={() => router.back()}><Text style={styles.link}>Go back</Text></Pressable></View>;
+  if (order.isLoading) return <Screen eyebrow="FULFILLMENT" title="Loading seller order"><View style={styles.center}><ActivityIndicator color={colors.primary} size="large" /></View></Screen>;
+  if (!order.data) return <Screen eyebrow="FULFILLMENT" title="Order unavailable" description="This package could not be opened in your seller workspace."><View style={styles.center}><Text style={styles.error}>{order.error instanceof Error ? order.error.message : "Order not found"}</Text><Pressable onPress={() => router.back()}><Text style={styles.link}>Go back</Text></Pressable></View></Screen>;
 
   const item = order.data;
   const units = item.items.reduce((sum, line) => sum + line.quantity, 0);
-  return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.page}>
+  return <Screen hideHeading title="Vendor order detail"><View style={styles.page}>
     <Pressable onPress={() => router.back()} style={styles.back}><Ionicons color={colors.primary} name="arrow-back" size={17} /><Text style={styles.link}>Vendor orders</Text></Pressable>
     <View style={[styles.hero, compact && styles.heroCompact]}>
       <View style={styles.flex}><View style={styles.statusRow}><Text style={styles.status}>{label(item.status)}</Text><Text style={styles.version}>v{item.version}</Text></View><Text accessibilityRole="header" style={styles.title}>{item.orderNumber}</Text><Text style={styles.heroText}>{item.shopName} package with {units} unit{units === 1 ? "" : "s"} ready for seller fulfillment.</Text></View>
@@ -169,7 +170,7 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
       </View>}
     </Panel> : null}
     {actions[item.status]?.length ? <View style={styles.actions}>{actions[item.status]!.map((action) => <Pressable disabled={Boolean(busy)} key={action.status} onPress={() => transition(action.status)} style={[styles.primary, action.danger && styles.danger, busy && styles.disabled]}>{busy === action.status ? <ActivityIndicator color="#fff" /> : <><Ionicons name={action.status === "READY_TO_SHIP" ? "cube-outline" : "checkmark-circle-outline"} size={19} color="#fff" /><Text style={styles.primaryText}>{action.label}</Text></>}</Pressable>)}</View> : <Text style={styles.notice}>No seller action is required at this stage.</Text>}
-  </ScrollView></SafeAreaView>;
+  </View></Screen>;
 }
 
 function HeroButton({ disabled, icon, label: text, onPress, primary }: { disabled?: boolean; icon: string; label: string; onPress(): void; primary?: boolean }) { return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={[styles.heroButton, primary && styles.heroButtonPrimary, disabled && styles.disabled]}><Ionicons color={primary ? "#fff" : colors.primary} name={icon as never} size={17} /><Text style={[styles.heroButtonText, primary && styles.light]}>{text}</Text></Pressable>; }
@@ -183,8 +184,7 @@ function pickupDateFor(day: number) { const date = new Date(); date.setDate(date
 function pickupDayLabel(day: number) { return day === 1 ? "Tomorrow" : new Date(Date.now() + day * 86_400_000).toLocaleDateString("en-BD", { day: "numeric", month: "short" }); }
 
 const styles = StyleSheet.create({
-  safe: { backgroundColor: colors.background, flex: 1 },
-  page: { alignSelf: "center", gap: spacing.md, maxWidth: 980, padding: spacing.lg, width: "100%" },
+  page: { alignSelf: "center", gap: spacing.md, maxWidth: 1080, width: "100%" },
   flex: { flex: 1, minWidth: 0 },
   back: { alignItems: "center", alignSelf: "flex-start", flexDirection: "row", gap: 6 },
   link: { color: colors.primary, fontWeight: "700" },

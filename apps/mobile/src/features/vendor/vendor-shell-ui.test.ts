@@ -7,6 +7,7 @@ const root = resolve(import.meta.dirname, "../../..");
 const shell = readFileSync(resolve(root, "src/ui/Screen.tsx"), "utf8");
 const dashboard = readFileSync(resolve(root, "app/vendor/dashboard.tsx"), "utf8");
 const orders = readFileSync(resolve(root, "src/features/orders/VendorOrdersScreen.tsx"), "utf8");
+const orderDetail = readFileSync(resolve(root, "src/features/orders/VendorOrderDetailScreen.tsx"), "utf8");
 
 test("seller workspace uses responsive grouped navigation", () => {
   assert.match(shell, /function VendorScreen/);
@@ -48,4 +49,7 @@ test("seller orders stay inside the workspace with reference controls", () => {
   assert.match(orders, /useCurrentUser/);
   assert.doesNotMatch(orders, /firebaseAuth/);
   assert.doesNotMatch(orders, /Â|Ã|à§|â†|â€œ|â€/);
+  assert.match(orderDetail, /<Screen hideHeading title="Vendor order detail">/);
+  assert.match(orderDetail, /<Screen eyebrow="FULFILLMENT" title="Loading seller order">/);
+  assert.doesNotMatch(orderDetail, /<SafeAreaView|<ScrollView/);
 });
