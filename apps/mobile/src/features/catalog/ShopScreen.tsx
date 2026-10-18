@@ -29,6 +29,7 @@ export function ShopScreen({ identifier }: { identifier: string }) {
   const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const { width } = useWindowDimensions();
   const desktop = width >= 900;
+  const compact = width < 620;
   const columns = width >= 1180 ? 4 : width >= 760 ? 3 : width < 360 ? 1 : 2;
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sort, setSort] = useState<ShopSortMode>("newest");
@@ -47,11 +48,11 @@ export function ShopScreen({ identifier }: { identifier: string }) {
   function resetFilters() { setSelectedCategory("all"); setSort("newest"); }
   const filters = <ShopFilters categories={categoryOptions} onCategory={setSelectedCategory} onReset={resetFilters} onSort={setSort} productCount={products.length} selectedCategory={selectedCategory} sort={sort} />;
 
-  return <SafeAreaView style={styles.safe}><ScrollView><StoreHeader desktop={desktop} viewportWidth={width} /><View style={styles.content}>
+  return <SafeAreaView style={styles.safe}><ScrollView><StoreHeader desktop={desktop} viewportWidth={width} /><View style={[styles.content, compact && responsive.contentCompact]}>
     <Pressable onPress={() => router.back()} style={styles.back}><Ionicons color={colors.primary} name="chevron-back" size={17} /><Text style={styles.link}>Back</Text></Pressable>
     {result.isLoading ? <ActivityIndicator color={colors.primary} size="large" /> : null}
     {result.data ? <>
-      <View style={styles.hero}>{result.data.bannerUrl ? <Image accessibilityLabel={`${result.data.name} cover`} resizeMode="cover" source={{ uri: result.data.bannerUrl }} style={styles.bannerImage} /> : null}<View style={styles.heroOverlay} />{result.data.logoUrl ? <Image accessibilityLabel={`${result.data.name} logo`} source={{ uri: result.data.logoUrl }} style={styles.logoImage} /> : <View style={styles.logo}><Text style={styles.logoText}>{result.data.name.slice(0, 1)}</Text></View>}<View style={styles.shopCopy}><Text accessibilityRole="header" style={styles.title}>{result.data.name}</Text><Text style={styles.description}>{result.data.description || "Verified Amiyo-Go shop"}</Text><Text style={styles.count}>{result.data.productCount} products</Text></View><Pressable disabled={chat.isPending} onPress={startChat} style={styles.messageButton}><Ionicons color={colors.navy} name="chatbubble-ellipses-outline" size={17} /><Text style={styles.messageText}>{chat.isPending ? "Opening…" : "Message seller"}</Text></Pressable></View>
+      <View style={[styles.hero, compact && responsive.heroCompact]}>{result.data.bannerUrl ? <Image accessibilityLabel={`${result.data.name} cover`} resizeMode="cover" source={{ uri: result.data.bannerUrl }} style={styles.bannerImage} /> : null}<View style={styles.heroOverlay} />{result.data.logoUrl ? <Image accessibilityLabel={`${result.data.name} logo`} source={{ uri: result.data.logoUrl }} style={styles.logoImage} /> : <View style={styles.logo}><Text style={styles.logoText}>{result.data.name.slice(0, 1)}</Text></View>}<View style={[styles.shopCopy, compact && responsive.shopCopyCompact]}><Text accessibilityRole="header" style={[styles.title, compact && responsive.titleCompact]}>{result.data.name}</Text><Text style={styles.description}>{result.data.description || "Verified Amiyo-Go shop"}</Text><Text style={styles.count}>{result.data.productCount} products</Text></View><Pressable disabled={chat.isPending} onPress={startChat} style={[styles.messageButton, compact && responsive.messageButtonCompact]}><Ionicons color={colors.navy} name="chatbubble-ellipses-outline" size={17} /><Text style={styles.messageText}>{chat.isPending ? "Opening…" : "Message seller"}</Text></Pressable></View>
       {chat.error ? <Text style={styles.error}>{chat.error.message}</Text> : null}
       {result.data.storefront?.tagline ? <Text style={styles.tagline}>{result.data.storefront.tagline}</Text> : null}
       {result.data.storefront?.announcement ? <View style={styles.announcement}><Ionicons color={colors.primary} name="megaphone-outline" size={18} /><Text style={styles.announcementText}>{result.data.storefront.announcement}</Text></View> : null}
@@ -59,13 +60,15 @@ export function ShopScreen({ identifier }: { identifier: string }) {
       {!desktop ? <Pressable accessibilityRole="button" onPress={() => setShowMobileFilters((visible) => !visible)} style={styles.mobileFilterButton}><View style={styles.mobileFilterCopy}><Ionicons color={colors.text} name="options-outline" size={19} /><Text style={styles.mobileFilterText}>Filters & Sort</Text></View><View style={styles.mobileFilterCopy}><Text style={styles.mobileFilterMeta}>{filteredProducts.length} items</Text><Ionicons color={colors.muted} name={showMobileFilters ? "chevron-up" : "chevron-down"} size={18} /></View></Pressable> : null}
       {!desktop && showMobileFilters ? <View style={styles.mobileFilters}>{filters}</View> : null}
       <View style={styles.catalogLayout}>{desktop ? <View style={styles.sidebar}>{filters}</View> : null}<View style={styles.productsArea}>
-        <View style={styles.productsHeader}><View><Text style={styles.productsTitle}>All Products</Text><Text style={styles.productsMeta}>Showing {filteredProducts.length} of {products.length} products</Text></View>{selectedCategory !== "all" ? <Pressable onPress={resetFilters} style={styles.clearButton}><Text style={styles.clearText}>Clear filter</Text></Pressable> : null}</View>
+        <View style={[styles.productsHeader, compact && responsive.productsHeaderCompact]}><View><Text style={styles.productsTitle}>All Products</Text><Text style={styles.productsMeta}>Showing {filteredProducts.length} of {products.length} products</Text></View>{selectedCategory !== "all" ? <Pressable onPress={resetFilters} style={styles.clearButton}><Text style={styles.clearText}>Clear filter</Text></Pressable> : null}</View>
         {filteredProducts.length ? <View style={styles.grid}>{filteredProducts.map(toHomeProduct).map((product) => <View key={product.id} style={[styles.slot, { width: `${100 / columns}%` as `${number}%` }]}><ProductCard product={product} /></View>)}</View> : <View style={styles.emptyState}><View style={styles.emptyIcon}><Ionicons color="#94a3b8" name="cube-outline" size={42} /></View><Text style={styles.emptyTitle}>No Products Found</Text><Text style={styles.emptyText}>Try adjusting your filters or check back later.</Text><Pressable onPress={resetFilters} style={styles.resetButton}><Text style={styles.resetButtonText}>Reset filters</Text></Pressable></View>}
       </View></View>
     </> : null}
     {result.error ? <Text style={styles.error}>Shop could not be loaded.</Text> : null}
   </View></ScrollView></SafeAreaView>;
 }
+
+const responsive = StyleSheet.create({ contentCompact: { padding: spacing.sm }, heroCompact: { alignItems: "flex-start", flexDirection: "column", gap: spacing.md, marginBottom: spacing.lg, marginTop: spacing.md, padding: spacing.lg }, messageButtonCompact: { justifyContent: "center", width: "100%" }, productsHeaderCompact: { alignItems: "flex-start", flexDirection: "column", gap: spacing.sm }, shopCopyCompact: { minWidth: 0, width: "100%" }, titleCompact: { fontSize: 24 } });
 
 const styles = StyleSheet.create({
   safe: { backgroundColor: colors.background, flex: 1 }, content: { alignSelf: "center", maxWidth: 1208, padding: spacing.lg, width: "100%" },

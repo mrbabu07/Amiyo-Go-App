@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
   lastSection: { borderBottomWidth: 0, paddingBottom: 0 },
   label: { color: colors.text, fontSize: 14, fontWeight: "700", marginBottom: 10 },
   option: { alignItems: "center", flexDirection: "row", gap: 10, minHeight: 34 },
-  radio: { alignItems: "center", borderColor: "#aab4c0", borderRadius: radius.pill, borderWidth: 1.5, height: 17, justifyContent: "center", width: 17 },
+  radio: { alignItems: "center", borderColor: colors.muted, borderRadius: radius.pill, borderWidth: 1.5, height: 17, justifyContent: "center", width: 17 },
   radioActive: { borderColor: colors.accent },
   radioDot: { backgroundColor: colors.accent, borderRadius: radius.pill, height: 9, width: 9 },
   optionText: { color: colors.muted, flex: 1, fontSize: 13 },
@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
   empty: { color: colors.muted, fontSize: 13, fontStyle: "italic" },
   sortOptions: { gap: 7 },
   sortOption: { alignItems: "center", backgroundColor: colors.background, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flexDirection: "row", justifyContent: "space-between", minHeight: 38, paddingHorizontal: 11 },
-  sortOptionActive: { backgroundColor: colors.accentSoft, borderColor: "#fdba8c" },
+  sortOptionActive: { backgroundColor: colors.accentSoft, borderColor: colors.accent },
   sortText: { color: colors.muted, fontSize: 12, fontWeight: "700" },
-  sortTextActive: { color: "#c2410c" },
+  sortTextActive: { color: colors.accent },
 });
