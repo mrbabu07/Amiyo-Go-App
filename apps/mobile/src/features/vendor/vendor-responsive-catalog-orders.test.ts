@@ -50,6 +50,11 @@ test("seller orders preserve readable mobile cards and actions", () => {
   assert.match(orders, /compact && styles\.orderBodyCompact/);
   assert.match(orders, /compact && styles\.actionsCompact/);
   assert.match(orders, /compact && styles\.actionCompact/);
+  assert.match(orders, /statusPresentation\(order\.status\)/);
+  assert.match(orders, /Seller action required/);
+  assert.match(orders, /successPill/);
+  assert.match(orders, /transitPill/);
+  assert.match(orders, /dangerPill/);
 });
 
 test("seller finance protects the balance hero on narrow screens", () => {
