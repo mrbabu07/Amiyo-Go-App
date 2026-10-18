@@ -29,3 +29,13 @@ test("vendor KYC waits for security processing and legacy settings stay account 
   assert.doesNotMatch(settings, /firebaseAuth/);
   assert.doesNotMatch(settings, /storageKey\.split/);
 });
+
+test("vendor KYC presents and enforces the verification workflow", () => {
+  assert.match(source, /\["SUBMITTED", "REVIEWING", "APPROVED"\]\.includes/);
+  assert.match(source, /latest\?\.rejectionReason/);
+  assert.match(source, /NEW SUBMISSION EVIDENCE/);
+  assert.match(source, /ReviewStep/);
+  assert.match(source, /Review in progress/);
+  assert.match(source, /accessibilityState=\{\{ disabled:/);
+  assert.match(source, /compact && styles\.progressCardCompact/);
+});
