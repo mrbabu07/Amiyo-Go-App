@@ -30,6 +30,8 @@ const productDetail = readFileSync(resolve(root, "src/features/vendor/VendorProd
 const marketing = readFileSync(resolve(root, "src/features/vendor/VendorMarketingScreen.tsx"), "utf8");
 const registration = readFileSync(resolve(root, "src/features/vendor/VendorRegistrationScreen.tsx"), "utf8");
 const bulkProducts = readFileSync(resolve(root, "src/features/vendor/VendorBulkProductsScreen.tsx"), "utf8");
+const productCategorySelect = readFileSync(resolve(root, "src/features/vendor/components/ProductCategorySelect.tsx"), "utf8");
+const locationSelect = readFileSync(resolve(root, "src/features/vendor/components/LocationSelect.tsx"), "utf8");
 
 test("seller catalog becomes a full-width mobile workspace", () => {
   assert.match(products, /const \{ width \} = useWindowDimensions\(\)/);
@@ -272,4 +274,13 @@ test("seller registration presents a mobile guided onboarding flow", () => {
   assert.match(registration, /Create workspace & continue KYC/);
   assert.match(registration, /router\.replace\("\/vendor\/kyc"\)/);
   assert.doesNotMatch(registration, /borderColor: "#d1d5db"/);
+});
+
+test("seller onboarding selectors use the current marketplace palette", () => {
+  assert.match(productCategorySelect, /backgroundColor: colors\.surface/);
+  assert.match(productCategorySelect, /backgroundColor: colors\.accentSoft/);
+  assert.doesNotMatch(productCategorySelect, /#f8fafc|#f1f5f9/);
+  assert.match(locationSelect, /borderColor: colors\.border/);
+  assert.match(locationSelect, /backgroundColor: colors\.accentSoft/);
+  assert.doesNotMatch(locationSelect, /#d1d5db|#f3f4f6/);
 });
