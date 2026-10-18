@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import type { User } from "firebase/auth";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
@@ -29,6 +29,7 @@ const initial = {
 export function VendorRegistrationScreen() {
   const router = useRouter();
   const user = useCurrentUser();
+  const compact = useWindowDimensions().width < 620;
   const activeUid = useRef(user?.uid);
   activeUid.current = user?.uid;
   const session = useAuthStore((state) => state.session);
@@ -86,6 +87,12 @@ export function VendorRegistrationScreen() {
 
   return (
     <Screen eyebrow="SELL ON AMIYO-GO" title="Become a Vendor" description="Open your shop and reach customers across Bangladesh.">
+      <View style={[styles.steps, compact && styles.stepsCompact]}>
+        <Step active icon="storefront-outline" label="Shop" />
+        <Step active={Boolean(form.upazilaId)} icon="location-outline" label="Location" />
+        <Step active={categoryIds.length > 0} icon="grid-outline" label="Categories" />
+        <Step active={accepted} icon="checkmark-circle-outline" label="Review" />
+      </View>
       <ModuleCard title="Vendor Registration" meta="Complete the information below to submit your shop for approval.">
         <Field label="Shop Name *" onChangeText={(shopName) => setForm({ ...form, shopName })} placeholder="Enter your shop name" value={form.shopName} />
         <Field keyboardType="phone-pad" label="Phone Number *" onChangeText={(phone) => setForm({ ...form, phone })} placeholder="01XXXXXXXXX" value={form.phone} />
@@ -98,8 +105,8 @@ export function VendorRegistrationScreen() {
           </View>
         </View>
 
-        <View style={styles.columns}>
-          <View style={styles.flex}>
+        <View style={[styles.columns, compact && styles.columnsCompact]}>
+          <View style={[styles.flex, compact && styles.flexCompact]}>
             <LocationSelect
               label="Division"
               onChange={(divisionId) => setForm({ ...form, divisionId, districtId: "", upazilaId: "", unionId: "" })}
@@ -109,7 +116,7 @@ export function VendorRegistrationScreen() {
               value={form.divisionId}
             />
           </View>
-          <View style={styles.flex}>
+          <View style={[styles.flex, compact && styles.flexCompact]}>
             <LocationSelect
               disabled={!form.divisionId}
               label="District"
@@ -121,8 +128,8 @@ export function VendorRegistrationScreen() {
             />
           </View>
         </View>
-        <View style={styles.columns}>
-          <View style={styles.flex}>
+        <View style={[styles.columns, compact && styles.columnsCompact]}>
+          <View style={[styles.flex, compact && styles.flexCompact]}>
             <LocationSelect
               disabled={!form.districtId}
               label="Upazila"
@@ -133,7 +140,7 @@ export function VendorRegistrationScreen() {
               value={form.upazilaId}
             />
           </View>
-          <View style={styles.flex}>
+          <View style={[styles.flex, compact && styles.flexCompact]}>
             <LocationSelect
               disabled={!form.upazilaId}
               label="Union (Optional)"
@@ -168,6 +175,10 @@ export function VendorRegistrationScreen() {
   );
 }
 
+function Step({ active, icon, label }: { active?: boolean; icon: React.ComponentProps<typeof Ionicons>["name"]; label: string }) {
+  return <View style={[styles.step, active && styles.stepActive]}><Ionicons color={active ? colors.surface : colors.muted} name={icon} size={17} /><Text style={[styles.stepText, active && styles.stepTextActive]}>{label}</Text></View>;
+}
+
 function Field(props: React.ComponentProps<typeof TextInput> & { label: string }) {
   const { label, ...input } = props;
   return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput placeholderTextColor={colors.muted} style={[styles.input, input.multiline && styles.multiline]} {...input} /></View>;
@@ -178,6 +189,12 @@ function Action({ busy, disabled, label, onPress }: { busy?: boolean; disabled?:
 }
 
 const styles = StyleSheet.create({
+  steps: { backgroundColor: colors.surface, borderRadius: radius.lg, flexDirection: "row", gap: spacing.sm, padding: spacing.sm },
+  stepsCompact: { flexWrap: "wrap" },
+  step: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.pill, flex: 1, flexDirection: "row", gap: 6, justifyContent: "center", minHeight: 40, minWidth: 110, paddingHorizontal: spacing.sm },
+  stepActive: { backgroundColor: colors.primary },
+  stepText: { color: colors.muted, fontSize: 11, fontWeight: "700" },
+  stepTextActive: { color: colors.surface },
   field: { gap: 6 },
   label: { color: colors.text, fontSize: 13, fontWeight: "700" },
   input: { backgroundColor: colors.surface, borderColor: "#d1d5db", borderRadius: radius.md, borderWidth: 1, color: colors.text, minHeight: 48, paddingHorizontal: 14 },
@@ -187,12 +204,14 @@ const styles = StyleSheet.create({
   sectionTitle: { color: colors.text, fontSize: 17, fontWeight: "700" },
   sectionMeta: { color: colors.muted, fontSize: 11, marginTop: 2 },
   columns: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
+  columnsCompact: { flexDirection: "column" },
   flex: { flex: 1, minWidth: 220 },
-  consent: { alignItems: "flex-start", backgroundColor: "#f9fafb", borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flexDirection: "row", gap: spacing.sm, padding: spacing.md },
-  consentText: { color: "#4b5563", flex: 1, fontSize: 13, lineHeight: 21 },
-  action: { alignItems: "center", backgroundColor: "#2563eb", borderRadius: radius.md, justifyContent: "center", minHeight: 50 },
-  actionText: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  disabled: { backgroundColor: "#9ca3af", opacity: 0.75 },
+  flexCompact: { minWidth: 0, width: "100%" },
+  consent: { alignItems: "flex-start", backgroundColor: colors.primarySoft, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flexDirection: "row", gap: spacing.sm, padding: spacing.md },
+  consentText: { color: colors.text, flex: 1, fontSize: 13, lineHeight: 21 },
+  action: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, justifyContent: "center", minHeight: 50 },
+  actionText: { color: colors.surface, fontSize: 15, fontWeight: "700" },
+  disabled: { opacity: 0.45 },
   error: { color: colors.danger },
-  submitError: { backgroundColor: "#fef2f2", borderColor: "#fecaca", borderRadius: radius.md, borderWidth: 1, color: colors.danger, padding: spacing.md }
+  submitError: { backgroundColor: colors.primarySoft, borderColor: colors.danger, borderRadius: radius.md, borderWidth: 1, color: colors.danger, padding: spacing.md }
 });

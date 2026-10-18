@@ -28,6 +28,7 @@ const operations = readFileSync(resolve(root, "src/features/vendor/VendorOperati
 const categoryRequests = readFileSync(resolve(root, "src/features/vendor/VendorCategoryRequestsScreen.tsx"), "utf8");
 const productDetail = readFileSync(resolve(root, "src/features/vendor/VendorProductDetailScreen.tsx"), "utf8");
 const marketing = readFileSync(resolve(root, "src/features/vendor/VendorMarketingScreen.tsx"), "utf8");
+const registration = readFileSync(resolve(root, "src/features/vendor/VendorRegistrationScreen.tsx"), "utf8");
 
 test("seller catalog becomes a full-width mobile workspace", () => {
   assert.match(products, /useWindowDimensions\(\)\.width < 620/);
@@ -222,4 +223,13 @@ test("seller marketing form and vouchers stack safely on mobile", () => {
   assert.match(marketing, /compact && styles\.primaryCompact/);
   assert.match(marketing, /compact && styles\.voucherCompact/);
   assert.doesNotMatch(marketing, /à§³|Â·|â€“/);
+});
+
+test("seller registration presents a mobile guided onboarding flow", () => {
+  assert.match(registration, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(registration, /activeUid\.current !== owner\.uid/);
+  assert.match(registration, /compact && styles\.stepsCompact/);
+  assert.match(registration, /compact && styles\.columnsCompact/);
+  assert.match(registration, /compact && styles\.flexCompact/);
+  assert.match(registration, /backgroundColor: colors\.primary/);
 });
