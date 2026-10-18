@@ -10,4 +10,8 @@ test("personal review history subscribes to identity and scopes its cache to the
   assert.match(source, /enabled: Boolean\(user\), retry: false/);
   assert.match(source, /if \(!user\) return <ReviewState/);
   assert.doesNotMatch(source, /firebaseAuth|placeholderData|keepPreviousData/);
+  assert.match(source, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(source, /compact && styles\.summaryCompact/);
+  assert.match(source, /compact && styles\.summaryDividerCompact/);
+  assert.match(source, /minHeight: 44/);
 });

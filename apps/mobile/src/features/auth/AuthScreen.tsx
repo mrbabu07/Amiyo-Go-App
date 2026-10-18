@@ -1,7 +1,7 @@
 import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, updateProfile, type User } from "firebase/auth";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { createSession } from "./auth.api";
 import { firebaseAuth, firebaseConfigured } from "./firebase";
@@ -15,6 +15,7 @@ function destination(roles: string[]) {
 }
 
 export function AuthScreen() {
+  const compact = useWindowDimensions().width < 480;
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
@@ -70,11 +71,11 @@ export function AuthScreen() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.page}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[styles.content, compact && styles.contentCompact]} keyboardShouldPersistTaps="handled">
         <Pressable accessibilityRole="link" accessibilityLabel="Back to shop" onPress={() => router.replace("/")}><Text style={styles.back}>‹ Back to shop</Text></Pressable>
-        <View style={styles.card}>
+        <View style={[styles.card, compact && styles.cardCompact]}>
           <Text style={styles.brand}>Amiyo-Go</Text>
-          <Text style={styles.title}>{mode === "login" ? "Welcome back" : "Create your account"}</Text>
+          <Text style={[styles.title, compact && styles.titleCompact]}>{mode === "login" ? "Welcome back" : "Create your account"}</Text>
           <Text style={styles.subtitle}>Shop, track orders, and manage delivery addresses securely.</Text>
           {!firebaseConfigured ? <Text style={styles.configError}>Firebase is not configured. Add the EXPO_PUBLIC_FIREBASE_* values to apps/mobile/.env.</Text> : null}
           {Platform.OS === "web" ? <><Pressable accessibilityLabel="Continue with Google" accessibilityRole="button" disabled={busy || !firebaseConfigured} onPress={continueWithGoogle} style={({ pressed }) => [styles.googleButton, (pressed || busy) && styles.pressed]}><View style={styles.googleMark}><Text style={styles.googleMarkText}>G</Text></View><Text style={styles.googleText}>Continue with Google</Text></Pressable><View style={styles.divider}><View style={styles.dividerLine} /><Text style={styles.dividerText}>OR CONTINUE WITH EMAIL</Text><View style={styles.dividerLine} /></View></> : null}
@@ -82,7 +83,7 @@ export function AuthScreen() {
           {mode === "register" ? <Field label="Full name" value={name} onChangeText={setName} placeholder="Your name" /> : null}
           <Field autoCapitalize="none" autoComplete="email" keyboardType="email-address" label="Email" value={email} onChangeText={setEmail} placeholder="you@example.com" />
           <Field autoCapitalize="none" autoComplete={mode === "login" ? "current-password" : "new-password"} label="Password" value={password} onChangeText={setPassword} placeholder="Minimum 6 characters" secureTextEntry returnKeyType="go" onSubmitEditing={() => void submit()} />
-          {emulatorEnabled && mode === "login" ? <View style={styles.demoPanel}><Text style={styles.demoTitle}>Local demo accounts</Text><View style={styles.demoRow}>{[{ label: "Customer", email: "customer@amiyo.test" }, { label: "Vendor", email: "vendor@amiyo.test" }, { label: "Admin", email: "admin@amiyo.test" }].map((account) => <Pressable accessibilityRole="button" accessibilityLabel={`Use ${account.label.toLowerCase()} demo account`} disabled={busy} key={account.label} onPress={() => { setEmail(account.email); setPassword(demoPassword); }} style={styles.demoButton}><Text style={styles.demoButtonText}>{account.label}</Text></Pressable>)}</View><Text style={styles.demoHint}>Password: {demoPassword}</Text></View> : null}
+          {emulatorEnabled && mode === "login" ? <View style={styles.demoPanel}><Text style={styles.demoTitle}>Local demo accounts</Text><View style={styles.demoRow}>{[{ label: "Customer", email: "customer@amiyo.test" }, { label: "Vendor", email: "vendor@amiyo.test" }, { label: "Admin", email: "admin@amiyo.test" }].map((account) => <Pressable accessibilityRole="button" accessibilityLabel={`Use ${account.label.toLowerCase()} demo account`} disabled={busy} key={account.label} onPress={() => { setEmail(account.email); setPassword(demoPassword); }} style={[styles.demoButton, compact && styles.demoButtonCompact]}><Text style={styles.demoButtonText}>{account.label}</Text></Pressable>)}</View><Text style={styles.demoHint}>Password: {demoPassword}</Text></View> : null}
           {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
           <Pressable accessibilityRole="button" accessibilityLabel={mode === "login" ? "Sign in" : "Create account"} accessibilityState={{ busy, disabled: busy || !firebaseConfigured || !email.trim() || password.length < 6 }} disabled={busy || !firebaseConfigured || !email.trim() || password.length < 6} onPress={submit} style={({ pressed }) => [styles.primary, (pressed || busy) && styles.pressed]}>
             {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>{mode === "login" ? "Sign in" : "Create account"}</Text>}
@@ -104,10 +105,13 @@ function Field(props: React.ComponentProps<typeof TextInput> & { label: string }
 const styles = StyleSheet.create({
   page: { backgroundColor: colors.background, flex: 1 },
   content: { alignSelf: "center", justifyContent: "center", minHeight: "100%", padding: spacing.lg, width: "100%", maxWidth: 520 },
+  contentCompact: { padding: spacing.md },
   back: { color: colors.primary, fontWeight: "600", marginBottom: spacing.md },
   card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl, borderWidth: 1, padding: spacing.xl, ...Platform.select({ web: { boxShadow: "0 10px 24px rgba(26,26,46,0.08)" }, default: { shadowColor: colors.navy, shadowOpacity: 0.08, shadowRadius: 20 } }) },
+  cardCompact: { padding: spacing.lg },
   brand: { color: colors.primary, fontSize: 20, fontWeight: "700" },
   title: { color: colors.text, fontSize: 28, fontWeight: "700", marginTop: spacing.lg },
+  titleCompact: { fontSize: 24 },
   subtitle: { color: colors.muted, lineHeight: 21, marginBottom: spacing.lg, marginTop: spacing.sm },
   configError: { backgroundColor: "#fef2f2", borderRadius: radius.md, color: colors.danger, marginBottom: spacing.md, padding: spacing.md },
   googleButton: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flexDirection: "row", justifyContent: "center", minHeight: 50, paddingHorizontal: spacing.md },
@@ -121,7 +125,7 @@ const styles = StyleSheet.create({
   label: { color: colors.text, fontSize: 12, fontWeight: "600" },
   input: { backgroundColor: colors.background, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, fontSize: 15, minHeight: 48, paddingHorizontal: 14 },
   error: { color: colors.danger, marginBottom: spacing.md },
-  demoPanel: { backgroundColor: colors.primarySoft, borderRadius: radius.md, marginBottom: spacing.md, padding: spacing.md }, demoTitle: { color: colors.text, fontSize: 12, fontWeight: "700" }, demoRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: spacing.sm }, demoButton: { backgroundColor: colors.surface, borderColor: colors.primary, borderRadius: radius.sm, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8 }, demoButtonText: { color: colors.primary, fontSize: 11, fontWeight: "700" }, demoHint: { color: colors.muted, fontSize: 10, marginTop: spacing.sm },
+  demoPanel: { backgroundColor: colors.primarySoft, borderRadius: radius.md, marginBottom: spacing.md, padding: spacing.md }, demoTitle: { color: colors.text, fontSize: 12, fontWeight: "700" }, demoRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: spacing.sm }, demoButton: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.primary, borderRadius: radius.sm, borderWidth: 1, justifyContent: "center", minHeight: 44, paddingHorizontal: 12, paddingVertical: 8 }, demoButtonCompact: { flex: 1, minWidth: 84 }, demoButtonText: { color: colors.primary, fontSize: 11, fontWeight: "700" }, demoHint: { color: colors.muted, fontSize: 10, marginTop: spacing.sm },
   primary: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, justifyContent: "center", minHeight: 50 },
   pressed: { opacity: 0.7 },
   primaryText: { color: "#fff", fontSize: 15, fontWeight: "700" },
