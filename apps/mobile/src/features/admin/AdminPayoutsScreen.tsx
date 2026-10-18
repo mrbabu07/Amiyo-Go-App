@@ -56,9 +56,10 @@ export function AdminPayoutsScreen({ requestsOnly = false }: { requestsOnly?: bo
 }
 
 function PayoutCard({ item, onPress, selected }: { item: AdminPayoutSummary; onPress(): void; selected: boolean }) {
+  const compact = useWindowDimensions().width < 620;
   const missingBank = !item.bankAccount;
-  return <Pressable onPress={onPress} style={[styles.card, selected && styles.cardActive]}>
-    <View style={styles.cardTop}><View style={[styles.icon, missingBank && styles.iconDanger]}><Ionicons color={missingBank ? colors.danger : colors.primary} name={missingBank ? "warning-outline" : "wallet-outline"} size={20} /></View><View style={styles.flex}><Text style={styles.vendor}>{item.vendor.displayName}</Text><Text style={styles.muted}>{item.vendor.legalName} | #{item.id.slice(0, 8).toUpperCase()}</Text></View><Status value={item.status} /></View>
+  return <Pressable onPress={onPress} style={[styles.card, compact && styles.cardCompact, selected && styles.cardActive]}>
+    <View style={[styles.cardTop, compact && styles.cardTopCompact]}><View style={[styles.icon, missingBank && styles.iconDanger]}><Ionicons color={missingBank ? colors.danger : colors.primary} name={missingBank ? "warning-outline" : "wallet-outline"} size={20} /></View><View style={styles.flex}><Text style={styles.vendor}>{item.vendor.displayName}</Text><Text style={styles.muted}>{item.vendor.legalName} | #{item.id.slice(0, 8).toUpperCase()}</Text></View><Status value={item.status} /></View>
     <Progress status={item.status} />
     <View style={styles.grid}><Cell label="Amount" value={money(Number(item.amount.amountMinor))} /><Cell label="Requested" value={dateTime(item.requestedAt)} /><Cell label="Bank / MFS" value={item.bankAccount?.provider ?? "Not configured"} /><Cell label="Account" value={item.bankAccount?.accountNumberMasked ?? "Missing"} /></View>
     {item.rejectionReason ? <Text style={styles.rejection}>Reason: {item.rejectionReason}</Text> : null}
@@ -67,14 +68,15 @@ function PayoutCard({ item, onPress, selected }: { item: AdminPayoutSummary; onP
 }
 
 function PayoutDetail({ action, error, item, onAction, onClose, onComplete, onProvider, onProviderRef, onReason, onReview, provider, providerRef, reason, saving }: { action: PayoutAction | null; error: string | null; item: AdminPayoutSummary; onAction: (value: PayoutAction) => void; onClose: () => void; onComplete: () => void; onProvider: (value: string) => void; onProviderRef: (value: string) => void; onReason: (value: string) => void; onReview: () => void; provider: string; providerRef: string; reason: string; saving: boolean }) {
+  const compact = useWindowDimensions().width < 620;
   const canPay = ["APPROVED", "PROCESSING"].includes(item.status);
-  return <View style={styles.detail}>
-    <View style={styles.detailHead}><View><Text style={styles.kicker}>SETTLEMENT CASE</Text><Text style={styles.detailTitle}>{item.vendor.displayName}</Text><Text style={styles.muted}>Request #{item.id.slice(0, 8).toUpperCase()} | Version {item.version}</Text></View><Pressable onPress={onClose} style={styles.close}><Ionicons color={colors.text} name="close" size={20} /></Pressable></View>
+  return <View style={[styles.detail, compact && styles.detailCompact]}>
+    <View style={[styles.detailHead, compact && styles.detailHeadCompact]}><View style={styles.flex}><Text style={styles.kicker}>SETTLEMENT CASE</Text><Text style={styles.detailTitle}>{item.vendor.displayName}</Text><Text style={styles.muted}>Request #{item.id.slice(0, 8).toUpperCase()} | Version {item.version}</Text></View><Pressable onPress={onClose} style={styles.close}><Ionicons color={colors.text} name="close" size={20} /></Pressable></View>
     <View style={styles.reviewBanner}><Ionicons color={item.bankAccount ? colors.success : colors.danger} name={item.bankAccount ? "shield-checkmark-outline" : "alert-circle-outline"} size={22} /><View style={styles.flex}><Text style={styles.reviewTitle}>{item.bankAccount ? "Bank/MFS account available" : "Bank/MFS account missing"}</Text><Text style={styles.muted}>{item.bankAccount ? `${item.bankAccount.provider} | ${item.bankAccount.accountName} | ${item.bankAccount.accountNumberMasked}` : "Ask seller to add payout account before payment completion."}</Text></View><Text style={styles.amountPill}>{money(Number(item.amount.amountMinor))}</Text></View>
     <View style={styles.grid}><Cell label="Status" value={item.status} /><Cell label="Requested" value={dateTime(item.requestedAt)} /><Cell label="Reviewed" value={item.reviewedAt ? dateTime(item.reviewedAt) : "Not reviewed"} /><Cell label="Previous payouts" value={String(item.payouts.length)} /></View>
     {item.payouts.length ? <View style={styles.history}><Text style={styles.section}>Payment history</Text>{item.payouts.map((payout) => <View key={payout.id} style={styles.historyRow}><View style={styles.flex}><Text style={styles.vendor}>{payout.provider}</Text><Text style={styles.muted}>{payout.providerRef || "No reference"} | {payout.paidAt ? dateTime(payout.paidAt) : "Not paid"}</Text></View><View style={styles.right}><Text style={styles.vendor}>{money(Number(payout.amount.amountMinor))}</Text><Text style={styles.muted}>{payout.status}</Text></View></View>)}</View> : null}
     <View style={styles.checklist}><Check label="Vendor identity reviewed" done={Boolean(item.vendor.legalName)} /><Check label="Payout account present" done={Boolean(item.bankAccount)} /><Check label="Amount reserved from wallet" done={Number(item.amount.amountMinor) > 0} /><Check label="Provider reference required before paid" done={!canPay || providerRef.trim().length > 1} /></View>
-    <View style={styles.actions}>{item.status === "REQUESTED" ? <><Pressable onPress={() => onAction("APPROVE")} style={[styles.action, action === "APPROVE" && styles.actionActive]}><Text style={[styles.actionText, action === "APPROVE" && styles.actionTextActive]}>Approve</Text></Pressable><Pressable onPress={() => onAction("REJECT")} style={[styles.action, styles.actionDanger]}><Text style={styles.actionDangerText}>Reject</Text></Pressable></> : null}{canPay ? <Pressable onPress={() => onAction("PAY")} style={[styles.action, action === "PAY" && styles.actionActive]}><Text style={[styles.actionText, action === "PAY" && styles.actionTextActive]}>Mark paid</Text></Pressable> : null}</View>
+    <View style={styles.actions}>{item.status === "REQUESTED" ? <><Pressable onPress={() => onAction("APPROVE")} style={[styles.action, compact && styles.actionCompact, action === "APPROVE" && styles.actionActive]}><Text style={[styles.actionText, action === "APPROVE" && styles.actionTextActive]}>Approve</Text></Pressable><Pressable onPress={() => onAction("REJECT")} style={[styles.action, compact && styles.actionCompact, styles.actionDanger]}><Text style={styles.actionDangerText}>Reject</Text></Pressable></> : null}{canPay ? <Pressable onPress={() => onAction("PAY")} style={[styles.action, compact && styles.actionCompact, action === "PAY" && styles.actionActive]}><Text style={[styles.actionText, action === "PAY" && styles.actionTextActive]}>Mark paid</Text></Pressable> : null}</View>
     {action === "REJECT" ? <TextInput multiline onChangeText={onReason} placeholder="Rejection reason (required)" placeholderTextColor="#94a3b8" style={[styles.field, styles.note]} value={reason} /> : null}
     {action === "APPROVE" ? <TextInput multiline onChangeText={onReason} placeholder="Approval note (optional)" placeholderTextColor="#94a3b8" style={[styles.field, styles.note]} value={reason} /> : null}
     {action === "PAY" ? <><TextInput onChangeText={onProvider} placeholder="Payment provider" placeholderTextColor="#94a3b8" style={styles.field} value={provider} /><TextInput onChangeText={onProviderRef} placeholder="Transaction reference" placeholderTextColor="#94a3b8" style={styles.field} value={providerRef} /></> : null}
@@ -85,7 +87,7 @@ function PayoutDetail({ action, error, item, onAction, onClose, onComplete, onPr
 
 function Progress({ status }: { status: string }) { const index = settlementSteps.indexOf(status); if (status === "REJECTED") return <Text style={styles.rejection}>Rejected settlement</Text>; return <View style={styles.progress}>{settlementSteps.map((step, stepIndex) => <View key={step} style={styles.step}><View style={[styles.dot, stepIndex <= index && styles.dotActive]} />{stepIndex < settlementSteps.length - 1 ? <View style={[styles.line, stepIndex < index && styles.lineActive]} /> : null}<Text style={[styles.stepText, stepIndex <= index && styles.stepTextActive]}>{step}</Text></View>)}</View>; }
 function Check({ done, label }: { done: boolean; label: string }) { return <View style={styles.check}><Ionicons color={done ? colors.success : colors.warning} name={done ? "checkmark-circle" : "time-outline"} size={17} /><Text style={styles.checkText}>{label}</Text></View>; }
-function Metric({ detail, icon, label, value }: { detail: string; icon: string; label: string; value: string }) { return <View style={styles.metric}><View style={styles.metricIcon}><Ionicons color={colors.primary} name={icon as never} size={20} /></View><View style={styles.flex}><Text style={styles.metricValue}>{value}</Text><Text style={styles.metricLabel}>{label}</Text><Text style={styles.muted}>{detail}</Text></View></View>; }
+function Metric({ detail, icon, label, value }: { detail: string; icon: string; label: string; value: string }) { return <View style={styles.metric}><View style={styles.metricIcon}><Ionicons color={colors.primary} name={icon as never} size={20} /></View><View style={styles.flex}><Text adjustsFontSizeToFit numberOfLines={1} style={styles.metricValue}>{value}</Text><Text style={styles.metricLabel}>{label}</Text><Text style={styles.muted}>{detail}</Text></View></View>; }
 function Cell({ label, value }: { label: string; value: string }) { return <View style={styles.cell}><Text style={styles.cellLabel}>{label}</Text><Text numberOfLines={2} style={styles.cellValue}>{value}</Text></View>; }
 function Status({ value }: { value: string }) { return <Text style={[styles.status, value === "PAID" && styles.statusGood, value === "REJECTED" && styles.statusBad, ["APPROVED", "PROCESSING"].includes(value) && styles.statusReady]}>{value}</Text>; }
 function ErrorBox({ message }: { message: string }) { return <View style={styles.error}><Ionicons color={colors.danger} name="alert-circle-outline" size={18} /><Text style={styles.errorText}>{message}</Text></View>; }
@@ -120,8 +122,10 @@ const styles = StyleSheet.create({
   countActive: { backgroundColor: "rgba(255,255,255,.2)", color: "#fff" },
   list: { gap: spacing.md },
   card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, overflow: "hidden", padding: spacing.md },
+  cardCompact: { padding: spacing.sm },
   cardActive: { borderColor: colors.primary, borderWidth: 2 },
   cardTop: { alignItems: "center", flexDirection: "row", gap: 10 },
+  cardTopCompact: { alignItems: "flex-start", flexWrap: "wrap" },
   icon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.md, height: 42, justifyContent: "center", width: 42 },
   iconDanger: { backgroundColor: "#fef2f2" },
   flex: { flex: 1, minWidth: 0 },
@@ -147,7 +151,9 @@ const styles = StyleSheet.create({
   open: { alignItems: "center", borderTopColor: colors.border, borderTopWidth: 1, flexDirection: "row", justifyContent: "space-between", marginTop: 13, paddingTop: 10 },
   openText: { color: colors.primary, fontSize: 11, fontWeight: "700" },
   detail: { backgroundColor: colors.surface, borderColor: colors.primary, borderRadius: radius.lg, borderWidth: 1, padding: spacing.md },
+  detailCompact: { padding: spacing.sm },
   detailHead: { alignItems: "center", borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: "row", justifyContent: "space-between", paddingBottom: 12 },
+  detailHeadCompact: { alignItems: "flex-start" },
   kicker: { color: colors.primary, fontSize: 9, fontWeight: "700", letterSpacing: 1.2 },
   detailTitle: { color: colors.text, fontSize: 20, fontWeight: "700", marginTop: 3 },
   close: { alignItems: "center", backgroundColor: colors.background, borderRadius: radius.md, height: 38, justifyContent: "center", width: 38 },
@@ -163,6 +169,7 @@ const styles = StyleSheet.create({
   checkText: { color: colors.text, flex: 1, fontSize: 11, fontWeight: "600" },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: spacing.md },
   action: { borderColor: colors.primary, borderRadius: radius.md, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10 },
+  actionCompact: { alignItems: "center", flex: 1, justifyContent: "center", minHeight: 44, minWidth: "45%" },
   actionActive: { backgroundColor: colors.primary },
   actionDanger: { borderColor: colors.danger },
   actionText: { color: colors.primary, fontSize: 11, fontWeight: "700" },
