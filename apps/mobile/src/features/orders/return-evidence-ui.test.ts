@@ -13,6 +13,11 @@ test("private evidence links are requested on action, account guarded and previe
   assert.ok(source.includes('result.url.startsWith("https://")'));
   assert.ok(source.includes("accessReturnEvidence(user, returnId, file.id, download, scope)"));
   assert.ok(source.includes('key={`${user?.uid}:${returnId}:${scope}`}'));
+  assert.match(source, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(source, /compact && styles\.actionsCompact/);
+  assert.match(source, /compact && styles\.buttonCompact/);
+  assert.match(source, /compact && styles\.imageCompact/);
+  assert.match(source, /minHeight: 44/);
   assert.doesNotMatch(source, /localStorage|AsyncStorage/);
 });
 
