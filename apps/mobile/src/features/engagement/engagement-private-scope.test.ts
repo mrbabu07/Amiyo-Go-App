@@ -28,5 +28,10 @@ test("notification reads cannot update another account cache", () => {
 test("admin promotions are cached per signed-in account", () => {
   const source = readScreen("PromotionsScreen.tsx");
   assert.match(source, /queryKey: \["admin-promotions", user\?\.uid\]/);
+  assert.match(source, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(source, /compact && styles\.summaryCardCompact/);
+  assert.match(source, /compact && styles\.cardCompact/);
+  assert.match(source, /compact && styles\.priorityCompact/);
+  assert.doesNotMatch(source, /Ã¢â€ â€™|#ecfdf5/);
   assert.doesNotMatch(source, /firebaseAuth/);
 });
