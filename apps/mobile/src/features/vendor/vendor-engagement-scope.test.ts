@@ -22,3 +22,14 @@ test("seller review replies stay scoped to the active account", () => {
   assert.match(reviews, /setReply\(""\)/);
   assert.doesNotMatch(reviews, /firebaseAuth\?\.currentUser/);
 });
+
+test("seller trust screens use responsive premium reputation summaries", () => {
+  for (const source of [questions, reviews]) {
+    assert.match(source, /responseRate/);
+    assert.match(source, /compact && styles\.heroCompact/);
+    assert.match(source, /backgroundColor: colors\.navy/);
+    assert.doesNotMatch(source, /#fff|Â|â/);
+  }
+  assert.match(questions, /BUYER CONFIDENCE/);
+  assert.match(reviews, /STORE REPUTATION/);
+});
