@@ -26,6 +26,7 @@ const decoration = readFileSync(resolve(root, "src/features/vendor/VendorShopDec
 const engagement = readFileSync(resolve(root, "src/features/vendor/VendorEngagementScreen.tsx"), "utf8");
 const operations = readFileSync(resolve(root, "src/features/vendor/VendorOperationsScreen.tsx"), "utf8");
 const categoryRequests = readFileSync(resolve(root, "src/features/vendor/VendorCategoryRequestsScreen.tsx"), "utf8");
+const productDetail = readFileSync(resolve(root, "src/features/vendor/VendorProductDetailScreen.tsx"), "utf8");
 
 test("seller catalog becomes a full-width mobile workspace", () => {
   assert.match(products, /useWindowDimensions\(\)\.width < 620/);
@@ -199,4 +200,15 @@ test("seller category requests stay usable on narrow screens", () => {
   assert.match(categoryRequests, /horizontal=\{compact\}/);
   assert.match(categoryRequests, /compact && styles\.primaryCompact/);
   assert.match(categoryRequests, /activeUid\.current !== owner\.uid/);
+});
+
+test("seller product detail is readable and actionable on mobile", () => {
+  assert.match(productDetail, /useWindowDimensions\(\)\.width < 620/);
+  assert.match(productDetail, /\["vendor", "products", user\?\.uid\]/);
+  assert.match(productDetail, /activeUid\.current === variables\.owner\.uid/);
+  assert.match(productDetail, /compact && styles\.actionsCompact/);
+  assert.match(productDetail, /compact && styles\.mediaCompact/);
+  assert.match(productDetail, /compact && styles\.summaryCompact/);
+  assert.match(productDetail, /compact && styles\.variantCompact/);
+  assert.doesNotMatch(productDetail, /à§³|Â·|â€¦|â†’/);
 });
