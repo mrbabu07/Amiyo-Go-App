@@ -46,7 +46,7 @@ export const adminOrderDetailSchema = z.object({
     total: adminOrderMoneySchema,
     commission: adminOrderMoneySchema,
     shipment: z.object({ status: z.string(), provider: z.string().nullable(), trackingNumber: z.string().nullable() }).nullable(),
-    items: z.array(z.object({ id: uuidSchema, productName: z.string(), sku: z.string(), quantity: z.number().int().positive(), unitPrice: adminOrderMoneySchema, lineTotal: adminOrderMoneySchema }))
+    items: z.array(z.object({ id: uuidSchema, productName: z.string(), sku: z.string(), thumbnailUrl: z.string().url().nullable(), quantity: z.number().int().positive(), unitPrice: adminOrderMoneySchema, lineTotal: adminOrderMoneySchema }))
   }))
 });
 export const adminOrderSlaSchema = z.object({
