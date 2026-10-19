@@ -28,3 +28,8 @@ export function sumMinor(values: Iterable<string | bigint>) {
   for (const value of values) total += BigInt(value);
   return total;
 }
+
+export function subtractMinorFloor(totalMinor: string | bigint, deductionMinor: string | bigint) {
+  const result = BigInt(totalMinor) - BigInt(deductionMinor);
+  return result > 0n ? result : 0n;
+}

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { formatMinor, sumMinor } from "../../ui/money";
+import { formatMinor, subtractMinorFloor, sumMinor } from "../../ui/money";
 
 test("seller money formatting preserves exact minor units and Bangladesh grouping", () => {
   assert.equal(formatMinor("0"), "৳0");
@@ -14,4 +14,6 @@ test("seller money formatting preserves exact minor units and Bangladesh groupin
 
 test("seller financial totals remain exact beyond JavaScript safe integers", () => {
   assert.equal(sumMinor(["9007199254740993", "7", -10n]), 9007199254740990n);
+  assert.equal(subtractMinorFloor("9007199254740993", "3"), 9007199254740990n);
+  assert.equal(subtractMinorFloor("100", "101"), 0n);
 });

@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
+import { formatMinor, sumMinor } from "../../ui/money";
 import { useCurrentUser } from "../auth/use-current-user";
 import { accessAdminPaymentEvidence, getAdminPaymentVerifications, reviewPaymentVerification, type AdminPaymentVerification } from "./admin.api";
 
@@ -50,7 +51,7 @@ export function AdminPaymentVerificationScreen() {
   });
   const rows = query.data ?? [];
   const filtered = useMemo(() => rows.filter((item) => filter === "all" || item.status === filter).filter((item) => `${item.orderNumber} ${item.customer} ${item.transactionRef} ${item.senderMasked ?? ""} ${item.provider}`.toLowerCase().includes(search.trim().toLowerCase())), [filter, rows, search]);
-  const pendingMinor = rows.filter((item) => item.status === "pending").reduce((sum, item) => sum + Number(item.amount.amountMinor), 0);
+  const pendingMinor = sumMinor(rows.filter((item) => item.status === "pending").map((item) => item.amount.amountMinor));
   const pendingCount = rows.filter((item) => item.status === "pending").length;
   const evidenceReady = rows.filter((item) => item.status === "pending" && item.evidence).length;
 
@@ -62,18 +63,18 @@ export function AdminPaymentVerificationScreen() {
     {query.isLoading ? <ActivityIndicator color={colors.primary} /> : null}{query.error ? <ErrorBox message={query.error.message} /> : null}
     {selected ? <View style={styles.detail}>
       <View style={styles.detailHead}><View><Text style={styles.kicker}>EVIDENCE REVIEW</Text><Text style={styles.detailTitle}>{selected.orderNumber}</Text></View><Pressable accessibilityLabel="Close payment verification" onPress={() => setSelected(null)} style={styles.close}><Ionicons color={colors.text} name="close" size={20} /></Pressable></View>
-      <View style={styles.grid}><Cell label="Customer" value={selected.customer} /><Cell label="Amount" value={money(Number(selected.amount.amountMinor))} /><Cell label="Provider" value={selected.provider} /><Cell label="Method" value={selected.method} /><Cell label="Transaction" value={selected.transactionRef} /><Cell label="Sender" value={selected.senderMasked || "Not provided"} /><Cell label="Payment status" value={selected.paymentStatus} /><Cell label="Evidence" value={selected.evidence?.name || "No scanned file attached"} /></View>
+      <View style={styles.grid}><Cell label="Customer" value={selected.customer} /><Cell label="Amount" value={money(selected.amount.amountMinor)} /><Cell label="Provider" value={selected.provider} /><Cell label="Method" value={selected.method} /><Cell label="Transaction" value={selected.transactionRef} /><Cell label="Sender" value={selected.senderMasked || "Not provided"} /><Cell label="Payment status" value={selected.paymentStatus} /><Cell label="Evidence" value={selected.evidence?.name || "No scanned file attached"} /></View>
       {selected.evidence ? <Pressable disabled={evidence.isPending} onPress={() => evidence.mutate()} style={styles.outline}><Ionicons color={colors.primary} name="eye-outline" size={17} /><Text style={styles.outlineText}>{evidence.isPending ? "Opening..." : `Open evidence (${selected.evidence.mimeType})`}</Text></Pressable> : null}
       <View style={styles.actions}><Pressable onPress={() => setDecision("approved")} style={[styles.action, decision === "approved" && styles.actionActive]}><Text style={[styles.actionText, decision === "approved" && styles.activeText]}>Approve</Text></Pressable><Pressable onPress={() => setDecision("rejected")} style={[styles.action, styles.actionDanger]}><Text style={styles.dangerText}>Reject</Text></Pressable><Pressable onPress={() => router.push(`/admin/orders/${selected.orderId}` as never)} style={styles.action}><Text style={styles.actionText}>Open order</Text></Pressable></View>
       {decision ? <><TextInput multiline onChangeText={setReason} placeholder={decision === "rejected" ? "Rejection reason (required)" : "Approval note (optional)"} placeholderTextColor={colors.muted} style={styles.note} value={reason} /><Pressable disabled={action.isPending} onPress={() => action.mutate()} style={[styles.primary, decision === "rejected" && styles.dangerPrimary]}>{action.isPending ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>Confirm {decision}</Text>}</Pressable></> : null}
       {formError ? <ErrorBox message={formError} /> : null}
     </View> : null}
-    <View style={styles.list}>{filtered.map((item) => <Pressable key={item.id} onPress={() => { setSelected(item); setDecision(null); setReason(""); setFormError(null); }} style={[styles.card, selected?.id === item.id && styles.cardActive]}><View style={styles.icon}><Ionicons color={colors.primary} name="card-outline" size={21} /></View><View style={styles.flex}><Text style={styles.name}>{item.orderNumber} · {item.customer}</Text><Text style={styles.muted}>{item.provider} · {item.transactionRef} · {new Date(item.createdAt).toLocaleDateString("en-BD")}</Text></View><Text style={styles.amount}>{money(Number(item.amount.amountMinor))}</Text><Status value={item.status} /></Pressable>)}</View>
+    <View style={styles.list}>{filtered.map((item) => <Pressable key={item.id} onPress={() => { setSelected(item); setDecision(null); setReason(""); setFormError(null); }} style={[styles.card, selected?.id === item.id && styles.cardActive]}><View style={styles.icon}><Ionicons color={colors.primary} name="card-outline" size={21} /></View><View style={styles.flex}><Text style={styles.name}>{item.orderNumber} · {item.customer}</Text><Text style={styles.muted}>{item.provider} · {item.transactionRef} · {new Date(item.createdAt).toLocaleDateString("en-BD")}</Text></View><Text style={styles.amount}>{money(item.amount.amountMinor)}</Text><Status value={item.status} /></Pressable>)}</View>
     {!query.isLoading && filtered.length === 0 ? <View style={styles.empty}><View style={styles.emptyIcon}><Ionicons color={colors.accent} name="checkmark-done-outline" size={28} /></View><Text style={styles.emptyTitle}>Verification queue is clear</Text><Text style={styles.muted}>Change the status or search term to review older cases.</Text></View> : null}
   </Screen>;
 }
 
-function money(minor: number) { return `৳${(minor / 100).toLocaleString("en-BD", { maximumFractionDigits: 2 })}`; }
+function money(minor: string | bigint) { return formatMinor(minor); }
 function Metric({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }) { return <View style={styles.metric}><View style={styles.metricIcon}><Ionicons color={colors.accent} name={icon} size={17} /></View><View style={styles.flex}><Text adjustsFontSizeToFit numberOfLines={1} style={styles.metricValue}>{value}</Text><Text style={styles.metricLabel}>{label}</Text></View></View>; }
 function Cell({ label, value }: { label: string; value: string }) { return <View style={styles.cell}><Text style={styles.cellLabel}>{label}</Text><Text numberOfLines={2} style={styles.cellValue}>{value}</Text></View>; }
 function Status({ value }: { value: string }) { return <Text style={[styles.status, value === "approved" && styles.statusGood, value === "rejected" && styles.statusBad]}>{value.toUpperCase()}</Text>; }
