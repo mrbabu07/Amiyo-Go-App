@@ -5,6 +5,7 @@ import type { ComponentProps } from "react";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
+import { formatMinor, minorToMajorInput, parseMajorToMinor } from "../../ui/money";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
 import { getCategories } from "../catalog/catalog.api";
@@ -33,13 +34,15 @@ const commissionPresets: Array<{ label: string; scope: Scope; percentage: string
 
 function isoDate(value: string) { return new Date(`${value}T00:00:00.000Z`).toISOString(); }
 function toInput(form: Form): CommissionRuleInput {
+  const fixedMinor = parseMajorToMinor(form.fixed || "0");
+  if (fixedMinor === null) throw new Error("Enter a valid fixed fee with at most two decimal places.");
   return {
     vendorId: ["VENDOR", "VENDOR_CATEGORY"].includes(form.scope) ? form.vendorId : null,
     shopId: form.scope === "SHOP" ? form.shopId : null,
     categoryId: ["CATEGORY", "VENDOR_CATEGORY"].includes(form.scope) ? form.categoryId : null,
     productId: form.scope === "PRODUCT" ? form.productId : null,
     rateBps: Math.round(Number(form.percentage || 0) * 100),
-    fixedMinor: String(Math.round(Number(form.fixed || 0) * 100)),
+    fixedMinor: fixedMinor.toString(),
     currency: "BDT",
     effectiveFrom: isoDate(form.starts),
     effectiveTo: form.ends ? isoDate(form.ends) : null
@@ -70,14 +73,14 @@ export function AdminCommissionScreen() {
   const activeRules = rules.data?.filter((rule) => rule.status === "ACTIVE") ?? [];
   const overrideRules = activeRules.filter((rule) => ["PRODUCT", "SHOP"].includes(rule.scope)).length;
   const percentage = Number(form.percentage || 0);
-  const fixed = Number(form.fixed || 0);
+  const fixedMinor = parseMajorToMinor(form.fixed || "0");
   const startsAt = Date.parse(`${form.starts}T00:00:00.000Z`);
   const endsAt = form.ends ? Date.parse(`${form.ends}T00:00:00.000Z`) : null;
-  const valid = Number.isFinite(startsAt) && (endsAt === null || (Number.isFinite(endsAt) && endsAt > startsAt)) && percentage >= 0 && percentage <= 50 && fixed >= 0 && (percentage > 0 || fixed > 0) && (!needsVendor || Boolean(form.vendorId)) && (!needsShop || Boolean(form.shopId)) && (!needsCategory || Boolean(form.categoryId)) && (!needsProduct || Boolean(form.productId));
+  const valid = Number.isFinite(startsAt) && (endsAt === null || (Number.isFinite(endsAt) && endsAt > startsAt)) && percentage >= 0 && percentage <= 50 && fixedMinor !== null && (percentage > 0 || fixedMinor > 0n) && (!needsVendor || Boolean(form.vendorId)) && (!needsShop || Boolean(form.shopId)) && (!needsCategory || Boolean(form.categoryId)) && (!needsProduct || Boolean(form.productId));
 
   function edit(rule: CommissionRule) {
     setEditing(rule);
-    setForm({ scope: rule.scope, vendorId: rule.vendorId || "", shopId: rule.shopId || "", categoryId: rule.categoryId || "", productId: rule.productId || "", percentage: String(rule.rateBps / 100), fixed: String(Number(rule.fixedMinor) / 100), starts: rule.effectiveFrom.slice(0, 10), ends: rule.effectiveTo?.slice(0, 10) || "" });
+    setForm({ scope: rule.scope, vendorId: rule.vendorId || "", shopId: rule.shopId || "", categoryId: rule.categoryId || "", productId: rule.productId || "", percentage: String(rule.rateBps / 100), fixed: minorToMajorInput(rule.fixedMinor), starts: rule.effectiveFrom.slice(0, 10), ends: rule.effectiveTo?.slice(0, 10) || "" });
   }
   function cancel() { setEditing(null); setForm(emptyForm()); save.reset(); }
   function confirmEnd(rule: CommissionRule) { Alert.alert("End commission rule?", "New orders will stop using this rule immediately.", [{ text: "Cancel", style: "cancel" }, { text: "End rule", style: "destructive", onPress: () => end.mutate(rule) }]); }
@@ -109,7 +112,7 @@ function RuleCard({ onEdit, onEnd, rule }: { onEdit(): void; onEnd(): void; rule
   const compact = useWindowDimensions().width < 620;
   const title = rule.productName || rule.shopName || rule.vendorName || "All vendors";
   const icon = rule.scope === "GLOBAL" ? "globe-outline" : rule.scope === "CATEGORY" ? "grid-outline" : rule.scope === "PRODUCT" ? "cube-outline" : "storefront-outline";
-  return <View style={[styles.rule, compact && styles.ruleCompact]}><View style={[styles.ruleTop, compact && styles.ruleTopCompact]}><View style={styles.ruleIdentity}><View style={styles.ruleIcon}><Ionicons color={colors.primary} name={icon as never} size={20} /></View><View style={styles.ruleCopy}><Text style={styles.ruleTitle}>{title}{rule.categoryName ? ` | ${rule.categoryName}` : ""}</Text><Text style={styles.ruleMeta}>{rule.scope.replaceAll("_", " ")} | v{rule.version}</Text></View></View><Status value={rule.status} /></View><View style={styles.feeRow}><Text style={styles.fee}>{rule.rateBps / 100}%</Text>{BigInt(rule.fixedMinor) > 0n ? <Text style={styles.fixed}>+ Tk {(Number(rule.fixedMinor) / 100).toLocaleString("en-BD")}</Text> : null}</View><Text style={styles.period}>{new Date(rule.effectiveFrom).toLocaleDateString("en-BD")} {'->'} {rule.effectiveTo ? new Date(rule.effectiveTo).toLocaleDateString("en-BD") : "No end date"}</Text><View style={[styles.actions, compact && styles.actionsCompact]}><Pressable onPress={onEdit} style={[styles.action, compact && styles.actionCompact]}><Ionicons color={colors.primary} name="create-outline" size={16} /><Text style={styles.actionText}>Edit</Text></Pressable>{rule.status !== "ENDED" ? <Pressable onPress={onEnd} style={[styles.action, styles.endAction, compact && styles.actionCompact]}><Ionicons color={colors.danger} name="stop-circle-outline" size={16} /><Text style={styles.endText}>End</Text></Pressable> : null}</View></View>;
+  return <View style={[styles.rule, compact && styles.ruleCompact]}><View style={[styles.ruleTop, compact && styles.ruleTopCompact]}><View style={styles.ruleIdentity}><View style={styles.ruleIcon}><Ionicons color={colors.primary} name={icon as never} size={20} /></View><View style={styles.ruleCopy}><Text style={styles.ruleTitle}>{title}{rule.categoryName ? ` | ${rule.categoryName}` : ""}</Text><Text style={styles.ruleMeta}>{rule.scope.replaceAll("_", " ")} | v{rule.version}</Text></View></View><Status value={rule.status} /></View><View style={styles.feeRow}><Text style={styles.fee}>{rule.rateBps / 100}%</Text>{BigInt(rule.fixedMinor) > 0n ? <Text style={styles.fixed}>+ {formatMinor(rule.fixedMinor)}</Text> : null}</View><Text style={styles.period}>{new Date(rule.effectiveFrom).toLocaleDateString("en-BD")} {'->'} {rule.effectiveTo ? new Date(rule.effectiveTo).toLocaleDateString("en-BD") : "No end date"}</Text><View style={[styles.actions, compact && styles.actionsCompact]}><Pressable onPress={onEdit} style={[styles.action, compact && styles.actionCompact]}><Ionicons color={colors.primary} name="create-outline" size={16} /><Text style={styles.actionText}>Edit</Text></Pressable>{rule.status !== "ENDED" ? <Pressable onPress={onEnd} style={[styles.action, styles.endAction, compact && styles.actionCompact]}><Ionicons color={colors.danger} name="stop-circle-outline" size={16} /><Text style={styles.endText}>End</Text></Pressable> : null}</View></View>;
 }
 
 function Metric({ icon, label, value }: { icon: string; label: string; value: number }) { const compact = useWindowDimensions().width < 620; return <View style={[styles.metric, compact && styles.metricCompact]}><View style={styles.metricIcon}><Ionicons color={colors.primary} name={icon as never} size={20} /></View><View style={styles.metricCopy}><Text adjustsFontSizeToFit numberOfLines={1} style={styles.metricValue}>{value}</Text><Text numberOfLines={1} style={styles.metricLabel}>{label}</Text></View></View>; }

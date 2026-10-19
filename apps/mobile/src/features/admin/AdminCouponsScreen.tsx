@@ -4,13 +4,14 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
+import { formatMinor, minorToMajorInput, parseMajorToMinor, sumMinor } from "../../ui/money";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
 import { createAdminCoupon, deleteAdminCoupon, getAdminCoupons, updateAdminCoupon, type AdminCouponDto, type AdminCouponInput } from "./admin.api";
 
 type CouponForm = { code: string; discountType: "PERCENT" | "FIXED"; value: string; maxDiscount: string; minimumSpend: string; usageLimit: string; perUserLimit: string; startsAt: string; endsAt: string; active: boolean };
 const initialForm = (): CouponForm => ({ code: "", discountType: "PERCENT", value: "10", maxDiscount: "", minimumSpend: "0", usageLimit: "", perUserLimit: "1", startsAt: new Date().toISOString(), endsAt: new Date(Date.now() + 30 * 86_400_000).toISOString(), active: true });
-const taka = (minor: string | null) => minor === null ? "No cap" : `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
+const taka = (minor: string | bigint | null) => minor === null ? "No cap" : formatMinor(minor);
 
 export function AdminCouponsScreen() {
   const compact = useWindowDimensions().width < 620;
@@ -25,23 +26,28 @@ export function AdminCouponsScreen() {
   const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen coupon management."); return user; };
   const refresh = async () => { await cache.invalidateQueries({ queryKey: ["admin", "coupons", userId] }); };
   const reset = () => { setEditing(null); setForm(initialForm()); };
-  const payload = (): AdminCouponInput => ({ code: form.code.trim().toUpperCase(), discountType: form.discountType, value: Number(form.value), maxDiscountMinor: form.maxDiscount ? String(Math.round(Number(form.maxDiscount) * 100)) : null, minimumSpendMinor: String(Math.round(Number(form.minimumSpend || 0) * 100)), usageLimit: form.usageLimit ? Number(form.usageLimit) : null, perUserLimit: Number(form.perUserLimit), startsAt: new Date(form.startsAt).toISOString(), endsAt: new Date(form.endsAt).toISOString(), active: form.active });
+  const payload = (): AdminCouponInput => {
+    const maxDiscountMinor = form.maxDiscount ? parseMajorToMinor(form.maxDiscount) : null;
+    const minimumSpendMinor = parseMajorToMinor(form.minimumSpend || "0");
+    if ((form.maxDiscount && maxDiscountMinor === null) || minimumSpendMinor === null) throw new Error("Enter valid monetary amounts with at most two decimal places.");
+    return { code: form.code.trim().toUpperCase(), discountType: form.discountType, value: Number(form.value), maxDiscountMinor: maxDiscountMinor?.toString() ?? null, minimumSpendMinor: minimumSpendMinor.toString(), usageLimit: form.usageLimit ? Number(form.usageLimit) : null, perUserLimit: Number(form.perUserLimit), startsAt: new Date(form.startsAt).toISOString(), endsAt: new Date(form.endsAt).toISOString(), active: form.active };
+  };
   const save = useMutation({ mutationFn: () => editing ? updateAdminCoupon(currentActor(), editing.id, { ...payload(), expectedVersion: editing.version }) : createAdminCoupon(currentActor(), payload()), onSuccess: async () => { reset(); await refresh(); } });
   const remove = useMutation({ mutationFn: (id: string) => deleteAdminCoupon(currentActor(), id), onSuccess: refresh });
   const coupons = useMemo(() => (query.data || []).filter((item) => item.code.toLowerCase().includes(search.trim().toLowerCase()) && (status === "all" || item.status === status)), [query.data, search, status]);
-  const valid = form.code.trim().length >= 3 && Number(form.value) > 0 && (form.discountType !== "PERCENT" || Number(form.value) <= 100) && Number(form.perUserLimit) > 0 && (!form.usageLimit || Number(form.perUserLimit) <= Number(form.usageLimit)) && Date.parse(form.startsAt) < Date.parse(form.endsAt);
-  const edit = (item: AdminCouponDto) => { setEditing(item); setForm({ code: item.code, discountType: item.discountType, value: String(item.value), maxDiscount: item.maxDiscountMinor === null ? "" : String(Number(item.maxDiscountMinor) / 100), minimumSpend: String(Number(item.minimumSpendMinor) / 100), usageLimit: item.usageLimit === null ? "" : String(item.usageLimit), perUserLimit: String(item.perUserLimit), startsAt: item.startsAt, endsAt: item.endsAt, active: item.active }); };
+  const valid = form.code.trim().length >= 3 && Number(form.value) > 0 && (form.discountType !== "PERCENT" || Number(form.value) <= 100) && parseMajorToMinor(form.minimumSpend || "0") !== null && (!form.maxDiscount || parseMajorToMinor(form.maxDiscount) !== null) && Number(form.perUserLimit) > 0 && (!form.usageLimit || Number(form.perUserLimit) <= Number(form.usageLimit)) && Date.parse(form.startsAt) < Date.parse(form.endsAt);
+  const edit = (item: AdminCouponDto) => { setEditing(item); setForm({ code: item.code, discountType: item.discountType, value: String(item.value), maxDiscount: item.maxDiscountMinor === null ? "" : minorToMajorInput(item.maxDiscountMinor), minimumSpend: minorToMajorInput(item.minimumSpendMinor), usageLimit: item.usageLimit === null ? "" : String(item.usageLimit), perUserLimit: String(item.perUserLimit), startsAt: item.startsAt, endsAt: item.endsAt, active: item.active }); };
   const confirmDelete = (item: AdminCouponDto) => Alert.alert("Delete coupon?", item.redemptions ? "Redeemed coupons must be disabled instead." : `${item.code} will be permanently removed.`, item.redemptions ? [{ text: "OK" }] : [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => remove.mutate(item.id) }]);
   const error = query.error || save.error || remove.error;
   if (query.isLoading) return <Screen title="Coupon management"><ActivityIndicator color={colors.primary} /></Screen>;
   const liveCoupons = query.data?.filter((item) => item.status === "active").length ?? 0;
-  const redeemedValue = query.data?.reduce((sum, item) => sum + Number(item.redeemedMinor), 0) ?? 0;
+  const redeemedValue = sumMinor((query.data ?? []).map((item) => item.redeemedMinor));
   const validSchedule = Number.isFinite(Date.parse(form.startsAt)) && Number.isFinite(Date.parse(form.endsAt)) && Date.parse(form.startsAt) < Date.parse(form.endsAt);
   const validLimits = Number(form.perUserLimit) > 0 && (!form.usageLimit || Number(form.perUserLimit) <= Number(form.usageLimit));
   return <Screen eyebrow="PROMOTIONS" title="Coupon management" description="Create scheduled discounts, control customer limits and monitor redemption performance.">
     <View style={[styles.hero, compact && styles.heroCompact]}><View style={styles.heroCopy}><Text style={styles.heroEyebrow}>PROMOTION MARGIN CONTROL</Text><Text style={styles.heroTitle}>{liveCoupons} coupon{liveCoupons === 1 ? "" : "s"} active across checkout</Text><Text style={styles.heroText}>Protect margin with bounded customer limits, minimum spend and auditable campaign schedules.</Text></View><View style={styles.heroBadge}><Ionicons color={colors.surface} name="ticket-outline" size={24} /><Text style={styles.heroBadgeValue}>{taka(String(redeemedValue))}</Text><Text style={styles.heroBadgeLabel}>DISCOUNT ISSUED</Text></View></View>
     {error ? <Text style={styles.error}>{error.message}</Text> : null}
-    <View style={styles.stats}><Stat label="Total coupons" value={query.data?.length || 0} /><Stat label="Live now" value={query.data?.filter((item) => item.status === "active").length || 0} /><Stat label="Redemptions" value={query.data?.reduce((sum, item) => sum + item.redemptions, 0) || 0} /><Stat label="Discount given" value={taka(String(query.data?.reduce((sum, item) => sum + Number(item.redeemedMinor), 0) || 0))} /></View>
+    <View style={styles.stats}><Stat label="Total coupons" value={query.data?.length || 0} /><Stat label="Live now" value={query.data?.filter((item) => item.status === "active").length || 0} /><Stat label="Redemptions" value={query.data?.reduce((sum, item) => sum + item.redemptions, 0) || 0} /><Stat label="Discount given" value={taka(redeemedValue)} /></View>
     <ModuleCard title={editing ? `Edit ${editing.code}` : "Create coupon"} meta="All monetary values are in Bangladeshi taka">
       <View style={styles.grid}><Field label="Coupon code" value={form.code} onChangeText={(code) => setForm({ ...form, code: code.toUpperCase().replace(/[^A-Z0-9_-]/g, "") })} /><Field keyboardType="numeric" label={form.discountType === "PERCENT" ? "Discount (%)" : "Discount (৳)"} value={form.value} onChangeText={(value) => setForm({ ...form, value })} /><Field keyboardType="numeric" label="Maximum discount (৳, optional)" value={form.maxDiscount} onChangeText={(maxDiscount) => setForm({ ...form, maxDiscount })} /><Field keyboardType="numeric" label="Minimum spend (৳)" value={form.minimumSpend} onChangeText={(minimumSpend) => setForm({ ...form, minimumSpend })} /><Field keyboardType="numeric" label="Total usage limit (optional)" value={form.usageLimit} onChangeText={(usageLimit) => setForm({ ...form, usageLimit })} /><Field keyboardType="numeric" label="Limit per customer" value={form.perUserLimit} onChangeText={(perUserLimit) => setForm({ ...form, perUserLimit })} /><Field label="Starts at (ISO date)" value={form.startsAt} onChangeText={(startsAt) => setForm({ ...form, startsAt })} /><Field label="Ends at (ISO date)" value={form.endsAt} onChangeText={(endsAt) => setForm({ ...form, endsAt })} /></View>
       <Text style={styles.label}>Discount type</Text><View style={styles.chips}>{(["PERCENT", "FIXED"] as const).map((type) => <Chip key={type} active={form.discountType === type} label={type === "PERCENT" ? "Percentage" : "Fixed amount"} onPress={() => setForm({ ...form, discountType: type })} />)}</View>
