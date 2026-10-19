@@ -15,4 +15,8 @@ test("admin banner controls remain usable on mobile", () => {
   assert.match(source, /validOrder/);
   assert.match(source, /validTarget/);
   assert.match(source, /disabled=\{save\.isPending \|\| !canSave\}/);
+  assert.match(source, /function BannerDraftPreview/);
+  assert.match(source, /LIVE CREATIVE PREVIEW/);
+  assert.match(source, /compact && form\.mobileStorageKey/);
+  assert.match(source, /No banners in this placement/);
 });
