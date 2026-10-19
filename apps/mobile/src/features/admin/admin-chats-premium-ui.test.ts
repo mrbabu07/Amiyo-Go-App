@@ -17,3 +17,11 @@ test("admin chat inbox uses premium mobile-safe surfaces", () => {
   assert.match(source, /accessibilityRole="alert"/);
   assert.match(source, /backgroundColor: colors\.primarySoft/);
 });
+
+test("admin chat inbox prioritizes unread operational work", () => {
+  assert.match(source, /SELLER COMMUNICATION DESK/);
+  assert.match(source, /unreadCount/);
+  assert.match(source, /compact && styles\.heroCompact/);
+  assert.match(source, /compact && styles\.searchCompact/);
+  assert.match(source, /All caught up/);
+});
