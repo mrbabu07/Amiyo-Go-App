@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import { adminCategoryAttributesInputSchema } from "@amiyo/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
@@ -16,24 +17,42 @@ export function AdminCategoryAttributesScreen({ initialCategoryId = "" }: { init
   const router = useRouter();
   const user = useCurrentUser();
   const userId = user?.uid ?? null;
+  const activeUserId = useRef(userId);
+  activeUserId.current = userId;
+  const saving = useRef(false);
   const queryClient = useQueryClient();
   const platform = useQuery({ queryKey: ["admin", "platform", userId], queryFn: () => getAdminPlatform(user!), enabled: Boolean(user), retry: false });
   const [categoryId, setCategoryId] = useState(initialCategoryId);
   const [form, setForm] = useState({ label: "", key: "", dataType: "text" as typeof dataTypes[number], options: "", required: false, filterable: false });
   const selected = useMemo(() => platform.data?.categories.find((category) => category.id === categoryId), [categoryId, platform.data]);
   const save = useMutation({
-    mutationFn: (attributes: NonNullable<typeof selected>["attributes"]) => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen category attributes."); return replaceAdminCategoryAttributes(user, categoryId, { attributes: attributes.map((attribute, displayOrder) => ({ key: attribute.key, label: attribute.label, dataType: attribute.dataType, required: attribute.required, filterable: attribute.filterable, displayOrder, options: attribute.options.map((option) => option.label) })) }); },
-    onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ["admin", "platform", userId] }); }
+    mutationFn: async (attributes: NonNullable<typeof selected>["attributes"]) => {
+      if (!user || activeUserId.current !== userId) throw new Error("Account changed. Reopen category attributes.");
+      if (saving.current) throw new Error("Wait for the current category update to finish.");
+      const targetCategoryId = categoryId;
+      const payload = adminCategoryAttributesInputSchema.parse({ attributes: attributes.map((attribute, displayOrder) => ({ key: attribute.key, label: attribute.label, dataType: attribute.dataType, required: attribute.required, filterable: attribute.filterable, displayOrder, options: attribute.options.map((option) => option.label) })) });
+      saving.current = true;
+      try {
+        return await replaceAdminCategoryAttributes(user, targetCategoryId, payload);
+      } finally {
+        saving.current = false;
+      }
+    },
+    onSuccess: async () => { await Promise.all([queryClient.invalidateQueries({ queryKey: ["admin", "platform", userId] }), queryClient.invalidateQueries({ queryKey: ["catalog", "categories"] })]); }
   });
   async function addAttribute() {
-    if (!selected || !form.label.trim() || !form.key.trim()) return;
-    const options = form.options.split(",").map((option) => option.trim()).filter(Boolean);
+    if (!selected || saving.current || !form.label.trim() || !form.key.trim()) return;
+    const options = form.dataType === "select" || form.dataType === "multiselect" ? form.options.split(",").map((option) => option.trim()).filter(Boolean) : [];
     const temporaryId = `temporary-${Date.now()}`;
-    await save.mutateAsync([...selected.attributes, { id: temporaryId, key: form.key.trim(), label: form.label.trim(), dataType: form.dataType, required: form.required, filterable: form.filterable, displayOrder: selected.attributes.length, options: options.map((option, displayOrder) => ({ id: `${temporaryId}-${displayOrder}`, value: option.toLowerCase().replace(/[^a-z0-9]+/g, "-"), label: option, displayOrder })) }]);
-    setForm({ label: "", key: "", dataType: "text", options: "", required: false, filterable: false });
+    try {
+      await save.mutateAsync([...selected.attributes, { id: temporaryId, key: form.key.trim(), label: form.label.trim(), dataType: form.dataType, required: form.required, filterable: form.filterable, displayOrder: selected.attributes.length, options: options.map((option, displayOrder) => ({ id: `${temporaryId}-${displayOrder}`, value: option.toLowerCase().replace(/[^a-z0-9]+/g, "-"), label: option, displayOrder })) }]);
+      if (activeUserId.current === userId) setForm({ label: "", key: "", dataType: "text", options: "", required: false, filterable: false });
+    } catch {
+      return;
+    }
   }
   function moveAttribute(index: number, direction: -1 | 1) {
-    if (!selected) return;
+    if (!selected || saving.current) return;
     const target = index + direction;
     if (target < 0 || target >= selected.attributes.length) return;
     const next = [...selected.attributes];
@@ -46,8 +65,8 @@ export function AdminCategoryAttributesScreen({ initialCategoryId = "" }: { init
     <View style={[catalogStyles.workspaceNav, compact && catalogStyles.workspaceNavCompact]}><View style={catalogStyles.workspaceCopy}><Text style={catalogStyles.workspaceTitle}>Taxonomy workspace</Text><Text style={styles.muted}>Create, enable and reorder main categories or subcategories in the category tree manager.</Text></View><Pressable accessibilityRole="link" onPress={() => router.push("/admin/categories/manage")} style={[catalogStyles.manageButton, compact && catalogStyles.manageButtonCompact]}><Ionicons color={colors.surface} name="git-network-outline" size={18} /><Text style={catalogStyles.manageButtonText}>Manage category tree</Text></Pressable></View>
     {platform.error ? <Text style={styles.error}>{platform.error.message}</Text> : null}
     <Text style={styles.heading}>Choose category</Text>
-    <View style={styles.chips}>{platform.data?.categories.map((category) => <Pressable accessibilityRole="button" key={category.id} onPress={() => setCategoryId(category.id)} style={[styles.chip, categoryId === category.id && styles.chipActive]}><Text style={[styles.chipText, categoryId === category.id && styles.chipTextActive]}>{category.name} ({category.attributes.length})</Text></Pressable>)}</View>
-    {selected ? <>
+    <View style={styles.chips}>{platform.data?.categories.map((category) => <Pressable accessibilityRole="button" disabled={save.isPending} key={category.id} onPress={() => setCategoryId(category.id)} style={[styles.chip, categoryId === category.id && styles.chipActive]}><Text style={[styles.chipText, categoryId === category.id && styles.chipTextActive]}>{category.name} ({category.attributes.length})</Text></Pressable>)}</View>
+    {selected ? <View pointerEvents={save.isPending ? "none" : "auto"} style={{ gap: spacing.md }}>
       <ModuleCard title={`Add field to ${selected.name}`} meta="Use comma-separated options for select fields.">
         <TextInput onChangeText={(label) => setForm({ ...form, label, key: label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/(^_|_$)/g, "") })} placeholder="Attribute label" placeholderTextColor={colors.muted} style={styles.input} value={form.label} />
         <Text style={styles.muted}>Key: {form.key || "—"}</Text>
@@ -59,16 +78,16 @@ export function AdminCategoryAttributesScreen({ initialCategoryId = "" }: { init
       {save.error ? <Text style={styles.error}>{save.error.message}</Text> : null}
       {selected.attributes.map((attribute, index) => <ModuleCard key={attribute.id} title={attribute.label} meta={`${attribute.dataType} · ${attribute.key}`}>
         {attribute.options.length ? <Text style={styles.muted}>Options: {attribute.options.map((option) => option.label).join(", ")}</Text> : null}
-        <View style={[catalogStyles.toggleRow, compact && catalogStyles.toggleRowCompact]}><AttributeToggle label="Required for sellers" value={attribute.required} onChange={(required) => save.mutate(selected.attributes.map((item) => item.id === attribute.id ? { ...item, required } : item))} /><AttributeToggle label="Customer filter" value={attribute.filterable} onChange={(filterable) => save.mutate(selected.attributes.map((item) => item.id === attribute.id ? { ...item, filterable } : item))} /></View>
+        <View style={[catalogStyles.toggleRow, compact && catalogStyles.toggleRowCompact]}><AttributeToggle disabled={save.isPending} label="Required for sellers" value={attribute.required} onChange={(required) => save.mutate(selected.attributes.map((item) => item.id === attribute.id ? { ...item, required } : item))} /><AttributeToggle disabled={save.isPending} label="Customer filter" value={attribute.filterable} onChange={(filterable) => save.mutate(selected.attributes.map((item) => item.id === attribute.id ? { ...item, filterable } : item))} /></View>
         <View style={catalogStyles.orderRow}><Text style={catalogStyles.orderLabel}>Field position {index + 1} of {selected.attributes.length}</Text><Pressable accessibilityLabel={`Move ${attribute.label} up`} disabled={index === 0 || save.isPending} onPress={() => moveAttribute(index, -1)} style={[catalogStyles.orderButton, (index === 0 || save.isPending) && catalogStyles.disabled]}><Ionicons color={colors.primary} name="arrow-up" size={17} /></Pressable><Pressable accessibilityLabel={`Move ${attribute.label} down`} disabled={index === selected.attributes.length - 1 || save.isPending} onPress={() => moveAttribute(index, 1)} style={[catalogStyles.orderButton, (index === selected.attributes.length - 1 || save.isPending) && catalogStyles.disabled]}><Ionicons color={colors.primary} name="arrow-down" size={17} /></Pressable></View>
         <Pressable disabled={save.isPending} onPress={() => save.mutate(selected.attributes.filter((item) => item.id !== attribute.id))} style={styles.delete}><Text style={styles.deleteText}>Remove attribute</Text></Pressable>
       </ModuleCard>)}
       {selected.attributes.length === 0 ? <ModuleCard title="No attributes yet" meta="Add the first dynamic product field above." /> : null}
-    </> : <ModuleCard title="Select a category" meta="Choose a category to manage its product fields." />}
+    </View> : <ModuleCard title="Select a category" meta="Choose a category to manage its product fields." />}
   </Screen>;
 }
 
-function AttributeToggle({ label, onChange, value }: { label: string; onChange(value: boolean): void; value: boolean }) { return <View style={catalogStyles.toggle}><Text style={catalogStyles.toggleLabel}>{label}</Text><Switch onValueChange={onChange} trackColor={{ false: colors.border, true: colors.primarySoft }} thumbColor={value ? colors.primary : colors.muted} value={value} /></View>; }
+function AttributeToggle({ disabled = false, label, onChange, value }: { disabled?: boolean; label: string; onChange(value: boolean): void; value: boolean }) { return <View style={catalogStyles.toggle}><Text style={catalogStyles.toggleLabel}>{label}</Text><Switch accessibilityLabel={label} disabled={disabled} onValueChange={onChange} trackColor={{ false: colors.border, true: colors.primarySoft }} thumbColor={value ? colors.primary : colors.muted} value={value} /></View>; }
 
 const catalogStyles = StyleSheet.create({
   hero: { alignItems: "center", backgroundColor: colors.navy, borderRadius: radius.xl, flexDirection: "row", gap: spacing.lg, justifyContent: "space-between", padding: spacing.xl },
