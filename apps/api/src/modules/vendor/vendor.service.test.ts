@@ -45,7 +45,7 @@ test("shop media accepts only the seller's completed upload with the expected pu
   let updateData: Record<string, unknown> | undefined;
   const workspace = { id: vendorId, legalName: "Seller Commerce", displayName: "Seller Shop", status: "APPROVED", version: 1, shops: [{ id: shopId, vendorId, name: "Seller Shop", slug: "seller-shop", status: "ACTIVE", description: null, logoStorageKey: "public/shop/logo.webp", bannerStorageKey: null, settings: null, version: 2 }], kycSubmissions: [], bankAccounts: [] };
   const transaction = { mediaUpload: { findMany: async ({ where }: any) => { assert.equal(where.userId, userId); assert.equal(where.visibility, "public"); assert.equal(where.status, "ready"); return [{ id: uploadId, purpose: "shop", storageKey: "public/shop/logo.webp" }]; } }, vendorShop: { updateMany: async ({ data }: any) => { updateData = data; return { count: 1 }; } }, auditLog: { create: async () => ({}) } };
-  const client = { $transaction: async (operation: (value: typeof transaction) => Promise<unknown>) => operation(transaction), vendor: { findUniqueOrThrow: async () => workspace } } as unknown as PrismaClient;
+  const client = { $transaction: async (operation: (value: typeof transaction) => Promise<unknown>) => operation(transaction), vendor: { findUniqueOrThrow: async () => workspace }, vendorShop: { findMany: async () => workspace.shops }, vendorKycSubmission: { findMany: async () => workspace.kycSubmissions }, vendorBankAccount: { findMany: async () => workspace.bankAccounts } } as unknown as PrismaClient;
   const result = await new VendorService(client).updateShop(shopSession, shopId, { version: 1, logoUploadId: uploadId });
   assert.equal(updateData?.logoStorageKey, "public/shop/logo.webp");
   assert.equal(result.shops[0]?.logoUrl, "https://media.amiyo.local/public/shop/logo.webp");
@@ -59,7 +59,7 @@ test("shop media can be cleared without trusting a client storage key", async ()
   let updateData: Record<string, unknown> | undefined;
   const workspace = { id: vendorId, legalName: "Seller Commerce", displayName: "Seller Shop", status: "APPROVED", version: 1, shops: [], kycSubmissions: [], bankAccounts: [] };
   const transaction = { mediaUpload: { findMany: async () => { throw new Error("clear must not query uploads"); } }, vendorShop: { updateMany: async ({ data }: any) => { updateData = data; return { count: 1 }; } }, auditLog: { create: async () => ({}) } };
-  const client = { $transaction: async (operation: (value: typeof transaction) => Promise<unknown>) => operation(transaction), vendor: { findUniqueOrThrow: async () => workspace } } as unknown as PrismaClient;
+  const client = { $transaction: async (operation: (value: typeof transaction) => Promise<unknown>) => operation(transaction), vendor: { findUniqueOrThrow: async () => workspace }, vendorShop: { findMany: async () => workspace.shops }, vendorKycSubmission: { findMany: async () => workspace.kycSubmissions }, vendorBankAccount: { findMany: async () => workspace.bankAccounts } } as unknown as PrismaClient;
   await new VendorService(client).updateShop(shopSession, shopId, { version: 3, bannerUploadId: null });
   assert.equal(updateData?.bannerStorageKey, null);
 });
@@ -80,7 +80,7 @@ test("KYC submission is atomic and blocks another active review", async () => {
   let audited = false;
   const workspace = { id: vendorId, legalName: "Seller Commerce", displayName: "Seller Shop", status: "PENDING", version: 1, shops: [], kycSubmissions: [], bankAccounts: [] };
   const transaction = { vendorKycSubmission: { findFirst: async () => null, create: async ({ data }: any) => { assert.equal(data.documents.create[0].checksum, kycDocument.checksum); return { id: categoryId }; } }, mediaUpload: { findMany: async () => [{ storageKey: kycDocument.storageKey, mimeType: kycDocument.mimeType, checksum: kycDocument.checksum.toUpperCase() }] }, auditLog: { create: async () => { audited = true; } } };
-  const client = { $transaction: async (operation: (value: typeof transaction) => Promise<unknown>) => operation(transaction), vendor: { findUniqueOrThrow: async () => workspace } } as unknown as PrismaClient;
+  const client = { $transaction: async (operation: (value: typeof transaction) => Promise<unknown>) => operation(transaction), vendor: { findUniqueOrThrow: async () => workspace }, vendorShop: { findMany: async () => workspace.shops }, vendorKycSubmission: { findMany: async () => workspace.kycSubmissions }, vendorBankAccount: { findMany: async () => workspace.bankAccounts } } as unknown as PrismaClient;
   await new VendorService(client).submitKyc(kycSession, { documents: [kycDocument] });
   assert.equal(audited, true);
 });
@@ -88,7 +88,7 @@ test("KYC submission is atomic and blocks another active review", async () => {
 test("vendor report applies the selected period and derives fulfilment metrics", async () => {
   const reportSession = { ...session, principal: { ...session.principal, vendorIds: ["33333333-3333-4333-8333-333333333333"] }, permissions: ["vendor:read"], vendorMemberships: [{ vendorId: "33333333-3333-4333-8333-333333333333", role: "VENDOR_OWNER", permissions: ["vendor:read"] }] } as Session;
   let since: Date | undefined;
-  const client = { vendorOrder: { findMany: async ({ where }: { where: { createdAt: { gte: Date } } }) => { since = where.createdAt.gte; return [{ id: "44444444-4444-4444-8444-444444444444", status: "DELIVERED", totalMinor: 25000n, createdAt: new Date() }, { id: "55555555-5555-4555-8555-555555555555", status: "CANCELLED", totalMinor: 10000n, createdAt: new Date() }]; } }, product: { count: async () => 4 }, inventoryItem: { count: async () => 2 }, return: { count: async () => 1 } } as unknown as PrismaClient;
+  const client = { vendorOrder: { findMany: async ({ where }: { where: { createdAt: { gte: Date } } }) => { since = where.createdAt.gte; return [{ id: "44444444-4444-4444-8444-444444444444", status: "DELIVERED", totalMinor: 25000n, createdAt: new Date(), order: { orderNumber: "AGO-1001" }, shop: { name: "Seller Shop" }, _count: { items: 2 } }, { id: "55555555-5555-4555-8555-555555555555", status: "CANCELLED", totalMinor: 10000n, createdAt: new Date(), order: { orderNumber: "AGO-1002" }, shop: { name: "Seller Shop" }, _count: { items: 1 } }]; } }, product: { count: async () => 4 }, inventoryItem: { count: async () => 2 }, return: { count: async () => 1 } } as unknown as PrismaClient;
   const report = await new VendorService(client).report(reportSession, 7);
-  assert.equal(report.periodDays, 7); assert.equal(report.averageOrderMinor, "25000"); assert.equal(report.fulfilmentRate, 50); assert.equal(report.cancelledCount, 1); assert.equal(report.returnCount, 1); assert.ok(since instanceof Date);
+  assert.equal(report.periodDays, 7); assert.equal(report.averageOrderMinor, "25000"); assert.equal(report.fulfilmentRate, 50); assert.equal(report.cancelledCount, 1); assert.equal(report.returnCount, 1); assert.equal(report.recentOrders[0]?.orderNumber, "AGO-1001"); assert.equal(report.recentOrders[0]?.itemCount, 2); assert.ok(since instanceof Date);
 });

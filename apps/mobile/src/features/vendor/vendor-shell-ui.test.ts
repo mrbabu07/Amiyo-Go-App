@@ -38,11 +38,13 @@ test("seller dashboard exposes live operational hierarchy", () => {
   assert.match(dashboard, /compact && styles\.orderActionCompact/);
   assert.match(dashboard, /getVendorWorkspace/);
   assert.match(dashboard, /getVendorReport/);
-  assert.match(dashboard, /getVendorOrders/);
+  assert.doesNotMatch(dashboard, /getVendorOrders/);
+  assert.match(dashboard, /report\.data\?\.recentOrders/);
+  assert.match(dashboard, /formatMinor\(order\.totalMinor\)/);
   assert.match(dashboard, /useCurrentUser/);
   assert.match(dashboard, /\["vendor", "workspace", user\?\.uid\]/);
   assert.match(dashboard, /\["vendor", "report", user\?\.uid\]/);
-  assert.match(dashboard, /\["orders", "vendor", user\?\.uid\]/);
+  assert.doesNotMatch(dashboard, /\["orders", "vendor", user\?\.uid\]/);
   assert.doesNotMatch(dashboard, /firebaseAuth/);
   assert.doesNotMatch(dashboard, /Â|Ã|à§|â†|â€œ|â€/);
 });

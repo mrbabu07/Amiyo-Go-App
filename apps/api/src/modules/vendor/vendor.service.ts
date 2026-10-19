@@ -46,6 +46,15 @@ const include = { shops: { orderBy: { createdAt: "asc" as const } }, kycSubmissi
 
 export class VendorService {
   constructor(private readonly client: PrismaClient) {}
+  private async workspace(id: string) {
+    const [vendor, shops, kycSubmissions, bankAccounts] = await Promise.all([
+      this.client.vendor.findUniqueOrThrow({ where: { id } }),
+      this.client.vendorShop.findMany({ where: { vendorId: id }, orderBy: { createdAt: "asc" } }),
+      this.client.vendorKycSubmission.findMany({ where: { vendorId: id }, include: { documents: true }, orderBy: { createdAt: "desc" } }),
+      this.client.vendorBankAccount.findMany({ where: { vendorId: id }, orderBy: { createdAt: "desc" } })
+    ]);
+    return workspace({ ...vendor, shops, kycSubmissions, bankAccounts });
+  }
   async register(session: Session, input: VendorRegistration, correlationId?: string) {
     if (session.status !== "ACTIVE") throw new ApiProblem(403, "ACCOUNT_NOT_ACTIVE", "An active customer account is required");
     const configuration = await this.client.platformConfiguration?.findUnique({ where: { key: "default" } }); const flags = configuration?.featureFlags as { sellerRegistration?: boolean } | undefined; const maintenance = configuration?.maintenanceMode as { enabled?: boolean; message?: string } | undefined;
@@ -64,7 +73,7 @@ export class VendorService {
       return workspace(vendor);
     });
   }
-  async getWorkspace(session: Session) { const id = vendorId(session); return workspace(await this.client.vendor.findUniqueOrThrow({ where: { id }, include })); }
+  async getWorkspace(session: Session) { return this.workspace(vendorId(session)); }
   async updateShop(session: Session, shopId: string, input: UpdateVendorShop) {
     const id = vendorId(session); requirePermission(session, "vendor:manage");
     await withSerializableTransaction(this.client, async (transaction) => {
@@ -128,10 +137,10 @@ export class VendorService {
   async report(session: Session, days = 30) {
     const id = vendorId(session); requirePermission(session, "vendor:read");
     const since = new Date(Date.now() - days * 24 * 60 * 60_000);
-    const [orders, productCount, lowStockCount, returnCount] = await Promise.all([this.client.vendorOrder.findMany({ where: { vendorId: id, createdAt: { gte: since } }, orderBy: { createdAt: "desc" }, take: 1000 }), this.client.product.count({ where: { vendorId: id } }), this.client.inventoryItem.count({ where: { variant: { product: { vendorId: id } }, onHand: { lte: 5 } } }), this.client.return.count({ where: { vendorOrder: { vendorId: id }, createdAt: { gte: since } } })]);
+    const [orders, productCount, lowStockCount, returnCount] = await Promise.all([this.client.vendorOrder.findMany({ where: { vendorId: id, createdAt: { gte: since } }, select: { id: true, status: true, totalMinor: true, createdAt: true, order: { select: { orderNumber: true } }, shop: { select: { name: true } }, _count: { select: { items: true } } }, orderBy: { createdAt: "desc" }, take: 1000 }), this.client.product.count({ where: { vendorId: id } }), this.client.inventoryItem.count({ where: { variant: { product: { vendorId: id } }, onHand: { lte: 5 } } }), this.client.return.count({ where: { vendorOrder: { vendorId: id }, createdAt: { gte: since } } })]);
     const statusCounts = orders.reduce<Record<string, number>>((result, order) => ({ ...result, [order.status]: (result[order.status] ?? 0) + 1 }), {}); const delivered = orders.filter((order) => order.status === "DELIVERED");
     const grossSales = delivered.reduce((sum, order) => sum + order.totalMinor, 0n); const cancelledCount = orders.filter((order) => order.status === "CANCELLED").length;
-    return { periodDays: days, orderCount: orders.length, deliveredCount: delivered.length, cancelledCount, returnCount, grossSalesMinor: grossSales.toString(), averageOrderMinor: delivered.length ? (grossSales / BigInt(delivered.length)).toString() : "0", fulfilmentRate: orders.length ? Number(((delivered.length / orders.length) * 100).toFixed(1)) : 0, productCount, lowStockCount, statusCounts, recentOrders: orders.slice(0, 12).map((order) => ({ id: order.id, status: order.status, totalMinor: order.totalMinor.toString(), createdAt: order.createdAt.toISOString() })) };
+    return { periodDays: days, orderCount: orders.length, deliveredCount: delivered.length, cancelledCount, returnCount, grossSalesMinor: grossSales.toString(), averageOrderMinor: delivered.length ? (grossSales / BigInt(delivered.length)).toString() : "0", fulfilmentRate: orders.length ? Number(((delivered.length / orders.length) * 100).toFixed(1)) : 0, productCount, lowStockCount, statusCounts, recentOrders: orders.slice(0, 12).map((order) => ({ id: order.id, orderNumber: order.order.orderNumber, shopName: order.shop.name, itemCount: order._count.items, status: order.status, totalMinor: order.totalMinor.toString(), createdAt: order.createdAt.toISOString() })) };
   }
   async returns(session: Session) { const id = vendorId(session); requirePermission(session, "orders:read"); const rows = await this.client.return.findMany({ where: { vendorOrder: { vendorId: id } }, include: { items: { include: { orderItem: { select: returnProductSelect } } } }, orderBy: { createdAt: "desc" }, take: 100 }); return rows.map((row) => ({ id: row.id, orderId: row.orderId, vendorOrderId: row.vendorOrderId, status: row.status, reasonCode: row.reasonCode, reasonDetail: row.reasonDetail, requestedAmount: { amountMinor: row.requestedMinor.toString(), currency: row.currency }, approvedAmount: row.approvedMinor === null ? null : { amountMinor: row.approvedMinor.toString(), currency: row.currency }, version: row.version, createdAt: row.createdAt.toISOString(), items: row.items.map((item) => ({ ...returnProductDetails(item.orderItem), id: item.id, orderItemId: item.orderItemId, quantity: item.quantity, requestedAmount: { amountMinor: item.requestedMinor.toString(), currency: row.currency }, inspection: item.inspection })) })); }
   async categoryRequests(session: Session) { const id = vendorId(session); requirePermission(session, "products:manage"); const rows = await this.client.vendorCategoryRequest.findMany({ where: { vendorId: id }, include: { vendor: true, category: { include: { parent: true } } }, orderBy: { createdAt: "desc" } }); return rows.map(categoryRequestDto); }

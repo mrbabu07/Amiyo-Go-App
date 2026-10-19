@@ -8,5 +8,6 @@ test("customer and seller after-sales detail routes exist", async () => {
 
 test("return and support lists navigate into dedicated detail journeys", async () => {
   const sources = (await Promise.all(["operations/ReturnsScreen.tsx", "vendor/VendorReturnsScreen.tsx", "support/SupportScreen.tsx", "operations/ReturnDetailScreen.tsx", "support/SupportThreadScreen.tsx"].map((file) => readFile(new URL(`../apps/mobile/src/features/${file}`, import.meta.url), "utf8")))).join("\n");
-  for (const capability of ["/return/", "/vendor/returns/", "/support/", "Progress timeline", "Send reply", "Open related order"]) assert.match(sources, new RegExp(capability.replaceAll("/", "\\/")));
+  for (const capability of ["/return/", "/vendor/returns/", "Progress timeline", "Send reply", "Open related order"]) assert.match(sources, new RegExp(capability.replaceAll("/", "\\/")));
+  assert.ok(sources.includes("${basePath}/${ticket.id}"));
 });

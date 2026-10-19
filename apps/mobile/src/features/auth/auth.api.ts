@@ -2,6 +2,7 @@ import { accountDashboardSchema, accountDataExportSchema, accountDeletionSchema,
 import type { User } from "firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
+const pendingSessions = new WeakMap<User, Promise<Session>>();
 
 async function authenticatedRequest<T>(user: User, path: string, init?: RequestInit): Promise<T> {
   const token = await user.getIdToken();
@@ -21,7 +22,14 @@ async function authenticatedRequest<T>(user: User, path: string, init?: RequestI
 }
 
 export async function createSession(user: User) {
-  return sessionSchema.parse(await authenticatedRequest<Session>(user, "/api/v2/auth/session", { method: "POST" }));
+  let pending = pendingSessions.get(user);
+  if (!pending) {
+    pending = authenticatedRequest<Session>(user, "/api/v2/auth/session", { method: "POST" }).then((value) => sessionSchema.parse(value));
+    pendingSessions.set(user, pending);
+    const release = () => { if (pendingSessions.get(user) === pending) pendingSessions.delete(user); };
+    void pending.then(release, release);
+  }
+  return structuredClone(await pending);
 }
 
 export async function updateMyProfile(user: User, input: UpdateProfile) {
