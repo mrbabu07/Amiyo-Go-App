@@ -20,6 +20,7 @@ export async function createCustomerReturn(user: User, input: CreateReturn, idem
 export async function respondToVendorReturn(user: User, id: string, input: SellerReturnResponse) { return returnSchema.parse(await request(user, `/api/v2/vendor/returns/${id}/response`, { method: "POST", headers: { "Idempotency-Key": Crypto.randomUUID() }, body: JSON.stringify(input) })); }
 export async function confirmVendorReturnReceipt(user: User, id: string, input: SellerReturnReceipt) { return returnSchema.parse(await request(user, `/api/v2/vendor/returns/${id}/receipt`, { method: "POST", headers: { "Idempotency-Key": Crypto.randomUUID() }, body: JSON.stringify(input) })); }
 export async function getVendorFinance(user: User) { return vendorFinanceSchema.parse(await request(user, "/api/v2/vendor/finance")); }
+export async function getPendingVendorPayout(user: User) { return pendingVendorPayoutStore.load(user.uid); }
 export async function requestVendorPayout(user: User, input: CreatePayoutRequest, idempotencyKey: string) {
   const pending = await pendingVendorPayoutStore.prepare(user.uid, input, idempotencyKey);
   try {

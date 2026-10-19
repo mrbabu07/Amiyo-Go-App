@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { payoutAmountMinor, selectPayoutBank } from "../operations/vendor-payout-input";
+import { payoutAmountMinor, payoutMinorToMajorInput, selectPayoutBank } from "../operations/vendor-payout-input";
 
 test("payout amounts preserve exact minor units and respect the available balance", () => {
   assert.equal(payoutAmountMinor("100.29", "10029"), "10029");
@@ -10,6 +10,14 @@ test("payout amounts preserve exact minor units and respect the available balanc
   assert.equal(payoutAmountMinor("100.30", "10029"), null);
   for (const invalid of ["", "0", "-1", "1.005", "1e3", "Infinity", "1.2.3"]) assert.equal(payoutAmountMinor(invalid, "100000"), null);
   assert.equal(payoutAmountMinor("1", "-100"), null);
+});
+
+test("saved payout minor units hydrate an exact editable BDT value", () => {
+  assert.equal(payoutMinorToMajorInput("1"), "0.01");
+  assert.equal(payoutMinorToMajorInput("100"), "1");
+  assert.equal(payoutMinorToMajorInput("1250"), "12.5");
+  assert.equal(payoutMinorToMajorInput("9007199254740993"), "90071992547409.93");
+  assert.equal(payoutMinorToMajorInput("invalid"), "");
 });
 
 test("payout destinations must belong to the current workspace", () => {

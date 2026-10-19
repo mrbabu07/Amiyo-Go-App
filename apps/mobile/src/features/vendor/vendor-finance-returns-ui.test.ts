@@ -21,7 +21,10 @@ test("seller finance wires a real idempotent payout workflow", () => {
   assert.match(operationsApi, /pendingVendorPayoutStore\.prepare/);
   assert.match(operationsApi, /pendingVendorPayoutStore\.complete/);
   assert.match(payoutRecovery, /earlier payout needs recovery/);
-  assert.match(finance, /bankAccountId: selectedBank/);
+  assert.match(finance, /bankAccountId: destination/);
+  assert.match(finance, /Retry original payout/);
+  assert.match(finance, /Payout requests are safely paused/);
+  assert.match(finance, /recovered\?\.input\.amountMinor/);
   assert.match(finance, /Payout amount in BDT/);
   assert.match(finance, /Submit payout request/);
   assert.match(finance, /queryKey: \["vendor-finance", user\?\.uid\]/);
