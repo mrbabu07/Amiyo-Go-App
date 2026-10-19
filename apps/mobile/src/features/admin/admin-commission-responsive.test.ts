@@ -12,4 +12,9 @@ test("admin commission controls remain usable on mobile", () => {
   assert.match(source, /compact && styles\.modalCompact/);
   assert.match(source, /compact && styles\.actionCompact/);
   assert.match(source, /adjustsFontSizeToFit numberOfLines=\{1\}/);
+  assert.match(source, /MARKETPLACE MARGIN CONTROL/);
+  assert.match(source, /Product → Shop → Vendor \+ Category/);
+  assert.match(source, /placeholderTextColor=\{colors\.muted\}/);
+  assert.match(source, /styles\.emptyIcon/);
+  assert.doesNotMatch(source, /#94a3b8|#dbeafe/);
 });
