@@ -76,6 +76,7 @@ const adminGroups: AdminGroup[] = [
     { label: "Add Product", href: "/admin/products/add", icon: "add-circle-outline" },
     { label: "Inventory", href: "/admin/inventory", icon: "layers-outline" },
     { label: "Categories", href: "/admin/categories", icon: "file-tray-full-outline" },
+    { label: "Category Tree", href: "/admin/categories/manage", icon: "git-network-outline" },
     { label: "Category Requests", href: "/admin/category-requests", icon: "git-pull-request-outline" }
   ] },
   { label: "Orders", icon: "bag-handle-outline", links: [

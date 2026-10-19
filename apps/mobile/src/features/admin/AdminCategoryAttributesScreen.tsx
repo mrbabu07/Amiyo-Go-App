@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
@@ -12,6 +13,7 @@ const dataTypes = ["text", "number", "boolean", "select", "multiselect"] as cons
 
 export function AdminCategoryAttributesScreen({ initialCategoryId = "" }: { initialCategoryId?: string }) {
   const compact = useWindowDimensions().width < 620;
+  const router = useRouter();
   const user = useCurrentUser();
   const userId = user?.uid ?? null;
   const queryClient = useQueryClient();
@@ -41,6 +43,7 @@ export function AdminCategoryAttributesScreen({ initialCategoryId = "" }: { init
   if (platform.isLoading) return <Screen title="Category attributes"><ActivityIndicator color={colors.primary} /></Screen>;
   return <Screen eyebrow="ADMIN TAXONOMY" title="Category attributes" description="Build the dynamic product fields and discovery filters used by each category.">
     <View style={[catalogStyles.hero, compact && catalogStyles.heroCompact]}><View style={catalogStyles.heroCopy}><Text style={catalogStyles.heroEyebrow}>CATALOG FIELD ARCHITECTURE</Text><Text style={catalogStyles.heroTitle}>{platform.data?.categories.reduce((sum, category) => sum + category.attributes.length, 0) ?? 0} dynamic fields across the catalog</Text><Text style={catalogStyles.heroText}>Control seller product forms and customer filters without shipping a new application build.</Text></View><View style={catalogStyles.heroBadge}><Ionicons color={colors.surface} name="options-outline" size={24} /><Text style={catalogStyles.heroBadgeValue}>{platform.data?.categories.length ?? 0}</Text><Text style={catalogStyles.heroBadgeLabel}>CATEGORIES</Text></View></View>
+    <View style={[catalogStyles.workspaceNav, compact && catalogStyles.workspaceNavCompact]}><View style={catalogStyles.workspaceCopy}><Text style={catalogStyles.workspaceTitle}>Taxonomy workspace</Text><Text style={styles.muted}>Create, enable and reorder main categories or subcategories in the category tree manager.</Text></View><Pressable accessibilityRole="link" onPress={() => router.push("/admin/categories/manage")} style={[catalogStyles.manageButton, compact && catalogStyles.manageButtonCompact]}><Ionicons color={colors.surface} name="git-network-outline" size={18} /><Text style={catalogStyles.manageButtonText}>Manage category tree</Text></Pressable></View>
     {platform.error ? <Text style={styles.error}>{platform.error.message}</Text> : null}
     <Text style={styles.heading}>Choose category</Text>
     <View style={styles.chips}>{platform.data?.categories.map((category) => <Pressable accessibilityRole="button" key={category.id} onPress={() => setCategoryId(category.id)} style={[styles.chip, categoryId === category.id && styles.chipActive]}><Text style={[styles.chipText, categoryId === category.id && styles.chipTextActive]}>{category.name} ({category.attributes.length})</Text></Pressable>)}</View>
@@ -84,7 +87,14 @@ const catalogStyles = StyleSheet.create({
   orderRow: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
   orderLabel: { color: colors.muted, flex: 1, fontSize: 10, fontWeight: "600" },
   orderButton: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.md, height: 42, justifyContent: "center", width: 42 },
-  disabled: { opacity: .35 }
+  disabled: { opacity: .35 },
+  workspaceNav: { alignItems: "center", backgroundColor: colors.surface, borderRadius: radius.lg, boxShadow: "0 7px 22px rgba(11,31,58,.06)", flexDirection: "row", gap: spacing.md, justifyContent: "space-between", padding: spacing.md },
+  workspaceNavCompact: { alignItems: "stretch", flexDirection: "column" },
+  workspaceCopy: { flex: 1, minWidth: 0 },
+  workspaceTitle: { color: colors.text, fontSize: 15, fontWeight: "700" },
+  manageButton: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, flexDirection: "row", gap: 7, justifyContent: "center", minHeight: 44, paddingHorizontal: spacing.md },
+  manageButtonCompact: { width: "100%" },
+  manageButtonText: { color: colors.surface, fontSize: 11, fontWeight: "700" }
 });
 
 const styles = StyleSheet.create({ heading: { color: colors.text, fontSize: 20, fontWeight: "700" }, error: { color: colors.danger }, muted: { color: colors.muted }, chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }, chip: { borderColor: colors.border, borderRadius: radius.pill, borderWidth: 1, paddingHorizontal: spacing.md, paddingVertical: spacing.sm }, chipActive: { backgroundColor: colors.primarySoft, borderColor: colors.primary }, chipText: { color: colors.muted, fontWeight: "700" }, chipTextActive: { color: colors.primary }, input: { borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, minHeight: 46, paddingHorizontal: spacing.md }, primary: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, minHeight: 46, justifyContent: "center" }, primaryText: { color: colors.surface, fontWeight: "700" }, delete: { alignItems: "center", borderColor: colors.danger, borderRadius: radius.md, borderWidth: 1, minHeight: 42, justifyContent: "center" }, deleteText: { color: colors.danger, fontWeight: "600" } });

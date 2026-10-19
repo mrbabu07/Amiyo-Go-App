@@ -16,4 +16,6 @@ test("category attributes supports responsive seller and discovery controls", ()
   assert.match(source, /Move \$\{attribute\.label\} up/);
   assert.match(source, /Move \$\{attribute\.label\} down/);
   assert.match(source, /Field position \{index \+ 1\}/);
+  assert.match(source, /Manage category tree/);
+  assert.match(source, /router\.push\("\/admin\/categories\/manage"\)/);
 });
