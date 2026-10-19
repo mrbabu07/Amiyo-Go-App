@@ -21,7 +21,7 @@ export function DocumentVerificationScreen() {
     const result = await verifyDocumentQr(user, value.trim());
     return { result, uid: user.uid };
   } });
-  const result = verification.data?.uid === activeUid.current ? verification.data.result : undefined;
+  const result = verification.data?.uid === activeUid.current ? verification.data?.result : undefined;
   return <Screen title="Verify invoice or parcel" description="Paste the complete code from your QR reader to check its authenticity and current order record.">
     {!user ? <Link href="/login">Sign in to verify</Link> : <>
       {Platform.OS !== "web" ? <Pressable accessibilityRole="button" disabled={verification.isPending} style={styles.button} onPress={async () => {

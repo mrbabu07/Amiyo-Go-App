@@ -1,4 +1,5 @@
 import { saveVendorBankAccountSchema, type SaveVendorBankAccount } from "@amiyo/contracts";
+import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { User } from "firebase/auth";
 import { router } from "expo-router";

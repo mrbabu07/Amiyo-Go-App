@@ -81,7 +81,7 @@ function MediaRow({ compact, imageUrl, kind, loading, onChoose, onClear }: { com
 const styles = StyleSheet.create({
   preview: { alignItems: "center", backgroundColor: colors.navy, borderRadius: radius.xl, flexDirection: "row", gap: spacing.md, minHeight: 190, overflow: "hidden", padding: spacing.xl, position: "relative" },
   previewCompact: { alignItems: "flex-start", flexDirection: "column", padding: spacing.lg },
-  bannerImage: { ...StyleSheet.absoluteFillObject }, overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(5,11,20,.66)" },
+  bannerImage: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 }, overlay: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, backgroundColor: "rgba(5,11,20,.66)" },
   logoImage: { backgroundColor: colors.surface, borderColor: colors.surface, borderRadius: radius.pill, borderWidth: 3, height: 76, width: 76 },
   logoFallback: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.pill, height: 76, justifyContent: "center", width: 76 },
   previewCopy: { flex: 1, minWidth: 0 }, previewLabel: { color: "#d9e6a7", fontSize: 9, fontWeight: "700", letterSpacing: 1 }, previewTitle: { color: "#fff", fontSize: 25, fontWeight: "700", marginTop: 5 }, previewMeta: { color: "#e2e8f0", fontSize: 11, marginTop: 5 },

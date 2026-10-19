@@ -16,7 +16,7 @@
     "dev:mobile": "npm --workspace @amiyo/mobile run start",
     "web": "node scripts/web.mjs",
     "build": "node ./node_modules/typescript/bin/tsc -b tsconfig.json",
-    "type-check": "node ./node_modules/typescript/bin/tsc -b tsconfig.json",
+    "type-check": "node ./node_modules/typescript/bin/tsc -b tsconfig.json && npm run type-check --workspace @amiyo/mobile",
     "test": "npm run build && npm run test:workspaces && node --test --test-concurrency=1 scripts/*.test.mjs",
     "test:workspaces": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
@@ -45,6 +45,7 @@
   "devDependencies": {
     "@electric-sql/pglite": "0.5.4",
     "@types/node": "^20.14.10",
+    "@types/react": "~19.2.4",
     "firebase-tools": "15.34.0",
     "prisma": "^5.22.0",
     "react": "19.2.3",

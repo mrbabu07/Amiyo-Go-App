@@ -9,12 +9,12 @@ import { FlashAlertToggle } from "./FlashAlerts";
 
 export function ProductAlertControls({ productId, productName }: { productId: string; productName: string }) {
   const user = useCurrentUser();
-  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   return user ? <AlertEditor key={`${user.uid}:${productId}`} productId={productId} productName={productName} /> : null;
 }
 
 function AlertEditor({ productId, productName }: { productId: string; productName: string }) {
   const user = useCurrentUser();
+  const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const cache = useQueryClient();
   const [expanded, setExpanded] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
