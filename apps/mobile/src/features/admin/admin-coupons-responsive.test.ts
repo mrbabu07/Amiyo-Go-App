@@ -11,3 +11,12 @@ test("admin coupon forms and performance cards remain usable on mobile", () => {
   assert.match(source, /flexBasis: "46%", minWidth: 0/);
   assert.match(source, /adjustsFontSizeToFit numberOfLines=\{1\}/);
 });
+
+test("admin coupons exposes margin impact and form validation", () => {
+  assert.match(source, /PROMOTION MARGIN CONTROL/);
+  assert.match(source, /redeemedValue/);
+  assert.match(source, /validSchedule/);
+  assert.match(source, /validLimits/);
+  assert.match(source, /Create your first coupon/);
+  assert.match(source, /compact && styles\.heroCompact/);
+});
