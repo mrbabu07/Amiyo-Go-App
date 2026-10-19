@@ -6,13 +6,14 @@ import { DocumentQrCode } from "../../ui/DocumentQrCode";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing, typography } from "../../ui/tokens";
+import { formatMinor } from "../../ui/money";
 import { useCurrentUser } from "../auth/use-current-user";
 import { getFulfillmentDocument } from "./orders.api";
 import { captureDocumentQr, shareDocumentPdf, type DocumentQrRef } from "./document-export";
 import { fulfillmentHtml } from "./fulfillment-html";
 
 const printId = "vendor-parcel-label";
-const money = (value: { amountMinor: string; currency: string }) => `${value.currency === "BDT" ? "Tk" : value.currency} ${(Number(value.amountMinor) / 100).toLocaleString("en-BD", { minimumFractionDigits: 2 })}`;
+const money = (value: { amountMinor: string; currency: string }) => formatMinor(value.amountMinor, value.currency, 2).replace(/^৳/, "Tk ");
 
 export function FulfillmentDocumentScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../../ui/tokens";
+import { formatMinor } from "../../../ui/money";
 import { checkServiceability } from "../../operations/delivery-settings.api";
 
 export function DeliveryAvailability({ subtotalMinor = "0" }: { subtotalMinor?: string }) {
@@ -32,7 +33,7 @@ export function DeliveryAvailability({ subtotalMinor = "0" }: { subtotalMinor?: 
       {check.data ? (
         <View style={styles.result}>
           <Text style={styles.resultTitle}>{check.data.serviceable ? "Delivery available" : "Not serviceable"}</Text>
-          <Text style={styles.resultText}>৳{(Number(check.data.charge.amountMinor) / 100).toLocaleString("en-BD")} · {check.data.estimatedDays.min}–{check.data.estimatedDays.max} days · {check.data.zone.replaceAll("_", " ")}</Text>
+          <Text style={styles.resultText}>{formatMinor(check.data.charge.amountMinor)} · {check.data.estimatedDays.min}–{check.data.estimatedDays.max} days · {check.data.zone.replaceAll("_", " ")}</Text>
           {check.data.freeDelivery ? <Text style={styles.free}>Free delivery applies to this selection.</Text> : null}
         </View>
       ) : null}

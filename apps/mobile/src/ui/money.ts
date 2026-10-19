@@ -33,3 +33,20 @@ export function subtractMinorFloor(totalMinor: string | bigint, deductionMinor: 
   const result = BigInt(totalMinor) - BigInt(deductionMinor);
   return result > 0n ? result : 0n;
 }
+
+export const subtractMinor = (totalMinor: string | bigint, deductionMinor: string | bigint) => BigInt(totalMinor) - BigInt(deductionMinor);
+export const multiplyMinor = (amountMinor: string | bigint, quantity: number) => BigInt(amountMinor) * BigInt(quantity);
+export const isPositiveMinor = (amountMinor: string | bigint) => BigInt(amountMinor) > 0n;
+
+export function compareMinor(leftMinor: string | bigint, rightMinor: string | bigint) {
+  const left = BigInt(leftMinor);
+  const right = BigInt(rightMinor);
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+export function percentageDiscount(priceMinor: string | bigint, compareAtMinor: string | bigint) {
+  const price = BigInt(priceMinor);
+  const compareAt = BigInt(compareAtMinor);
+  if (price < 0n || compareAt <= price) return 0;
+  return Number(((compareAt - price) * 100n + compareAt / 2n) / compareAt);
+}

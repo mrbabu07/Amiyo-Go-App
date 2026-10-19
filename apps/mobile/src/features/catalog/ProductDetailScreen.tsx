@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Image, Platform, Pressable, SafeAreaView, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
+import { formatMinor, multiplyMinor, percentageDiscount } from "../../ui/money";
 import { firebaseAuth } from "../auth/firebase";
 import { useCurrentUser } from "../auth/use-current-user";
 import { ensureGuestUser } from "../auth/guest-auth";
@@ -19,7 +20,7 @@ import { fallbackProductImage, toHomeProduct } from "./catalog.view-model";
 import { useComparisonStore } from "./comparison.store";
 import { getDiscoverySessionId, safelyRecordDiscoveryEvent } from "./discovery.api";
 
-const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
+const money = (minor: string) => formatMinor(minor);
 
 export function ProductDetailScreen({ identifier }: { identifier: string }) {
   const router = useRouter();
@@ -87,7 +88,7 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
   if (!item) return <SafeAreaView style={styles.center}><Ionicons color={colors.danger} name="alert-circle-outline" size={52} /><Text style={styles.errorTitle}>Product unavailable</Text><Text style={styles.error}>{product.error instanceof Error ? product.error.message : "Product not found"}</Text><Pressable onPress={() => router.back()} style={styles.backButton}><Text style={styles.backButtonText}>Go back</Text></Pressable></SafeAreaView>;
 
   const maximumQuantity = Math.min(99, selected?.availableQuantity ?? 0);
-  const discount = selected?.compareAtPrice && Number(selected.compareAtPrice.amountMinor) > Number(selected.price.amountMinor) ? Math.round((1 - Number(selected.price.amountMinor) / Number(selected.compareAtPrice.amountMinor)) * 100) : 0;
+  const discount = selected?.compareAtPrice ? percentageDiscount(selected.price.amountMinor, selected.compareAtPrice.amountMinor) : 0;
   const specificationRows = [
     ["Brand", item.brand || "Not specified"],
     ["Seller", item.shopName],
@@ -146,7 +147,7 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
         </View>
         {showReport ? <ReportPanel details={reportDetails} mutation={report} onCancel={() => setShowReport(false)} onDetails={setReportDetails} onReason={setReportReason} reason={reportReason} /> : report.isSuccess ? <Text style={styles.success}>Report submitted for trust and safety review.</Text> : null}
         <SellerInfoStrip compact={compact} item={item} onVisit={() => router.push(`/shop/${item.shopSlug}` as never)} />
-        <BuyerProtection subtotalMinor={selected ? String(Number(selected.price.amountMinor) * quantity) : "0"} />
+        <BuyerProtection subtotalMinor={selected ? String(multiplyMinor(selected.price.amountMinor, quantity)) : "0"} />
         <View style={styles.tabPanel}><View style={styles.tabs}><Tab active={activeTab === "description"} label="Description" onPress={() => setActiveTab("description")} /><Tab active={activeTab === "specifications"} label="Specifications" onPress={() => setActiveTab("specifications")} /></View>{activeTab === "description" ? <View style={[styles.tabBody, compact && responsive.tabBodyCompact]}><Text style={styles.sectionTitle}>Product Details</Text><Text style={styles.description}>{item.description || "No detailed description has been added yet."}</Text></View> : <View style={[styles.tabBody, compact && responsive.tabBodyCompact]}><Text style={styles.sectionTitle}>Product Specifications</Text><View style={styles.specTable}>{specificationRows.map(([label, value], index) => <View key={`${label}-${index}`} style={[styles.specRow, compact && responsive.specRowCompact]}><Text style={[styles.specLabel, compact && responsive.specCellCompact]}>{String(label).replaceAll("_", " ")}</Text><Text style={[styles.specValue, compact && responsive.specCellCompact]}>{String(value)}</Text></View>)}</View></View>}</View>
         <View style={styles.engagementGrid}><ReviewsPanel compact={compact} query={reviews} /><QuestionsPanel ask={ask} body={questionBody} compact={compact} onBody={setQuestionBody} onSubmit={submitQuestion} query={questions} /></View>
         <View><Text style={styles.sectionTitle}>Similar Products</Text><View style={styles.relatedGrid}>{related.data?.data.filter((productItem) => productItem.id !== item.id).slice(0, 4).map(toHomeProduct).map((productItem) => <View key={productItem.id} style={{ minWidth: desktop ? 210 : 0, width: desktop ? "23%" : "47%" }}><ProductCard product={productItem} /></View>)}</View>{related.isLoading ? <ActivityIndicator color={colors.primary} /> : null}</View>

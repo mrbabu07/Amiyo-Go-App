@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
+import { compareMinor } from "../../ui/money";
 import type { HomeProduct } from "../home/home.data";
 import { ProductCard } from "../home/components/ProductCard";
 import { StoreHeader } from "../home/components/StoreHeader";
@@ -30,7 +31,7 @@ export function ProductListScreen({ category, query, title }: { category?: strin
   const pageTitle = selectedCategory?.name || title;
   const products = useMemo(() => {
     const rows = [...(result.data?.data || [])];
-    rows.sort((left, right) => sort === "price-low" ? Number(left.minimumPrice.amountMinor) - Number(right.minimumPrice.amountMinor) : sort === "price-high" ? Number(right.minimumPrice.amountMinor) - Number(left.minimumPrice.amountMinor) : sort === "rating" ? right.rating - left.rating : new Date(right.publishedAt || 0).getTime() - new Date(left.publishedAt || 0).getTime());
+    rows.sort((left, right) => sort === "price-low" ? compareMinor(left.minimumPrice.amountMinor, right.minimumPrice.amountMinor) : sort === "price-high" ? compareMinor(right.minimumPrice.amountMinor, left.minimumPrice.amountMinor) : sort === "rating" ? right.rating - left.rating : new Date(right.publishedAt || 0).getTime() - new Date(left.publishedAt || 0).getTime());
     return rows.map(toHomeProduct);
   }, [result.data?.data, sort]);
   const columns = view === "list" ? 1 : gridColumns;

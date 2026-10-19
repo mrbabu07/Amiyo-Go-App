@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
+import { compareMinor } from "../../ui/money";
 import { useCurrentUser } from "../auth/use-current-user";
 import { createThread } from "../engagement/engagement.api";
 import { ProductCard } from "../home/components/ProductCard";
@@ -15,8 +16,8 @@ import { ShopFilters, type ShopSortMode } from "./components/ShopFilters";
 
 function sortProducts(products: ProductSummaryDto[], sort: ShopSortMode) {
   return [...products].sort((left, right) => {
-    if (sort === "price-low") return Number(left.minimumPrice.amountMinor) - Number(right.minimumPrice.amountMinor);
-    if (sort === "price-high") return Number(right.minimumPrice.amountMinor) - Number(left.minimumPrice.amountMinor);
+    if (sort === "price-low") return compareMinor(left.minimumPrice.amountMinor, right.minimumPrice.amountMinor);
+    if (sort === "price-high") return compareMinor(right.minimumPrice.amountMinor, left.minimumPrice.amountMinor);
     if (sort === "rating") return right.rating - left.rating || right.reviewCount - left.reviewCount;
     if (sort === "popular") return right.reviewCount - left.reviewCount || right.rating - left.rating;
     return new Date(right.publishedAt || 0).getTime() - new Date(left.publishedAt || 0).getTime();

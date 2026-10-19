@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useCurrentUser } from "../auth/use-current-user";
 import { colors, radius, spacing } from "../../ui/tokens";
+import { formatMinor } from "../../ui/money";
 import { getCustomerOrder, getOrderTracking } from "./orders.api";
 import { OrderItemImage } from "./OrderItemImage";
 import { CustomerReturnWizard } from "../operations/CustomerReturnWizard";
@@ -13,7 +14,7 @@ import { OrderReorder } from "./OrderReorder";
 import { returnActionState } from "./return-action";
 
 const label = (value: string) => value.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
-const money = (value: OrderDto["total"]) => `${value.currency} ${(Number(value.amountMinor) / 100).toLocaleString("en-BD", { minimumFractionDigits: 2 })}`;
+const money = (value: OrderDto["total"]) => formatMinor(value.amountMinor, value.currency, 2);
 
 export function CustomerOrderExpansion({ id, compact }: { id: string; compact: boolean }) {
   const user = useCurrentUser();
