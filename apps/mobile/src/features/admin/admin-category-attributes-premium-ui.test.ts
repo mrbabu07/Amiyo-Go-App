@@ -12,4 +12,8 @@ test("category attributes supports responsive seller and discovery controls", ()
   assert.match(source, /attribute\.filterable/);
   assert.match(source, /compact && catalogStyles\.toggleRowCompact/);
   assert.match(source, /trackColor=\{\{ false: colors\.border, true: colors\.primarySoft \}\}/);
+  assert.match(source, /function moveAttribute/);
+  assert.match(source, /Move \$\{attribute\.label\} up/);
+  assert.match(source, /Move \$\{attribute\.label\} down/);
+  assert.match(source, /Field position \{index \+ 1\}/);
 });

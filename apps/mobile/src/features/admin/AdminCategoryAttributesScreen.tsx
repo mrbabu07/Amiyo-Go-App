@@ -30,6 +30,14 @@ export function AdminCategoryAttributesScreen({ initialCategoryId = "" }: { init
     await save.mutateAsync([...selected.attributes, { id: temporaryId, key: form.key.trim(), label: form.label.trim(), dataType: form.dataType, required: form.required, filterable: form.filterable, displayOrder: selected.attributes.length, options: options.map((option, displayOrder) => ({ id: `${temporaryId}-${displayOrder}`, value: option.toLowerCase().replace(/[^a-z0-9]+/g, "-"), label: option, displayOrder })) }]);
     setForm({ label: "", key: "", dataType: "text", options: "", required: false, filterable: false });
   }
+  function moveAttribute(index: number, direction: -1 | 1) {
+    if (!selected) return;
+    const target = index + direction;
+    if (target < 0 || target >= selected.attributes.length) return;
+    const next = [...selected.attributes];
+    [next[index], next[target]] = [next[target], next[index]];
+    save.mutate(next);
+  }
   if (platform.isLoading) return <Screen title="Category attributes"><ActivityIndicator color={colors.primary} /></Screen>;
   return <Screen eyebrow="ADMIN TAXONOMY" title="Category attributes" description="Build the dynamic product fields and discovery filters used by each category.">
     <View style={[catalogStyles.hero, compact && catalogStyles.heroCompact]}><View style={catalogStyles.heroCopy}><Text style={catalogStyles.heroEyebrow}>CATALOG FIELD ARCHITECTURE</Text><Text style={catalogStyles.heroTitle}>{platform.data?.categories.reduce((sum, category) => sum + category.attributes.length, 0) ?? 0} dynamic fields across the catalog</Text><Text style={catalogStyles.heroText}>Control seller product forms and customer filters without shipping a new application build.</Text></View><View style={catalogStyles.heroBadge}><Ionicons color={colors.surface} name="options-outline" size={24} /><Text style={catalogStyles.heroBadgeValue}>{platform.data?.categories.length ?? 0}</Text><Text style={catalogStyles.heroBadgeLabel}>CATEGORIES</Text></View></View>
@@ -46,9 +54,10 @@ export function AdminCategoryAttributesScreen({ initialCategoryId = "" }: { init
         <Pressable disabled={save.isPending} onPress={addAttribute} style={styles.primary}><Text style={styles.primaryText}>{save.isPending ? "Saving…" : "Add attribute"}</Text></Pressable>
       </ModuleCard>
       {save.error ? <Text style={styles.error}>{save.error.message}</Text> : null}
-      {selected.attributes.map((attribute) => <ModuleCard key={attribute.id} title={attribute.label} meta={`${attribute.dataType} · ${attribute.key}`}>
+      {selected.attributes.map((attribute, index) => <ModuleCard key={attribute.id} title={attribute.label} meta={`${attribute.dataType} · ${attribute.key}`}>
         {attribute.options.length ? <Text style={styles.muted}>Options: {attribute.options.map((option) => option.label).join(", ")}</Text> : null}
         <View style={[catalogStyles.toggleRow, compact && catalogStyles.toggleRowCompact]}><AttributeToggle label="Required for sellers" value={attribute.required} onChange={(required) => save.mutate(selected.attributes.map((item) => item.id === attribute.id ? { ...item, required } : item))} /><AttributeToggle label="Customer filter" value={attribute.filterable} onChange={(filterable) => save.mutate(selected.attributes.map((item) => item.id === attribute.id ? { ...item, filterable } : item))} /></View>
+        <View style={catalogStyles.orderRow}><Text style={catalogStyles.orderLabel}>Field position {index + 1} of {selected.attributes.length}</Text><Pressable accessibilityLabel={`Move ${attribute.label} up`} disabled={index === 0 || save.isPending} onPress={() => moveAttribute(index, -1)} style={[catalogStyles.orderButton, (index === 0 || save.isPending) && catalogStyles.disabled]}><Ionicons color={colors.primary} name="arrow-up" size={17} /></Pressable><Pressable accessibilityLabel={`Move ${attribute.label} down`} disabled={index === selected.attributes.length - 1 || save.isPending} onPress={() => moveAttribute(index, 1)} style={[catalogStyles.orderButton, (index === selected.attributes.length - 1 || save.isPending) && catalogStyles.disabled]}><Ionicons color={colors.primary} name="arrow-down" size={17} /></Pressable></View>
         <Pressable disabled={save.isPending} onPress={() => save.mutate(selected.attributes.filter((item) => item.id !== attribute.id))} style={styles.delete}><Text style={styles.deleteText}>Remove attribute</Text></Pressable>
       </ModuleCard>)}
       {selected.attributes.length === 0 ? <ModuleCard title="No attributes yet" meta="Add the first dynamic product field above." /> : null}
@@ -71,7 +80,11 @@ const catalogStyles = StyleSheet.create({
   toggleRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   toggleRowCompact: { flexDirection: "column" },
   toggle: { alignItems: "center", backgroundColor: colors.background, borderRadius: radius.md, flex: 1, flexDirection: "row", justifyContent: "space-between", minWidth: 210, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  toggleLabel: { color: colors.text, flex: 1, fontSize: 11, fontWeight: "600" }
+  toggleLabel: { color: colors.text, flex: 1, fontSize: 11, fontWeight: "600" },
+  orderRow: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
+  orderLabel: { color: colors.muted, flex: 1, fontSize: 10, fontWeight: "600" },
+  orderButton: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.md, height: 42, justifyContent: "center", width: 42 },
+  disabled: { opacity: .35 }
 });
 
 const styles = StyleSheet.create({ heading: { color: colors.text, fontSize: 20, fontWeight: "700" }, error: { color: colors.danger }, muted: { color: colors.muted }, chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }, chip: { borderColor: colors.border, borderRadius: radius.pill, borderWidth: 1, paddingHorizontal: spacing.md, paddingVertical: spacing.sm }, chipActive: { backgroundColor: colors.primarySoft, borderColor: colors.primary }, chipText: { color: colors.muted, fontWeight: "700" }, chipTextActive: { color: colors.primary }, input: { borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, minHeight: 46, paddingHorizontal: spacing.md }, primary: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, minHeight: 46, justifyContent: "center" }, primaryText: { color: colors.surface, fontWeight: "700" }, delete: { alignItems: "center", borderColor: colors.danger, borderRadius: radius.md, borderWidth: 1, minHeight: 42, justifyContent: "center" }, deleteText: { color: colors.danger, fontWeight: "600" } });
