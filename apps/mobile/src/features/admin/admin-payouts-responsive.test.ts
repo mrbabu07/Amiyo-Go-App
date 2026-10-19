@@ -11,4 +11,8 @@ test("admin payout settlement cards remain usable on mobile", () => {
   assert.match(source, /compact && styles\.detailCompact/);
   assert.match(source, /compact && styles\.actionCompact/);
   assert.match(source, /adjustsFontSizeToFit numberOfLines=\{1\}/);
+  assert.match(source, /shadowColor: colors\.navy/);
+  assert.match(source, /placeholderTextColor=\{colors\.muted\}/);
+  assert.match(source, /styles\.emptyIcon/);
+  assert.doesNotMatch(source, /#94a3b8|#dbeafe|#1d4ed8/);
 });

@@ -46,12 +46,12 @@ export function AdminPayoutsScreen({ requestsOnly = false }: { requestsOnly?: bo
     <View style={[styles.hero, compact && styles.heroCompact]}><View style={styles.heroCopy}><Text style={styles.heroTitle}>Seller settlement control</Text><Text style={styles.heroText}>{rows.filter((item) => item.status === "REQUESTED").length} waiting review | {rows.filter((item) => ["APPROVED", "PROCESSING"].includes(item.status)).length} ready to pay | {money(payableMinor)} payable now</Text></View><View style={styles.actions}><Pressable disabled={propose.isPending} onPress={() => propose.mutate()} style={styles.heroRefresh}><Ionicons color="#fff" name="layers-outline" size={19} /><Text style={styles.heroRefreshText}>{propose.isPending ? "Preparing…" : "Build settlement batch"}</Text></Pressable><Pressable onPress={() => payouts.refetch()} style={styles.heroRefresh}><Ionicons color="#fff" name="refresh" size={19} /><Text style={styles.heroRefreshText}>Refresh</Text></Pressable></View></View>
     {propose.error ? <ErrorBox message={propose.error.message} /> : null}{proposals.data?.length ? <View style={styles.proposal}><Ionicons color={colors.success} name="document-text-outline" size={21} /><View style={styles.flex}><Text style={styles.vendor}>Latest proposal · {proposals.data[0]!.status}</Text><Text style={styles.muted}>{money(Number(proposals.data[0]!.amount.amountMinor))} · {new Date(proposals.data[0]!.createdAt).toLocaleString("en-BD")}</Text></View><Text style={styles.status}>{proposals.data.length} BATCH{proposals.data.length === 1 ? "" : "ES"}</Text></View> : null}
     <View style={[styles.metrics, compact && styles.stack]}><Metric icon="time-outline" label="Review queue" value={money(requestedMinor)} detail={`${rows.filter((item) => item.status === "REQUESTED").length} request(s)`} /><Metric icon="wallet-outline" label="Payable approved" value={money(payableMinor)} detail="Approved or processing" /><Metric icon="shield-checkmark-outline" label="Paid total" value={money(paidMinor)} detail={`${rows.filter((item) => item.status === "PAID").length} completed`} /><Metric icon="alert-circle-outline" label="Needs bank check" value={String(rows.filter((item) => !item.bankAccount).length)} detail="Missing payout account" /></View>
-    <View style={[styles.toolbar, compact && styles.stack]}><View style={styles.search}><Ionicons color={colors.muted} name="search-outline" size={18} /><TextInput onChangeText={setSearch} placeholder="Search vendor, request ID, bank or MFS..." placeholderTextColor="#94a3b8" style={styles.searchInput} value={search} /></View></View>
+    <View style={[styles.toolbar, compact && styles.stack]}><View style={styles.search}><Ionicons color={colors.muted} name="search-outline" size={18} /><TextInput onChangeText={setSearch} placeholder="Search vendor, request ID, bank or MFS..." placeholderTextColor={colors.muted} style={styles.searchInput} value={search} /></View></View>
     <View style={styles.filters}>{statuses.map((item) => <Pressable key={item} onPress={() => setStatus(item)} style={[styles.filter, status === item && styles.filterActive]}><Text style={[styles.filterText, status === item && styles.filterTextActive]}>{item}</Text><Text style={[styles.count, status === item && styles.countActive]}>{item === "ALL" ? rows.length : rows.filter((row) => row.status === item).length}</Text></Pressable>)}</View>
     {payouts.isLoading ? <ActivityIndicator color={colors.primary} /> : null}{payouts.error ? <ErrorBox message={payouts.error.message} /> : null}
     {selected ? <PayoutDetail action={action} error={formError} item={selected} onAction={setAction} onClose={() => setSelected(null)} onComplete={() => complete.mutate()} onProvider={setProvider} onProviderRef={setProviderRef} onReason={setReason} onReview={() => review.mutate()} provider={provider} providerRef={providerRef} reason={reason} saving={review.isPending || complete.isPending} /> : null}
     <View style={styles.list}>{filtered.map((item) => <PayoutCard key={item.id} item={item} onPress={() => select(item)} selected={selected?.id === item.id} />)}</View>
-    {!payouts.isLoading && filtered.length === 0 ? <View style={styles.empty}><Ionicons color="#94a3b8" name="file-tray-outline" size={34} /><Text style={styles.emptyTitle}>No matching payout requests</Text><Text style={styles.muted}>Change the status or search term.</Text></View> : null}
+    {!payouts.isLoading && filtered.length === 0 ? <View style={styles.empty}><View style={styles.emptyIcon}><Ionicons color={colors.accent} name="file-tray-outline" size={30} /></View><Text style={styles.emptyTitle}>No matching payout requests</Text><Text style={styles.muted}>Change the status or search term.</Text></View> : null}
   </Screen>;
 }
 
@@ -77,9 +77,9 @@ function PayoutDetail({ action, error, item, onAction, onClose, onComplete, onPr
     {item.payouts.length ? <View style={styles.history}><Text style={styles.section}>Payment history</Text>{item.payouts.map((payout) => <View key={payout.id} style={styles.historyRow}><View style={styles.flex}><Text style={styles.vendor}>{payout.provider}</Text><Text style={styles.muted}>{payout.providerRef || "No reference"} | {payout.paidAt ? dateTime(payout.paidAt) : "Not paid"}</Text></View><View style={styles.right}><Text style={styles.vendor}>{money(Number(payout.amount.amountMinor))}</Text><Text style={styles.muted}>{payout.status}</Text></View></View>)}</View> : null}
     <View style={styles.checklist}><Check label="Vendor identity reviewed" done={Boolean(item.vendor.legalName)} /><Check label="Payout account present" done={Boolean(item.bankAccount)} /><Check label="Amount reserved from wallet" done={Number(item.amount.amountMinor) > 0} /><Check label="Provider reference required before paid" done={!canPay || providerRef.trim().length > 1} /></View>
     <View style={styles.actions}>{item.status === "REQUESTED" ? <><Pressable onPress={() => onAction("APPROVE")} style={[styles.action, compact && styles.actionCompact, action === "APPROVE" && styles.actionActive]}><Text style={[styles.actionText, action === "APPROVE" && styles.actionTextActive]}>Approve</Text></Pressable><Pressable onPress={() => onAction("REJECT")} style={[styles.action, compact && styles.actionCompact, styles.actionDanger]}><Text style={styles.actionDangerText}>Reject</Text></Pressable></> : null}{canPay ? <Pressable onPress={() => onAction("PAY")} style={[styles.action, compact && styles.actionCompact, action === "PAY" && styles.actionActive]}><Text style={[styles.actionText, action === "PAY" && styles.actionTextActive]}>Mark paid</Text></Pressable> : null}</View>
-    {action === "REJECT" ? <TextInput multiline onChangeText={onReason} placeholder="Rejection reason (required)" placeholderTextColor="#94a3b8" style={[styles.field, styles.note]} value={reason} /> : null}
-    {action === "APPROVE" ? <TextInput multiline onChangeText={onReason} placeholder="Approval note (optional)" placeholderTextColor="#94a3b8" style={[styles.field, styles.note]} value={reason} /> : null}
-    {action === "PAY" ? <><TextInput onChangeText={onProvider} placeholder="Payment provider" placeholderTextColor="#94a3b8" style={styles.field} value={provider} /><TextInput onChangeText={onProviderRef} placeholder="Transaction reference" placeholderTextColor="#94a3b8" style={styles.field} value={providerRef} /></> : null}
+    {action === "REJECT" ? <TextInput multiline onChangeText={onReason} placeholder="Rejection reason (required)" placeholderTextColor={colors.muted} style={[styles.field, styles.note]} value={reason} /> : null}
+    {action === "APPROVE" ? <TextInput multiline onChangeText={onReason} placeholder="Approval note (optional)" placeholderTextColor={colors.muted} style={[styles.field, styles.note]} value={reason} /> : null}
+    {action === "PAY" ? <><TextInput onChangeText={onProvider} placeholder="Payment provider" placeholderTextColor={colors.muted} style={styles.field} value={provider} /><TextInput onChangeText={onProviderRef} placeholder="Transaction reference" placeholderTextColor={colors.muted} style={styles.field} value={providerRef} /></> : null}
     {action ? <Pressable disabled={saving || (action === "PAY" && !item.bankAccount)} onPress={action === "PAY" ? onComplete : onReview} style={[styles.primary, action === "REJECT" && styles.dangerPrimary, (saving || (action === "PAY" && !item.bankAccount)) && styles.disabled]}>{saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>Confirm {action.toLowerCase()}</Text>}</Pressable> : null}
     {error ? <ErrorBox message={error} /> : null}
   </View>;
@@ -118,10 +118,10 @@ const styles = StyleSheet.create({
   filterActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   filterText: { color: colors.muted, fontSize: 10, fontWeight: "700" },
   filterTextActive: { color: "#fff" },
-  count: { backgroundColor: "#f1f5f9", borderRadius: 10, color: colors.text, fontSize: 9, fontWeight: "700", minWidth: 18, overflow: "hidden", paddingHorizontal: 5, paddingVertical: 2, textAlign: "center" },
+  count: { backgroundColor: colors.accentSoft, borderRadius: 10, color: colors.text, fontSize: 9, fontWeight: "700", minWidth: 18, overflow: "hidden", paddingHorizontal: 5, paddingVertical: 2, textAlign: "center" },
   countActive: { backgroundColor: "rgba(255,255,255,.2)", color: "#fff" },
   list: { gap: spacing.md },
-  card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, overflow: "hidden", padding: spacing.md },
+  card: { backgroundColor: colors.surface, borderRadius: radius.lg, overflow: "hidden", padding: spacing.md, shadowColor: colors.navy, shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.06, shadowRadius: 14 },
   cardCompact: { padding: spacing.sm },
   cardActive: { borderColor: colors.primary, borderWidth: 2 },
   cardTop: { alignItems: "center", flexDirection: "row", gap: 10 },
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1, minWidth: 0 },
   vendor: { color: colors.text, fontSize: 13, fontWeight: "700" },
   muted: { color: colors.muted, flexShrink: 1, fontSize: 10, lineHeight: 16, marginTop: 3 },
-  status: { backgroundColor: "#dbeafe", borderRadius: 12, color: "#1d4ed8", fontSize: 9, fontWeight: "700", overflow: "hidden", paddingHorizontal: 8, paddingVertical: 5 },
+  status: { backgroundColor: colors.accentSoft, borderRadius: 12, color: colors.text, fontSize: 9, fontWeight: "700", overflow: "hidden", paddingHorizontal: 8, paddingVertical: 5 },
   statusReady: { backgroundColor: "#fff7ed", color: colors.warning },
   statusGood: { backgroundColor: "#dcfce7", color: "#166534" },
   statusBad: { backgroundColor: "#fee2e2", color: "#991b1b" },
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   cell: { flex: 1, minWidth: 135 },
   cellLabel: { color: colors.muted, fontSize: 9, fontWeight: "700", textTransform: "uppercase" },
   cellValue: { color: colors.text, fontSize: 12, fontWeight: "600", marginTop: 4 },
-  rejection: { backgroundColor: "#fff1f2", borderRadius: radius.sm, color: colors.danger, fontSize: 10, marginTop: 12, padding: 8 },
+  rejection: { backgroundColor: colors.primarySoft, borderRadius: radius.sm, color: colors.danger, fontSize: 10, marginTop: 12, padding: 8 },
   open: { alignItems: "center", borderTopColor: colors.border, borderTopWidth: 1, flexDirection: "row", justifyContent: "space-between", marginTop: 13, paddingTop: 10 },
   openText: { color: colors.primary, fontSize: 11, fontWeight: "700" },
   detail: { backgroundColor: colors.surface, borderColor: colors.primary, borderRadius: radius.lg, borderWidth: 1, padding: spacing.md },
@@ -181,8 +181,9 @@ const styles = StyleSheet.create({
   dangerPrimary: { backgroundColor: colors.danger },
   primaryText: { color: "#fff", fontSize: 12, fontWeight: "700" },
   disabled: { opacity: 0.55 },
-  error: { alignItems: "center", backgroundColor: "#fff1f2", borderRadius: radius.md, flexDirection: "row", gap: 8, marginTop: 10, padding: 11 },
+  error: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.md, flexDirection: "row", gap: 8, marginTop: 10, padding: 11 },
   errorText: { color: colors.danger, flex: 1, fontSize: 11, fontWeight: "700" },
   empty: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, padding: spacing.xl },
+  emptyIcon: { alignItems: "center", backgroundColor: colors.accentSoft, borderRadius: radius.pill, height: 54, justifyContent: "center", width: 54 },
   emptyTitle: { color: colors.text, fontSize: 15, fontWeight: "700", marginTop: 8 }
 });
