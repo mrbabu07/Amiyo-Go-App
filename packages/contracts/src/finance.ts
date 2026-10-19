@@ -22,6 +22,7 @@ export const vendorFinanceSchema = z.object({
 });
 
 export const createPayoutRequestSchema = z.object({ bankAccountId: uuidSchema, amountMinor: z.string().regex(/^[1-9]\d*$/) });
+export const payoutRequestResultSchema = z.object({ id: uuidSchema, status: payoutStatusSchema, version: versionSchema, amount: moneySchema });
 export const reviewPayoutSchema = z.object({ expectedVersion: versionSchema, action: z.enum(["APPROVE", "REJECT"]), reason: z.string().trim().max(500).nullable().optional() });
 export const completePayoutSchema = z.object({ provider: z.string().trim().min(2).max(80), providerRef: z.string().trim().min(2).max(200) });
 export const createSettlementProposalSchema = z.object({ periodStart: timestampSchema.optional(), periodEnd: timestampSchema.optional(), payoutRequestIds: z.array(uuidSchema).max(500).default([]) }).refine((value) => !value.periodStart || !value.periodEnd || value.periodStart < value.periodEnd, "periodStart must precede periodEnd");
@@ -36,6 +37,7 @@ export const adminCodOrderSchema = z.object({ orderId: uuidSchema, orderNumber: 
 export const adminCodWorkspaceSchema = z.object({ orders: z.array(adminCodOrderSchema), reconciliations: z.array(z.object({ id: uuidSchema, periodStart: timestampSchema, periodEnd: timestampSchema, expectedMinor: z.string().regex(/^\d+$/), receivedMinor: z.string().regex(/^\d+$/), varianceMinor: z.string().regex(/^-?\d+$/), currency: z.string().length(3), status: z.string(), itemCount: z.number().int().nonnegative(), createdAt: timestampSchema })), summary: z.object({ totalCod: z.number().int().nonnegative(), codValueMinor: z.string().regex(/^\d+$/), awaitingConfirmation: z.number().int().nonnegative(), confirmed: z.number().int().nonnegative(), waitingDelivery: z.number().int().nonnegative(), discrepancies: z.number().int().nonnegative(), remitted: z.number().int().nonnegative(), outstandingMinor: z.string().regex(/^-?\d+$/) }) });
 
 export type CreatePayoutRequest = z.infer<typeof createPayoutRequestSchema>;
+export type PayoutRequestResult = z.infer<typeof payoutRequestResultSchema>;
 export type ReviewPayout = z.infer<typeof reviewPayoutSchema>;
 export type CompletePayout = z.infer<typeof completePayoutSchema>;
 export type CreateSettlementProposal = z.infer<typeof createSettlementProposalSchema>;

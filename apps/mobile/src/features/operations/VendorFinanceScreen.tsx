@@ -12,6 +12,7 @@ import { getVendorWorkspace } from "../vendor/vendor.api";
 import { getVendorFinance, requestVendorPayout } from "./operations.api";
 import { VendorStatementExport } from "./VendorStatementExport";
 import { payoutAmountMinor, selectPayoutBank } from "./vendor-payout-input";
+import { createVendorPayoutAttempt } from "./vendor-payout-attempt";
 
 const money = (minor: string | number) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
 const label = (value: string) => value.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
@@ -37,6 +38,7 @@ function VendorFinanceWorkspace({ user }: { user: User }) {
   const compact = useWindowDimensions().width < 620;
   const pathname = usePathname();
   const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
+  const payoutAttempt = useRef(createVendorPayoutAttempt(Crypto.randomUUID)).current;
   const cache = useQueryClient();
   const query = useQuery({ queryKey: ["vendor-finance", user?.uid], queryFn: () => getVendorFinance(user!), enabled: Boolean(user) });
   const workspace = useQuery({ queryKey: ["vendor", "workspace", user?.uid], queryFn: () => getVendorWorkspace(user!), enabled: Boolean(user) });
@@ -47,9 +49,10 @@ function VendorFinanceWorkspace({ user }: { user: User }) {
     const ownerUid = user.uid;
     const amountMinor = payoutAmountMinor(amount, query.data?.balance.amountMinor ?? "0");
     if (activeUid.current !== ownerUid || !selectedBank || !amountMinor || workspace.isFetching || workspace.error) throw new Error("Check your payout amount and destination before submitting.");
-    await requestVendorPayout(user, { bankAccountId: selectedBank, amountMinor }, Crypto.randomUUID());
-    return ownerUid;
-  }, onSuccess: async (ownerUid) => { if (activeUid.current !== ownerUid) return; setAmount(""); await cache.invalidateQueries({ queryKey: ["vendor-finance", ownerUid] }); } });
+    const identity = `${ownerUid}:${selectedBank}:${amountMinor}`;
+    const result = await payoutAttempt.submit(identity, (idempotencyKey) => requestVendorPayout(user, { bankAccountId: selectedBank, amountMinor }, idempotencyKey));
+    return { identity, ownerUid, result };
+  }, onSuccess: ({ identity, ownerUid }) => { if (activeUid.current !== ownerUid) return; payoutAttempt.reset(identity); setAmount(""); void cache.invalidateQueries({ queryKey: ["vendor-finance", ownerUid] }); } });
 
   if (query.isLoading) return <Screen eyebrow="SELLER FINANCE" title="Loading finance" description="Calculating your current ledger balance."><View style={styles.empty}><ActivityIndicator color={colors.primary} /></View></Screen>;
   if (query.error || !query.data) return <Screen eyebrow="SELLER FINANCE" title="Finance unavailable" description={query.error instanceof Error ? query.error.message : "Sign in with a vendor account to continue."}><View style={styles.empty}><Ionicons color={colors.primary} name="alert-circle-outline" size={48} /></View></Screen>;
