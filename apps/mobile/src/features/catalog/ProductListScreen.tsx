@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { compareMinor } from "../../ui/money";
+import { compareMinor, formatMinor } from "../../ui/money";
 import type { HomeProduct } from "../home/home.data";
 import { ProductCard } from "../home/components/ProductCard";
 import { StoreHeader } from "../home/components/StoreHeader";
@@ -14,7 +14,7 @@ import { MarketplacePageHero } from "./MarketplacePageHero";
 
 type SortMode = "newest" | "price-low" | "price-high" | "rating";
 const sortOptions: Array<{ label: string; value: SortMode }> = [{ label: "Newest", value: "newest" }, { label: "Price: Low", value: "price-low" }, { label: "Price: High", value: "price-high" }, { label: "Top rated", value: "rating" }];
-const money = (value: number) => `৳${value.toLocaleString("en-BD")}`;
+const money = (value: string) => formatMinor(value);
 
 export function ProductListScreen({ category, query, title }: { category?: string; query?: string; title: string }) {
   const router = useRouter();
@@ -41,7 +41,7 @@ export function ProductListScreen({ category, query, title }: { category?: strin
 
 function ListProductCard({ compact, product }: { compact: boolean; product: HomeProduct }) {
   const router = useRouter();
-  return <Pressable onPress={() => router.push(`/product/${product.slug || product.id}` as never)} style={[styles.listCard, compact && responsive.listCardCompact]}><Image source={{ uri: product.image }} style={[styles.listImage, compact && responsive.listImageCompact]} /><View style={styles.listCopy}>{product.badge ? <Text style={styles.badge}>{product.badge}</Text> : null}<Text numberOfLines={2} style={[styles.listTitle, compact && responsive.listTitleCompact]}>{product.title}</Text><Text style={styles.shop}>{product.shop}</Text><View style={styles.listMeta}><Text style={styles.listPrice}>{money(product.price)}</Text><View style={styles.rating}><Ionicons color="#f59e0b" name="star" size={14} /><Text style={styles.ratingText}>{product.rating} · {product.reviewCount} reviews</Text></View></View></View><View style={[styles.listArrow, compact && responsive.listArrowCompact]}><Ionicons color={colors.surface} name="arrow-forward" size={18} /></View></Pressable>;
+  return <Pressable onPress={() => router.push(`/product/${product.slug || product.id}` as never)} style={[styles.listCard, compact && responsive.listCardCompact]}><Image source={{ uri: product.image }} style={[styles.listImage, compact && responsive.listImageCompact]} /><View style={styles.listCopy}>{product.badge ? <Text style={styles.badge}>{product.badge}</Text> : null}<Text numberOfLines={2} style={[styles.listTitle, compact && responsive.listTitleCompact]}>{product.title}</Text><Text style={styles.shop}>{product.shop}</Text><View style={styles.listMeta}><Text style={styles.listPrice}>{money(product.priceMinor)}</Text><View style={styles.rating}><Ionicons color="#f59e0b" name="star" size={14} /><Text style={styles.ratingText}>{product.rating} · {product.reviewCount} reviews</Text></View></View></View><View style={[styles.listArrow, compact && responsive.listArrowCompact]}><Ionicons color={colors.surface} name="arrow-forward" size={18} /></View></Pressable>;
 }
 
 const responsive = StyleSheet.create({ contentCompact: { padding: spacing.sm }, listArrowCompact: { display: "none" }, listCardCompact: { alignItems: "flex-start", minHeight: 118, padding: spacing.sm }, listImageCompact: { height: 96, width: 96 }, listTitleCompact: { fontSize: 15 }, panelCompact: { padding: spacing.md }, sortScrollerCompact: { width: "100%" }, subcategoryCompact: { flexGrow: 1, justifyContent: "space-between" }, subcategoryHeaderCompact: { alignItems: "flex-start", gap: spacing.sm }, toolbarCompact: { alignItems: "stretch", flexDirection: "column", marginBottom: spacing.md }, viewToggleCompact: { alignSelf: "flex-end", marginLeft: 0 } });

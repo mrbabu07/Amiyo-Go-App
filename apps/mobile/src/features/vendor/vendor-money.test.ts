@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { compareMinor, formatMinor, isPositiveMinor, multiplyMinor, percentageDiscount, subtractMinor, subtractMinorFloor, sumMinor } from "../../ui/money";
+import { compareMinor, formatMinor, isPositiveMinor, maxMinor, multiplyMinor, percentageDiscount, ratioPercent, subtractMinor, subtractMinorFloor, sumMinor } from "../../ui/money";
 
 test("seller money formatting preserves exact minor units and Bangladesh grouping", () => {
   assert.equal(formatMinor("0"), "৳0");
@@ -23,4 +23,7 @@ test("seller financial totals remain exact beyond JavaScript safe integers", () 
   assert.equal(isPositiveMinor("0"), false);
   assert.equal(percentageDiscount("7500", "10000"), 25);
   assert.equal(percentageDiscount("6666", "10000"), 33);
+  assert.equal(maxMinor(["9007199254740993", "9007199254740994"]), 9007199254740994n);
+  assert.equal(ratioPercent("4503599627370497", "9007199254740994"), 50);
+  assert.equal(ratioPercent("0", "9007199254740994", 3), 3);
 });

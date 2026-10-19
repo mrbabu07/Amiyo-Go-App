@@ -5,6 +5,7 @@ import { useRef } from "react";
 import type { GestureResponderEvent } from "react-native";
 import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, radius, spacing } from "../../../ui/tokens";
+import { formatMinor } from "../../../ui/money";
 import { firebaseAuth } from "../../auth/firebase";
 import { useCurrentUser } from "../../auth/use-current-user";
 import { ensureGuestUser } from "../../auth/guest-auth";
@@ -15,7 +16,7 @@ import { addWishlistItem, getWishlist, removeWishlistItem } from "../../engageme
 import { getDiscoverySessionId, safelyRecordDiscoveryEvent } from "../../catalog/discovery.api";
 import type { HomeProduct } from "../home.data";
 
-const money = (value: number) => `৳${value.toLocaleString("en-BD")}`;
+const money = (value: string) => formatMinor(value);
 const fallbackImage = "https://images.unsplash.com/photo-1560343090-f0409e92791a?w=700&h=700&fit=crop";
 
 function lowDataImage(url: string) { if (!url.includes("images.unsplash.com")) return url; const separator = url.includes("?") ? "&" : "?"; return `${url}${separator}w=360&q=55&auto=format`; }
@@ -25,7 +26,7 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
   const queryClient = useQueryClient();
   const user = useCurrentUser();
   const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
-  const discount = productDiscount(product.price, product.originalPrice);
+  const discount = productDiscount(product.priceMinor, product.originalPriceMinor);
   const wishlist = useQuery({ queryKey: ["wishlist", user?.uid ?? null], queryFn: () => getWishlist(user!), enabled: Boolean(user), staleTime: 30_000 });
   const saved = Boolean(wishlist.data?.items.some((item) => item.productId === product.id));
   const addToCart = useMutation({
@@ -76,7 +77,7 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
           {product.badge ? <Text numberOfLines={1} style={styles.badge}>{product.badge}</Text> : null}
           <Text numberOfLines={2} style={styles.title}>{product.title}</Text>
           <View style={styles.shopRow}><Ionicons color={colors.success} name="checkmark-circle" size={12} /><Text numberOfLines={1} style={styles.shop}>{product.shop}</Text></View>
-          <View style={styles.priceRow}><Text style={styles.price}>{money(product.price)}</Text>{product.originalPrice ? <Text style={styles.original}>{money(product.originalPrice)}</Text> : null}</View>
+          <View style={styles.priceRow}><Text style={styles.price}>{money(product.priceMinor)}</Text>{product.originalPriceMinor ? <Text style={styles.original}>{money(product.originalPriceMinor)}</Text> : null}</View>
           <View style={styles.metaRow}><Ionicons color="#f59e0b" name="star" size={13} /><Text style={styles.rating}>{product.rating}</Text><Text style={styles.sold}>{product.reviewCount} reviews</Text></View>
         </View>
       </Pressable>

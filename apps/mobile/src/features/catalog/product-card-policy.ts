@@ -1,6 +1,8 @@
-export function productDiscount(price: number, originalPrice?: number) {
-  if (!Number.isFinite(price) || price < 0 || !originalPrice || !Number.isFinite(originalPrice) || originalPrice <= price) return 0;
-  return Math.round((1 - price / originalPrice) * 100);
+import { percentageDiscount } from "../../ui/money";
+
+export function productDiscount(priceMinor: string, originalPriceMinor?: string) {
+  if (!/^\d+$/.test(priceMinor) || !originalPriceMinor || !/^\d+$/.test(originalPriceMinor)) return 0;
+  return percentageDiscount(priceMinor, originalPriceMinor);
 }
 
 export function quickCartVariant(variants: { id: string; active: boolean; availableQuantity: number }[]) {

@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { productDiscount, quickCartVariant } from "./product-card-policy";
 
-test("discount badges require a genuine finite price reduction", () => {
-  assert.equal(productDiscount(80, 100), 20);
-  for (const original of [undefined, 0, 80, 70, Infinity, NaN]) assert.equal(productDiscount(80, original), 0);
-  assert.equal(productDiscount(-1, 100), 0);
-  assert.equal(productDiscount(NaN, 100), 0);
+test("discount badges require a genuine exact price reduction", () => {
+  assert.equal(productDiscount("8000", "10000"), 20);
+  for (const original of [undefined, "0", "8000", "7000", "Infinity", "NaN"]) assert.equal(productDiscount("8000", original), 0);
+  assert.equal(productDiscount("-1", "10000"), 0);
+  assert.equal(productDiscount("NaN", "10000"), 0);
 });
 
 test("quick cart selects only a single active purchasable variant", () => {

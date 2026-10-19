@@ -10,7 +10,7 @@ export function toHomeProduct(product: ProductSummaryDto): HomeProduct {
     title: product.name,
     shop: product.shopName,
     image: product.thumbnailUrl || fallbackProductImage,
-    price: Number(product.minimumPrice.amountMinor) / 100,
+    priceMinor: product.minimumPrice.amountMinor,
     rating: product.rating,
     reviewCount: product.reviewCount,
     ...(product.status === "APPROVED" ? { badge: "Verified" } : {})

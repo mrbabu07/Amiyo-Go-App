@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
+import { formatMinor, maxMinor, ratioPercent } from "../../ui/money";
 import { useCurrentUser } from "../auth/use-current-user";
 import { getAdminQueues } from "../operations/operations.api";
 import { getAdminAnalytics, getAdminPlatform, getAdminWorkspace } from "./admin.api";
@@ -14,7 +15,7 @@ import { adminSavedViews } from "./admin-saved-views.storage";
 import { buildCustomAdminRange } from "./admin-report-range";
 
 const ranges = ["7d", "30d", "90d"] as const;
-const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
+const money = (minor: string) => formatMinor(minor);
 const titleCase = (value: string) => value.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 export function AdminDashboardScreen() {
@@ -82,7 +83,7 @@ export function AdminDashboardScreen() {
   const openReturns = queues.data?.returns.filter((item) => !["CLOSED", "REJECTED"].includes(item.status.toUpperCase())) ?? [];
   const openPayouts = queues.data?.payouts.filter((item) => !["PAID", "REJECTED", "CANCELLED"].includes(item.status.toUpperCase())) ?? [];
   const pendingActions = pendingVendors + pendingKyc + openTrust + pendingPayments + openReturns.length + openPayouts.length;
-  const maxRevenue = Math.max(1, ...(analytics.data?.trend.map((item) => Number(item.revenue.amountMinor)) ?? []));
+  const maxRevenue = maxMinor(analytics.data?.trend.map((item) => item.revenue.amountMinor) ?? []);
 
   return <Screen hideHeading title="Admin Dashboard">
     <View style={styles.hero}>
@@ -132,7 +133,7 @@ export function AdminDashboardScreen() {
 
     <View style={styles.groupHeading}><View><Text style={styles.sectionTitle}>Reports And Activity</Text><Text style={styles.groupDescription}>Revenue, queues, vendor ranking and platform events.</Text></View><Pressable onPress={() => open("/admin/analytics")}><Text style={styles.groupLink}>Open analytics →</Text></Pressable></View>
     <View style={styles.dashboardGrid}>
-      <View style={styles.panelWide}><PanelHeader href="/admin/analytics" icon="bar-chart-outline" onOpen={router.push} title="Marketplace performance" /><View style={styles.chart}>{analytics.data?.trend.map((item) => <View key={item.date} style={styles.chartColumn}><View style={styles.barTrack}><View style={[styles.bar, { height: `${Math.max(5, Number(item.revenue.amountMinor) / maxRevenue * 100)}%` }]} /></View><Text style={styles.chartLabel}>{new Date(`${item.date}T00:00:00`).toLocaleDateString("en-BD", { day: "numeric", month: "short" })}</Text></View>)}</View>{!analytics.data?.trend.length ? <Text style={styles.emptyText}>No completed order activity in this period.</Text> : null}</View>
+      <View style={styles.panelWide}><PanelHeader href="/admin/analytics" icon="bar-chart-outline" onOpen={router.push} title="Marketplace performance" /><View style={styles.chart}>{analytics.data?.trend.map((item) => <View key={item.date} style={styles.chartColumn}><View style={styles.barTrack}><View style={[styles.bar, { height: `${ratioPercent(item.revenue.amountMinor, maxRevenue, 5)}%` }]} /></View><Text style={styles.chartLabel}>{new Date(`${item.date}T00:00:00`).toLocaleDateString("en-BD", { day: "numeric", month: "short" })}</Text></View>)}</View>{!analytics.data?.trend.length ? <Text style={styles.emptyText}>No completed order activity in this period.</Text> : null}</View>
       <View style={styles.panel}><PanelHeader href="/admin/trust" icon="warning-outline" onOpen={router.push} title="Pending queues" /><QueueRow color={colors.accent} label="Vendor applications" value={pendingVendors} /><QueueRow color={colors.primary} label="KYC reviews" value={pendingKyc} /><QueueRow color={colors.danger} label="Trust cases" value={openTrust} /><QueueRow color={colors.success} label="Payment reviews" value={pendingPayments} /></View>
     </View>
 

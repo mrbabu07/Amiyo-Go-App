@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Alert, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type NativeSyntheticEvent, type TextInputKeyPressEventData } from "react-native";
 import { colors, radius, spacing } from "../../../ui/tokens";
+import { formatMinor } from "../../../ui/money";
 import { useAuthStore } from "../../auth/auth.store";
 import { useCurrentUser } from "../../auth/use-current-user";
 import { getCategoryNavigation, searchProducts } from "../../catalog/catalog.api";
@@ -40,7 +41,7 @@ export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; view
     if (debouncedQuery.length < 2) return [];
     const needle = debouncedQuery.toLocaleLowerCase();
     const matchedCategories = (categories.data || []).filter((category) => `${category.name} ${category.slug}`.toLocaleLowerCase().includes(needle)).slice(0, 2).map((category) => ({ href: `/category/${category.slug}`, icon: "grid-outline", id: `category:${category.id}`, image: null, meta: "Category", title: category.name, type: "category" as const }));
-    const products = (suggestionQuery.data?.data || []).slice(0, 5).map((product) => ({ href: `/product/${product.slug}`, id: `product:${product.id}`, image: product.thumbnailUrl, meta: `${product.shopName} · ৳${(Number(product.minimumPrice.amountMinor) / 100).toLocaleString("en-BD")}`, title: product.name, type: "product" as const }));
+    const products = (suggestionQuery.data?.data || []).slice(0, 5).map((product) => ({ href: `/product/${product.slug}`, id: `product:${product.id}`, image: product.thumbnailUrl, meta: `${product.shopName} · ${formatMinor(product.minimumPrice.amountMinor)}`, title: product.name, type: "product" as const }));
     const seenShops = new Set<string>();
     const shops = (suggestionQuery.data?.data || []).flatMap((product) => { if (seenShops.has(product.shopId)) return []; seenShops.add(product.shopId); return [{ href: `/shop/${product.shopSlug}`, icon: "storefront-outline", id: `shop:${product.shopId}`, image: null, meta: "Verified shop", title: product.shopName, type: "shop" as const }]; }).slice(0, 2);
     return [...matchedCategories, ...products, ...shops].slice(0, 8);

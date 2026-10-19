@@ -72,8 +72,8 @@ export function CustomerHomeScreen() {
   const recommendedProducts = (recommendationQuery.data?.data || []).map(toHomeProduct);
   const activeFlashSale = growthQuery.data?.flashSales[0];
   const heroBanner = growthQuery.data?.banners.find((banner) => banner.placement === "home_hero");
-  const flashPriceByProduct = new Map(activeFlashSale?.products.map((product) => [product.productId, Number(product.price.amountMinor) / 100]) || []);
-  const flashProducts = liveProducts.filter((product) => flashPriceByProduct.has(product.id)).map((product) => ({ ...product, originalPrice: product.price, price: flashPriceByProduct.get(product.id) ?? product.price }));
+  const flashPriceByProduct = new Map(activeFlashSale?.products.map((product) => [product.productId, product.price.amountMinor]) || []);
+  const flashProducts = liveProducts.filter((product) => flashPriceByProduct.has(product.id)).map((product) => ({ ...product, originalPriceMinor: product.priceMinor, priceMinor: flashPriceByProduct.get(product.id) ?? product.priceMinor }));
 
   return (
     <SafeAreaView style={styles.safe}>

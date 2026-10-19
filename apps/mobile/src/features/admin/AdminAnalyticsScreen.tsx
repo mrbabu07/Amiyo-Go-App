@@ -5,13 +5,14 @@ import { ActivityIndicator, Platform, Pressable, Share, StyleSheet, Text, TextIn
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
+import { formatMinor, maxMinor, ratioPercent } from "../../ui/money";
 import { useCurrentUser } from "../auth/use-current-user";
 import { getAdminAnalytics } from "./admin.api";
 import { buildAdminAnalyticsCsv } from "./analytics-report";
 import { buildCustomAdminRange } from "./admin-report-range";
 
 const ranges = ["7d", "30d", "90d"] as const;
-const money = (value: string) => `৳${(Number(value) / 100).toLocaleString("en-BD")}`;
+const money = (value: string) => formatMinor(value);
 
 export function AdminAnalyticsScreen() {
   const user = useCurrentUser();
@@ -23,7 +24,7 @@ export function AdminAnalyticsScreen() {
   const [customError, setCustomError] = useState("");
   const [exportError, setExportError] = useState("");
   const analytics = useQuery({ queryKey: ["admin", "analytics", userId, selection.range, selection.startsAt?.toISOString(), selection.endsAt?.toISOString()], queryFn: () => getAdminAnalytics(user!, selection), enabled: Boolean(user), retry: false });
-  const maximumRevenue = Math.max(1, ...(analytics.data?.trend.map((item) => Number(item.revenue.amountMinor)) ?? []));
+  const maximumRevenue = maxMinor(analytics.data?.trend.map((item) => item.revenue.amountMinor) ?? []);
   const choosePreset = (value: typeof ranges[number]) => { setRange(value); setSelection({ range: value }); setCustomError(""); };
   const applyCustomRange = () => { try { setSelection(buildCustomAdminRange(customStart, customEnd)); setCustomError(""); } catch (error) { setCustomError(error instanceof Error ? error.message : "Choose a valid start and end date."); } };
   const exportCsv = async () => {
@@ -58,7 +59,7 @@ export function AdminAnalyticsScreen() {
         <Metric label="New accounts" value={analytics.data.summary.newCustomers.toLocaleString()} />
       </View>
       <ModuleCard title="Daily GMV trend" meta={`${new Date(analytics.data.range.startsAt).toLocaleDateString()} – ${new Date(analytics.data.range.endsAt).toLocaleDateString()}`}>
-        {analytics.data.trend.map((item) => <View key={item.date} style={styles.trendRow}><Text style={styles.date}>{new Date(`${item.date}T00:00:00`).toLocaleDateString("en-BD", { day: "2-digit", month: "short" })}</Text><View style={styles.track}><View style={[styles.bar, { width: `${Math.max(3, Number(item.revenue.amountMinor) / maximumRevenue * 100)}%` }]} /></View><Text style={styles.trendValue}>{money(item.revenue.amountMinor)}</Text></View>)}
+        {analytics.data.trend.map((item) => <View key={item.date} style={styles.trendRow}><Text style={styles.date}>{new Date(`${item.date}T00:00:00`).toLocaleDateString("en-BD", { day: "2-digit", month: "short" })}</Text><View style={styles.track}><View style={[styles.bar, { width: `${ratioPercent(item.revenue.amountMinor, maximumRevenue, 3)}%` }]} /></View><Text style={styles.trendValue}>{money(item.revenue.amountMinor)}</Text></View>)}
         {analytics.data.trend.length === 0 ? <Text style={styles.muted}>No completed marketplace activity in this period.</Text> : null}
       </ModuleCard>
       <Text style={styles.heading}>Customer segments</Text>

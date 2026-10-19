@@ -12,8 +12,8 @@ export type HomeProduct = {
   title: string;
   shop: string;
   image: string;
-  price: number;
-  originalPrice?: number;
+  priceMinor: string;
+  originalPriceMinor?: string;
   rating: number;
   reviewCount: number;
   badge?: string;

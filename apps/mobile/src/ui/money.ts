@@ -50,3 +50,17 @@ export function percentageDiscount(priceMinor: string | bigint, compareAtMinor: 
   if (price < 0n || compareAt <= price) return 0;
   return Number(((compareAt - price) * 100n + compareAt / 2n) / compareAt);
 }
+
+export function maxMinor(values: Iterable<string | bigint>, floor = 1n) {
+  let maximum = floor;
+  for (const value of values) if (BigInt(value) > maximum) maximum = BigInt(value);
+  return maximum;
+}
+
+export function ratioPercent(value: string | bigint, maximum: string | bigint, minimum = 0) {
+  const numerator = BigInt(value);
+  const denominator = BigInt(maximum);
+  if (numerator <= 0n || denominator <= 0n) return minimum;
+  const bounded = numerator > denominator ? denominator : numerator;
+  return Math.max(minimum, Number(bounded * 10_000n / denominator) / 100);
+}
