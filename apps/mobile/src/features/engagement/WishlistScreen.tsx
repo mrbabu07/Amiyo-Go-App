@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import { ActivityIndicator, Image, Pressable, Share, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
+import { formatMinor } from "../../ui/money";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
 import { getProduct } from "../catalog/catalog.api";
@@ -16,7 +17,7 @@ import { WishlistToCart } from "./WishlistToCart";
 import { ProductAlertControls } from "./ProductAlertControls";
 
 type WishlistItem = Awaited<ReturnType<typeof getWishlist>>["items"][number];
-const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
+const money = (minor: string) => formatMinor(minor);
 
 export function WishlistScreen() {
   const router = useRouter();

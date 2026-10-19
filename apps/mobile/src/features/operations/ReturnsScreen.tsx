@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
+import { formatMinor } from "../../ui/money";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
 import { getReturns } from "./operations.api";
@@ -13,7 +14,7 @@ import { ReturnStatusTracker } from "./ReturnStatusTracker";
 import { ReturnEvidencePanel } from "./ReturnEvidencePanel";
 import { CustomerReturnWizard } from "./CustomerReturnWizard";
 
-const money = (minor: string, currency: string) => `${currency} ${(Number(minor) / 100).toLocaleString("en-BD", { minimumFractionDigits: 2 })}`;
+const money = (minor: string, currency: string) => formatMinor(minor, currency, 2);
 const label = (value: string) => value.replaceAll("_", " ").toLowerCase().replace(/^./, (letter) => letter.toUpperCase());
 
 export function ReturnsScreen() {

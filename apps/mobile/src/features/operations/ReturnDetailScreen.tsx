@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
+import { formatMinor } from "../../ui/money";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { pickAndUploadDocument } from "../media/media.api";
 import { useCurrentUser } from "../auth/use-current-user";
@@ -14,7 +15,7 @@ import { confirmVendorReturnReceipt, getOwnReturn, respondToVendorReturn } from 
 
 const refundPreference = (method?: string | null) => method === "ORIGINAL_PAYMENT" ? "Original payment method" : method === "MANUAL" ? "Manual arrangement after approval" : "Not recorded";
 const actions = [{ id: "APPROVE", label: "Approve return", copy: "Accept the request and allow the refund workflow.", icon: "checkmark-circle-outline" }, { id: "DISPUTE", label: "Dispute with evidence", copy: "Send proof to operations for review before a decision.", icon: "warning-outline" }, { id: "REJECT", label: "Reject request", copy: "Reject an invalid request with a clear reason.", icon: "close-circle-outline" }] as const;
-const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
+const money = (minor: string) => formatMinor(minor);
 
 export function ReturnDetailScreen({ id, vendor = false }: { id: string; vendor?: boolean }) {
   const user = useCurrentUser();

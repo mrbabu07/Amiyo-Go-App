@@ -3,8 +3,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../../ui/tokens";
+import { formatMinor } from "../../../ui/money";
 
-const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
+const money = (minor: string) => formatMinor(minor);
 
 export function CouponInput({ appliedQuote, busy, onApply, onRemove }: { appliedQuote?: CheckoutQuote | null; busy?: boolean; onApply(code: string): Promise<void>; onRemove(): void }) {
   const compact = useWindowDimensions().width < 480;

@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import type { z } from "zod";
 import { Screen } from "../../ui/Screen";
+import { formatMinor } from "../../ui/money";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { firebaseAuth } from "../auth/firebase";
 import { ensureGuestUser } from "../auth/guest-auth";
@@ -16,7 +17,7 @@ import { addCartItem } from "../commerce/commerce.api";
 import { addWishlistItem, getSharedWishlist, getWishlist, removeWishlistItem } from "./engagement.api";
 
 type SharedItem = z.infer<typeof sharedWishlistSchema>["items"][number];
-const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
+const money = (minor: string) => formatMinor(minor);
 
 export function SharedWishlistScreen({ token }: { token: string }) {
   const router = useRouter();

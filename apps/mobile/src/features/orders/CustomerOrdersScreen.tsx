@@ -5,6 +5,7 @@ import { Link, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
+import { formatMinor } from "../../ui/money";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
 import { getCustomerOrders } from "./orders.api";
@@ -13,7 +14,7 @@ import { CustomerOrderExpansion } from "./CustomerOrderExpansion";
 import { orderFilters as filters, orderStatusGroup, orderProgressStep, type OrderFilter as Filter } from "./order-list-presentation";
 
 import { OrderItemImage } from "./OrderItemImage";
-const money = (minor: string) => `Tk ${(Number(minor) / 100).toLocaleString("en-BD")}`;
+const money = (minor: string) => formatMinor(minor);
 const statusLabel = (status: string) => status.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 function matchesFilter(order: CustomerOrderSummary, filter: Filter) {

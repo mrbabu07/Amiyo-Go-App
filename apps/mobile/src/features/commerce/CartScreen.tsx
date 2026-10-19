@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
+import { formatMinor } from "../../ui/money";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { ensureGuestUser } from "../auth/guest-auth";
 import { useCurrentUser } from "../auth/use-current-user";
@@ -12,7 +13,7 @@ import { fallbackProductImage } from "../catalog/catalog.view-model";
 import { getCart, getCheckoutQuote, removeCartItem, updateCartItem } from "./commerce.api";
 import { CouponInput } from "./components/CouponInput";
 
-const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
+const money = (minor: string) => formatMinor(minor);
 
 export function CartScreen() {
   const router = useRouter();

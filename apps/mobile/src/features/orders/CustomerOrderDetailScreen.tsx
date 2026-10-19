@@ -7,6 +7,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDim
 import type { CreateReturn, OrderDto, ParentOrderStatus, VendorOrderStatus } from "@amiyo/contracts";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
+import { formatMinor } from "../../ui/money";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
 import { OrderDeliverySummary } from "./OrderDeliverySummary";
@@ -21,7 +22,7 @@ import { mayDiscardOrderRejection, type OrderCommand, type PendingOrderAction } 
 
 const orderSteps: ParentOrderStatus[] = ["PENDING_PAYMENT", "CONFIRMED", "PROCESSING", "READY_TO_SHIP", "SHIPPED", "DELIVERED"];
 const vendorSteps: VendorOrderStatus[] = ["PLACED", "ACCEPTED", "PROCESSING", "READY_TO_SHIP", "PICKED_UP", "IN_TRANSIT", "DELIVERED"];
-const money = (minor: string) => `Tk ${(Number(minor) / 100).toLocaleString("en-BD")}`;
+const money = (minor: string) => formatMinor(minor);
 const statusLabel = (value: string) => value.replaceAll("_", " ");
 function formatRemaining(ms: number) { const totalSeconds = Math.max(0, Math.ceil(ms / 1000)); const minutes = Math.floor(totalSeconds / 60); const seconds = totalSeconds % 60; return `${minutes}:${String(seconds).padStart(2, "0")}`; }
 function progressIndex<T extends string>(steps: T[], status: string) { const index = steps.indexOf(status as T); return index < 0 ? 0 : index; }

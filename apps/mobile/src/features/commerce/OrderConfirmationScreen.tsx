@@ -3,9 +3,10 @@ import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
+import { formatMinor } from "../../ui/money";
 import { colors, radius, spacing } from "../../ui/tokens";
 
-const money = (minor: string) => `৳${(Number(minor || 0) / 100).toLocaleString("en-BD")}`;
+const money = (minor: string) => formatMinor(minor || "0");
 
 type ConfirmationProps = { actionUrl?: string; instructions?: string; invoice?: string; orderId?: string; orderNumber?: string; payment?: string; totalMinor?: string };
 

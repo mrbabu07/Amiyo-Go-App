@@ -3,12 +3,13 @@ import { useQueries } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { ActivityIndicator, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
+import { formatMinor } from "../../ui/money";
 import { StoreHeader } from "../home/components/StoreHeader";
 import { getProduct } from "./catalog.api";
 import { fallbackProductImage } from "./catalog.view-model";
 import { useComparisonStore } from "./comparison.store";
 
-const money = (minor?: string) => minor ? `৳${(Number(minor) / 100).toLocaleString("en-BD")}` : "Unavailable";
+const money = (minor?: string) => minor ? formatMinor(minor) : "Unavailable";
 const attributeText = (value: unknown) => Array.isArray(value) ? value.join(", ") : typeof value === "object" && value !== null ? JSON.stringify(value) : String(value ?? "—");
 
 export function ComparisonScreen() {

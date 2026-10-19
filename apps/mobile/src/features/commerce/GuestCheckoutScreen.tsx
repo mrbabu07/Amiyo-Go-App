@@ -6,6 +6,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
+import { formatMinor } from "../../ui/money";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { createMyAddress } from "../auth/auth.api";
 import { useCurrentUser } from "../auth/use-current-user";
@@ -17,7 +18,7 @@ import { CouponInput } from "./components/CouponInput";
 import { getPublicPlatformSettings } from "../platform/platform.api";
 import { checkoutPolicyError, paymentMethodEnabled } from "./checkout-policy";
 
-const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
+const money = (minor: string) => formatMinor(minor);
 const paymentMethods: Array<{ label: string; value: PaymentMethod }> = [{ label: "Cash on delivery", value: "COD" }, { label: "bKash", value: "BKASH" }, { label: "Nagad", value: "NAGAD" }, { label: "Card / mobile banking", value: "SSLCOMMERZ" }];
 
 export function GuestCheckoutScreen() {
