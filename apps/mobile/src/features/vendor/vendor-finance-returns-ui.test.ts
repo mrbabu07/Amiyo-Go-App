@@ -7,6 +7,7 @@ const root = resolve(import.meta.dirname, "../../..");
 const finance = readFileSync(resolve(root, "src/features/operations/VendorFinanceScreen.tsx"), "utf8");
 const operationsApi = readFileSync(resolve(root, "src/features/operations/operations.api.ts"), "utf8");
 const payoutAttempt = readFileSync(resolve(root, "src/features/operations/vendor-payout-attempt.ts"), "utf8");
+const payoutRecovery = readFileSync(resolve(root, "src/features/operations/pending-vendor-payout.ts"), "utf8");
 const returns = readFileSync(resolve(root, "src/features/vendor/VendorReturnsScreen.tsx"), "utf8");
 const returnDetail = readFileSync(resolve(root, "src/features/operations/ReturnDetailScreen.tsx"), "utf8");
 
@@ -17,6 +18,9 @@ test("seller finance wires a real idempotent payout workflow", () => {
   assert.match(finance, /payoutAttempt\.submit\(identity/);
   assert.match(payoutAttempt, /attempts\.get\(identity\)/);
   assert.match(payoutAttempt, /if \(attempt\.pending\) return attempt\.pending/);
+  assert.match(operationsApi, /pendingVendorPayoutStore\.prepare/);
+  assert.match(operationsApi, /pendingVendorPayoutStore\.complete/);
+  assert.match(payoutRecovery, /earlier payout needs recovery/);
   assert.match(finance, /bankAccountId: selectedBank/);
   assert.match(finance, /Payout amount in BDT/);
   assert.match(finance, /Submit payout request/);

@@ -4,6 +4,8 @@ import { withReadDeadline } from "../../network/request-deadline";
 import { approveOrderSettlementSchema, orderSettlementResultSchema, vendorChargeReportSchema, vendorCommissionInvoiceSchema, vendorStatementSchema } from "@amiyo/contracts";
 import * as Crypto from "expo-crypto";
 import { returnEvidenceFileSchema, returnEvidenceAccessSchema } from "@amiyo/contracts";
+import { pendingVendorPayoutStore } from "./vendor-payout-recovery.storage";
+import { mayDiscardRejectedPayout } from "./pending-vendor-payout";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
 export class OperationsRequestError extends Error {
@@ -18,7 +20,17 @@ export async function createCustomerReturn(user: User, input: CreateReturn, idem
 export async function respondToVendorReturn(user: User, id: string, input: SellerReturnResponse) { return returnSchema.parse(await request(user, `/api/v2/vendor/returns/${id}/response`, { method: "POST", headers: { "Idempotency-Key": Crypto.randomUUID() }, body: JSON.stringify(input) })); }
 export async function confirmVendorReturnReceipt(user: User, id: string, input: SellerReturnReceipt) { return returnSchema.parse(await request(user, `/api/v2/vendor/returns/${id}/receipt`, { method: "POST", headers: { "Idempotency-Key": Crypto.randomUUID() }, body: JSON.stringify(input) })); }
 export async function getVendorFinance(user: User) { return vendorFinanceSchema.parse(await request(user, "/api/v2/vendor/finance")); }
-export async function requestVendorPayout(user: User, input: CreatePayoutRequest, idempotencyKey: string) { return payoutRequestResultSchema.parse(await request(user, "/api/v2/vendor/payouts", { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: JSON.stringify(input) })); }
+export async function requestVendorPayout(user: User, input: CreatePayoutRequest, idempotencyKey: string) {
+  const pending = await pendingVendorPayoutStore.prepare(user.uid, input, idempotencyKey);
+  try {
+    const result = payoutRequestResultSchema.parse(await request(user, "/api/v2/vendor/payouts", { method: "POST", headers: { "Idempotency-Key": pending.key }, body: JSON.stringify(pending.input) }));
+    await pendingVendorPayoutStore.complete(user.uid, pending.key);
+    return result;
+  } catch (error) {
+    if (error instanceof OperationsRequestError && mayDiscardRejectedPayout(pending.fresh, error.status, error.code)) await pendingVendorPayoutStore.complete(user.uid, pending.key);
+    throw error;
+  }
+}
 export async function getVendorCommissionInvoice(user: User, month: string, vendorId: string) { return vendorCommissionInvoiceSchema.parse(await request(user, `/api/v2/vendor/finance/commission-invoice?month=${encodeURIComponent(month)}&vendorId=${encodeURIComponent(vendorId)}`)); }
 export async function approveOrderSettlement(user: User, id: string, input: unknown) { return orderSettlementResultSchema.parse(await request(user, `/api/v2/admin/vendor-orders/${encodeURIComponent(id)}/settlement`, { method: "POST", body: JSON.stringify(approveOrderSettlementSchema.parse(input)) })); }
 export async function getVendorStatement(user: User, month: string, vendorId: string) { return vendorStatementSchema.parse(await request(user, `/api/v2/vendor/finance/statement?month=${encodeURIComponent(month)}&vendorId=${encodeURIComponent(vendorId)}`)); }
