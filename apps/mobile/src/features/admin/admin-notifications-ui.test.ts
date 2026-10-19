@@ -17,6 +17,12 @@ test("admin notifications use the audited broadcast workspace", () => {
   assert.match(screen, /randomUUID\(\)/);
   assert.match(screen, /Email and SMS are not offered here/);
   assert.match(screen, /metricCompact/);
+  assert.match(screen, /Order update/);
+  assert.match(screen, /Payout update/);
+  assert.match(screen, /Seller approval/);
+  assert.match(screen, /Campaign/);
+  assert.match(screen, /Account changed\. Reopen notification management/);
+  assert.match(screen, /createAdminNotificationBroadcast\(currentActor\(\)/);
   assert.match(api, /getAdminNotificationWorkspace/);
   assert.match(api, /createAdminNotificationBroadcast/);
   assert.doesNotMatch(screen, /#fff\b/i);
