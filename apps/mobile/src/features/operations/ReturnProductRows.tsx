@@ -2,6 +2,7 @@ import type { ReturnDto } from "@amiyo/contracts";
 import { StyleSheet, Text, View } from "react-native";
 import { OrderItemImage } from "../orders/OrderItemImage";
 import { colors, spacing } from "../../ui/tokens";
+import { formatMinor } from "../../ui/money";
 
 export function ReturnProductRows({ items }: { items: ReturnDto["items"] }) {
   return <View style={styles.list}>{items.map((item) => {
@@ -14,7 +15,7 @@ export function ReturnProductRows({ items }: { items: ReturnDto["items"] }) {
         {item.sku ? <Text style={styles.muted}>SKU: {item.sku}</Text> : null}
         {attributes ? <Text style={styles.muted}>{attributes}</Text> : null}
         <Text style={styles.muted}>Return quantity: {item.quantity}</Text>
-        <Text style={styles.amount}>Requested: {item.requestedAmount.currency} {(Number(item.requestedAmount.amountMinor) / 100).toLocaleString("en-BD", { minimumFractionDigits: 2 })}</Text>
+        <Text style={styles.amount}>Requested: {formatMinor(item.requestedAmount.amountMinor, item.requestedAmount.currency, 2)}</Text>
       </View>
     </View>;
   })}</View>;

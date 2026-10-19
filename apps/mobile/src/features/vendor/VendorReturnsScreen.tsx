@@ -5,12 +5,13 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
+import { formatMinor, sumMinor } from "../../ui/money";
 import { ReturnProductRows } from "../operations/ReturnProductRows";
 import { useCurrentUser } from "../auth/use-current-user";
 import { getVendorReturns } from "./vendor.api";
 
 const filters = ["ALL", "REQUESTED", "REVIEWING", "APPROVED", "RECEIVED", "REFUND_PENDING", "CLOSED", "REJECTED"] as const;
-const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
+const money = (minor: string | bigint) => formatMinor(minor);
 
 export function VendorReturnsScreen() {
   const compact = useWindowDimensions().width < 620;
@@ -22,8 +23,8 @@ export function VendorReturnsScreen() {
   const visible = useMemo(() => (query.data ?? []).filter((item) => filter === "ALL" || item.status === filter).filter((item) => `${item.id} ${item.orderId} ${item.reasonCode} ${item.reasonDetail || ""} ${item.items.map((row) => row.productName).join(" ")}`.toLowerCase().includes(search.trim().toLowerCase())), [filter, query.data, search]);
   const open = query.data?.filter((item) => !["REFUNDED", "REJECTED", "CLOSED"].includes(item.status)).length ?? 0;
   const needsResponse = query.data?.filter((item) => ["REQUESTED", "REVIEWING"].includes(item.status)).length ?? 0;
-  const requested = query.data?.reduce((sum, item) => sum + Number(item.requestedAmount.amountMinor), 0) ?? 0;
-  const approved = query.data?.reduce((sum, item) => sum + Number(item.approvedAmount?.amountMinor ?? 0), 0) ?? 0;
+  const requested = sumMinor((query.data ?? []).map((item) => item.requestedAmount.amountMinor));
+  const approved = sumMinor((query.data ?? []).map((item) => item.approvedAmount?.amountMinor ?? "0"));
 
   if (!user) return <Screen title="Customer returns" description="Sign in with your seller account to view returns." />;
   return <Screen eyebrow="AFTER SALES" title="Customer returns" description="Review claims, respond on time and track inspection, refund and payout impact.">

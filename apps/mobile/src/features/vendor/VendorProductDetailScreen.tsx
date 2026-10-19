@@ -7,6 +7,7 @@ import { ActivityIndicator, Alert, Image, Pressable, StyleSheet, Text, useWindow
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
+import { formatMinor } from "../../ui/money";
 import { useCurrentUser } from "../auth/use-current-user";
 import { getCategories, getVendorProducts, submitVendorProduct, archiveVendorProduct } from "../catalog/catalog.api";
 import { fallbackProductImage } from "../catalog/catalog.view-model";
@@ -51,7 +52,7 @@ export function VendorProductDetailScreen({ id }: { id: string }) {
     { label: "Description", pass: Boolean(product.description?.trim()) },
     { label: "Brand", pass: Boolean(product.brand?.trim()) },
     { label: "Product media", pass: product.media.length > 0 },
-    { label: "Sellable variant", pass: product.variants.some((item) => item.active && Number(item.price.amountMinor) > 0) },
+    { label: "Sellable variant", pass: product.variants.some((item) => item.active && BigInt(item.price.amountMinor) > 0n) },
     { label: "Available stock", pass: stock > 0 }
   ];
   const confirmArchive = () => Alert.alert("Remove product?", "The listing will be archived and hidden from customers. Order history remains safe.", [
@@ -78,7 +79,7 @@ export function VendorProductDetailScreen({ id }: { id: string }) {
         <View style={styles.statusRow}><Text style={styles.status}>{product.status}</Text><Text style={styles.version}>VERSION {product.version}</Text></View>
         <Text style={[styles.name, compact && styles.nameCompact]}>{product.name}</Text>
         <Text style={styles.meta}>{product.brand || "No brand"} · {category}</Text>
-        <Text style={styles.price}>৳{(Number(product.minimumPrice.amountMinor) / 100).toLocaleString("en-BD")}</Text>
+        <Text style={styles.price}>{formatMinor(product.minimumPrice.amountMinor)}</Text>
         <Text style={styles.description}>{product.description || "No product description has been added."}</Text>
         <View style={styles.summaryStats}><Stat label="Variants" value={String(product.variants.length)} /><Stat label="Available" value={String(stock)} /><Stat label="Reviews" value={String(product.reviewCount)} /><Stat label="Rating" value={product.rating.toFixed(1)} /></View>
       </View>
@@ -92,7 +93,7 @@ export function VendorProductDetailScreen({ id }: { id: string }) {
     </View>
 
     <ModuleCard title="Variants" meta="Pricing and current sellable stock">
-      {product.variants.map((variant) => <View key={variant.id} style={[styles.variant, compact && styles.variantCompact]}><View style={styles.variantIcon}><Ionicons color={colors.primary} name="pricetag-outline" size={20} /></View><View style={styles.flex}><Text style={styles.variantName}>{variant.title}</Text><Text style={styles.variantMeta}>{variant.sku} · Version {variant.version}</Text></View><View style={compact && styles.variantPriceBlockCompact}><Text style={styles.variantPrice}>৳{(Number(variant.price.amountMinor) / 100).toLocaleString("en-BD")}</Text><Text style={styles.variantStock}>{variant.availableQuantity} available</Text></View></View>)}
+      {product.variants.map((variant) => <View key={variant.id} style={[styles.variant, compact && styles.variantCompact]}><View style={styles.variantIcon}><Ionicons color={colors.primary} name="pricetag-outline" size={20} /></View><View style={styles.flex}><Text style={styles.variantName}>{variant.title}</Text><Text style={styles.variantMeta}>{variant.sku} · Version {variant.version}</Text></View><View style={compact && styles.variantPriceBlockCompact}><Text style={styles.variantPrice}>{formatMinor(variant.price.amountMinor)}</Text><Text style={styles.variantStock}>{variant.availableQuantity} available</Text></View></View>)}
       <Pressable onPress={() => router.push("/vendor/inventory")} style={styles.inventory}><Text style={styles.inventoryText}>Open inventory management →</Text></Pressable>
     </ModuleCard>
     {submit.error || archive.error ? <Text accessibilityRole="alert" style={styles.error}>{(submit.error || archive.error)?.message}</Text> : null}
