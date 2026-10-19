@@ -28,8 +28,22 @@ export function VendorOperationsScreen() {
   const openReturns = returns.data?.filter((item) => !["refunded", "rejected", "closed"].includes(item.status.toLowerCase())).length ?? 0;
   const activeStaff = staff.data?.filter((item) => item.status === "active").length ?? 0;
   const activeVouchers = vouchers.data?.filter((item) => item.active && new Date(item.endsAt) > new Date()).length ?? 0;
+  const grossSales = Number(report.data?.grossSalesMinor ?? 0) / 100;
+  const urgentWork = openReturns + Number(report.data?.lowStockCount ?? 0);
 
   return <Screen eyebrow="SELLER CENTER" title="Business operations" description="A focused command center for sales, returns, campaigns, and team access.">
+    <View style={[styles.hero, compact && styles.heroCompact]}>
+      <View style={styles.heroCopy}>
+        <Text style={styles.heroEyebrow}>OPERATIONS PULSE</Text>
+        <Text adjustsFontSizeToFit numberOfLines={1} style={styles.heroValue}>৳{grossSales.toLocaleString("en-BD")}</Text>
+        <Text style={styles.heroText}>Delivered gross sales across the current 30-day reporting window.</Text>
+      </View>
+      <View style={[styles.priorityCard, compact && styles.priorityCardCompact]}>
+        <View style={styles.priorityIcon}><Ionicons color={urgentWork ? colors.warning : colors.success} name={urgentWork ? "flash-outline" : "checkmark-circle-outline"} size={24} /></View>
+        <View style={styles.flex}><Text style={styles.priorityValue}>{urgentWork}</Text><Text style={styles.priorityLabel}>{urgentWork ? "priority tasks need attention" : "operations are under control"}</Text></View>
+        <Ionicons color={colors.surface} name="arrow-forward" size={18} />
+      </View>
+    </View>
     {loading ? <ActivityIndicator color={colors.primary} /> : null}
     <View style={styles.metrics}>
       <Metric compact={compact} label="Orders (30 days)" value={report.data?.orderCount ?? 0} />
@@ -49,8 +63,8 @@ export function VendorOperationsScreen() {
         <Ionicons color={colors.muted} name="chevron-forward" size={19} />
       </Pressable>)}
     </View>
-    {report.data ? <ModuleCard title={`৳${(Number(report.data.grossSalesMinor) / 100).toLocaleString("en-BD")}`} meta="Delivered gross sales in the selected 30-day overview">
-      <Text style={styles.copy}>{report.data.deliveredCount} delivered · {report.data.lowStockCount} low-stock variants</Text>
+    {report.data ? <ModuleCard title="Fulfillment health" meta="Live delivery and inventory signals for the selected period">
+      <Text style={styles.copy}>{report.data.deliveredCount} delivered · {report.data.lowStockCount} low-stock variants · {report.data.fulfilmentRate}% fulfillment rate</Text>
     </ModuleCard> : null}
     {error ? <Text accessibilityRole="alert" style={styles.error}>{error.message}</Text> : null}
   </Screen>;
@@ -65,6 +79,17 @@ function Metric({ compact, label, value }: { compact: boolean; label: string; va
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  hero: { alignItems: "center", backgroundColor: colors.navy, borderRadius: radius.xl, flexDirection: "row", gap: spacing.lg, justifyContent: "space-between", padding: spacing.xl },
+  heroCompact: { alignItems: "stretch", flexDirection: "column", padding: spacing.lg },
+  heroCopy: { flex: 1, minWidth: 0 },
+  heroEyebrow: { color: "#E8D7A4", fontSize: 10, fontWeight: "700", letterSpacing: 1 },
+  heroValue: { color: colors.surface, fontSize: 36, fontWeight: "700", marginTop: spacing.sm },
+  heroText: { color: "#C9C2B6", fontSize: 11, lineHeight: 18, marginTop: 4 },
+  priorityCard: { alignItems: "center", backgroundColor: "rgba(255,255,255,.1)", borderColor: "rgba(255,255,255,.14)", borderRadius: radius.lg, borderWidth: 1, flexDirection: "row", gap: spacing.sm, minWidth: 270, padding: spacing.md },
+  priorityCardCompact: { minWidth: 0, width: "100%" },
+  priorityIcon: { alignItems: "center", backgroundColor: "rgba(255,255,255,.1)", borderRadius: radius.md, height: 46, justifyContent: "center", width: 46 },
+  priorityValue: { color: colors.surface, fontSize: 22, fontWeight: "700" },
+  priorityLabel: { color: "#C9C2B6", fontSize: 10, marginTop: 2 },
   metrics: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   metric: { backgroundColor: colors.primarySoft, borderRadius: radius.lg, flex: 1, minWidth: 130, padding: spacing.md },
   metricCompact: { minWidth: "45%" },
