@@ -13,3 +13,11 @@ test("admin promotional offers stack into mobile campaign cards", () => {
   assert.match(source, /adjustsFontSizeToFit numberOfLines=\{1\}/);
   assert.doesNotMatch(source, /Â|â€”|à§³/);
 });
+
+test("admin offers presents campaign coverage and actionable empty states", () => {
+  assert.match(source, /CAMPAIGN COMMAND CENTER/);
+  assert.match(source, /targetedProducts/);
+  assert.match(source, /compact && styles\.heroCompact/);
+  assert.match(source, /Create your first promotion/);
+  assert.match(source, /router\.push\("\/admin\/offers\/add"\)/);
+});
