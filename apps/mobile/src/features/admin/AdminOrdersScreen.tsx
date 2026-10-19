@@ -4,12 +4,13 @@ import { useMemo, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
+import { formatMinor, sumMinor } from "../../ui/money";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
 import { getAdminCommerce, getAdminOrderFraudQueue, getAdminOrderSlaBreaches, type AdminCommerceDto } from "./admin.api";
 
 type Order = AdminCommerceDto["orders"][number];
-const taka = (minor: string | number) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
+const taka = (minor: string | bigint) => formatMinor(minor);
 const fulfillment = ["CONFIRMED", "PROCESSING", "PACKED", "READY_TO_SHIP", "SHIPPED"];
 export function AdminOrdersScreen() {
   const user = useCurrentUser(); const userId = user?.uid ?? null; const router = useRouter(); const params = useLocalSearchParams<{ search?: string }>();
@@ -19,7 +20,7 @@ export function AdminOrdersScreen() {
   const [search, setSearch] = useState(params.search ?? ""); const [status, setStatus] = useState("ALL"); const [payment, setPayment] = useState("ALL"); const [vendor, setVendor] = useState("ALL"); const [from, setFrom] = useState(""); const [to, setTo] = useState("");
   const all = query.data?.orders ?? []; const statuses = ["ALL", ...Array.from(new Set(all.map((item) => item.status)))]; const payments = ["ALL", ...Array.from(new Set(all.map((item) => item.paymentMethod || "UNSET")))]; const vendors = Array.from(new Map(all.flatMap((item) => item.vendorOrders.map((row) => [row.vendorId, row.vendor] as const))).entries());
   const rows = useMemo(() => all.filter((item) => status === "ALL" || item.status === status).filter((item) => payment === "ALL" || (item.paymentMethod || "UNSET") === payment).filter((item) => vendor === "ALL" || item.vendorOrders.some((row) => row.vendorId === vendor)).filter((item) => !from || new Date(item.createdAt) >= new Date(`${from}T00:00:00`)).filter((item) => !to || new Date(item.createdAt) <= new Date(`${to}T23:59:59`)).filter((item) => `${item.orderNumber} ${item.customer} ${item.vendorOrders.map((row) => `${row.vendor} ${row.shop}`).join(" ")}`.toLowerCase().includes(search.trim().toLowerCase())), [all, from, payment, search, status, to, vendor]);
-  const revenue = rows.filter((item) => item.status !== "CANCELLED").reduce((sum, item) => sum + Number(item.totalMinor), 0); const pending = rows.filter((item) => ["PENDING_PAYMENT", "CONFIRMED"].includes(item.status)).length; const processing = rows.filter((item) => fulfillment.includes(item.status)).length; const issues = rows.filter((item) => ["CANCELLED", "RETURN_REQUESTED", "RETURNED", "REFUNDED"].includes(item.status)).length;
+  const revenue = sumMinor(rows.filter((item) => item.status !== "CANCELLED").map((item) => item.totalMinor)); const pending = rows.filter((item) => ["PENDING_PAYMENT", "CONFIRMED"].includes(item.status)).length; const processing = rows.filter((item) => fulfillment.includes(item.status)).length; const issues = rows.filter((item) => ["CANCELLED", "RETURN_REQUESTED", "RETURNED", "REFUNDED"].includes(item.status)).length;
   const exportCsv = () => { if (Platform.OS !== "web") return; const data = [["Order", "Created", "Customer", "Vendors", "Items", "Payment method", "Payment status", "Total minor", "Currency", "Status"], ...rows.map((item) => [item.orderNumber, item.createdAt, item.customer, item.vendorOrders.map((row) => row.vendor).join("; "), item.itemCount, item.paymentMethod || "", item.paymentStatus || "", item.totalMinor, item.currency, item.status])].map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n"); const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([data], { type: "text/csv" })); link.download = `amiyo-orders-${new Date().toISOString().slice(0, 10)}.csv`; link.click(); URL.revokeObjectURL(link.href); };
   const reset = () => { setSearch(""); setStatus("ALL"); setPayment("ALL"); setVendor("ALL"); setFrom(""); setTo(""); };
   return <Screen eyebrow="ORDER OPERATIONS" title="Marketplace orders" description="Global operations across sellers, payment, fulfillment, delivery and customer service.">
