@@ -10,4 +10,9 @@ test("customer 360 uses responsive premium override surfaces", () => {
   assert.match(source, /metric: \{ borderWidth: 0, borderRadius: radius\.xl, boxShadow:/);
   assert.match(source, /detail: \{ borderWidth: 0, borderRadius: radius\.xl, boxShadow:/);
   assert.match(source, /statusBad: \{ backgroundColor: colors\.primarySoft, color: colors\.danger \}/);
+  assert.match(source, /CUSTOMER TRUST & RETENTION/);
+  assert.match(source, /cache\.invalidateQueries\(\{ queryKey: \["admin", "customer", userId, selectedId\] \}\)/);
+  assert.match(source, /pointValue <= BigInt\(data\.loyalty\.pointsBalance\)/);
+  assert.match(source, /Deduction cannot exceed the current loyalty balance/);
+  assert.match(source, /No matching customers/);
 });
