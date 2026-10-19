@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { ActivityIndicator, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
+import { formatMinor } from "../../ui/money";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
@@ -28,14 +29,13 @@ export function VendorOperationsScreen() {
   const openReturns = returns.data?.filter((item) => !["refunded", "rejected", "closed"].includes(item.status.toLowerCase())).length ?? 0;
   const activeStaff = staff.data?.filter((item) => item.status === "active").length ?? 0;
   const activeVouchers = vouchers.data?.filter((item) => item.active && new Date(item.endsAt) > new Date()).length ?? 0;
-  const grossSales = Number(report.data?.grossSalesMinor ?? 0) / 100;
   const urgentWork = openReturns + Number(report.data?.lowStockCount ?? 0);
 
   return <Screen eyebrow="SELLER CENTER" title="Business operations" description="A focused command center for sales, returns, campaigns, and team access.">
     <View style={[styles.hero, compact && styles.heroCompact]}>
       <View style={styles.heroCopy}>
         <Text style={styles.heroEyebrow}>OPERATIONS PULSE</Text>
-        <Text adjustsFontSizeToFit numberOfLines={1} style={styles.heroValue}>৳{grossSales.toLocaleString("en-BD")}</Text>
+        <Text adjustsFontSizeToFit numberOfLines={1} style={styles.heroValue}>{formatMinor(report.data?.grossSalesMinor ?? "0")}</Text>
         <Text style={styles.heroText}>Delivered gross sales across the current 30-day reporting window.</Text>
       </View>
       <View style={[styles.priorityCard, compact && styles.priorityCardCompact]}>

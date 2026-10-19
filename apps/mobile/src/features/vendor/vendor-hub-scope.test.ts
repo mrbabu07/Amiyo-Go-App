@@ -17,6 +17,8 @@ test("vendor operations presents a premium live command hierarchy", () => {
   assert.match(source, /OPERATIONS PULSE/);
   assert.match(source, /priority tasks need attention/);
   assert.match(source, /grossSalesMinor/);
+  assert.match(source, /formatMinor\(report\.data\?\.grossSalesMinor \?\? "0"\)/);
+  assert.doesNotMatch(source, /Number\(report\.data\?\.grossSalesMinor/);
   assert.match(source, /fulfilmentRate/);
   assert.match(source, /compact && styles\.heroCompact/);
 });

@@ -15,3 +15,12 @@ test("seller reports and bulk catalog data are account scoped", () => {
   assert.match(bulk, /\[user\?\.uid\]/);
   assert.doesNotMatch(bulk, /firebaseAuth\?\.currentUser/);
 });
+
+test("seller reports use exact money and open operational order detail", () => {
+  assert.match(reports, /formatMinor\(report\.data\.grossSalesMinor\)/);
+  assert.match(reports, /order\.orderNumber/);
+  assert.match(reports, /order\.shopName/);
+  assert.match(reports, /order\.itemCount/);
+  assert.match(reports, /`\/vendor\/orders\/\$\{order\.id\}`/);
+  assert.doesNotMatch(reports, /Number\(minor\)/);
+});
