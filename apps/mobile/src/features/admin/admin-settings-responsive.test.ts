@@ -12,3 +12,10 @@ test("admin platform settings stack controls and save actions on mobile", () => 
   assert.match(source, /compact && styles\.saveCompact/);
   assert.match(source, /saveCopy: \{ flex: 1, minWidth: 0 \}/);
 });
+
+test("admin settings exposes live platform control hierarchy", () => {
+  assert.match(source, /MARKETPLACE CONFIGURATION/);
+  assert.match(source, /healthyServices/);
+  assert.match(source, /enabledCapabilities/);
+  assert.match(source, /compact && premiumStyles\.heroCompact/);
+});
