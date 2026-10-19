@@ -10,4 +10,9 @@ test("admin banner controls remain usable on mobile", () => {
   assert.match(source, /flexGrow: 1, justifyContent: "center", minHeight: 44/);
   assert.match(source, /adjustsFontSizeToFit numberOfLines=\{1\}/);
   assert.match(source, /aspectRatio: 3/);
+  assert.match(source, /STOREFRONT MERCHANDISING/);
+  assert.match(source, /validSchedule/);
+  assert.match(source, /validOrder/);
+  assert.match(source, /validTarget/);
+  assert.match(source, /disabled=\{save\.isPending \|\| !canSave\}/);
 });
