@@ -4,11 +4,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
+import { formatMinor, minorToMajorInput, parseMajorToMinor } from "../../ui/money";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
 import { forceAdminOrderRefund } from "../operations/operations.api";
 
-const money = (minor: bigint) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
+const money = (minor: bigint) => formatMinor(minor);
 
 export function AdminOrderRefund({ order }: { order: AdminOrderDetail }) {
   const user = useCurrentUser();
@@ -17,13 +18,10 @@ export function AdminOrderRefund({ order }: { order: AdminOrderDetail }) {
   const paid = BigInt(order.payment?.amount.amountMinor ?? "0");
   const refunded = BigInt(order.payment?.refunded.amountMinor ?? "0");
   const remaining = paid - refunded;
-  const [amount, setAmount] = useState(remaining > 0n ? (Number(remaining) / 100).toFixed(2) : "");
+  const [amount, setAmount] = useState(remaining > 0n ? minorToMajorInput(remaining) : "");
   const [reason, setReason] = useState("");
   const [providerRefundId, setProviderRefundId] = useState(`ADMIN-${order.orderNumber}-${Date.now()}`);
-  const amountMinor = useMemo(() => {
-    const parsed = Number(amount);
-    return Number.isFinite(parsed) && parsed > 0 ? BigInt(Math.round(parsed * 100)) : 0n;
-  }, [amount]);
+  const amountMinor = useMemo(() => parseMajorToMinor(amount) ?? 0n, [amount]);
   const valid = Boolean(user && order.payment && amountMinor > 0n && amountMinor <= remaining && reason.trim().length >= 5 && providerRefundId.trim().length >= 2);
   const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen refund controls."); return user; };
   const refund = useMutation({

@@ -23,6 +23,23 @@ export function formatMinor(amountMinor: string | bigint, currency = "BDT", mini
   return currency === "BDT" ? `৳${value}` : `${currency} ${value}`;
 }
 
+export function minorToMajorInput(amountMinor: string | bigint) {
+  const raw = String(amountMinor);
+  if (!/^-?\d+$/.test(raw)) return "";
+  const negative = raw.startsWith("-");
+  const digits = (negative ? raw.slice(1) : raw).replace(/^0+(?=\d)/, "").padStart(3, "0");
+  return `${negative ? "-" : ""}${digits.slice(0, -2)}.${digits.slice(-2)}`;
+}
+
+export function parseMajorToMinor(value: string) {
+  const normalized = value.trim();
+  const match = /^(\d+)(?:\.(\d{0,2}))?$/.exec(normalized);
+  if (!match) return null;
+  const whole = match[1]!.replace(/^0+(?=\d)/, "");
+  const fraction = (match[2] ?? "").padEnd(2, "0");
+  return BigInt(whole) * 100n + BigInt(fraction || "0");
+}
+
 export function sumMinor(values: Iterable<string | bigint>) {
   let total = 0n;
   for (const value of values) total += BigInt(value);

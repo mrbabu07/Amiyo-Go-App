@@ -7,6 +7,7 @@ import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, useWi
 import type { AdminOrderDetail } from "@amiyo/contracts";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
+import { formatMinor } from "../../ui/money";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
 import { cancelCustomerOrder } from "../operations/operations.api";
@@ -20,7 +21,7 @@ import { AdminOrderReturnWindow } from "./AdminOrderReturnWindow";
 const parentSteps = ["PENDING_PAYMENT", "CONFIRMED", "PROCESSING", "READY_TO_SHIP", "SHIPPED", "DELIVERED"];
 const vendorSteps = ["PLACED", "ACCEPTED", "PROCESSING", "READY_TO_SHIP", "PICKED_UP", "IN_TRANSIT", "DELIVERED"];
 const nextStatuses: Record<string, string[]> = { PLACED: ["ACCEPTED", "REJECTED", "CANCELLED"], ACCEPTED: ["PROCESSING", "CANCELLED"], PROCESSING: ["READY_TO_SHIP", "CANCELLED"], READY_TO_SHIP: ["PICKED_UP"], PICKED_UP: ["IN_TRANSIT"], IN_TRANSIT: ["DELIVERED"] };
-const money = (minor: string) => `Tk ${(Number(minor) / 100).toLocaleString("en-BD")}`;
+const money = (minor: string) => formatMinor(minor);
 const statusLabel = (value: string) => value.replaceAll("_", " ");
 const statusIndex = (steps: string[], status: string) => Math.max(0, steps.indexOf(status));
 
