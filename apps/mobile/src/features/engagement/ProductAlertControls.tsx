@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
   copy: { color: colors.muted, lineHeight: 20, fontSize: 12 },
   input: { minHeight: 44, minWidth: 0, color: colors.text, backgroundColor: colors.background, borderRadius: radius.md, paddingHorizontal: spacing.sm },
   primary: { minHeight: 44, justifyContent: "center", alignItems: "center", padding: spacing.sm, borderRadius: radius.md, backgroundColor: colors.primary },
-  primaryText: { color: "#fff", fontWeight: "600" },
+  primaryText: { color: colors.background, fontWeight: "600" },
   error: { color: colors.danger },
   disabled: { opacity: 0.5 }
 });

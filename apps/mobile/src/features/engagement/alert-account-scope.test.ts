@@ -12,6 +12,11 @@ test("alert list links to the product and identifies which subscription is remov
   assert.match(source, /alertMinorToPrice\(minor\)/);
   assert.match(source, /compact = useWindowDimensions\(\).width < 600/);
   assert.match(source, /compact && styles.removeCompact/);
+  assert.match(source, /priceCount/);
+  assert.match(source, /stockCount/);
+  assert.match(source, /compact && alertStyles\.summaryCompact/);
+  assert.match(source, /remove\.variables\?\.id === item\.id/);
+  assert.match(source, /PRICE ALERT/);
 });
 
 for (const path of ["./AlertsScreen.tsx", "../catalog/ProductDetailScreen.tsx"]) {
