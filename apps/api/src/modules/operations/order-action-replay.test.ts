@@ -72,7 +72,7 @@ test("lost partial-return response replays without duplicating quantities, audit
   let now = Date.now();
   context.mock.method(Date, "now", () => now);
   const { service, effects } = replayClient("return", now);
-  const input = { vendorOrderId: "package", reasonCode: "DAMAGED", refundMethod: "ORIGINAL_PAYMENT" as const, items: [{ orderItemId: "item", quantity: 1 }] };
+  const input = { vendorOrderId: "package", reasonCode: "DAMAGED" as const, refundMethod: "ORIGINAL_PAYMENT" as const, items: [{ orderItemId: "item", quantity: 1 }] };
   await assert.rejects(() => service.createReturn(customer, input, key), /response lost after commit/);
   const committed = [...effects];
   assert.deepEqual(committed, ["return", "order", "outbox", "audit", "idempotency"]);

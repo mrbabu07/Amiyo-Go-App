@@ -71,8 +71,11 @@ test("vendor registration requires consent and unique categories", () => {
 
 test("return contracts reject duplicate items and invalid quantities", () => {
   const item = { orderItemId: crypto.randomUUID(), quantity: 1 };
-  assert.equal(createReturnSchema.safeParse({ vendorOrderId: crypto.randomUUID(), reasonCode: "damaged", items: [item] }).success, true);
+  const normalized = createReturnSchema.safeParse({ vendorOrderId: crypto.randomUUID(), reasonCode: "damaged", items: [item] });
+  assert.equal(normalized.success, true);
+  if (normalized.success) assert.equal(normalized.data.reasonCode, "DAMAGED");
   assert.equal(createReturnSchema.safeParse({ vendorOrderId: crypto.randomUUID(), reasonCode: "damaged", items: [item, item] }).success, false);
+  assert.equal(createReturnSchema.safeParse({ vendorOrderId: crypto.randomUUID(), reasonCode: "changed_mind", items: [item] }).success, false);
 });
 
 test("commerce contracts enforce quantities and supported payments", () => {

@@ -3,6 +3,7 @@ import { moneySchema, timestampSchema, uuidSchema, versionSchema } from "./commo
 
 export const returnEvidenceFileSchema = z.object({ id: uuidSchema, name: z.string(), mimeType: z.string() });
 export const returnEvidenceAccessSchema = z.object({ url: z.string().url().startsWith("https://"), expiresAt: timestampSchema });
+export const returnReasonSchema = z.string().trim().toUpperCase().pipe(z.enum(["DAMAGED", "DEFECTIVE", "WRONG_ITEM", "OTHER"]));
 
 export const returnStatusSchema = z.enum([
   "REQUESTED", "REVIEWING", "APPROVED", "REJECTED", "PICKUP_SCHEDULED", "RECEIVED", "INSPECTED", "REFUND_PENDING", "REFUNDED", "CLOSED"
@@ -43,7 +44,7 @@ export const returnSchema = z.object({
 
 export const createReturnSchema = z.object({
   vendorOrderId: uuidSchema,
-  reasonCode: z.string().trim().min(2).max(80),
+  reasonCode: returnReasonSchema,
   reasonDetail: z.string().trim().max(1000).nullable().optional(),
   refundMethod: z.enum(["ORIGINAL_PAYMENT", "MANUAL"]).default("ORIGINAL_PAYMENT"),
   evidenceStorageKeys: z.array(z.string().trim().min(3).max(500)).max(5).refine((keys) => new Set(keys).size === keys.length, "Evidence files must be unique").optional(),
@@ -75,6 +76,7 @@ export const sellerReturnReceiptSchema = z.object({
 export const cancelOrderSchema = z.object({ reason: z.string().trim().min(3).max(500), expectedVersion: versionSchema });
 
 export type ReturnDto = z.infer<typeof returnSchema>;
+export type ReturnReason = z.infer<typeof returnReasonSchema>;
 export type CreateReturn = z.infer<typeof createReturnSchema>;
 export type ReturnTransition = z.infer<typeof returnTransitionSchema>;
 export type SellerReturnResponse = z.infer<typeof sellerReturnResponseSchema>;

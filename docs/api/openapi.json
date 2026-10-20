@@ -12443,9 +12443,7 @@
                     "format": "uuid"
                   },
                   "reasonCode": {
-                    "type": "string",
-                    "minLength": 2,
-                    "maxLength": 80
+                    "type": "string"
                   },
                   "reasonDetail": {
                     "type": [

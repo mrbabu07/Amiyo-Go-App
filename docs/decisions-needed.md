@@ -20,7 +20,7 @@ These decisions block production implementation. Do not guess them in code.
 | Payments | PARTIAL | COD and validated SSLCommerz hosted sandbox checkout are implemented. Approve live credentials and final bKash, Nagad, card, and manual-proof scope. |
 | Refunds | IMPLEMENTED | Provider-reference rules, full/partial bounds, role approvals, and ledger timing are defined in `docs/business-rules-approval.md`; live provider evidence remains required before production. |
 | Cancellation | PARTIAL | Customer window is admin-controlled (5-1440 minutes), versioned and enforced against placement time; allowed fulfillment states are enforced. Final actor-specific reason taxonomy still requires approval. |
-| Returns | TBD | Window, eligibility, evidence, pickup, refund order. |
+| Returns | PARTIAL | Admin-controlled window/evidence rules, delivered-order eligibility, bounded reason taxonomy, item quantities, reverse logistics and refund sequencing are implemented. Final category eligibility and restocking-fee reason policy require approval. |
 | Delivery | TBD | Amiyo Delivery, external courier, self pickup, manual fallback. |
 | READY_TO_SHIP trigger | Implemented | Vendor transition emits one transactional outbox event with `delivery-create:<vendorOrderId>`; external credentials still require staging approval. |
 | Vendor pickup address | PARTIAL | Registration and shop settings now persist and validate dispatch-ready contact name, Bangladesh mobile, address, division, district and upazila; confirm whether union/area must be mandatory before production dispatch. |

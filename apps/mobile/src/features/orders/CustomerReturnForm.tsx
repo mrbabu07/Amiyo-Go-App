@@ -1,4 +1,4 @@
-import { createReturnSchema, type CreateReturn, type OrderDto } from "@amiyo/contracts";
+import { createReturnSchema, type CreateReturn, type OrderDto, type ReturnReason } from "@amiyo/contracts";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
@@ -8,11 +8,11 @@ import { useCurrentUser } from "../auth/use-current-user";
 import { pickAndUploadDocument } from "../media/media.api";
 import { returnEligibilityMessage } from "./return-eligibility";
 
-const reasons = [{ code: "DAMAGED", label: "Damaged item" }, { code: "DEFECTIVE", label: "Not working" }, { code: "WRONG_ITEM", label: "Wrong item" }, { code: "OTHER", label: "Other issue" }];
+const reasons: Array<{ code: ReturnReason; label: string }> = [{ code: "DAMAGED", label: "Damaged item" }, { code: "DEFECTIVE", label: "Not working" }, { code: "WRONG_ITEM", label: "Wrong item" }, { code: "OTHER", label: "Other issue" }];
 
 export function CustomerReturnForm({ vendorOrder, busy, onSubmit }: { vendorOrder: OrderDto["vendorOrders"][number]; busy: boolean; onSubmit(input: CreateReturn): Promise<unknown> }) {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const [reason, setReason] = useState("");
+  const [reason, setReason] = useState<ReturnReason | "">("");
   const [detail, setDetail] = useState("");
   const [method, setMethod] = useState<CreateReturn["refundMethod"]>("ORIGINAL_PAYMENT");
   const [review, setReview] = useState<CreateReturn | null>(null);
