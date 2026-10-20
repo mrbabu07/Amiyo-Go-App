@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { parseApiEnv } from "./env.js";
+import { parseApiEnv, parseWorkerEnv } from "./env.js";
 
 test("API env accepts blank optional values from env example files", () => {
   const env = parseApiEnv({
@@ -37,14 +37,14 @@ test("API env forbids SSLCommerz sandbox credentials in production", () => {
 });
 
 test("staging and production require TLS Redis while local development remains compatible", () => {
-  const shared = { API_PUBLIC_URL: "https://api.example.com", CORS_ORIGINS: "https://app.example.com", DATABASE_URL: "postgresql://database.example.com/amiyogo", FIREBASE_PROJECT_ID: "amiyo-app", FIREBASE_USE_APPLICATION_DEFAULT: "true", FIREBASE_STORAGE_BUCKET: "bucket.example", PARCEL_QR_SIGNING_SECRET: "a".repeat(32) };
+  const shared = { API_PUBLIC_URL: "https://api.example.com", CORS_ORIGINS: "https://app.example.com", DATABASE_URL: "postgresql://database.example.com/amiyogo?sslmode=require", FIREBASE_PROJECT_ID: "amiyo-app", FIREBASE_USE_APPLICATION_DEFAULT: "true", FIREBASE_STORAGE_BUCKET: "bucket.example", PARCEL_QR_SIGNING_SECRET: "a".repeat(32) };
   assert.throws(() => parseApiEnv({ ...shared, NODE_ENV: "staging", REDIS_URL: "redis://redis.example.com:6379" }), /TLS Redis/);
   assert.equal(parseApiEnv({ ...shared, NODE_ENV: "production", REDIS_URL: "rediss://redis.example.com:6379", SSLCOMMERZ_SANDBOX: "false" }).REDIS_URL, "rediss://redis.example.com:6379");
   assert.equal(parseApiEnv({ API_PUBLIC_URL: "http://localhost:4000", DATABASE_URL: "postgresql://localhost:5432/amiyogo", REDIS_URL: "redis://localhost:6379" }).REDIS_URL, "redis://localhost:6379");
 });
 
 test("deployed public endpoints require HTTPS while localhost remains available", () => {
-  const shared = { NODE_ENV: "staging", CORS_ORIGINS: "https://app.example.com", DATABASE_URL: "postgresql://database.example.com/amiyogo", REDIS_URL: "rediss://redis.example.com:6379", FIREBASE_PROJECT_ID: "amiyo-app", FIREBASE_USE_APPLICATION_DEFAULT: "true", FIREBASE_STORAGE_BUCKET: "bucket.example", PARCEL_QR_SIGNING_SECRET: "a".repeat(32) };
+  const shared = { NODE_ENV: "staging", CORS_ORIGINS: "https://app.example.com", DATABASE_URL: "postgresql://database.example.com/amiyogo?sslmode=require", REDIS_URL: "rediss://redis.example.com:6379", FIREBASE_PROJECT_ID: "amiyo-app", FIREBASE_USE_APPLICATION_DEFAULT: "true", FIREBASE_STORAGE_BUCKET: "bucket.example", PARCEL_QR_SIGNING_SECRET: "a".repeat(32) };
   assert.throws(() => parseApiEnv({ ...shared, API_PUBLIC_URL: "http://api.example.com" }), /API_PUBLIC_URL must use HTTPS/);
   assert.throws(() => parseApiEnv({ ...shared, API_PUBLIC_URL: "https://api.example.com", APP_PUBLIC_URL: "http://app.example.com" }), /APP_PUBLIC_URL must use HTTPS/);
   assert.throws(() => parseApiEnv({ ...shared, API_PUBLIC_URL: "https://api.example.com", OBJECT_STORAGE_PUBLIC_URL: "http://cdn.example.com" }), /OBJECT_STORAGE_PUBLIC_URL must use HTTPS/);
@@ -52,11 +52,25 @@ test("deployed public endpoints require HTTPS while localhost remains available"
 });
 
 test("deployed CORS requires an explicit HTTPS allowlist", () => {
-  const shared = { NODE_ENV: "production", API_PUBLIC_URL: "https://api.example.com", DATABASE_URL: "postgresql://database.example.com/amiyogo", REDIS_URL: "rediss://redis.example.com:6379", FIREBASE_PROJECT_ID: "amiyo-app", FIREBASE_USE_APPLICATION_DEFAULT: "true", FIREBASE_STORAGE_BUCKET: "bucket.example", PARCEL_QR_SIGNING_SECRET: "a".repeat(32), SSLCOMMERZ_SANDBOX: "false" };
+  const shared = { NODE_ENV: "production", API_PUBLIC_URL: "https://api.example.com", DATABASE_URL: "postgresql://database.example.com/amiyogo?sslmode=require", REDIS_URL: "rediss://redis.example.com:6379", FIREBASE_PROJECT_ID: "amiyo-app", FIREBASE_USE_APPLICATION_DEFAULT: "true", FIREBASE_STORAGE_BUCKET: "bucket.example", PARCEL_QR_SIGNING_SECRET: "a".repeat(32), SSLCOMMERZ_SANDBOX: "false" };
   assert.throws(() => parseApiEnv(shared), /explicit CORS origin allowlist/);
   assert.throws(() => parseApiEnv({ ...shared, CORS_ORIGINS: "*" }), /explicit HTTPS origin/);
   assert.throws(() => parseApiEnv({ ...shared, CORS_ORIGINS: "http://app.example.com" }), /explicit HTTPS origin/);
   assert.throws(() => parseApiEnv({ ...shared, CORS_ORIGINS: "not-a-url" }), /explicit HTTPS origin/);
   assert.throws(() => parseApiEnv({ ...shared, CORS_ORIGINS: "https://app.example.com/path" }), /explicit HTTPS origin/);
   assert.equal(parseApiEnv({ ...shared, CORS_ORIGINS: "https://app.example.com, https://admin.example.com" }).CORS_ORIGINS, "https://app.example.com, https://admin.example.com");
+});
+
+test("deployed database connections require PostgreSQL TLS", () => {
+  const shared = { NODE_ENV: "staging", API_PUBLIC_URL: "https://api.example.com", CORS_ORIGINS: "https://app.example.com", REDIS_URL: "rediss://redis.example.com:6379", FIREBASE_PROJECT_ID: "amiyo-app", FIREBASE_USE_APPLICATION_DEFAULT: "true", FIREBASE_STORAGE_BUCKET: "bucket.example", PARCEL_QR_SIGNING_SECRET: "a".repeat(32) };
+  assert.throws(() => parseApiEnv({ ...shared, DATABASE_URL: "postgresql://database.example.com/amiyogo" }), /DATABASE_URL must use PostgreSQL with TLS/);
+  assert.throws(() => parseApiEnv({ ...shared, DATABASE_URL: "postgresql://database.example.com/amiyogo?sslmode=require", DIRECT_URL: "postgresql://database.example.com/amiyogo" }), /DIRECT_URL must use PostgreSQL with TLS/);
+  assert.equal(parseApiEnv({ ...shared, DATABASE_URL: "postgresql://database.example.com/amiyogo?sslmode=verify-full" }).DATABASE_URL.includes("verify-full"), true);
+});
+
+test("worker applies shared deployment safety and provider pairing", () => {
+  const local = { API_PUBLIC_URL: "http://localhost:4000", DATABASE_URL: "postgresql://localhost:5432/amiyogo", REDIS_URL: "redis://localhost:6379" };
+  assert.throws(() => parseWorkerEnv({ ...local, AMIYO_DELIVERY_API_URL: "https://delivery.example.com" }), /configured together/);
+  assert.throws(() => parseWorkerEnv({ ...local, EMAIL_PROVIDER: "resend", EMAIL_PROVIDER_TOKEN: "long-enough-token" }), /configured together/);
+  assert.throws(() => parseWorkerEnv({ ...local, NODE_ENV: "production", FIREBASE_AUTH_EMULATOR_HOST: "127.0.0.1:9099" }), /forbidden in production/);
 });

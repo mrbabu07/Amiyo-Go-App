@@ -48,6 +48,14 @@ function validateFirebaseAdmin(env: z.infer<typeof apiEnvObject>, context: z.Ref
   if (env.NODE_ENV === "production" && env.SSLCOMMERZ_STORE_ID && env.SSLCOMMERZ_SANDBOX === "true") context.addIssue({ code: z.ZodIssueCode.custom, path: ["SSLCOMMERZ_SANDBOX"], message: "SSLCommerz sandbox mode is forbidden in production" });
   if (deployed && !env.PARCEL_QR_SIGNING_SECRET) context.addIssue({ code: z.ZodIssueCode.custom, path: ["PARCEL_QR_SIGNING_SECRET"], message: "A document QR signing secret is required" });
   if (deployed && new URL(env.REDIS_URL).protocol !== "rediss:") context.addIssue({ code: z.ZodIssueCode.custom, path: ["REDIS_URL"], message: "TLS Redis (rediss://) is required outside local development" });
+  for (const [key, value] of [["DATABASE_URL", env.DATABASE_URL], ["DIRECT_URL", env.DIRECT_URL]] as const) {
+    if (!deployed || !value) continue;
+    const url = new URL(value);
+    const sslMode = url.searchParams.get("sslmode");
+    if (!["postgres:", "postgresql:"].includes(url.protocol) || !["require", "verify-ca", "verify-full"].includes(sslMode ?? "")) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: [key], message: `${key} must use PostgreSQL with TLS outside local development` });
+    }
+  }
   for (const [key, value] of [["API_PUBLIC_URL", env.API_PUBLIC_URL], ["APP_PUBLIC_URL", env.APP_PUBLIC_URL], ["OBJECT_STORAGE_PUBLIC_URL", env.OBJECT_STORAGE_PUBLIC_URL]] as const) {
     if (deployed && value && new URL(value).protocol !== "https:") context.addIssue({ code: z.ZodIssueCode.custom, path: [key], message: `${key} must use HTTPS outside local development` });
   }
@@ -67,7 +75,7 @@ function validateFirebaseAdmin(env: z.infer<typeof apiEnvObject>, context: z.Ref
 
 export const apiEnvSchema = apiEnvObject.superRefine(validateFirebaseAdmin);
 
-export const workerEnvSchema = apiEnvObject.extend({
+const workerEnvObject = apiEnvObject.extend({
   WORKER_CONCURRENCY: z.coerce.number().int().positive().default(5),
   WORKER_HEALTH_PORT: z.coerce.number().int().positive().max(65_535).default(4_002),
   WORKER_SLOW_JOB_MS: z.coerce.number().int().min(1).max(3_600_000).default(5_000),
@@ -79,6 +87,12 @@ export const workerEnvSchema = apiEnvObject.extend({
   EMAIL_PROVIDER_API_URL: optionalUrlSchema,
   EMAIL_PROVIDER_TOKEN: optionalSecretSchema,
   EMAIL_FROM: optionalStringSchema
+});
+
+export const workerEnvSchema = workerEnvObject.superRefine((env, context) => {
+  validateFirebaseAdmin(env, context);
+  if (Boolean(env.AMIYO_DELIVERY_API_URL) !== Boolean(env.AMIYO_DELIVERY_INTEGRATION_TOKEN)) context.addIssue({ code: z.ZodIssueCode.custom, path: ["AMIYO_DELIVERY_API_URL"], message: "Delivery API URL and integration token must be configured together" });
+  if (Boolean(env.EMAIL_PROVIDER) !== Boolean(env.EMAIL_PROVIDER_TOKEN) || Boolean(env.EMAIL_PROVIDER) !== Boolean(env.EMAIL_FROM)) context.addIssue({ code: z.ZodIssueCode.custom, path: ["EMAIL_PROVIDER"], message: "Email provider, token, and sender must be configured together" });
 });
 
 export const mobilePublicEnvSchema = z.object({

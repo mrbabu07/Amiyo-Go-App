@@ -9,8 +9,8 @@ Real values belong in local ignored files or encrypted environment managers. `EX
 | `NODE_ENV` | Runtime mode | `staging` or `production` outside local development |
 | `API_PUBLIC_URL` | Canonical HTTPS API origin | Required |
 | `APP_PUBLIC_URL` | Customer app origin used after hosted payment redirects | Required for online payments |
-| `DATABASE_URL` | Pooled PostgreSQL runtime connection | Required; secret |
-| `DIRECT_URL` | Direct PostgreSQL migration connection | CI migration only; secret |
+| `DATABASE_URL` | Pooled PostgreSQL runtime connection | Required; secret; `sslmode=require`, `verify-ca`, or `verify-full` in staging/production |
+| `DIRECT_URL` | Direct PostgreSQL migration connection | CI migration only; secret; TLS mode required in staging/production |
 | `REDIS_URL` | TLS Redis connection | Required for API shared rate limits and worker queues; secret |
 | `LOG_LEVEL` | Structured log threshold | Default `info` |
 | `SENTRY_DSN` | Server error reporting destination | Required before release |
@@ -49,9 +49,12 @@ Object storage, email, SMS, payment-provider, delivery-provider, and public asse
 |---|---|---|
 | `WORKER_CONCURRENCY` | Delivery queue concurrency | Positive integer; default `5` |
 | `AMIYO_DELIVERY_API_URL` | Provider endpoint | HTTPS staging/production endpoint |
-| `AMIYO_DELIVERY_INTEGRATION_TOKEN` | Provider bearer credential | Secret |
+| `AMIYO_DELIVERY_INTEGRATION_TOKEN` | Provider bearer credential | Secret; configure together with the provider endpoint |
 | `AMIYO_DELIVERY_WEBHOOK_SECRET` | Outbound request signing | Secret |
 | `AMIYO_DELIVERY_TIMEOUT_MS` | Provider timeout | Default `12000` |
+| `EMAIL_PROVIDER`, `EMAIL_PROVIDER_TOKEN`, `EMAIL_FROM` | Transactional email provider configuration | Configure all three together or leave all disabled |
+
+The worker applies the same deployed-environment controls as the API: Firebase Admin must be configured, the emulator is forbidden in production, Redis and PostgreSQL must use TLS, public URLs must use HTTPS, CORS must be explicit, and production SSLCommerz cannot remain in sandbox mode.
 
 ## Mobile public configuration
 
