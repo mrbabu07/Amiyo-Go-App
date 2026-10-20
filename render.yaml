@@ -1,0 +1,127 @@
+services:
+  - type: web
+    name: amiyo-api
+    runtime: docker
+    plan: 0.5c-512mb
+    region: singapore
+    branch: main
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /ready
+    preDeployCommand: npm run prisma:migrate:deploy
+    autoDeployTrigger: checksPass
+    maxShutdownDelaySeconds: 30
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: API_PUBLIC_URL
+        sync: false
+      - key: APP_PUBLIC_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: FIREBASE_STORAGE_BUCKET
+        sync: false
+      - key: FIREBASE_USE_APPLICATION_DEFAULT
+        value: "false"
+      - key: OBJECT_STORAGE_PUBLIC_URL
+        sync: false
+      - key: SSLCOMMERZ_STORE_ID
+        sync: false
+      - key: SSLCOMMERZ_STORE_PASSWORD
+        sync: false
+      - key: SSLCOMMERZ_SANDBOX
+        value: "false"
+      - key: PARCEL_QR_SIGNING_SECRET
+        generateValue: true
+      - key: VENDOR_DATA_ENCRYPTION_KEY
+        generateValue: true
+      - key: AMIYO_DELIVERY_CALLBACK_API_SECRET
+        sync: false
+      - key: AMIYO_DELIVERY_CALLBACK_SECRET
+        sync: false
+      - key: LOG_LEVEL
+        value: info
+
+  - type: worker
+    name: amiyo-worker
+    runtime: docker
+    plan: 0.5c-512mb
+    region: singapore
+    branch: main
+    dockerfilePath: ./apps/worker/Dockerfile
+    dockerContext: .
+    autoDeployTrigger: checksPass
+    maxShutdownDelaySeconds: 30
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_PUBLIC_URL
+        sync: false
+      - key: APP_PUBLIC_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: FIREBASE_STORAGE_BUCKET
+        sync: false
+      - key: FIREBASE_USE_APPLICATION_DEFAULT
+        value: "false"
+      - key: OBJECT_STORAGE_PUBLIC_URL
+        sync: false
+      - key: SSLCOMMERZ_STORE_ID
+        sync: false
+      - key: SSLCOMMERZ_STORE_PASSWORD
+        sync: false
+      - key: SSLCOMMERZ_SANDBOX
+        value: "false"
+      - key: PARCEL_QR_SIGNING_SECRET
+        fromService:
+          name: amiyo-api
+          type: web
+          envVarKey: PARCEL_QR_SIGNING_SECRET
+      - key: AMIYO_DELIVERY_API_URL
+        sync: false
+      - key: AMIYO_DELIVERY_INTEGRATION_TOKEN
+        sync: false
+      - key: AMIYO_DELIVERY_WEBHOOK_SECRET
+        sync: false
+      - key: EMAIL_PROVIDER
+        sync: false
+      - key: EMAIL_PROVIDER_API_URL
+        value: https://api.resend.com/emails
+      - key: EMAIL_PROVIDER_TOKEN
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: WORKER_CONCURRENCY
+        value: 5
+      - key: WORKER_HEALTH_PORT
+        value: 4002
+      - key: LOG_LEVEL
+        value: info

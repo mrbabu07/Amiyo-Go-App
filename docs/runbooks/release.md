@@ -2,6 +2,8 @@
 
 ## Staging
 
+`render.yaml` is the production-shaped Render Blueprint for the API and continuous background worker. It uses Singapore, CI-gated auto-deploys, API readiness checks and an API pre-deploy migration. Render does not provide a free background-worker plan, so this Blueprint intentionally uses the smallest paid compute plan for both services; use it only after accepting the account cost. Every deployment-specific value remains a Dashboard prompt or generated secret.
+
 1. Confirm CI, dependency audit, secret scan, OpenAPI compatibility, container builds, and mobile export pass for the commit SHA.
    The manual deploy workflow runs `npm run release:deploy-env` against the selected protected GitHub Environment before it can publish images. Missing, partial, local-only, non-TLS, emulator, or production-sandbox configuration fails the workflow without printing secret values.
 2. Build immutable API and worker images and apply `prisma migrate deploy` with the staging direct URL. Both PostgreSQL URLs must explicitly use `sslmode=require`, `verify-ca`, or `verify-full`; both services fail startup when deployed shared safety rules are incomplete.

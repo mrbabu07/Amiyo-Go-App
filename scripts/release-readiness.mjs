@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 const requiredFiles = [
   ".github/workflows/ci.yml",
   ".github/workflows/deploy.yml",
+  "render.yaml",
   "apps/api/Dockerfile",
   "apps/worker/Dockerfile",
   "apps/mobile/eas.json",
@@ -13,6 +14,7 @@ const requiredFiles = [
   "docs/runbooks/backup-restore.md",
   "docs/runbooks/incident-response.md",
   "docs/runbooks/release.md",
+  "docs/runbooks/render-deployment.md",
   "docs/runbooks/queue-operations.md",
   "docs/runbooks/payment-operations.md",
   "docs/runbooks/delivery-operations.md",

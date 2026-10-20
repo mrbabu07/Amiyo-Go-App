@@ -25,9 +25,20 @@ test("release artifacts enforce immutable builds and non-root containers", async
   const workerDockerfile = await readFile(new URL("../apps/worker/Dockerfile", import.meta.url), "utf8");
   const workflow = await readFile(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
   assert.match(apiDockerfile, /USER node/);
+  assert.match(apiDockerfile, /\/app\/prisma \.\/prisma/);
   assert.match(workerDockerfile, /USER node/);
   assert.match(workflow, /npm audit --audit-level=high/);
   assert.match(workflow, /docker build/);
+});
+
+test("Render blueprint deploys API and worker only after checks pass", async () => {
+  const blueprint = await readFile(new URL("../render.yaml", import.meta.url), "utf8");
+  assert.match(blueprint, /type: web[\s\S]*name: amiyo-api[\s\S]*healthCheckPath: \/ready/);
+  assert.match(blueprint, /preDeployCommand: npm run prisma:migrate:deploy/);
+  assert.match(blueprint, /type: worker[\s\S]*name: amiyo-worker/);
+  assert.equal((blueprint.match(/autoDeployTrigger: checksPass/g) ?? []).length, 2);
+  assert.equal((blueprint.match(/region: singapore/g) ?? []).length, 2);
+  assert.doesNotMatch(blueprint, /postgresql:\/\/|redis(?:s)?:\/\/|npg_|BEGIN PRIVATE KEY/);
 });
 
 test("deploy workflow validates environment before publishing images", async () => {
