@@ -17,3 +17,7 @@
 5. Record deployment timestamps, artifact digests, migration IDs, smoke evidence, and approvers.
 
 Store submission remains blocked until final branding, privacy URLs/disclosures, signing accounts, screenshots, and package identifiers are approved.
+
+## Automated release gate
+
+Run `npm run release:check` to verify required release artifacts, unresolved product/operations decisions, and runtime dependency advisories. High or critical dependency findings keep the release blocked. Set `REQUIRE_PRODUCTION_READY=true` in CI so unresolved decisions, an unavailable audit, or blocking advisories fail the job. Never use `npm audit fix --force` to downgrade the Expo/React Native stack; resolve findings with a compatible SDK upgrade and rerun Expo Doctor and the full regression suite.
