@@ -18,6 +18,7 @@ const later = () => new Date(Date.now() + 7 * 86_400_000).toISOString();
 const voucherInitial = (): VoucherForm => ({ code: "", discountType: "PERCENT", value: "10", minimumSpend: "0", usageLimit: "", startsAt: now(), endsAt: later(), active: true });
 const flashInitial = (): FlashForm => ({ name: "", startsAt: now(), endsAt: later(), status: "draft", products: [] });
 const taka = (minor: string | bigint) => formatMinor(minor);
+const requiredMinor = (value: string, label: string) => { const amount = parseMajorToMinor(value); if (amount === null) throw new Error(`${label} must be a valid amount with at most two decimals.`); return amount.toString(); };
 const voucherRules = (rules: unknown) => (rules && typeof rules === "object" ? rules : {}) as { discountType?: "PERCENT" | "FIXED"; value?: number; minimumSpendMinor?: string; usageLimit?: number | null };
 
 export function AdminMarketingScreen({ mode }: { mode: Mode }) {
@@ -35,8 +36,8 @@ export function AdminMarketingScreen({ mode }: { mode: Mode }) {
   const currentActor = () => { if (!user || user.uid !== userId) throw new Error("Account changed. Reopen marketing management."); return user; };
   const refresh = async () => { await cache.invalidateQueries({ queryKey: ["admin", "marketing", userId] }); };
   const reset = () => { setEditingId(null); setVoucher(voucherInitial()); setFlash(flashInitial()); };
-  const voucherPayload = (): AdminVoucherInput => ({ code: voucher.code.trim().toUpperCase(), discountType: voucher.discountType, value: Number(voucher.value), minimumSpendMinor: parseMajorToMinor(voucher.minimumSpend || "0")!.toString(), usageLimit: voucher.usageLimit ? Number(voucher.usageLimit) : null, startsAt: new Date(voucher.startsAt).toISOString(), endsAt: new Date(voucher.endsAt).toISOString(), active: voucher.active });
-  const flashPayload = (): AdminFlashSaleInput => ({ name: flash.name.trim(), startsAt: new Date(flash.startsAt).toISOString(), endsAt: new Date(flash.endsAt).toISOString(), status: flash.status, products: flash.products.map((item) => ({ productId: item.productId, priceMinor: parseMajorToMinor(item.price)!.toString(), quantityLimit: item.quantity ? Number(item.quantity) : null })) });
+  const voucherPayload = (): AdminVoucherInput => ({ code: voucher.code.trim().toUpperCase(), discountType: voucher.discountType, value: Number(voucher.value), minimumSpendMinor: requiredMinor(voucher.minimumSpend || "0", "Minimum spend"), usageLimit: voucher.usageLimit ? Number(voucher.usageLimit) : null, startsAt: new Date(voucher.startsAt).toISOString(), endsAt: new Date(voucher.endsAt).toISOString(), active: voucher.active });
+  const flashPayload = (): AdminFlashSaleInput => ({ name: flash.name.trim(), startsAt: new Date(flash.startsAt).toISOString(), endsAt: new Date(flash.endsAt).toISOString(), status: flash.status, products: flash.products.map((item) => ({ productId: item.productId, priceMinor: requiredMinor(item.price, "Flash price"), quantityLimit: item.quantity ? Number(item.quantity) : null })) });
   const saveVoucher = useMutation({ mutationFn: () => editingId ? updateAdminVoucher(currentActor(), editingId, voucherPayload()) : createAdminVoucher(currentActor(), voucherPayload()), onSuccess: async () => { reset(); await refresh(); } });
   const saveFlash = useMutation({ mutationFn: () => editingId ? updateAdminFlashSale(currentActor(), editingId, flashPayload()) : createAdminFlashSale(currentActor(), flashPayload()), onSuccess: async () => { reset(); await refresh(); } });
   const removeVoucher = useMutation({ mutationFn: (id: string) => deleteAdminVoucher(currentActor(), id), onSuccess: refresh });

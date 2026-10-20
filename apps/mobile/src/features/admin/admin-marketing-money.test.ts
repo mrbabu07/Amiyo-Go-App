@@ -7,8 +7,9 @@ const source = readFileSync(resolve(import.meta.dirname, "AdminMarketingScreen.t
 
 test("admin marketing persists entered money as exact minor units", () => {
   assert.match(source, /const taka = \(minor: string \| bigint\) => formatMinor\(minor\)/);
-  assert.match(source, /minimumSpendMinor: parseMajorToMinor\(voucher\.minimumSpend \|\| "0"\)!\.toString\(\)/);
-  assert.match(source, /priceMinor: parseMajorToMinor\(item\.price\)!\.toString\(\)/);
+  assert.match(source, /minimumSpendMinor: requiredMinor\(voucher\.minimumSpend \|\| "0", "Minimum spend"\)/);
+  assert.match(source, /priceMinor: requiredMinor\(item\.price, "Flash price"\)/);
+  assert.match(source, /must be a valid amount with at most two decimals/);
   assert.match(source, /minorToMajorInput\(rules\.minimumSpendMinor \|\| "0"\)/);
   assert.match(source, /minorToMajorInput\(product\.priceMinor\)/);
   assert.doesNotMatch(source, /Math\.round\(Number\([^)]*\) \* 100\)/);
