@@ -6,10 +6,12 @@ import test from "node:test";
 const root = resolve(import.meta.dirname, "../../..");
 const shell = readFileSync(resolve(root, "src/ui/Screen.tsx"), "utf8");
 const dashboard = readFileSync(resolve(root, "app/vendor/dashboard.tsx"), "utf8");
+const vendorIndex = readFileSync(resolve(root, "app/vendor/index.tsx"), "utf8");
 const orders = readFileSync(resolve(root, "src/features/orders/VendorOrdersScreen.tsx"), "utf8");
 const orderDetail = readFileSync(resolve(root, "src/features/orders/VendorOrderDetailScreen.tsx"), "utf8");
 
 test("seller workspace uses responsive grouped navigation", () => {
+  assert.match(vendorIndex, /<Redirect href="\/vendor\/dashboard"/);
   assert.match(shell, /function VendorScreen/);
   assert.match(shell, /function VendorSidebar/);
   assert.match(shell, /mobileSidebarOpen/);
