@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
-import { formatMinor, sumMinor } from "../../ui/money";
+import { formatMinor, minorToMajorInput, parseMajorToMinor, sumMinor } from "../../ui/money";
 import { useCurrentUser } from "../auth/use-current-user";
 import { ReturnEvidencePanel } from "./ReturnEvidencePanel";
 import { applyAdminReturnLogisticsAction, completeAdminRefundCase, getAdminReturnDetail, getAdminReturns, transitionAdminReturnCase, type AdminReturnLogisticsAction, type AdminReturnStatus } from "../operations/operations.api";
@@ -38,9 +38,9 @@ export function AdminReturnsScreen() {
   const transition = useMutation({ mutationFn: async () => {
     if (!detail.data || !nextStatus) return;
     if (nextStatus === "REJECTED" && note.trim().length < 3) throw new Error("Add a rejection reason before closing the case.");
-    const approvedAmountMinor = nextStatus === "APPROVED" ? String(Math.round(Number(amount) * 100)) : undefined;
-    if (nextStatus === "APPROVED" && (!Number.isFinite(Number(amount)) || Number(amount) < 0)) throw new Error("Enter a valid approved refund amount.");
-    return transitionAdminReturnCase(user!, detail.data.id, { expectedVersion: detail.data.version, status: nextStatus, note: note.trim() || null, ...(approvedAmountMinor !== undefined ? { approvedAmountMinor } : {}) });
+    const approvedAmountMinor = nextStatus === "APPROVED" ? parseMajorToMinor(amount) : null;
+    if (nextStatus === "APPROVED" && approvedAmountMinor === null) throw new Error("Enter a valid approved refund amount with at most two decimal places.");
+    return transitionAdminReturnCase(user!, detail.data.id, { expectedVersion: detail.data.version, status: nextStatus, note: note.trim() || null, ...(approvedAmountMinor !== null ? { approvedAmountMinor: approvedAmountMinor.toString() } : {}) });
   }, onSuccess: async () => { setNextStatus(null); setNote(""); setFormError(null); await refresh(); }, onError: (error) => setFormError(error.message) });
   const refund = useMutation({ mutationFn: async () => {
     if (!detail.data) return; if (providerRef.trim().length < 2) throw new Error("Enter the payment provider refund reference.");
@@ -56,7 +56,7 @@ export function AdminReturnsScreen() {
   const filtered = useMemo(() => rows.filter((item) => caseFlow(item.status) === flow || flow === "all").filter((item) => `${item.id} ${item.orderId} ${item.reasonCode} ${item.status}`.toLowerCase().includes(search.trim().toLowerCase())), [flow, rows, search]);
   const requestedMinor = sumMinor(rows.map((item) => item.requestedAmount.amountMinor));
   const refundReady = rows.filter((item) => ["APPROVED", "RECEIVED", "INSPECTED", "REFUND_PENDING"].includes(item.status)).length;
-  const select = (id: string, requestedAmountMinor: string) => { setSelectedId(id); setNextStatus(null); setLogisticsAction(null); setNote(""); setAmount((Number(requestedAmountMinor) / 100).toFixed(2)); setFormError(null); };
+  const select = (id: string, requestedAmountMinor: string) => { setSelectedId(id); setNextStatus(null); setLogisticsAction(null); setNote(""); setAmount(minorToMajorInput(requestedAmountMinor)); setFormError(null); };
 
   return <Screen eyebrow="ORDER CONTROL" title="Returns & refund desk" description="Triage seller responses, inspect return evidence, process refunds and keep every decision auditable.">
     <View style={[styles.metrics, width < 720 && styles.stack]}><Metric icon="return-down-back-outline" label="Total cases" value={String(rows.length)} /><Metric icon="alert-circle-outline" label="Needs decision" value={String(rows.filter((item) => ["REQUESTED", "REVIEWING"].includes(item.status)).length)} /><Metric icon="cash-outline" label="Refund ready" value={String(refundReady)} /><Metric icon="wallet-outline" label="Requested value" value={money(requestedMinor)} /></View>

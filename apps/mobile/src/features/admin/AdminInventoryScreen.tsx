@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
+import { formatMinor } from "../../ui/money";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
 import { bulkUpdateAdminInventory, getAdminInventory, updateAdminInventoryItem, type AdminInventoryWorkspaceDto } from "./admin.api";
@@ -12,7 +13,7 @@ type Filter = "all" | "in_stock" | "low_stock" | "out_of_stock";
 type Tab = "inventory" | "movements" | "import_export";
 type BulkMode = "add" | "subtract" | "set";
 type Item = AdminInventoryWorkspaceDto["items"][number];
-const money = (minor: string) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
+const money = (minor: string) => formatMinor(minor);
 
 export function AdminInventoryScreen() {
   const user = useCurrentUser(); const userId = user?.uid ?? null; const cache = useQueryClient(); const compact = useWindowDimensions().width < 760;
