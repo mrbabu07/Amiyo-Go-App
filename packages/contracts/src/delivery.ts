@@ -66,6 +66,21 @@ export const vendorOrderDetailSchema = z.object({
   dispatchStatus: dispatchStatusSchema.nullable()
 });
 
+export const vendorOrderSummarySchema = vendorOrderDetailSchema.pick({
+  id: true,
+  orderId: true,
+  orderNumber: true,
+  vendorId: true,
+  shopId: true,
+  shopName: true,
+  customer: true,
+  payment: true,
+  status: true,
+  total: true,
+  createdAt: true,
+  items: true
+});
+
 export const customerOrderSummarySchema = z.object({
   id: uuidSchema,
   orderNumber: z.string(),
@@ -127,6 +142,7 @@ export const amiyoDeliveryCallbackSchema = z.object({
 });
 
 export type VendorOrderDetail = z.infer<typeof vendorOrderDetailSchema>;
+export type VendorOrderSummary = z.infer<typeof vendorOrderSummarySchema>;
 export type VendorOrderTransition = z.infer<typeof vendorOrderTransitionSchema>;
 export type VendorDeliveryExceptionInput = z.infer<typeof vendorDeliveryExceptionInputSchema>;
 export type VendorPickupRequestInput = z.infer<typeof vendorPickupRequestInputSchema>;

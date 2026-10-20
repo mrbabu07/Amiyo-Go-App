@@ -19,6 +19,42 @@ const vendorOrderInclude = {
 } satisfies Prisma.VendorOrderInclude;
 type LoadedVendorOrder = Prisma.VendorOrderGetPayload<{ include: typeof vendorOrderInclude }>;
 
+const vendorOrderSummarySelect = {
+  id: true,
+  orderId: true,
+  vendorId: true,
+  shopId: true,
+  status: true,
+  totalMinor: true,
+  createdAt: true,
+  shop: { select: { name: true } },
+  order: {
+    select: {
+      orderNumber: true,
+      currency: true,
+      payments: { orderBy: { createdAt: "desc" as const }, take: 1, select: { provider: true, method: true, status: true, amountMinor: true, currency: true, providerTransactionId: true, createdAt: true } },
+      user: { select: { normalizedEmail: true, normalizedPhone: true, profile: { select: { displayName: true } } } }
+    }
+  },
+  items: {
+    select: {
+      id: true,
+      productId: true,
+      variantId: true,
+      productNameSnapshot: true,
+      skuSnapshot: true,
+      attributesSnapshot: true,
+      quantity: true,
+      unitPriceMinor: true,
+      discountMinor: true,
+      lineTotalMinor: true,
+      currency: true,
+      product: { select: { media: { orderBy: { displayOrder: "asc" as const }, take: 1, select: { storageKey: true } } } }
+    }
+  }
+} satisfies Prisma.VendorOrderSelect;
+type LoadedVendorOrderSummary = Prisma.VendorOrderGetPayload<{ select: typeof vendorOrderSummarySelect }>;
+
 const money = (amount: bigint, currency = "BDT") => ({ amountMinor: amount.toString(), currency });
 const json = (value: unknown) => JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 function mediaUrl(key: string | null | undefined) { if (!key) return null; if (/^https?:\/\//.test(key)) return key; const base = process.env.OBJECT_STORAGE_PUBLIC_URL?.replace(/\/$/, ""); return base ? `${base}/${key}` : null; }
@@ -51,6 +87,17 @@ function vendorOrderDto(row: LoadedVendorOrder) {
     subtotal: money(row.subtotalMinor, row.order.currency), discount: money(row.discountMinor, row.order.currency), delivery: money(row.deliveryMinor, row.order.currency), total: money(row.totalMinor, row.order.currency), version: row.version, createdAt: row.createdAt.toISOString(),
     items: row.items.map((item) => ({ id: item.id, productId: item.productId, variantId: item.variantId, productName: item.productNameSnapshot, sku: item.skuSnapshot, thumbnailUrl: mediaUrl(item.product.media[0]?.storageKey), attributes: item.attributesSnapshot as Record<string, unknown> | null, quantity: item.quantity, unitPrice: money(item.unitPriceMinor, item.currency), discount: money(item.discountMinor, item.currency), lineTotal: money(item.lineTotalMinor, item.currency) })),
     shipment: shipmentDto(row.shipments[0]), dispatchStatus: row.dispatches[0]?.status ?? null
+  };
+}
+
+function vendorOrderSummaryDto(row: LoadedVendorOrderSummary) {
+  const payment = row.order.payments[0];
+  return {
+    id: row.id, orderId: row.orderId, orderNumber: row.order.orderNumber, vendorId: row.vendorId, shopId: row.shopId, shopName: row.shop.name, status: row.status,
+    customer: { displayName: row.order.user?.profile?.displayName ?? row.order.user?.normalizedEmail ?? row.order.user?.normalizedPhone ?? "Customer", email: row.order.user?.normalizedEmail ?? null, phone: row.order.user?.normalizedPhone ?? null },
+    payment: payment ? { provider: payment.provider, method: payment.method, status: payment.status, amount: money(payment.amountMinor, payment.currency), transactionId: payment.providerTransactionId, createdAt: payment.createdAt.toISOString() } : null,
+    total: money(row.totalMinor, row.order.currency), createdAt: row.createdAt.toISOString(),
+    items: row.items.map((item) => ({ id: item.id, productId: item.productId, variantId: item.variantId, productName: item.productNameSnapshot, sku: item.skuSnapshot, thumbnailUrl: mediaUrl(item.product.media[0]?.storageKey), attributes: item.attributesSnapshot as Record<string, unknown> | null, quantity: item.quantity, unitPrice: money(item.unitPriceMinor, item.currency), discount: money(item.discountMinor, item.currency), lineTotal: money(item.lineTotalMinor, item.currency) }))
   };
 }
 
@@ -96,24 +143,8 @@ export class OrderService {
     if (session.status !== "ACTIVE" || !session.permissions.includes("orders:read")) throw new ApiProblem(403, "ORDERS_FORBIDDEN", "Order access is not allowed");
     const elevated = session.principal.roles.some((role) => ["SUPER_ADMIN", "OPERATIONS_ADMIN"].includes(role));
     if (!elevated && session.principal.vendorIds.length === 0) return [];
-    const rows = await this.client.vendorOrder.findMany({ where: { ...(elevated ? {} : { vendorId: { in: session.principal.vendorIds } }), ...(status ? { status } : {}) }, include: { shop: true, items: vendorOrderInclude.items }, orderBy: { createdAt: "desc" }, take: 100 });
-    if (!rows.length) return [];
-    const packageIds = rows.map((row) => row.id);
-    const orderIds = [...new Set(rows.map((row) => row.orderId))];
-    const [orders, shipments, dispatchPackages] = await Promise.all([
-      this.client.order.findMany({ where: { id: { in: orderIds } }, include: vendorOrderInclude.order.include }),
-      this.client.shipment.findMany({ where: { vendorOrderId: { in: packageIds } }, include: { assignment: true, events: vendorOrderInclude.shipments.include.events } }),
-      this.client.vendorOrder.findMany({ where: { id: { in: packageIds } }, select: { id: true, dispatches: vendorOrderInclude.dispatches } })
-    ]);
-    const ordersById = new Map(orders.map((order) => [order.id, order]));
-    const shipmentsByPackage = new Map(shipments.map((shipment) => [shipment.vendorOrderId, shipment]));
-    const dispatchesByPackage = new Map(dispatchPackages.map((row) => [row.id, row.dispatches]));
-    return rows.map((row) => {
-      const order = ordersById.get(row.orderId);
-      if (!order) throw new ApiProblem(503, "ORDER_READ_INCOMPLETE", "Order data changed; please retry");
-      const shipment = shipmentsByPackage.get(row.id);
-      return vendorOrderDto({ ...row, order, shipments: shipment ? [shipment] : [], dispatches: dispatchesByPackage.get(row.id) ?? [] });
-    });
+    const rows = await this.client.vendorOrder.findMany({ where: { ...(elevated ? {} : { vendorId: { in: session.principal.vendorIds } }), ...(status ? { status } : {}) }, select: vendorOrderSummarySelect, orderBy: { createdAt: "desc" }, take: 100 });
+    return rows.map(vendorOrderSummaryDto);
   }
 
   async vendorOrder(session: Session, id: string) {
