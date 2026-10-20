@@ -12,7 +12,7 @@ test("seller support stays inside the seller workspace", () => {
   assert.match(detailRoute, /SupportThreadScreen audience="seller" basePath="\/vendor\/support"/);
   assert.match(form, /router\.push\(`\$\{basePath\}\/\$\{ticket\.id\}` as never\)/);
   assert.match(thread, /router\.replace\(basePath\)/);
-  assert.match(thread, /`\/vendor\/orders\/\$\{ticket\.orderId\}`/);
+  assert.match(thread, /pathname: "\/vendor\/orders", params: \{ orderId: ticket\.orderId \}/);
   assert.match(thread, /`\/vendor\/returns\/\$\{ticket\.returnId\}`/);
 });
 

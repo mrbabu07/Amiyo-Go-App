@@ -21,6 +21,6 @@ test("seller reports use exact money and open operational order detail", () => {
   assert.match(reports, /order\.orderNumber/);
   assert.match(reports, /order\.shopName/);
   assert.match(reports, /order\.itemCount/);
-  assert.match(reports, /`\/vendor\/orders\/\$\{order\.id\}`/);
+  assert.match(reports, /`\/vendor\/order\/\$\{order\.id\}`/);
   assert.doesNotMatch(reports, /Number\(minor\)/);
 });

@@ -62,6 +62,8 @@ test("seller orders stay inside the workspace with reference controls", () => {
   assert.match(orders, /<Screen eyebrow="FULFILLMENT"/);
   for (const control of ["Search seller orders", "Batch print", "Documents", "View order"]) assert.match(orders, new RegExp(control));
   assert.match(orders, /thumbnailUrl/);
+  assert.match(orders, /useLocalSearchParams<\{ orderId\?: string \}>/);
+  assert.match(orders, /`\$\{order\.orderId\} \$\{order\.orderNumber\}/);
   assert.match(orders, /formatMinor\(order\.total\.amountMinor\)/);
   assert.doesNotMatch(orders, /Number\(amount\)/);
   assert.match(orders, /useCurrentUser/);

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
@@ -25,16 +25,17 @@ function statusPresentation(status: string) {
 
 export function VendorOrdersScreen() {
   const compact = useWindowDimensions().width < 620;
+  const { orderId } = useLocalSearchParams<{ orderId?: string }>();
   const [selected, setSelected] = useState<string[]>([]);
   const [filter, setFilter] = useState<(typeof filters)[number]>("ALL");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(typeof orderId === "string" ? orderId : "");
   const router = useRouter();
   const user = useCurrentUser();
   const session = useAuthStore((state) => state.session);
   const allowed = Boolean(session?.permissions.includes("orders:read") && session.principal.vendorIds.length);
   const orders = useQuery({ queryKey: ["orders", "vendor", user?.uid], queryFn: () => getVendorOrders(user!), enabled: Boolean(user && allowed) });
   const selectedIds = selected.filter((id) => orders.data?.some((order) => order.id === id));
-  const visible = useMemo(() => (orders.data ?? []).filter((order) => filter === "ALL" || order.status === filter).filter((order) => `${order.orderNumber} ${order.shopName} ${order.customer.displayName} ${order.items.map((item) => item.productName).join(" ")}`.toLowerCase().includes(search.trim().toLowerCase())), [filter, orders.data, search]);
+  const visible = useMemo(() => (orders.data ?? []).filter((order) => filter === "ALL" || order.status === filter).filter((order) => `${order.orderId} ${order.orderNumber} ${order.shopName} ${order.customer.displayName} ${order.items.map((item) => item.productName).join(" ")}`.toLowerCase().includes(search.trim().toLowerCase())), [filter, orders.data, search]);
 
   if (!user || !allowed) return <Screen title="Vendor order access required" description="Sign in with a seller account that has order permission."><View style={styles.locked}><Ionicons name="lock-closed-outline" size={48} color={colors.primary} /></View></Screen>;
 
