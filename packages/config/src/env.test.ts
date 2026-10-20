@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { parseApiEnv, parseWorkerEnv } from "./env.js";
+import { parseApiEnv, parseMobilePublicEnv, parseWorkerEnv } from "./env.js";
 
 test("API env accepts blank optional values from env example files", () => {
   const env = parseApiEnv({
@@ -73,4 +73,12 @@ test("worker applies shared deployment safety and provider pairing", () => {
   assert.throws(() => parseWorkerEnv({ ...local, AMIYO_DELIVERY_API_URL: "https://delivery.example.com" }), /configured together/);
   assert.throws(() => parseWorkerEnv({ ...local, EMAIL_PROVIDER: "resend", EMAIL_PROVIDER_TOKEN: "long-enough-token" }), /configured together/);
   assert.throws(() => parseWorkerEnv({ ...local, NODE_ENV: "production", FIREBASE_AUTH_EMULATOR_HOST: "127.0.0.1:9099" }), /forbidden in production/);
+});
+
+test("mobile production builds reject local services and incomplete observability", () => {
+  const firebase = { EXPO_PUBLIC_FIREBASE_API_KEY: "public-key", EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: "amiyo-app.firebaseapp.com", EXPO_PUBLIC_FIREBASE_PROJECT_ID: "amiyo-app", EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: "amiyo-app.firebasestorage.app", EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "123456", EXPO_PUBLIC_FIREBASE_APP_ID: "1:123456:web:abcdef" };
+  assert.throws(() => parseMobilePublicEnv({ EAS_BUILD_PROFILE: "production", EXPO_PUBLIC_API_URL: "http://localhost:4000", EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL: "http://127.0.0.1:9099" }), /HTTPS API URL/);
+  assert.throws(() => parseMobilePublicEnv({ EAS_BUILD_PROFILE: "production", EXPO_PUBLIC_API_URL: "https://api.example.com", ...firebase }), /EAS project ID/);
+  const parsed = parseMobilePublicEnv({ EAS_BUILD_PROFILE: "production", EXPO_PUBLIC_API_URL: "https://api.example.com", EXPO_PUBLIC_EAS_PROJECT_ID: "b3f9db72-cc0c-4aac-b410-aa496f931254", EXPO_PUBLIC_SENTRY_DSN: "https://public@example.ingest.sentry.io/1", ...firebase });
+  assert.equal(parsed.EAS_BUILD_PROFILE, "production");
 });

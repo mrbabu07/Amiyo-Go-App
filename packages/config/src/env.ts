@@ -95,7 +95,8 @@ export const workerEnvSchema = workerEnvObject.superRefine((env, context) => {
   if (Boolean(env.EMAIL_PROVIDER) !== Boolean(env.EMAIL_PROVIDER_TOKEN) || Boolean(env.EMAIL_PROVIDER) !== Boolean(env.EMAIL_FROM)) context.addIssue({ code: z.ZodIssueCode.custom, path: ["EMAIL_PROVIDER"], message: "Email provider, token, and sender must be configured together" });
 });
 
-export const mobilePublicEnvSchema = z.object({
+const mobilePublicEnvObject = z.object({
+  EAS_BUILD_PROFILE: z.enum(["development", "preview", "production"]).optional(),
   EXPO_PUBLIC_API_URL: z.string().url(),
   EXPO_PUBLIC_FIREBASE_API_KEY: z.string().optional(),
   EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: z.string().optional(),
@@ -107,7 +108,23 @@ export const mobilePublicEnvSchema = z.object({
   EXPO_PUBLIC_FIREBASE_ANALYTICS_ENABLED: z.enum(["true", "false"]).default("false"),
   EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL: optionalUrlSchema,
   EXPO_PUBLIC_SENTRY_DSN: z.string().optional(),
-  EXPO_PUBLIC_EAS_PROJECT_ID: z.string().uuid().optional()
+  EXPO_PUBLIC_EAS_PROJECT_ID: z.string().uuid().optional(),
+  EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: optionalStringSchema,
+  EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID: optionalStringSchema,
+  EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: optionalStringSchema,
+  EXPO_PUBLIC_MAPS_KEY: optionalStringSchema
+});
+
+export const mobilePublicEnvSchema = mobilePublicEnvObject.superRefine((env, context) => {
+  const deployed = env.EAS_BUILD_PROFILE === "preview" || env.EAS_BUILD_PROFILE === "production";
+  if (!deployed) return;
+  if (new URL(env.EXPO_PUBLIC_API_URL).protocol !== "https:") context.addIssue({ code: z.ZodIssueCode.custom, path: ["EXPO_PUBLIC_API_URL"], message: "Deployed mobile builds require an HTTPS API URL" });
+  if (env.EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL) context.addIssue({ code: z.ZodIssueCode.custom, path: ["EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL"], message: "Firebase Auth emulator is forbidden in deployed mobile builds" });
+  for (const key of ["EXPO_PUBLIC_FIREBASE_API_KEY", "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN", "EXPO_PUBLIC_FIREBASE_PROJECT_ID", "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET", "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID", "EXPO_PUBLIC_FIREBASE_APP_ID"] as const) {
+    if (!env[key]?.trim()) context.addIssue({ code: z.ZodIssueCode.custom, path: [key], message: `${key} is required for deployed mobile builds` });
+  }
+  if (env.EAS_BUILD_PROFILE === "production" && !env.EXPO_PUBLIC_EAS_PROJECT_ID) context.addIssue({ code: z.ZodIssueCode.custom, path: ["EXPO_PUBLIC_EAS_PROJECT_ID"], message: "EAS project ID is required for production builds" });
+  if (env.EAS_BUILD_PROFILE === "production" && !env.EXPO_PUBLIC_SENTRY_DSN?.trim()) context.addIssue({ code: z.ZodIssueCode.custom, path: ["EXPO_PUBLIC_SENTRY_DSN"], message: "Sentry DSN is required for production builds" });
 });
 
 export function parseApiEnv(env: NodeJS.ProcessEnv) {
