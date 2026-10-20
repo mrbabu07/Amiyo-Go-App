@@ -2,6 +2,12 @@ name: Staging Smoke
 
 on:
   workflow_dispatch:
+    inputs:
+      include_authenticated:
+        description: Run role-boundary checks with short-lived staging tokens
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -41,6 +47,15 @@ jobs:
           LOAD_MAX_FAILURE_RATE: "0"
           LOAD_MAX_P95_MS: "1500"
           LOAD_REPORT_PATH: staging-load-smoke.json
+      - name: Authenticated role-boundary smoke
+        if: ${{ inputs.include_authenticated }}
+        run: npm run smoke:staging-authenticated
+        env:
+          SMOKE_API_URL: ${{ vars.API_PUBLIC_URL }}
+          STAGING_CUSTOMER_TOKEN: ${{ secrets.STAGING_CUSTOMER_TOKEN }}
+          STAGING_VENDOR_TOKEN: ${{ secrets.STAGING_VENDOR_TOKEN }}
+          STAGING_ADMIN_TOKEN: ${{ secrets.STAGING_ADMIN_TOKEN }}
+          SMOKE_REPORT_PATH: staging-authenticated-smoke.json
       - name: Upload immutable smoke evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -49,5 +64,6 @@ jobs:
           path: |
             staging-marketplace-smoke.json
             staging-load-smoke.json
+            staging-authenticated-smoke.json
           if-no-files-found: error
           retention-days: 30
