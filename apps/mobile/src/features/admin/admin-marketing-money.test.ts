@@ -12,5 +12,9 @@ test("admin marketing persists entered money as exact minor units", () => {
   assert.match(source, /must be a valid amount with at most two decimals/);
   assert.match(source, /minorToMajorInput\(rules\.minimumSpendMinor \|\| "0"\)/);
   assert.match(source, /minorToMajorInput\(product\.priceMinor\)/);
+  assert.match(source, /const validPositiveMinor = \(value: string\) =>/);
+  assert.match(source, /const suggestedFlashPrice = \(priceMinor: string\) => minorToMajorInput\(\(BigInt\(priceMinor\) \* 80n\) \/ 100n \|\| 1n\)/);
+  assert.match(source, /price: suggestedFlashPrice\(product\.priceMinor\)/);
   assert.doesNotMatch(source, /Math\.round\(Number\([^)]*\) \* 100\)/);
+  assert.doesNotMatch(source, /Number\(product\.priceMinor\)/);
 });
