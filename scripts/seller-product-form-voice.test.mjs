@@ -23,8 +23,10 @@ test("seller variant form provides modern colors and crash guards", async () => 
   assert.match(form, /colorChoices/);
   assert.match(form, /uniqueSkus/);
   assert.match(form, /combinations\.length > 100/);
-  assert.match(form, /Number\.isInteger\(Number\(variant\.stock\)\)/);
-  assert.match(form, /Number\(variant\.compareAt\) >= Number\(variant\.price\)/);
+  assert.match(form, /const stock = Number\(variant\.stock\)/);
+  assert.match(form, /Number\.isInteger\(stock\)/);
+  assert.match(form, /parseMajorToMinor\(variant\.price\)/);
+  assert.match(form, /compareAt >= price/);
 });
 
 test("store search supports microphone speech recognition", async () => {

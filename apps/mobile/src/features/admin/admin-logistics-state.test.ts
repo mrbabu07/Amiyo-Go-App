@@ -15,6 +15,7 @@ test("logistics pickup controls require and submit the visible assignment versio
   assert.match(source, /failed && row\.status === "FAILED"/);
   assert.match(source, /const canCollect = row\.status === "DELIVERED"/);
   assert.match(source, /const canFail = \["FAILED", "CANCELLED"\]\.includes\(row\.status\)/);
-  assert.match(source, /function bdtMinor\(value: string\)/);
+  assert.match(source, /const bdtMinor = \(value: string\) => parseMajorToMinor\(value\)\?\.toString\(\) \?\? null/);
+  assert.match(source, /isPositiveMinor\(row\.codAmountMinor\)/);
   assert.match(source, /BigInt\(remittedMinor\) <= BigInt\(collectedMinor\)/);
 });
