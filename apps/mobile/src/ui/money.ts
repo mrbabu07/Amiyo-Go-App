@@ -54,6 +54,10 @@ export function subtractMinorFloor(totalMinor: string | bigint, deductionMinor: 
 export const subtractMinor = (totalMinor: string | bigint, deductionMinor: string | bigint) => BigInt(totalMinor) - BigInt(deductionMinor);
 export const multiplyMinor = (amountMinor: string | bigint, quantity: number) => BigInt(amountMinor) * BigInt(quantity);
 export const isPositiveMinor = (amountMinor: string | bigint) => BigInt(amountMinor) > 0n;
+export const absoluteMinor = (amountMinor: string | bigint) => {
+  const value = BigInt(amountMinor);
+  return value < 0n ? -value : value;
+};
 
 export function compareMinor(leftMinor: string | bigint, rightMinor: string | bigint) {
   const left = BigInt(leftMinor);

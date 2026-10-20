@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-const { minorToMajorInput, parseMajorToMinor } = await import(new URL("./money.ts", import.meta.url).href) as typeof import("./money");
+const { absoluteMinor, minorToMajorInput, parseMajorToMinor } = await import(new URL("./money.ts", import.meta.url).href) as typeof import("./money");
 
 test("minor units convert to editable decimal text without floating point", () => {
   assert.equal(minorToMajorInput("0"), "0.00");
@@ -16,4 +16,9 @@ test("decimal input converts to exact minor units", () => {
   assert.equal(parseMajorToMinor("1.005"), null);
   assert.equal(parseMajorToMinor("-1"), null);
   assert.equal(parseMajorToMinor("NaN"), null);
+});
+
+test("signed discrepancies become exact absolute minor units", () => {
+  assert.equal(absoluteMinor("-900719925474099312345"), 900719925474099312345n);
+  assert.equal(absoluteMinor("25"), 25n);
 });
