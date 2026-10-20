@@ -8,6 +8,8 @@ const requiredFiles = [
   "apps/api/Dockerfile",
   "apps/worker/Dockerfile",
   "apps/mobile/eas.json",
+  "apps/mobile/assets/amiyo-icon.png",
+  "apps/mobile/assets/amiyo-adaptive-foreground.png",
   "docs/runbooks/backup-restore.md",
   "docs/runbooks/incident-response.md",
   "docs/runbooks/release.md",

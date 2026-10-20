@@ -4,6 +4,7 @@
     "slug": "amiyo-go",
     "scheme": "amiyogo",
     "version": "0.1.0",
+    "icon": "./assets/amiyo-icon.png",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -11,15 +12,35 @@
     "userInterfaceStyle": "automatic",
     "android": {
       "package": "com.amiyo.go",
-      "versionCode": 1
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/amiyo-adaptive-foreground.png",
+        "backgroundColor": "#FAF7F0"
+      }
     },
     "ios": {
       "bundleIdentifier": "com.amiyo.go",
       "buildNumber": "1",
       "supportsTablet": true
     },
+    "web": {
+      "favicon": "./assets/amiyo-icon.png"
+    },
     "plugins": [
       "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FAF7F0",
+          "image": "./assets/amiyo-adaptive-foreground.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "dark": {
+            "backgroundColor": "#050B14",
+            "image": "./assets/amiyo-adaptive-foreground.png"
+          }
+        }
+      ],
       "expo-secure-store",
       [
         "expo-image-picker",
