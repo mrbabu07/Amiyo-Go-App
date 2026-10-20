@@ -19,7 +19,8 @@ test("seller workspace uses responsive grouped navigation", () => {
   assert.match(shell, /vendorMobileLinks/);
   assert.match(shell, /accessibilityLabel="Seller primary navigation"/);
   assert.match(shell, /href: "\/vendor\/notifications"/);
-  assert.match(shell, /href === "\/notifications" \? "\/vendor\/notifications" : href/);
+  assert.match(shell, /accessibilityLabel="Seller notifications" onPress=\{\(\) => open\("\/vendor\/notifications"\)\}/);
+  assert.doesNotMatch(shell, /href === "\/notifications"/);
   assert.match(vendorNotifications, /<NotificationsScreen workspace="vendor"/);
   assert.match(shell, /styles\.vendorBottomDock/);
   assert.match(shell, /accessibilityLabel="More seller tools"/);
