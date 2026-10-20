@@ -24,6 +24,15 @@ Recorded 2026-08-02 for the Phase 10/handover baseline:
 
 Docker is unavailable on the current workstation, so container build evidence must come from GitHub CI. Load/security, managed restore, production-scale migration, and Android/iOS device E2E evidence are still required and must be attached to the release record.
 
+## 2026-10-21 local release evidence
+
+- Full monorepo build and test gate passed, including 269 API tests, 441 mobile tests, 36 worker tests, 71 contract tests, 28 domain tests, migration tests, PostgreSQL-backed integration tests, and 102 repository acceptance checks.
+- Expo SDK dependency alignment passed and Expo Doctor reported 21/21 checks passing.
+- Expo web production export completed successfully. The missing Sentry organization/project warning remains an external production configuration gate.
+- Public catalog load smoke passed against the configured database through the local API: 100 requests, concurrency 10, zero failures, 717.43 requests/second, 11 ms p50, 28 ms p95, 29 ms p99, and 32 ms maximum latency after five warm-up requests.
+- Authenticated local browser verification covered the seller dashboard at 360px and desktop widths plus seller products and notifications. Remote-database cold/authenticated requests were visibly slower than cached catalog reads, so production hosting must be colocated with PostgreSQL and authenticated staging load evidence is still required.
+- `npm audit --omit=dev` reported 16 high and 12 moderate findings in the Expo/React Native dependency graph. Expo's compatibility checks are green, but npm proposes incompatible major downgrades; do not use `npm audit fix --force`. Production approval remains blocked until a compatible upstream SDK resolution or documented security acceptance is available.
+
 ## 2026-09-01 business-rule evidence
 
 - Full `npm test` repository gate passed, including API, worker, contracts, domain, migration, PostgreSQL constraints/concurrency, and reference-parity source contracts.
