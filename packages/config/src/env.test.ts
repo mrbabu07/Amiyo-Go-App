@@ -18,6 +18,14 @@ test("API env accepts blank optional values from env example files", () => {
   assert.equal(env.FIREBASE_CLIENT_EMAIL, undefined);
   assert.equal(env.OBJECT_STORAGE_PUBLIC_URL, undefined);
   assert.equal(env.DIRECT_URL, undefined);
+  assert.equal(env.HTTP_REQUEST_TIMEOUT_MS, 30_000);
+  assert.equal(env.HTTP_HEADERS_TIMEOUT_MS, 15_000);
+  assert.equal(env.HTTP_KEEP_ALIVE_TIMEOUT_MS, 5_000);
+  assert.equal(env.HTTP_MAX_REQUESTS_PER_SOCKET, 1_000);
+});
+
+test("API env rejects a headers timeout beyond the request timeout", () => {
+  assert.throws(() => parseApiEnv({ API_PUBLIC_URL: "http://localhost:4000", DATABASE_URL: "postgresql://localhost:5432/amiyogo", REDIS_URL: "redis://localhost:6379", HTTP_REQUEST_TIMEOUT_MS: "10000", HTTP_HEADERS_TIMEOUT_MS: "10001" }), /cannot exceed the request timeout/);
 });
 
 test("API env rejects partial SSLCommerz credentials", () => {

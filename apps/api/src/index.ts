@@ -6,6 +6,7 @@ import { createApiApp } from "./server.js";
 import { CatalogService } from "./modules/catalog/catalog.service.js";
 import { EngagementService } from "./modules/engagement/engagement.service.js";
 import { closeHttpServer } from "./infrastructure/http/close-server.js";
+import { configureHttpServer } from "./infrastructure/http/server-timeouts.js";
 
 const env = parseApiEnv(process.env);
 const app = createApiApp({ slowRequestMs: env.API_SLOW_REQUEST_MS });
@@ -19,6 +20,12 @@ const server = app.listen(env.PORT, () => {
     await new EngagementService(prisma).warmPublicGrowth();
     app.locals.logger.info("Public marketplace cache warmed");
   })().catch((error: unknown) => app.locals.logger.warn({ error }, "Public marketplace cache warmup incomplete"));
+});
+configureHttpServer(server, {
+  requestTimeoutMs: env.HTTP_REQUEST_TIMEOUT_MS,
+  headersTimeoutMs: env.HTTP_HEADERS_TIMEOUT_MS,
+  keepAliveTimeoutMs: env.HTTP_KEEP_ALIVE_TIMEOUT_MS,
+  maxRequestsPerSocket: env.HTTP_MAX_REQUESTS_PER_SOCKET
 });
 
 let shuttingDown = false;

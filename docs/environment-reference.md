@@ -23,6 +23,10 @@ Real values belong in local ignored files or encrypted environment managers. `EX
 | `PORT` | HTTP listener port | Default `4000` |
 | `CORS_ORIGINS` | Comma-separated approved origins | Explicit staging/production values |
 | `TRUST_PROXY_HOPS` | Trusted reverse-proxy count | Match deployment topology |
+| `HTTP_REQUEST_TIMEOUT_MS` | Maximum time for one API request | Default `30000` |
+| `HTTP_HEADERS_TIMEOUT_MS` | Maximum time to receive headers; cannot exceed request timeout | Default `15000` |
+| `HTTP_KEEP_ALIVE_TIMEOUT_MS` | Idle keep-alive connection timeout | Default `5000` |
+| `HTTP_MAX_REQUESTS_PER_SOCKET` | Maximum requests served by one socket | Default `1000` |
 | `FIREBASE_PROJECT_ID` | Authentication project | Required for authenticated flows |
 | `FIREBASE_CLIENT_EMAIL` | Firebase Admin identity | Secret |
 | `FIREBASE_PRIVATE_KEY` | Firebase Admin signing key | Secret; preserve escaped newlines |

@@ -28,6 +28,10 @@ const apiEnvObject = z.object({
   PARCEL_QR_SIGNING_SECRET: optionalSigningSecretSchema,
   PARCEL_QR_TTL_SECONDS: z.coerce.number().int().min(60).max(31_536_000).default(7_776_000),
   API_SLOW_REQUEST_MS: z.coerce.number().int().min(1).max(300_000).default(1_000),
+  HTTP_REQUEST_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(300_000).default(30_000),
+  HTTP_HEADERS_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(120_000).default(15_000),
+  HTTP_KEEP_ALIVE_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(60_000).default(5_000),
+  HTTP_MAX_REQUESTS_PER_SOCKET: z.coerce.number().int().min(1).max(100_000).default(1_000),
   SHUTDOWN_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(120_000).default(15_000),
   LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "fatal"]).default("info")
 });
@@ -41,6 +45,7 @@ function validateFirebaseAdmin(env: z.infer<typeof apiEnvObject>, context: z.Ref
   if (Boolean(env.SSLCOMMERZ_STORE_ID) !== Boolean(env.SSLCOMMERZ_STORE_PASSWORD)) context.addIssue({ code: z.ZodIssueCode.custom, path: ["SSLCOMMERZ_STORE_ID"], message: "SSLCommerz store ID and password must be configured together" });
   if (env.NODE_ENV === "production" && env.SSLCOMMERZ_STORE_ID && env.SSLCOMMERZ_SANDBOX === "true") context.addIssue({ code: z.ZodIssueCode.custom, path: ["SSLCOMMERZ_SANDBOX"], message: "SSLCommerz sandbox mode is forbidden in production" });
   if (["staging", "production"].includes(env.NODE_ENV) && !env.PARCEL_QR_SIGNING_SECRET) context.addIssue({ code: z.ZodIssueCode.custom, path: ["PARCEL_QR_SIGNING_SECRET"], message: "A document QR signing secret is required" });
+  if (env.HTTP_HEADERS_TIMEOUT_MS > env.HTTP_REQUEST_TIMEOUT_MS) context.addIssue({ code: z.ZodIssueCode.custom, path: ["HTTP_HEADERS_TIMEOUT_MS"], message: "HTTP headers timeout cannot exceed the request timeout" });
 }
 
 export const apiEnvSchema = apiEnvObject.superRefine(validateFirebaseAdmin);
