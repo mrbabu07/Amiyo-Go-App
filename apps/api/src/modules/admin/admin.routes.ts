@@ -1,6 +1,5 @@
 import { adminAnalyticsQuerySchema, adminAuditQuerySchema, adminBannerInputSchema, adminCampaignInputSchema, adminCategoryAttributesInputSchema, adminCategoryInputSchema, adminCategoryRequestReviewSchema, adminCouponInputSchema, adminFlashSaleInputSchema, adminInventoryBulkUpdateSchema, adminInventoryUpdateSchema, adminKycReviewInputSchema, adminLoyaltyAdjustmentSchema, adminOrderAddressInputSchema, adminOrderCourierInputSchema, adminOrderReturnWindowInputSchema, adminOrderStatusOverrideSchema, adminToggleInputSchema, adminUserRolesInputSchema, adminUserStatusInputSchema, adminVendorStatusInputSchema, adminVoucherInputSchema, commissionRuleInputSchema, endCommissionRuleSchema, paymentVerificationReviewSchema, platformSettingsInputSchema, trustCaseActionInputSchema, updateAdminCampaignSchema, updateAdminCouponSchema, updateCommissionRuleSchema } from "@amiyo/contracts";
 import { Router } from "express";
-import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
@@ -12,6 +11,7 @@ import { AdminService } from "./admin.service.js";
 import { AdminKycDocumentAccessService } from "./admin-kyc-document-access.service.js";
 import { AdminPaymentEvidenceAccessService } from "./admin-payment-evidence-access.service.js";
 import { FirebaseStorageProvider } from "../media/firebase-storage.provider.js";
+import { marketplaceRateLimit } from "../../middleware/marketplace-rate-limit.js";
 
 const idSchema = z.object({ id: z.string().uuid() });
 const adminChatInputSchema = z.object({ body: z.string().trim().min(1).max(4000) });
@@ -26,7 +26,7 @@ export function createAdminRouter() {
   const kycDocuments = new AdminKycDocumentAccessService(prisma, new FirebaseStorageProvider());
   const paymentEvidence = new AdminPaymentEvidenceAccessService(prisma, new FirebaseStorageProvider());
   const authenticate = createAuthenticationMiddleware(new FirebaseTokenVerifier(), new IdentityService(prisma));
-  const writes = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: "draft-7", legacyHeaders: false, message: { title: "Too many admin requests", status: 429, code: "ADMIN_RATE_LIMITED" } });
+  const writes = marketplaceRateLimit("admin-writes", { windowMs: 60_000, limit: 30, standardHeaders: "draft-7", legacyHeaders: false, message: { title: "Too many admin requests", status: 429, code: "ADMIN_RATE_LIMITED" } });
   router.get("/api/v2/platform/settings", async (_req, res, next) => { try { res.json(await service.publicSettings()); } catch (error) { next(error); } });
   router.use("/api/v2/admin/workspace", authenticate);
   router.get("/api/v2/admin/workspace/search", async (req, res, next) => { try {

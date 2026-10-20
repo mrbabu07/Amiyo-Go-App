@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { accountDeletionInputSchema, accountPreferencesSchema, addressInputSchema, deviceInputSchema, updateProfileSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
@@ -7,6 +6,7 @@ import { FirebaseTokenVerifier } from "./firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "./identity.middleware.js";
 import { IdentityService } from "./identity.service.js";
 import type { IdentityTokenVerifier } from "./identity.types.js";
+import { marketplaceRateLimit } from "../../middleware/marketplace-rate-limit.js";
 
 const idParamsSchema = z.object({ id: z.string().uuid() });
 
@@ -20,7 +20,7 @@ export function createIdentityRouter(options?: { service?: IdentityService; veri
   const service = options?.service ?? new IdentityService(prisma);
   const verifier = options?.verifier ?? new FirebaseTokenVerifier();
   const authenticate = createAuthenticationMiddleware(verifier, service);
-  const sessionRateLimit = rateLimit({
+  const sessionRateLimit = marketplaceRateLimit("auth-session", {
     windowMs: 60_000,
     limit: 30,
     standardHeaders: "draft-8",

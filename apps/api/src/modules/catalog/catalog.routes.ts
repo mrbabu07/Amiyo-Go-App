@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { archiveProductSchema, bulkProductCsvInputSchema, catalogQuerySchema, createProductSchema, cursorPaginationQuerySchema, discoveryEventInputSchema, inventoryAdjustmentSchema, moderationInputSchema, replaceProductMediaSchema, replaceProductVariantsSchema, updateProductSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
@@ -7,6 +6,7 @@ import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "../identity/identity.middleware.js";
 import { IdentityService } from "../identity/identity.service.js";
 import { CatalogService } from "./catalog.service.js";
+import { marketplaceRateLimit } from "../../middleware/marketplace-rate-limit.js";
 
 const identifierSchema = z.object({ id: z.string().trim().min(1).max(220) });
 const vendorScopeSchema = z.object({ vendorId: z.string().uuid().optional() });
@@ -21,7 +21,7 @@ export function createCatalogRouter() {
   const router = Router();
   const service = new CatalogService(prisma);
   const authenticate = createAuthenticationMiddleware(new FirebaseTokenVerifier(), new IdentityService(prisma));
-  const discoveryWrites = rateLimit({ windowMs: 60_000, limit: 60, standardHeaders: "draft-7", legacyHeaders: false });
+  const discoveryWrites = marketplaceRateLimit("catalog-discovery", { windowMs: 60_000, limit: 60, standardHeaders: "draft-7", legacyHeaders: false });
 
   router.get("/api/v2/catalog/categories", async (_req, res, next) => {
     try { res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300").json(await service.categories()); } catch (error) { next(error); }

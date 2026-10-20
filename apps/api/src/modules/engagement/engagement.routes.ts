@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { adminNotificationBroadcastInputSchema, answerInputSchema, chatMessageInputSchema, chatThreadInputSchema, contentModerationInputSchema, createPromotionSchema, newsletterBroadcastInputSchema, newsletterSubscribeInputSchema, productReportInputSchema, questionInputSchema, referralCodeInputSchema, reviewInputSchema, stockAlertInputSchema, productAlertSelectionSchema, vendorReviewReplyInputSchema, wishlistItemInputSchema, wishlistSelectionSchema, wishlistCollectionInputSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
@@ -7,6 +6,7 @@ import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "../identity/identity.middleware.js";
 import { IdentityService } from "../identity/identity.service.js";
 import { EngagementService } from "./engagement.service.js";
+import { marketplaceRateLimit } from "../../middleware/marketplace-rate-limit.js";
 import { WishlistCollectionsService } from "./wishlist-collections.service.js";
 import { FlashAlertService } from "./flash-alert.service.js";
 
@@ -18,8 +18,8 @@ export function createEngagementRouter() {
   const router = Router(); const service = new EngagementService(prisma); const authenticate = createAuthenticationMiddleware(new FirebaseTokenVerifier(), new IdentityService(prisma));
   const collections = new WishlistCollectionsService(prisma);
   const flashAlerts = new FlashAlertService(prisma);
-  const writeLimit = rateLimit({ windowMs: 60_000, limit: 20, standardHeaders: "draft-7", legacyHeaders: false, message: { type: "https://amiyo.app/problems/rate-limit", title: "Too many requests", status: 429, code: "ENGAGEMENT_RATE_LIMITED" } });
-  const chatLimit = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: "draft-7", legacyHeaders: false, message: { type: "https://amiyo.app/problems/rate-limit", title: "Too many messages", status: 429, code: "CHAT_RATE_LIMITED" } });
+  const writeLimit = marketplaceRateLimit("engagement-writes", { windowMs: 60_000, limit: 20, standardHeaders: "draft-7", legacyHeaders: false, message: { type: "https://amiyo.app/problems/rate-limit", title: "Too many requests", status: 429, code: "ENGAGEMENT_RATE_LIMITED" } });
+  const chatLimit = marketplaceRateLimit("chat-writes", { windowMs: 60_000, limit: 30, standardHeaders: "draft-7", legacyHeaders: false, message: { type: "https://amiyo.app/problems/rate-limit", title: "Too many messages", status: 429, code: "CHAT_RATE_LIMITED" } });
 
   router.get("/api/v2/growth/feed", async (_req, res, next) => { try { res.set("Cache-Control", "public, max-age=15, stale-while-revalidate=30").json(await service.growthFeed()); } catch (error) { next(error); } });
   router.post("/api/v2/newsletter/subscribe", writeLimit, async (req, res, next) => { try { res.status(201).json(await service.subscribeNewsletter(newsletterSubscribeInputSchema.parse(req.body))); } catch (error) { next(error); } });

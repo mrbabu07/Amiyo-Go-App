@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { createSupportTicketSchema, supportMessageInputSchema, supportTicketStatusInputSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
@@ -7,6 +6,7 @@ import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "../identity/identity.middleware.js";
 import { IdentityService } from "../identity/identity.service.js";
 import { SupportService } from "./support.service.js";
+import { marketplaceRateLimit } from "../../middleware/marketplace-rate-limit.js";
 import { SupportAttachmentAccessService } from "./support-attachment-access.service.js";
 import { FirebaseStorageProvider } from "../media/firebase-storage.provider.js";
 
@@ -17,7 +17,7 @@ export function createSupportRouter() {
   const service = new SupportService(prisma);
   const attachmentAccess = new SupportAttachmentAccessService(prisma, new FirebaseStorageProvider());
   const authenticate = createAuthenticationMiddleware(new FirebaseTokenVerifier(), new IdentityService(prisma));
-  const writeLimit = rateLimit({ windowMs: 60_000, limit: 20, standardHeaders: "draft-7", legacyHeaders: false, message: { type: "https://amiyo.app/problems/rate-limit", title: "Too many requests", status: 429, code: "SUPPORT_RATE_LIMITED" } });
+  const writeLimit = marketplaceRateLimit("support-writes", { windowMs: 60_000, limit: 20, standardHeaders: "draft-7", legacyHeaders: false, message: { type: "https://amiyo.app/problems/rate-limit", title: "Too many requests", status: 429, code: "SUPPORT_RATE_LIMITED" } });
 
   router.use(["/api/v2/support", "/api/v2/admin/support"], authenticate);
   router.get("/api/v2/support/tickets", async (req, res, next) => { try { res.json(await service.listMine(requireSession(req))); } catch (error) { next(error); } });

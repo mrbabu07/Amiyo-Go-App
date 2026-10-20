@@ -1,8 +1,8 @@
 import type { Request } from "express";
-import { rateLimit } from "express-rate-limit";
+import { marketplaceRateLimit } from "./marketplace-rate-limit.js";
 
 export function authenticatedWriteLimit(options: { code: string; limit: number; windowMs?: number }) {
-  return rateLimit({
+  return marketplaceRateLimit(options.code.toLowerCase(), {
     windowMs: options.windowMs ?? 60_000,
     limit: options.limit,
     standardHeaders: "draft-8",
