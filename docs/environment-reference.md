@@ -11,7 +11,7 @@ Real values belong in local ignored files or encrypted environment managers. `EX
 | `APP_PUBLIC_URL` | Customer app origin used after hosted payment redirects | Required for online payments |
 | `DATABASE_URL` | Pooled PostgreSQL runtime connection | Required; secret |
 | `DIRECT_URL` | Direct PostgreSQL migration connection | CI migration only; secret |
-| `REDIS_URL` | TLS Redis connection | Required for worker; secret |
+| `REDIS_URL` | TLS Redis connection | Required for API shared rate limits and worker queues; secret |
 | `LOG_LEVEL` | Structured log threshold | Default `info` |
 | `SENTRY_DSN` | Server error reporting destination | Required before release |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Trace/metric exporter | Required before release |

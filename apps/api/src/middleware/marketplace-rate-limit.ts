@@ -20,3 +20,15 @@ export function marketplaceRateLimit(prefix: string, options: RateLimitOptions) 
   const store = sharedStore(prefix);
   return rateLimit({ ...options, ...(store ? { store, passOnStoreError: false } : {}) });
 }
+
+export async function checkRateLimitStore() {
+  if (redis && await redis.ping() !== "PONG") throw new Error("Redis rate-limit store did not acknowledge readiness");
+}
+
+export async function closeRateLimitStore() {
+  if (!redis) return;
+  const client = redis;
+  redis = undefined;
+  if (["ready", "connect", "connecting"].includes(client.status)) await client.quit();
+  else client.disconnect();
+}

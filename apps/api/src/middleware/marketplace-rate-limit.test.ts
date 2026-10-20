@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { marketplaceRateLimit } from "./marketplace-rate-limit.js";
+import { checkRateLimitStore, closeRateLimitStore, marketplaceRateLimit } from "./marketplace-rate-limit.js";
 
 test("local rate limits retain the in-process store", () => {
   const previous = process.env.NODE_ENV;
@@ -23,4 +23,9 @@ test("production refuses a process-local rate-limit fallback", () => {
     if (previousNodeEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previousNodeEnv;
     if (previousRedisUrl === undefined) delete process.env.REDIS_URL; else process.env.REDIS_URL = previousRedisUrl;
   }
+});
+
+test("local readiness and shutdown do not require Redis", async () => {
+  await checkRateLimitStore();
+  await closeRateLimitStore();
 });
