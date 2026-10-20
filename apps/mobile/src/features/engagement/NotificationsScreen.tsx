@@ -10,6 +10,9 @@ import { EngagementState } from "./components/EngagementState";
 import { getNotifications, readNotification } from "./engagement.api";
 
 function notificationIcon(type: string) {
+  if (type.includes("payout")) return "wallet-outline";
+  if (type.includes("return")) return "return-down-back-outline";
+  if (type.includes("product")) return "cube-outline";
   if (type.includes("order") || type.includes("delivery")) return "cube-outline";
   if (type.includes("chat") || type.includes("message")) return "chatbubble-outline";
   if (type.includes("stock") || type.includes("price")) return "pricetag-outline";

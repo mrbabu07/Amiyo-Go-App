@@ -10,6 +10,15 @@ import { parseProductCsv, serializeProductCsv } from "./product-csv.js";
 
 const catalogPublicCache = new TtlCache();
 
+export async function notifyProductModeration(transaction: TransactionClient, input: { productId: string; productName: string; vendorId: string; decisionVersion: number; status: "APPROVED" | "REJECTED"; reason?: string | null }) {
+  const members = await transaction.vendorMember.findMany({ where: { vendorId: input.vendorId, status: "active", user: { status: "ACTIVE" } }, select: { userId: true } });
+  for (const userId of new Set(members.map((member) => member.userId))) {
+    const idempotencyKey = `vendor-product-${input.status.toLowerCase()}:${input.productId}:${input.decisionVersion}:${userId}`;
+    const detail = input.status === "APPROVED" ? "is now live in the marketplace." : `needs changes${input.reason ? `: ${input.reason}` : "."}`;
+    await transaction.notification.upsert({ where: { idempotencyKey }, update: {}, create: { userId, type: `vendor.product.${input.status.toLowerCase()}`, title: `Product ${input.status.toLowerCase()}`, body: `${input.productName} ${detail}`, data: { href: `/vendor/products/${input.productId}`, productId: input.productId }, idempotencyKey, deliveries: { create: { channel: "in_app", status: "DELIVERED", deliveredAt: new Date() } } } });
+  }
+}
+
 function mediaUrl(storageKey: string | null) {
   if (!storageKey) return null;
   if (/^https?:\/\//.test(storageKey)) return storageKey;
@@ -468,6 +477,7 @@ export class CatalogService {
     return withSerializableTransaction(this.client, async (transaction) => {
       const after = await transaction.product.update({ where: { id: productId }, data: { status: input.status, publishedAt: input.status === "APPROVED" ? new Date() : null, version: { increment: 1 } } });
       await transaction.productModerationEvent.create({ data: { productId, fromStatus: before.status, toStatus: input.status, actorUserId: session.principal.userId, reason: input.reason } });
+      await notifyProductModeration(transaction, { productId, productName: before.name, vendorId: before.vendorId, decisionVersion: after.version, status: input.status, reason: input.reason ?? null });
       await audit(transaction, { actorUserId: session.principal.userId, action: `catalog.product.${input.status.toLowerCase()}`, resourceId: productId, ...(correlationId ? { correlationId } : {}), before: { status: before.status }, after: { status: after.status, reason: input.reason } });
       return after;
     });

@@ -61,6 +61,14 @@ export async function notifyVendorPayoutStatus(transaction: TransactionClient, i
   }
 }
 
+export async function notifyVendorReturnRequested(transaction: TransactionClient, input: { returnId: string; vendorId: string; orderNumber: string; reasonCode: string }) {
+  const members = await transaction.vendorMember.findMany({ where: { vendorId: input.vendorId, status: "active", user: { status: "ACTIVE" } }, select: { userId: true } });
+  for (const userId of new Set(members.map((member) => member.userId))) {
+    const idempotencyKey = `vendor-return-requested:${input.returnId}:${userId}`;
+    await transaction.notification.upsert({ where: { idempotencyKey }, update: {}, create: { userId, type: "vendor.return.requested", title: `Return requested for ${input.orderNumber}`, body: `A customer submitted a ${input.reasonCode.toLowerCase().replaceAll("_", " ")} return request that needs review.`, data: { href: `/vendor/returns/${input.returnId}`, returnId: input.returnId }, idempotencyKey, deliveries: { create: { channel: "in_app", status: "DELIVERED", deliveredAt: new Date() } } } });
+  }
+}
+
 export class OperationsService {
   private readonly outbox = new OutboxRepository();
   constructor(private readonly client: PrismaClient, private readonly sslCommerz = new SslCommerzGateway()) {}
@@ -118,6 +126,7 @@ export class OperationsService {
       });
       const created = await transaction.return.create({ data: { orderId: vendorOrder.orderId, vendorOrderId: vendorOrder.id, userId: session.principal.userId, reasonCode: input.reasonCode, reasonDetail: input.reasonDetail ?? null, refundMethod: input.refundMethod, requestedMinor, currency: vendorOrder.order.currency, items: { create: items }, events: { create: { toStatus: "REQUESTED", actorType: "customer", actorId: session.principal.userId, metadata: json({ evidenceStorageKeys }) } } }, include: { items: true } });
       await transaction.order.update({ where: { id: vendorOrder.orderId }, data: { status: "RETURN_REQUESTED", version: { increment: 1 } } });
+      await notifyVendorReturnRequested(transaction, { returnId: created.id, vendorId: vendorOrder.vendorId, orderNumber: vendorOrder.order.orderNumber, reasonCode: input.reasonCode });
       await this.outbox.enqueue(transaction, { aggregateType: "return", aggregateId: created.id, eventType: "return.requested", idempotencyKey: `return-requested:${created.id}`, payload: { orderId: created.orderId, vendorOrderId: created.vendorOrderId } });
       await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "customer", action: "return.requested", resourceType: "return", resourceId: created.id, ...(correlationId ? { correlationId } : {}), after: json({ requestedMinor: requestedMinor.toString(), reasonCode: input.reasonCode }) } });
       const result = returnDto(created); await remember(transaction, scope, key, prior.hash, result); return result;

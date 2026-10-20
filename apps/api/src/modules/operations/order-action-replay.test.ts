@@ -32,9 +32,11 @@ function replayClient(kind: "cancel" | "return", now: number) {
       updateMany: async () => { write("packages-cancelled"); },
       findFirst: async ({ where }: { where: { order: { userId: string }; status: string } }) => {
         assert.equal(where.status, "DELIVERED");
-        return completed || where.order.userId !== "customer" ? null : { id: "package", orderId: "order", order: { currency: "BDT", returnWindowUntil: null }, shipments: [{ deliveredAt: new Date(now - 1000) }], items: [{ id: "item", quantity: 3, lineTotalMinor: 900n, returnItems: [{ quantity: 1 }] }] };
+        return completed || where.order.userId !== "customer" ? null : { id: "package", orderId: "order", vendorId: "vendor", order: { orderNumber: "AGO-RETURN", currency: "BDT", returnWindowUntil: null }, shipments: [{ deliveredAt: new Date(now - 1000) }], items: [{ id: "item", quantity: 3, lineTotalMinor: 900n, returnItems: [{ quantity: 1 }] }] };
       }
     },
+    vendorMember: { findMany: async () => [{ userId: "vendor-owner" }] },
+    notification: { upsert: async () => { write("notification"); } },
     return: { create: async ({ data }: { data: { requestedMinor: bigint; reasonCode: string; reasonDetail?: string; items: { create: Array<{ orderItemId: string; quantity: number; requestedMinor: bigint }> } } }) => {
       write("return");
       return { ...data, id: "return", orderId: "order", vendorOrderId: "package", status: "REQUESTED", currency: "BDT", approvedMinor: null, reasonDetail: data.reasonDetail ?? null, version: 1, createdAt: new Date(now), items: data.items.create.map((item) => ({ ...item, id: "return-item", inspection: null })) };
@@ -75,7 +77,7 @@ test("lost partial-return response replays without duplicating quantities, audit
   const input = { vendorOrderId: "package", reasonCode: "DAMAGED" as const, refundMethod: "ORIGINAL_PAYMENT" as const, items: [{ orderItemId: "item", quantity: 1 }] };
   await assert.rejects(() => service.createReturn(customer, input, key), /response lost after commit/);
   const committed = [...effects];
-  assert.deepEqual(committed, ["return", "order", "outbox", "audit", "idempotency"]);
+  assert.deepEqual(committed, ["return", "order", "notification", "outbox", "audit", "idempotency"]);
   now += 8 * 86400000;
   const replay = await service.createReturn(customer, input, key) as { requestedAmount: { amountMinor: string }; items: Array<{ quantity: number }> };
   assert.equal(replay.requestedAmount.amountMinor, "300");

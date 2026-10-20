@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Prisma } from "@prisma/client";
-import { notifyVendorPayoutStatus } from "./operations.service.js";
+import { notifyVendorPayoutStatus, notifyVendorReturnRequested } from "./operations.service.js";
 
 test("payout decisions notify active seller members once with finance routing", async () => {
   const created: Array<Record<string, unknown>> = [];
@@ -29,4 +29,17 @@ test("paid payout notification preserves exact minor units", async () => {
   await notifyVendorPayoutStatus(transaction, { requestId: "request-2", vendorId: "vendor-1", amountMinor: 50000n, status: "PAID" });
   assert.equal(created?.body, "Your BDT 500.00 payout request has been paid.");
   assert.equal(created?.idempotencyKey, "vendor-payout-paid:request-2:owner-1");
+});
+
+test("new returns notify the seller with the owned case route", async () => {
+  let created: Record<string, unknown> | undefined;
+  const transaction = {
+    vendorMember: { findMany: async () => [{ userId: "owner-1" }] },
+    notification: { upsert: async (input: { create: Record<string, unknown> }) => { created = input.create; } }
+  } as unknown as Prisma.TransactionClient;
+
+  await notifyVendorReturnRequested(transaction, { returnId: "return-1", vendorId: "vendor-1", orderNumber: "AGO-200", reasonCode: "WRONG_ITEM" });
+  assert.equal(created?.type, "vendor.return.requested");
+  assert.equal(created?.body, "A customer submitted a wrong item return request that needs review.");
+  assert.deepEqual(created?.data, { href: "/vendor/returns/return-1", returnId: "return-1" });
 });
