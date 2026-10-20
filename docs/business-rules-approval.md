@@ -4,6 +4,13 @@ Date: 2026-09-01
 Scope: refunds, promotion stacking, loyalty guardrails, payout settlement  
 Status: implemented in code; live-provider rollout still requires staging evidence and operator credentials.
 
+## Customer Cancellation Rules
+
+- The default customer cancellation window is 30 minutes after order placement.
+- Administrators may configure 5 to 1,440 minutes through versioned platform business rules.
+- Customer cancellation remains limited to eligible parent and seller-fulfillment states; administrative cancellation follows the separate privileged workflow.
+- Changing the rule affects future eligibility checks and does not bypass idempotent replay of an already committed cancellation.
+
 ## Refund Provider Rules
 
 - Gateway payments through SSLCommerz, bKash, or Nagad require a provider refund reference before an admin refund can be marked completed.

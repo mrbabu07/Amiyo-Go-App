@@ -20,7 +20,6 @@ const money = (amountMinor: bigint, currency = "BDT") => ({ amountMinor: amountM
 const requestHash = (input: unknown) => createHash("sha256").update(JSON.stringify(input)).digest("hex");
 const elevated = (session: Session) => session.principal.roles.some((role) => ["FINANCE_ADMIN", "OPERATIONS_ADMIN", "SUPER_ADMIN"].includes(role));
 const deliveryOperator = (session: Session) => session.principal.roles.some((role) => ["OPERATIONS_ADMIN", "SUPER_ADMIN"].includes(role));
-const customerCancellationWindowMs = 30 * 60_000;
 
 async function verifySslRefund(gateway: SslCommerzGateway, payment: { provider: string; attempts: Array<{ responseSnapshot: Prisma.JsonValue | null }> }, reference?: string | null) {
   if (payment.provider.toLowerCase() !== "sslcommerz") return;
@@ -72,7 +71,8 @@ export class OperationsService {
       if (!order) throw new ApiProblem(404, "ORDER_NOT_FOUND", "Order not found");
       if (order.version !== input.expectedVersion) throw new ApiProblem(409, "ORDER_VERSION_CONFLICT", "Order changed; refresh and try again");
       const placedAt = order.placedAt ?? order.createdAt;
-      if (!adminCancellation && placedAt.getTime() + customerCancellationWindowMs <= Date.now()) throw new ApiProblem(409, "ORDER_CANCELLATION_WINDOW_EXPIRED", "Orders can only be cancelled within 30 minutes of placement");
+      const cancellationMinutes = (await loadBusinessRules(transaction)).rules.orders.customerCancellationMinutes;
+      if (!adminCancellation && placedAt.getTime() + cancellationMinutes * 60_000 <= Date.now()) throw new ApiProblem(409, "ORDER_CANCELLATION_WINDOW_EXPIRED", `Orders can only be cancelled within ${cancellationMinutes} minutes of placement`);
       if (!["PENDING_PAYMENT", "CONFIRMED", "PROCESSING"].includes(order.status) || order.vendorOrders.some((item) => !["PLACED", "ACCEPTED", "PROCESSING"].includes(item.status))) throw new ApiProblem(409, "ORDER_CANCELLATION_NOT_ALLOWED", "Order can no longer be cancelled");
       for (const reservation of order.reservations) {
         const inventory = await transaction.inventoryItem.findUniqueOrThrow({ where: { variantId: reservation.variantId } });

@@ -18,4 +18,6 @@ test("admin settings exposes live platform control hierarchy", () => {
   assert.match(source, /healthyServices/);
   assert.match(source, /enabledCapabilities/);
   assert.match(source, /compact && premiumStyles\.heroCompact/);
+  assert.match(source, /Customer cancellation window \(minutes\)/);
+  assert.match(source, /businessRules\.orders\.customerCancellationMinutes/);
 });

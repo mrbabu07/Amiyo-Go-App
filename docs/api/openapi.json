@@ -36545,6 +36545,19 @@
                             "allowCodeWithAutomatic"
                           ]
                         },
+                        "orders": {
+                          "type": "object",
+                          "properties": {
+                            "customerCancellationMinutes": {
+                              "type": "integer",
+                              "minimum": 5,
+                              "maximum": 1440
+                            }
+                          },
+                          "required": [
+                            "customerCancellationMinutes"
+                          ]
+                        },
                         "settlement": {
                           "type": "object",
                           "properties": {
@@ -36604,6 +36617,9 @@
                           "maximumStackedDiscountBps": 3500,
                           "allowCodeWithAutomatic": true
                         },
+                        "orders": {
+                          "customerCancellationMinutes": 30
+                        },
                         "settlement": {
                           "minimumPayoutMinor": "50000",
                           "holdDays": 7,
@@ -36618,6 +36634,7 @@
                       "required": [
                         "loyalty",
                         "promotions",
+                        "orders",
                         "settlement",
                         "refunds"
                       ]
@@ -37116,6 +37133,19 @@
                           "allowCodeWithAutomatic"
                         ]
                       },
+                      "orders": {
+                        "type": "object",
+                        "properties": {
+                          "customerCancellationMinutes": {
+                            "type": "integer",
+                            "minimum": 5,
+                            "maximum": 1440
+                          }
+                        },
+                        "required": [
+                          "customerCancellationMinutes"
+                        ]
+                      },
                       "settlement": {
                         "type": "object",
                         "properties": {
@@ -37175,6 +37205,9 @@
                         "maximumStackedDiscountBps": 3500,
                         "allowCodeWithAutomatic": true
                       },
+                      "orders": {
+                        "customerCancellationMinutes": 30
+                      },
                       "settlement": {
                         "minimumPayoutMinor": "50000",
                         "holdDays": 7,
@@ -37189,6 +37222,7 @@
                     "required": [
                       "loyalty",
                       "promotions",
+                      "orders",
                       "settlement",
                       "refunds"
                     ]
@@ -37554,6 +37588,19 @@
                             "allowCodeWithAutomatic"
                           ]
                         },
+                        "orders": {
+                          "type": "object",
+                          "properties": {
+                            "customerCancellationMinutes": {
+                              "type": "integer",
+                              "minimum": 5,
+                              "maximum": 1440
+                            }
+                          },
+                          "required": [
+                            "customerCancellationMinutes"
+                          ]
+                        },
                         "settlement": {
                           "type": "object",
                           "properties": {
@@ -37613,6 +37660,9 @@
                           "maximumStackedDiscountBps": 3500,
                           "allowCodeWithAutomatic": true
                         },
+                        "orders": {
+                          "customerCancellationMinutes": 30
+                        },
                         "settlement": {
                           "minimumPayoutMinor": "50000",
                           "holdDays": 7,
@@ -37627,6 +37677,7 @@
                       "required": [
                         "loyalty",
                         "promotions",
+                        "orders",
                         "settlement",
                         "refunds"
                       ]
