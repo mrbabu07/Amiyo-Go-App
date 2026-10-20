@@ -45,6 +45,7 @@ function validateFirebaseAdmin(env: z.infer<typeof apiEnvObject>, context: z.Ref
   if (Boolean(env.SSLCOMMERZ_STORE_ID) !== Boolean(env.SSLCOMMERZ_STORE_PASSWORD)) context.addIssue({ code: z.ZodIssueCode.custom, path: ["SSLCOMMERZ_STORE_ID"], message: "SSLCommerz store ID and password must be configured together" });
   if (env.NODE_ENV === "production" && env.SSLCOMMERZ_STORE_ID && env.SSLCOMMERZ_SANDBOX === "true") context.addIssue({ code: z.ZodIssueCode.custom, path: ["SSLCOMMERZ_SANDBOX"], message: "SSLCommerz sandbox mode is forbidden in production" });
   if (["staging", "production"].includes(env.NODE_ENV) && !env.PARCEL_QR_SIGNING_SECRET) context.addIssue({ code: z.ZodIssueCode.custom, path: ["PARCEL_QR_SIGNING_SECRET"], message: "A document QR signing secret is required" });
+  if (["staging", "production"].includes(env.NODE_ENV) && new URL(env.REDIS_URL).protocol !== "rediss:") context.addIssue({ code: z.ZodIssueCode.custom, path: ["REDIS_URL"], message: "TLS Redis (rediss://) is required outside local development" });
   if (env.HTTP_HEADERS_TIMEOUT_MS > env.HTTP_REQUEST_TIMEOUT_MS) context.addIssue({ code: z.ZodIssueCode.custom, path: ["HTTP_HEADERS_TIMEOUT_MS"], message: "HTTP headers timeout cannot exceed the request timeout" });
 }
 

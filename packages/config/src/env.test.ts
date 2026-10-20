@@ -33,5 +33,12 @@ test("API env rejects partial SSLCommerz credentials", () => {
 });
 
 test("API env forbids SSLCommerz sandbox credentials in production", () => {
-  assert.throws(() => parseApiEnv({ NODE_ENV: "production", API_PUBLIC_URL: "https://api.example.com", DATABASE_URL: "postgresql://localhost:5432/amiyogo", REDIS_URL: "redis://localhost:6379", FIREBASE_PROJECT_ID: "amiyo-app", FIREBASE_USE_APPLICATION_DEFAULT: "true", FIREBASE_STORAGE_BUCKET: "bucket.example", SSLCOMMERZ_STORE_ID: "sandbox-store", SSLCOMMERZ_STORE_PASSWORD: "sandbox-password", SSLCOMMERZ_SANDBOX: "true" }), /sandbox mode is forbidden/);
+  assert.throws(() => parseApiEnv({ NODE_ENV: "production", API_PUBLIC_URL: "https://api.example.com", DATABASE_URL: "postgresql://localhost:5432/amiyogo", REDIS_URL: "rediss://redis.example.com:6379", FIREBASE_PROJECT_ID: "amiyo-app", FIREBASE_USE_APPLICATION_DEFAULT: "true", FIREBASE_STORAGE_BUCKET: "bucket.example", SSLCOMMERZ_STORE_ID: "sandbox-store", SSLCOMMERZ_STORE_PASSWORD: "sandbox-password", SSLCOMMERZ_SANDBOX: "true" }), /sandbox mode is forbidden/);
+});
+
+test("staging and production require TLS Redis while local development remains compatible", () => {
+  const shared = { API_PUBLIC_URL: "https://api.example.com", DATABASE_URL: "postgresql://database.example.com/amiyogo", FIREBASE_PROJECT_ID: "amiyo-app", FIREBASE_USE_APPLICATION_DEFAULT: "true", FIREBASE_STORAGE_BUCKET: "bucket.example", PARCEL_QR_SIGNING_SECRET: "a".repeat(32) };
+  assert.throws(() => parseApiEnv({ ...shared, NODE_ENV: "staging", REDIS_URL: "redis://redis.example.com:6379" }), /TLS Redis/);
+  assert.equal(parseApiEnv({ ...shared, NODE_ENV: "production", REDIS_URL: "rediss://redis.example.com:6379", SSLCOMMERZ_SANDBOX: "false" }).REDIS_URL, "rediss://redis.example.com:6379");
+  assert.equal(parseApiEnv({ API_PUBLIC_URL: "http://localhost:4000", DATABASE_URL: "postgresql://localhost:5432/amiyogo", REDIS_URL: "redis://localhost:6379" }).REDIS_URL, "redis://localhost:6379");
 });
