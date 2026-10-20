@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-const { absoluteMinor, minorToMajorInput, parseMajorToMinor } = await import(new URL("./money.ts", import.meta.url).href) as typeof import("./money");
+import { absoluteMinor, minorToMajorInput, parseMajorToMinor } from "./money";
 
 test("minor units convert to editable decimal text without floating point", () => {
   assert.equal(minorToMajorInput("0"), "0.00");

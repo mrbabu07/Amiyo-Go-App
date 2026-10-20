@@ -14,7 +14,7 @@ const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
 Sentry.init({ dsn, enabled: Boolean(dsn), environment: __DEV__ ? "development" : "production", sendDefaultPii: false, tracesSampleRate: __DEV__ ? 0 : 0.1 });
 
 function RootLayout() {
-  const [queryClient] = useState(() => new QueryClient({ defaultOptions: { queries: { networkMode: "offlineFirst", retry: 2, staleTime: 30_000 } } }));
+  const [queryClient] = useState(() => new QueryClient({ defaultOptions: { queries: { gcTime: 10 * 60_000, networkMode: "offlineFirst", retry: 1, retryDelay: (attempt) => Math.min(500 * 2 ** attempt, 2_000), staleTime: 30_000 } } }));
   const colorScheme = useColorScheme();
   return <Sentry.ErrorBoundary fallback={<CrashFallback />}>
     <ThemeProvider><QueryClientProvider client={queryClient}>
@@ -33,10 +33,14 @@ function GlobalWebStyles() {
     if (Platform.OS !== "web" || typeof document === "undefined") return;
     const styleId = "amiyo-web-fonts";
     if (document.getElementById(styleId)) return;
+    const fontLink = document.createElement("link");
+    fontLink.id = `${styleId}-stylesheet`;
+    fontLink.rel = "stylesheet";
+    fontLink.href = "https://fonts.googleapis.com/css2?family=Croissant+One&family=Lora:wght@500;600&family=Quicksand:wght@400;500;600;700&display=swap";
+    document.head.appendChild(fontLink);
     const style = document.createElement("style");
     style.id = styleId;
     style.textContent = `
-@import url('https://fonts.googleapis.com/css2?family=Croissant+One&family=Lora:ital,wght@0,400..700;1,400..700&family=Noto+Serif:ital,wght@0,100..900;1,100..900&family=Quicksand:wght@300..700&display=swap');
 html, body, #root { font-family: ${typography.fontFamily}; }
 body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 * { font-family: ${typography.fontFamily}; }
