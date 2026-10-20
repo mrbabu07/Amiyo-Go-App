@@ -53,6 +53,18 @@ test("deploy workflow validates environment before publishing images", async () 
   assert.doesNotMatch(preflight, /STORE_PASSWORD|PRIVATE_KEY|INTEGRATION_TOKEN/);
 });
 
+test("staging smoke retains public contract and load evidence", async () => {
+  const workflow = await readFile(new URL("../.github/workflows/staging-smoke.yml", import.meta.url), "utf8");
+  const smoke = await readFile(new URL("./marketplace-smoke.mjs", import.meta.url), "utf8");
+  assert.match(workflow, /environment: staging/);
+  assert.match(workflow, /npm run smoke:marketplace/);
+  assert.match(workflow, /npm run smoke:load/);
+  assert.match(workflow, /actions\/upload-artifact@v4/);
+  assert.match(workflow, /LOAD_MAX_FAILURE_RATE: "0"/);
+  assert.match(smoke, /SMOKE_REPORT_PATH/);
+  assert.match(smoke, /flag: "wx"/);
+});
+
 test("mobile release uses the hardened Expo SDK and explicit build profiles", async () => {
   const mobilePackage = JSON.parse(await readFile(new URL("../apps/mobile/package.json", import.meta.url), "utf8"));
   const eas = JSON.parse(await readFile(new URL("../apps/mobile/eas.json", import.meta.url), "utf8"));

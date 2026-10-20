@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { writeFile } from "node:fs/promises";
 import { categorySchema, healthResponseSchema, productDetailSchema, productListResponseSchema, shopListResponseSchema } from "@amiyo/contracts";
 
 const origin = new URL(process.env.SMOKE_API_URL || "http://127.0.0.1:4000");
@@ -28,5 +29,8 @@ const products = await check("/api/v2/catalog/products?limit=2", 200, productLis
 await check("/api/v2/shops?limit=2", 200, shopListResponseSchema, (page) => { if (requireData) assert.ok(page.data.length, "No published shops"); });
 if (products?.data.length) await check(`/api/v2/catalog/products/${encodeURIComponent(products.data[0].slug || products.data[0].id)}`, 200, productDetailSchema);
 for (const path of ["/api/v2/orders", "/api/v2/vendor/orders", "/api/v2/admin/workspace"]) await check(path, 401);
-console.log(JSON.stringify({ kind: "read-only-marketplace-smoke", results }, null, 2));
+const report = { kind: "read-only-marketplace-smoke", measuredAt: new Date().toISOString(), origin: origin.origin, results };
+const output = JSON.stringify(report, null, 2);
+console.log(output);
+if (process.env.SMOKE_REPORT_PATH) await writeFile(process.env.SMOKE_REPORT_PATH, `${output}\n`, { encoding: "utf8", flag: "wx" });
 if (results.some((result) => result.status === "fail")) process.exitCode = 1;

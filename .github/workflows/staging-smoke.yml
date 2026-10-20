@@ -1,0 +1,53 @@
+name: Staging Smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-smoke
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    environment: staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run prisma:generate
+      - run: npm run build
+      - name: Public marketplace contract smoke
+        run: npm run smoke:marketplace
+        env:
+          SMOKE_API_URL: ${{ vars.API_PUBLIC_URL }}
+          SMOKE_REQUIRE_DATA: "1"
+          SMOKE_REPORT_PATH: staging-marketplace-smoke.json
+      - name: Bounded public catalog load smoke
+        run: npm run smoke:load
+        env:
+          LOAD_TARGET_URL: ${{ vars.LOAD_TARGET_URL }}
+          LOAD_REQUESTS: "250"
+          LOAD_CONCURRENCY: "10"
+          LOAD_WARMUP_REQUESTS: "5"
+          LOAD_TIMEOUT_MS: "20000"
+          LOAD_MAX_FAILURE_RATE: "0"
+          LOAD_MAX_P95_MS: "1500"
+          LOAD_REPORT_PATH: staging-load-smoke.json
+      - name: Upload immutable smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-smoke-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            staging-marketplace-smoke.json
+            staging-load-smoke.json
+          if-no-files-found: error
+          retention-days: 30

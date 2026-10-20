@@ -18,12 +18,14 @@
 4. Use the same canonical API URL, app URL, CORS allowlist, database, Redis, Firebase project and storage configuration for both services.
 5. Keep `SSLCOMMERZ_SANDBOX=false` only when the supplied credentials and callback URLs are live. Use a separate staging Blueprint/environment for sandbox credentials.
 6. Confirm the worker receives the API-generated `PARCEL_QR_SIGNING_SECRET` through the Blueprint service reference.
+7. In the GitHub `staging` Environment, set `API_PUBLIC_URL` to the staging API origin and `LOAD_TARGET_URL` to a representative public catalog endpoint on that same origin.
 
 ## Acceptance
 
 1. Confirm the API pre-deploy migration succeeds before the new instance starts.
 2. Verify API `/health` is `200` and `/ready` is `200`; verify the worker logs its health listener and every queue processor as running.
 3. Run `npm run smoke:marketplace`, `npm run smoke:authenticated`, and bounded public/authenticated `npm run smoke:load` checks against staging.
+   The manual **Staging Smoke** workflow automates the public contract and bounded catalog checks and retains both JSON reports for 30 days. Authenticated role journeys still require short-lived staging identities and must not reuse emulator demo credentials.
 4. Retain immutable smoke reports, deploy ID, commit SHA, migration IDs, service logs and approver names.
 5. Do not promote production until payment callbacks/refunds, queues, email/push delivery, backup restore and real-device customer/vendor/admin journeys pass.
 

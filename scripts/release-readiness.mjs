@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 const requiredFiles = [
   ".github/workflows/ci.yml",
   ".github/workflows/deploy.yml",
+  ".github/workflows/staging-smoke.yml",
   "render.yaml",
   "apps/api/Dockerfile",
   "apps/worker/Dockerfile",
