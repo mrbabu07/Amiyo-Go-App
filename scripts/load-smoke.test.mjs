@@ -5,6 +5,7 @@ import { loadSmokeConfiguration, runLoadSmoke } from "./load-smoke-lib.mjs";
 test("load smoke configuration rejects credential-bearing and invalid thresholds", () => {
   assert.throws(() => loadSmokeConfiguration({ LOAD_TARGET_URL: "https://user:pass@example.test/health" }), /without credentials/);
   assert.throws(() => loadSmokeConfiguration({ LOAD_TARGET_URL: "https://example.test/health", LOAD_MAX_FAILURE_RATE: "2" }), /between 0 and 1/);
+  assert.throws(() => loadSmokeConfiguration({ LOAD_TARGET_URL: "https://example.test/health", LOAD_BEARER_TOKEN: "first\nsecond" }), /single bounded token/);
 });
 
 test("load smoke reports bounded latency, throughput and status counts", async () => {
@@ -18,6 +19,16 @@ test("load smoke reports bounded latency, throughput and status counts", async (
   assert.deepEqual(result.statusCounts, { "200": 4 });
   assert.equal(result.latencyMs.p95, 5);
   assert.ok(result.throughputRps > 0);
+});
+
+test("authenticated load smoke sends a bearer token without exposing it in evidence", async () => {
+  const secret = "test-token-that-must-not-appear";
+  let authorization;
+  const configuration = loadSmokeConfiguration({ LOAD_TARGET_URL: "https://example.test/vendor/workspace", LOAD_BEARER_TOKEN: secret, LOAD_REQUESTS: "1", LOAD_CONCURRENCY: "1", LOAD_WARMUP_REQUESTS: "0" });
+  const result = await runLoadSmoke(configuration, { fetch: async (_target, init) => { authorization = init.headers.Authorization; return { ok: true, status: 200, arrayBuffer: async () => new ArrayBuffer(0) }; } });
+  assert.equal(authorization, `Bearer ${secret}`);
+  assert.equal(result.authenticated, true);
+  assert.equal(JSON.stringify(result).includes(secret), false);
 });
 
 test("load smoke fails when error budget or latency threshold is exceeded", async () => {

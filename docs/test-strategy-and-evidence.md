@@ -11,6 +11,8 @@
 - `npm run release:check`: reports unresolved production decisions and missing handover artifacts.
 - GitHub CI builds non-root API and worker images.
 
+Authenticated load checks use the same `npm run smoke:load` command with `LOAD_BEARER_TOKEN` supplied only through the process environment. Reports expose only `authenticated: true`; they never include the token or URL query values. Use a short-lived staging token, never a production user credential or a token committed to a file.
+
 ## Latest local evidence
 
 Recorded 2026-08-02 for the Phase 10/handover baseline:
@@ -30,7 +32,7 @@ Docker is unavailable on the current workstation, so container build evidence mu
 - Expo SDK dependency alignment passed and Expo Doctor reported 21/21 checks passing.
 - Expo web production export completed successfully. The missing Sentry organization/project warning remains an external production configuration gate.
 - Public catalog load smoke passed against the configured database through the local API: 100 requests, concurrency 10, zero failures, 717.43 requests/second, 11 ms p50, 28 ms p95, 29 ms p99, and 32 ms maximum latency after five warm-up requests.
-- Authenticated local browser verification covered the seller dashboard at 360px and desktop widths plus seller products and notifications. Remote-database cold/authenticated requests were visibly slower than cached catalog reads, so production hosting must be colocated with PostgreSQL and authenticated staging load evidence is still required.
+- Authenticated local browser verification covered the seller dashboard at 360px and desktop widths plus seller products and notifications. A bounded vendor-workspace load check used a short-lived local Firebase token entirely through process memory: 20 requests, concurrency 2, zero failures, 0.81 requests/second, 1,956 ms p50, 4,184 ms p95, and 4,185 ms maximum latency. The endpoint already runs its independent workspace reads concurrently, so production hosting must be colocated with PostgreSQL and the same authenticated check must pass against staging before release.
 - `npm audit --omit=dev` reported 16 high and 12 moderate findings in the Expo/React Native dependency graph. Expo's compatibility checks are green, but npm proposes incompatible major downgrades; do not use `npm audit fix --force`. Production approval remains blocked until a compatible upstream SDK resolution or documented security acceptance is available.
 
 ## 2026-09-01 business-rule evidence

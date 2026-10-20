@@ -14,8 +14,11 @@ export function loadSmokeConfiguration(environment) {
   if (!environment.LOAD_TARGET_URL) throw new Error("LOAD_TARGET_URL is required");
   const target = new URL(environment.LOAD_TARGET_URL);
   if (!["http:", "https:"].includes(target.protocol) || target.username || target.password) throw new Error("LOAD_TARGET_URL must be an HTTP(S) URL without credentials");
+  const bearerToken = environment.LOAD_BEARER_TOKEN?.trim() || null;
+  if (bearerToken && (bearerToken.length > 16_384 || /[\r\n]/.test(bearerToken))) throw new Error("LOAD_BEARER_TOKEN must be a single bounded token");
   return {
     target,
+    bearerToken,
     requests: integer(environment.LOAD_REQUESTS, 100, "LOAD_REQUESTS"),
     concurrency: integer(environment.LOAD_CONCURRENCY, 10, "LOAD_CONCURRENCY"),
     warmupRequests: integer(environment.LOAD_WARMUP_REQUESTS, 5, "LOAD_WARMUP_REQUESTS", 0),
@@ -40,7 +43,7 @@ export async function runLoadSmoke(configuration, dependencies = {}) {
   const execute = async (record) => {
     const startedAt = clock();
     try {
-      const response = await request(configuration.target, { signal: AbortSignal.timeout(configuration.timeoutMs) });
+      const response = await request(configuration.target, { signal: AbortSignal.timeout(configuration.timeoutMs), headers: configuration.bearerToken ? { Authorization: `Bearer ${configuration.bearerToken}` } : undefined });
       await response.arrayBuffer();
       if (record) statuses.set(String(response.status), (statuses.get(String(response.status)) ?? 0) + 1);
       if (!response.ok && record) failures += 1;
@@ -75,6 +78,7 @@ export async function runLoadSmoke(configuration, dependencies = {}) {
     schemaVersion: 1,
     measuredAt: new Date().toISOString(),
     target: publicTarget(configuration.target),
+    authenticated: Boolean(configuration.bearerToken),
     requests: configuration.requests,
     concurrency: configuration.concurrency,
     warmupRequests: configuration.warmupRequests,
