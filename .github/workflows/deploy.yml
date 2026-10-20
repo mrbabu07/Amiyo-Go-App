@@ -12,9 +12,52 @@ permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+
 jobs:
+  preflight:
+    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build --workspace @amiyo/config
+      - run: npm run release:deploy-env
+        env:
+          NODE_ENV: ${{ inputs.environment }}
+          API_PUBLIC_URL: ${{ vars.API_PUBLIC_URL }}
+          APP_PUBLIC_URL: ${{ vars.APP_PUBLIC_URL }}
+          CORS_ORIGINS: ${{ vars.CORS_ORIGINS }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET }}
+          FIREBASE_USE_APPLICATION_DEFAULT: ${{ vars.FIREBASE_USE_APPLICATION_DEFAULT }}
+          OBJECT_STORAGE_PUBLIC_URL: ${{ vars.OBJECT_STORAGE_PUBLIC_URL }}
+          SSLCOMMERZ_STORE_ID: ${{ secrets.SSLCOMMERZ_STORE_ID }}
+          SSLCOMMERZ_STORE_PASSWORD: ${{ secrets.SSLCOMMERZ_STORE_PASSWORD }}
+          SSLCOMMERZ_SANDBOX: ${{ vars.SSLCOMMERZ_SANDBOX }}
+          PARCEL_QR_SIGNING_SECRET: ${{ secrets.PARCEL_QR_SIGNING_SECRET }}
+          AMIYO_DELIVERY_API_URL: ${{ vars.AMIYO_DELIVERY_API_URL }}
+          AMIYO_DELIVERY_INTEGRATION_TOKEN: ${{ secrets.AMIYO_DELIVERY_INTEGRATION_TOKEN }}
+          AMIYO_DELIVERY_WEBHOOK_SECRET: ${{ secrets.AMIYO_DELIVERY_WEBHOOK_SECRET }}
+          EMAIL_PROVIDER: ${{ vars.EMAIL_PROVIDER }}
+          EMAIL_PROVIDER_API_URL: ${{ vars.EMAIL_PROVIDER_API_URL }}
+          EMAIL_PROVIDER_TOKEN: ${{ secrets.EMAIL_PROVIDER_TOKEN }}
+          EMAIL_FROM: ${{ vars.EMAIL_FROM }}
+
   images:
     environment: ${{ inputs.environment }}
+    needs: preflight
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

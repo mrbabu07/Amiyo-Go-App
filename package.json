@@ -33,6 +33,7 @@
     "migration:dry-run": "tsx scripts/migration/dry-run.ts",
     "migration:apply": "tsx scripts/migration/apply-plan.ts",
     "release:check": "node scripts/release-readiness.mjs",
+    "release:deploy-env": "node scripts/deployment-env.mjs",
     "release:mobile-env": "node scripts/mobile-release-env.mjs",
     "smoke:load": "node scripts/load-smoke.mjs",
     "smoke:marketplace": "node scripts/marketplace-smoke.mjs",

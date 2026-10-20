@@ -30,6 +30,18 @@ test("release artifacts enforce immutable builds and non-root containers", async
   assert.match(workflow, /docker build/);
 });
 
+test("deploy workflow validates environment before publishing images", async () => {
+  const workflow = await readFile(new URL("../.github/workflows/deploy.yml", import.meta.url), "utf8");
+  const preflight = await readFile(new URL("./deployment-env.mjs", import.meta.url), "utf8");
+  assert.match(workflow, /preflight:/);
+  assert.match(workflow, /npm run release:deploy-env/);
+  assert.match(workflow, /needs: preflight/);
+  assert.match(workflow, /group: deploy-\$\{\{ inputs\.environment \}\}/);
+  assert.match(preflight, /parseApiEnv\(process\.env\)/);
+  assert.match(preflight, /parseWorkerEnv\(process\.env\)/);
+  assert.doesNotMatch(preflight, /STORE_PASSWORD|PRIVATE_KEY|INTEGRATION_TOKEN/);
+});
+
 test("mobile release uses the hardened Expo SDK and explicit build profiles", async () => {
   const mobilePackage = JSON.parse(await readFile(new URL("../apps/mobile/package.json", import.meta.url), "utf8"));
   const eas = JSON.parse(await readFile(new URL("../apps/mobile/eas.json", import.meta.url), "utf8"));
