@@ -11,7 +11,7 @@ import { colors, radius, spacing } from "../../src/ui/tokens";
 
 export default function VendorDashboardScreen() {
   const router = useRouter();
-  const compact = useWindowDimensions().width < 720;
+  const compact = useWindowDimensions().width < 980;
   const user = useCurrentUser();
   const session = useAuthStore((state) => state.session);
   const enabled = Boolean(user && session?.vendorMemberships.length);

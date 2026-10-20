@@ -21,7 +21,10 @@ test("seller workspace uses responsive grouped navigation", () => {
   assert.match(shell, /compact && styles\.vendorHeadingCompact/);
   assert.match(shell, /compact && styles\.vendorPageTitleCompact/);
   assert.match(shell, /vendorDockItem: \{[^}]*minHeight: 52/);
-  assert.match(shell, /vendorMobilePage: \{[^}]*paddingBottom: 100/);
+  assert.match(shell, /vendorMobilePage: \{[^}]*paddingBottom: 104/);
+  assert.match(shell, /function VendorDockLink/);
+  assert.match(shell, /styles\.vendorCreateIcon/);
+  assert.match(shell, /showBack=\{pathname !== "\/vendor\/dashboard"\}/);
   assert.match(shell, /vendorBack: \{[^}]*height: 44[^}]*width: 44/);
   for (const group of ["Products", "Orders", "Finance", "Growth", "Shop", "Support"]) assert.match(shell, new RegExp(`label: "${group}"`));
   assert.match(shell, /accessibilityLabel="Seller navigation"/);
@@ -39,6 +42,7 @@ test("seller dashboard exposes live operational hierarchy", () => {
   assert.match(dashboard, /horizontal showsHorizontalScrollIndicator=\{false\}/);
   assert.match(dashboard, /compact && styles\.heroCompact/);
   assert.match(dashboard, /compact && styles\.orderActionCompact/);
+  assert.match(dashboard, /useWindowDimensions\(\)\.width < 980/);
   assert.match(dashboard, /getVendorWorkspace/);
   assert.match(dashboard, /getVendorReport/);
   assert.doesNotMatch(dashboard, /getVendorOrders/);
