@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
+import { parseMajorToMinor } from "../../ui/money";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
@@ -19,6 +20,8 @@ export function AdminProductCreateScreen() {
   const selectedShop = form.shopId || shops.data?.data[0]?.id || "";
   const selectedCategory = form.categoryId || categories.data?.find((item) => !item.parentId)?.id || categories.data?.[0]?.id || "";
   const slug = useMemo(() => form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""), [form.name]);
+  const priceMinor = parseMajorToMinor(form.price);
+  const openingStock = Number(form.onHand);
   const currentActor = () => {
     if (!user || user.uid !== userId) throw new Error("Account changed. Reopen product creation.");
     return user;
@@ -31,11 +34,11 @@ export function AdminProductCreateScreen() {
       slug: `${slug}-${Date.now().toString(36)}`,
       description: form.description.trim() || null,
       brand: form.brand.trim() || null,
-      variants: [{ sku: form.sku.trim(), title: "Default", priceMinor: String(Math.round(Number(form.price) * 100)), currency: "BDT", onHand: Number(form.onHand) }]
+      variants: [{ sku: form.sku.trim(), title: "Default", priceMinor: priceMinor!.toString(), currency: "BDT", onHand: openingStock }]
     }),
     onSuccess: () => router.replace("/admin/products")
   });
-  const valid = Boolean(user && selectedShop && selectedCategory && form.name.trim().length >= 3 && form.sku.trim() && Number(form.price) > 0 && Number(form.onHand) >= 0);
+  const valid = Boolean(user && selectedShop && selectedCategory && form.name.trim().length >= 3 && form.sku.trim() && priceMinor !== null && priceMinor > 0n && Number.isInteger(openingStock) && openingStock >= 0);
 
   return <Screen eyebrow="ADMIN CATALOG" title="Add product" description="Create a marketplace product for a selected seller shop and category.">
     {shops.isLoading || categories.isLoading ? <ActivityIndicator color={colors.primary} /> : null}
