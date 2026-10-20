@@ -60,6 +60,16 @@ export const vendorRegistrationSchema = z.object({
   privacyVersion: z.string().trim().regex(/^\d{4}\.\d{2}$/)
 });
 
+export const vendorPickupAddressSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  phone: z.string().trim().regex(/^01\d{9}$/, "A valid Bangladesh mobile number is required"),
+  address: z.string().trim().min(5).max(240),
+  division: z.string().trim().min(2).max(80),
+  district: z.string().trim().min(2).max(80),
+  upazila: z.string().trim().min(2).max(80),
+  union: z.string().trim().max(80).default("")
+});
+
 export const updateVendorShopSchema = z.object({
   version: versionSchema,
   name: z.string().trim().min(3).max(160).optional(),
@@ -67,7 +77,13 @@ export const updateVendorShopSchema = z.object({
   logoUploadId: uuidSchema.nullable().optional(),
   bannerUploadId: uuidSchema.nullable().optional(),
   settings: z.record(z.unknown()).nullable().optional()
-}).refine((input) => Object.keys(input).length > 1, "At least one shop field is required");
+}).superRefine((input, context) => {
+  if (Object.keys(input).length <= 1) context.addIssue({ code: z.ZodIssueCode.custom, message: "At least one shop field is required" });
+  if (input.settings && Object.prototype.hasOwnProperty.call(input.settings, "pickupAddress")) {
+    const result = vendorPickupAddressSchema.safeParse(input.settings.pickupAddress);
+    if (!result.success) for (const issue of result.error.issues) context.addIssue({ ...issue, path: ["settings", "pickupAddress", ...issue.path] });
+  }
+});
 
 export const submitVendorKycSchema = z.object({ documents: z.array(vendorKycDocumentInputSchema).min(1).max(10) })
   .superRefine(({ documents }, context) => {

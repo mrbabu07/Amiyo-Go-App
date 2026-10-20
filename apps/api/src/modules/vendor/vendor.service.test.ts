@@ -37,6 +37,8 @@ test("vendor registration creates an owner workspace atomically", async () => {
   assert.equal(roleAssigned, true);
   assert.equal(transactionTimeout, 60_000);
   assert.equal(vendorData?.displayName, input.displayName);
+  const shops = vendorData?.shops as { create: { settings: { pickupAddress: Record<string, string> } } };
+  assert.deepEqual(shops.create.settings.pickupAddress, { name: "Seller Shop", phone: "01700000000", address: "Road 1", division: "Dhaka", district: "Dhaka", upazila: "Savar", union: "" });
 });
 
 test("shop media accepts only the seller's completed upload with the expected purpose", async () => {

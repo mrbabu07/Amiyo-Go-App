@@ -23,7 +23,7 @@ These decisions block production implementation. Do not guess them in code.
 | Returns | TBD | Window, eligibility, evidence, pickup, refund order. |
 | Delivery | TBD | Amiyo Delivery, external courier, self pickup, manual fallback. |
 | READY_TO_SHIP trigger | Implemented | Vendor transition emits one transactional outbox event with `delivery-create:<vendorOrderId>`; external credentials still require staging approval. |
-| Vendor pickup address | TBD | Confirm required phone/address/geography fields stored in shop settings before production dispatch. |
+| Vendor pickup address | PARTIAL | Registration and shop settings now persist and validate dispatch-ready contact name, Bangladesh mobile, address, division, district and upazila; confirm whether union/area must be mandatory before production dispatch. |
 | Rider contact exposure | TBD | Confirm whether customer tracking may display rider name and masked phone. |
 | Vendor payout | IMPLEMENTED | Verified bank/MFS, BDT 500 minimum, approved/processing-only settlement, provider reference, and reserve/release rules are defined in `docs/business-rules-approval.md`; payout schedule and live bank/MFS ops evidence remain required. |
 | COD split collection | TBD | Confirm whether one parent payment is collected once or each vendor shipment records a separate COD collection. Automatic delivery settlement remains disabled until approved. |
