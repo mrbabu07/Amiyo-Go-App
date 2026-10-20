@@ -12,6 +12,7 @@ const apiEnvObject = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   API_PUBLIC_URL: z.string().url(),
   APP_PUBLIC_URL: optionalUrlSchema,
+  CORS_ORIGINS: optionalStringSchema,
   DATABASE_URL: z.string().url(),
   DIRECT_URL: optionalUrlSchema,
   REDIS_URL: z.string().url(),
@@ -37,15 +38,30 @@ const apiEnvObject = z.object({
 });
 
 function validateFirebaseAdmin(env: z.infer<typeof apiEnvObject>, context: z.RefinementCtx) {
+  const deployed = ["staging", "production"].includes(env.NODE_ENV);
   const serviceAccountComplete = Boolean(env.FIREBASE_PROJECT_ID && env.FIREBASE_CLIENT_EMAIL && env.FIREBASE_PRIVATE_KEY);
   const applicationDefaultComplete = Boolean(env.FIREBASE_PROJECT_ID && env.FIREBASE_USE_APPLICATION_DEFAULT === "true");
   if (env.NODE_ENV === "production" && env.FIREBASE_AUTH_EMULATOR_HOST) context.addIssue({ code: z.ZodIssueCode.custom, path: ["FIREBASE_AUTH_EMULATOR_HOST"], message: "Firebase Auth emulator is forbidden in production" });
-  if (["staging", "production"].includes(env.NODE_ENV) && !serviceAccountComplete && !applicationDefaultComplete) context.addIssue({ code: z.ZodIssueCode.custom, path: ["FIREBASE_PROJECT_ID"], message: "Firebase Admin credentials or application-default mode are required" });
-  if (["staging", "production"].includes(env.NODE_ENV) && !env.FIREBASE_STORAGE_BUCKET) context.addIssue({ code: z.ZodIssueCode.custom, path: ["FIREBASE_STORAGE_BUCKET"], message: "Firebase Storage bucket is required" });
+  if (deployed && !serviceAccountComplete && !applicationDefaultComplete) context.addIssue({ code: z.ZodIssueCode.custom, path: ["FIREBASE_PROJECT_ID"], message: "Firebase Admin credentials or application-default mode are required" });
+  if (deployed && !env.FIREBASE_STORAGE_BUCKET) context.addIssue({ code: z.ZodIssueCode.custom, path: ["FIREBASE_STORAGE_BUCKET"], message: "Firebase Storage bucket is required" });
   if (Boolean(env.SSLCOMMERZ_STORE_ID) !== Boolean(env.SSLCOMMERZ_STORE_PASSWORD)) context.addIssue({ code: z.ZodIssueCode.custom, path: ["SSLCOMMERZ_STORE_ID"], message: "SSLCommerz store ID and password must be configured together" });
   if (env.NODE_ENV === "production" && env.SSLCOMMERZ_STORE_ID && env.SSLCOMMERZ_SANDBOX === "true") context.addIssue({ code: z.ZodIssueCode.custom, path: ["SSLCOMMERZ_SANDBOX"], message: "SSLCommerz sandbox mode is forbidden in production" });
-  if (["staging", "production"].includes(env.NODE_ENV) && !env.PARCEL_QR_SIGNING_SECRET) context.addIssue({ code: z.ZodIssueCode.custom, path: ["PARCEL_QR_SIGNING_SECRET"], message: "A document QR signing secret is required" });
-  if (["staging", "production"].includes(env.NODE_ENV) && new URL(env.REDIS_URL).protocol !== "rediss:") context.addIssue({ code: z.ZodIssueCode.custom, path: ["REDIS_URL"], message: "TLS Redis (rediss://) is required outside local development" });
+  if (deployed && !env.PARCEL_QR_SIGNING_SECRET) context.addIssue({ code: z.ZodIssueCode.custom, path: ["PARCEL_QR_SIGNING_SECRET"], message: "A document QR signing secret is required" });
+  if (deployed && new URL(env.REDIS_URL).protocol !== "rediss:") context.addIssue({ code: z.ZodIssueCode.custom, path: ["REDIS_URL"], message: "TLS Redis (rediss://) is required outside local development" });
+  for (const [key, value] of [["API_PUBLIC_URL", env.API_PUBLIC_URL], ["APP_PUBLIC_URL", env.APP_PUBLIC_URL], ["OBJECT_STORAGE_PUBLIC_URL", env.OBJECT_STORAGE_PUBLIC_URL]] as const) {
+    if (deployed && value && new URL(value).protocol !== "https:") context.addIssue({ code: z.ZodIssueCode.custom, path: [key], message: `${key} must use HTTPS outside local development` });
+  }
+  if (deployed && !env.CORS_ORIGINS) context.addIssue({ code: z.ZodIssueCode.custom, path: ["CORS_ORIGINS"], message: "An explicit CORS origin allowlist is required outside local development" });
+  if (deployed && env.CORS_ORIGINS) for (const origin of env.CORS_ORIGINS.split(",").map((value) => value.trim()).filter(Boolean)) {
+    let validOrigin = false;
+    try {
+      const url = new URL(origin);
+      validOrigin = origin !== "*" && url.protocol === "https:" && !url.username && !url.password && url.pathname === "/" && !url.search && !url.hash;
+    } catch {
+      validOrigin = false;
+    }
+    if (!validOrigin) context.addIssue({ code: z.ZodIssueCode.custom, path: ["CORS_ORIGINS"], message: "Every deployed CORS origin must be an explicit HTTPS origin" });
+  }
   if (env.HTTP_HEADERS_TIMEOUT_MS > env.HTTP_REQUEST_TIMEOUT_MS) context.addIssue({ code: z.ZodIssueCode.custom, path: ["HTTP_HEADERS_TIMEOUT_MS"], message: "HTTP headers timeout cannot exceed the request timeout" });
 }
 

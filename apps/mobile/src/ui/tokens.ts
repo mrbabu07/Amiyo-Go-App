@@ -14,7 +14,7 @@ const adaptive = (key: PaletteKey): string => {
 export const colors = Object.fromEntries((Object.keys(lightPalette) as PaletteKey[]).map((key) => [key, adaptive(key)])) as Record<PaletteKey, string>;
 
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 };
-export const radius = { sm: 6, md: 8, lg: 12, xl: 16, pill: 999 };
+export const radius = { sm: 8, md: 12, lg: 18, xl: 24, pill: 999 };
 export const typography = {
   fontFamily: Platform.select({
     web: '"Quicksand", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',

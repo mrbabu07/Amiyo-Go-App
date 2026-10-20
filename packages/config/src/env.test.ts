@@ -37,8 +37,26 @@ test("API env forbids SSLCommerz sandbox credentials in production", () => {
 });
 
 test("staging and production require TLS Redis while local development remains compatible", () => {
-  const shared = { API_PUBLIC_URL: "https://api.example.com", DATABASE_URL: "postgresql://database.example.com/amiyogo", FIREBASE_PROJECT_ID: "amiyo-app", FIREBASE_USE_APPLICATION_DEFAULT: "true", FIREBASE_STORAGE_BUCKET: "bucket.example", PARCEL_QR_SIGNING_SECRET: "a".repeat(32) };
+  const shared = { API_PUBLIC_URL: "https://api.example.com", CORS_ORIGINS: "https://app.example.com", DATABASE_URL: "postgresql://database.example.com/amiyogo", FIREBASE_PROJECT_ID: "amiyo-app", FIREBASE_USE_APPLICATION_DEFAULT: "true", FIREBASE_STORAGE_BUCKET: "bucket.example", PARCEL_QR_SIGNING_SECRET: "a".repeat(32) };
   assert.throws(() => parseApiEnv({ ...shared, NODE_ENV: "staging", REDIS_URL: "redis://redis.example.com:6379" }), /TLS Redis/);
   assert.equal(parseApiEnv({ ...shared, NODE_ENV: "production", REDIS_URL: "rediss://redis.example.com:6379", SSLCOMMERZ_SANDBOX: "false" }).REDIS_URL, "rediss://redis.example.com:6379");
   assert.equal(parseApiEnv({ API_PUBLIC_URL: "http://localhost:4000", DATABASE_URL: "postgresql://localhost:5432/amiyogo", REDIS_URL: "redis://localhost:6379" }).REDIS_URL, "redis://localhost:6379");
+});
+
+test("deployed public endpoints require HTTPS while localhost remains available", () => {
+  const shared = { NODE_ENV: "staging", CORS_ORIGINS: "https://app.example.com", DATABASE_URL: "postgresql://database.example.com/amiyogo", REDIS_URL: "rediss://redis.example.com:6379", FIREBASE_PROJECT_ID: "amiyo-app", FIREBASE_USE_APPLICATION_DEFAULT: "true", FIREBASE_STORAGE_BUCKET: "bucket.example", PARCEL_QR_SIGNING_SECRET: "a".repeat(32) };
+  assert.throws(() => parseApiEnv({ ...shared, API_PUBLIC_URL: "http://api.example.com" }), /API_PUBLIC_URL must use HTTPS/);
+  assert.throws(() => parseApiEnv({ ...shared, API_PUBLIC_URL: "https://api.example.com", APP_PUBLIC_URL: "http://app.example.com" }), /APP_PUBLIC_URL must use HTTPS/);
+  assert.throws(() => parseApiEnv({ ...shared, API_PUBLIC_URL: "https://api.example.com", OBJECT_STORAGE_PUBLIC_URL: "http://cdn.example.com" }), /OBJECT_STORAGE_PUBLIC_URL must use HTTPS/);
+  assert.equal(parseApiEnv({ API_PUBLIC_URL: "http://localhost:4000", DATABASE_URL: "postgresql://localhost:5432/amiyogo", REDIS_URL: "redis://localhost:6379" }).API_PUBLIC_URL, "http://localhost:4000");
+});
+
+test("deployed CORS requires an explicit HTTPS allowlist", () => {
+  const shared = { NODE_ENV: "production", API_PUBLIC_URL: "https://api.example.com", DATABASE_URL: "postgresql://database.example.com/amiyogo", REDIS_URL: "rediss://redis.example.com:6379", FIREBASE_PROJECT_ID: "amiyo-app", FIREBASE_USE_APPLICATION_DEFAULT: "true", FIREBASE_STORAGE_BUCKET: "bucket.example", PARCEL_QR_SIGNING_SECRET: "a".repeat(32), SSLCOMMERZ_SANDBOX: "false" };
+  assert.throws(() => parseApiEnv(shared), /explicit CORS origin allowlist/);
+  assert.throws(() => parseApiEnv({ ...shared, CORS_ORIGINS: "*" }), /explicit HTTPS origin/);
+  assert.throws(() => parseApiEnv({ ...shared, CORS_ORIGINS: "http://app.example.com" }), /explicit HTTPS origin/);
+  assert.throws(() => parseApiEnv({ ...shared, CORS_ORIGINS: "not-a-url" }), /explicit HTTPS origin/);
+  assert.throws(() => parseApiEnv({ ...shared, CORS_ORIGINS: "https://app.example.com/path" }), /explicit HTTPS origin/);
+  assert.equal(parseApiEnv({ ...shared, CORS_ORIGINS: "https://app.example.com, https://admin.example.com" }).CORS_ORIGINS, "https://app.example.com, https://admin.example.com");
 });
