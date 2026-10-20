@@ -6,6 +6,7 @@ import type { User } from "firebase/auth";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
+import { minorToMajorInput, parseMajorToMinor } from "../../ui/money";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
@@ -52,7 +53,7 @@ export function VendorProductFormScreen({ id }: { id?: string }) {
   const categoryAttributes = useMemo(() => inheritedAttributes(categories.data ?? [], form.categoryId), [categories.data, form.categoryId]);
   const requiredAttributesValid = categoryAttributes.filter((attribute) => attribute.required).every((attribute) => hasAttributeValue(attributeValues[attribute.key]));
   const uniqueSkus = new Set(variants.map((variant) => variant.sku.trim().toUpperCase())).size === variants.length;
-  const validVariants = variants.every((variant) => variant.sku.trim().length >= 3 && variant.title.trim().length > 0 && Number.isFinite(Number(variant.price)) && Number(variant.price) > 0 && Number.isInteger(Number(variant.stock)) && Number(variant.stock) >= 0 && (!variant.compareAt || Number(variant.compareAt) >= Number(variant.price)));
+  const validVariants = variants.every(validVariant);
   const workspaceReady = editing ? Boolean(product) : Boolean(workspace.data?.shops[0]);
   const valid = form.name.trim().length >= 3 && Boolean(form.categoryId) && variants.length > 0 && variants.length <= 100 && validVariants && uniqueSkus && requiredAttributesValid && workspaceReady;
   const informationComplete = form.name.trim().length >= 3 && Boolean(form.categoryId) && requiredAttributesValid;
@@ -144,8 +145,9 @@ function Step({ complete, label, number }: { complete: boolean; label: string; n
 function values(value: string) { return unique(value.split(",").map((item) => item.trim()).filter(Boolean)); }
 function unique(valuesInput: string[]) { return [...new Set(valuesInput.filter(Boolean))]; }
 function slug(value: string) { return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""); }
-function minor(value: string) { return String(Math.round(Number(value) * 100)); }
-function decimal(value: string) { return String(Number(value) / 100); }
+function minor(value: string) { const amount = parseMajorToMinor(value); if (amount === null) throw new Error("Variant price must be a valid amount with at most two decimals."); return amount.toString(); }
+function decimal(value: string) { return minorToMajorInput(value); }
+function validVariant(variant: VariantDraft) { const price = parseMajorToMinor(variant.price); const compareAt = variant.compareAt ? parseMajorToMinor(variant.compareAt) : null; const stock = Number(variant.stock); return variant.sku.trim().length >= 3 && variant.title.trim().length > 0 && price !== null && price > 0n && Number.isInteger(stock) && stock >= 0 && (!variant.compareAt || compareAt !== null && compareAt >= price); }
 function textAttribute(value: unknown) { return typeof value === "string" ? value : ""; }
 function hasAttributeValue(value: unknown) { return value === true || typeof value === "number" || (typeof value === "string" && value.trim().length > 0) || (Array.isArray(value) && value.length > 0); }
 function inheritedAttributes(categories: CategoryDto[], categoryId: string) { const byId = new Map(categories.map((category) => [category.id, category])); const path: CategoryDto[] = []; const visited = new Set<string>(); let current = byId.get(categoryId); while (current && !visited.has(current.id)) { path.unshift(current); visited.add(current.id); current = current.parentId ? byId.get(current.parentId) : undefined; } const attributes = new Map<string, CategoryAttribute>(); path.forEach((category) => category.attributes.forEach((attribute) => attributes.set(attribute.key, attribute))); return [...attributes.values()].sort((left, right) => left.displayOrder - right.displayOrder); }

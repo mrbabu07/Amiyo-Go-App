@@ -17,3 +17,11 @@ test("seller product editor reports live listing readiness", () => {
   assert.match(source, /complete=\{mediaComplete\}/);
   assert.match(source, /complete=\{variantsComplete\}/);
 });
+
+test("seller product editor preserves exact variant money", () => {
+  assert.match(source, /parseMajorToMinor\(variant\.price\)/);
+  assert.match(source, /minorToMajorInput\(value\)/);
+  assert.match(source, /compareAt >= price/);
+  assert.doesNotMatch(source, /Math\.round\(Number\(value\) \* 100\)/);
+  assert.doesNotMatch(source, /String\(Number\(value\) \/ 100\)/);
+});
