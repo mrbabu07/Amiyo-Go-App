@@ -35,6 +35,7 @@
     "release:check": "node scripts/release-readiness.mjs",
     "release:deploy-env": "node scripts/deployment-env.mjs",
     "release:mobile-env": "node scripts/mobile-release-env.mjs",
+    "restore:verify": "node scripts/restore-verification.mjs",
     "smoke:load": "node scripts/load-smoke.mjs",
     "smoke:marketplace": "node scripts/marketplace-smoke.mjs",
     "smoke:authenticated": "node scripts/authenticated-marketplace-smoke.mjs",

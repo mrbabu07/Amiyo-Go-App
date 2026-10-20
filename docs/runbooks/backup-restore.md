@@ -10,10 +10,11 @@
 
 1. Select a backup and create a new isolated PostgreSQL restore target through the managed provider.
 2. Configure temporary `DATABASE_URL` and `DIRECT_URL` in the encrypted staging environment.
-3. Run `npm run prisma:migrate:deploy`, then read-only reconciliation and integrity queries.
-4. Verify row counts, order/payment totals, vendor ledger balance derivation, inventory non-negativity, unique external IDs, and outbox state.
-5. Start one API instance against the restored database and verify `/health`, `/ready`, authentication, catalog, order lookup, and protected operations access.
-6. Record measured RPO/RTO, checks, approvers, failures, and cleanup evidence.
-7. Destroy the isolated target only after approval and according to provider retention policy.
+3. Run `npm run prisma:migrate:deploy`, then set `RESTORE_DATABASE_URL`, `RESTORE_VERIFICATION_ACK=isolated-non-production`, and a new `RESTORE_REPORT_PATH`.
+4. Run `npm run restore:verify`. It refuses the active `DATABASE_URL`, requires PostgreSQL TLS, executes only a fixed read-only reconciliation query, preserves bigint totals as strings, refuses to overwrite evidence, and fails on financial/inventory/idempotency violations.
+5. Review its row counts, order/payment/refund totals, derived vendor-ledger balance, inventory/payment/order/ledger invariants, unique provider/outbox identifiers, and pending/failed outbox counts against the source backup evidence.
+6. Start one API instance against the restored database and verify `/health`, `/ready`, authentication, catalog, order lookup, and protected operations access.
+7. Record measured RPO/RTO, checks, approvers, failures, and cleanup evidence.
+8. Destroy the isolated target only after approval and according to provider retention policy.
 
 The production gate requires provider evidence for a successful restore within RPO 15 minutes and RTO 60 minutes. This repository cannot manufacture that evidence locally.
