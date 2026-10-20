@@ -4,19 +4,20 @@ import { useMemo, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";
+import { compareMinor, formatMinor, sumMinor } from "../../ui/money";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
 import { getAdminCommerce } from "./admin.api";
 
-const taka = (minor: string | number) => `৳${(Number(minor) / 100).toLocaleString("en-BD")}`;
+const taka = (minor: string | bigint) => formatMinor(minor);
 type Range = "7d" | "30d" | "90d";
 export function AdminVendorActivityScreen() {
   const user = useCurrentUser(); const userId = user?.uid ?? null; const router = useRouter(); const [range, setRange] = useState<Range>("30d"); const [search, setSearch] = useState(""); const [status, setStatus] = useState("ALL");
   const query = useQuery({ queryKey: ["admin", "commerce", userId], queryFn: () => getAdminCommerce(user!), enabled: Boolean(user), refetchInterval: 30_000, staleTime: 15_000, retry: false });
   const cutoff = Date.now() - Number(range.slice(0, -1)) * 86_400_000;
   const orders = (query.data?.orders ?? []).filter((item) => new Date(item.createdAt).getTime() >= cutoff);
-  const vendors = useMemo(() => (query.data?.vendorActivity ?? []).filter((item) => status === "ALL" || item.status === status).filter((item) => `${item.vendor} ${item.status}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => Number(b.gmvMinor) - Number(a.gmvMinor)), [query.data, search, status]);
-  const gmv = orders.reduce((sum, item) => sum + Number(item.totalMinor), 0); const active = (query.data?.vendorActivity ?? []).filter((item) => item.status === "APPROVED").length; const aov = orders.length ? gmv / orders.length : 0;
+  const vendors = useMemo(() => (query.data?.vendorActivity ?? []).filter((item) => status === "ALL" || item.status === status).filter((item) => `${item.vendor} ${item.status}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => compareMinor(b.gmvMinor, a.gmvMinor)), [query.data, search, status]);
+  const gmv = sumMinor(orders.map((item) => item.totalMinor)); const active = (query.data?.vendorActivity ?? []).filter((item) => item.status === "APPROVED").length; const aov = orders.length ? gmv / BigInt(orders.length) : 0n;
   const exportCsv = () => { if (Platform.OS !== "web") return; const rows = [["Vendor", "Status", "GMV minor", "Commission minor", "Products", "Orders", "Chats", "Payout requests"], ...vendors.map((item) => [item.vendor, item.status, item.gmvMinor, item.commissionMinor, item.products, item.orders, item.chats, item.payoutRequests])]; const body = rows.map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n"); const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([body], { type: "text/csv" })); link.download = `amiyo-vendor-activity-${range}.csv`; link.click(); URL.revokeObjectURL(link.href); };
   return <Screen eyebrow="SELLER OPERATIONS" title="Vendor Activity Center" description="Real-time seller performance, marketplace activity and operational health monitoring.">
     {query.error ? <Text style={styles.error}>{query.error.message}</Text> : null}
