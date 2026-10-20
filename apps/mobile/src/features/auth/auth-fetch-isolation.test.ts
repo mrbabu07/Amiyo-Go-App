@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { Auth } from "firebase/auth";
+import type { Auth } from "@firebase/auth";
 import { authenticatedFetchRetry } from "./auth-fetch";
 
 const invalid = () => new Response(JSON.stringify({ code: "INVALID_ACCESS_TOKEN" }), { status: 401 });

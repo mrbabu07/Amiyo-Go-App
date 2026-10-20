@@ -1,5 +1,5 @@
 import { chatThreadCreatedSchema, customerOrderSummarySchema, documentQrVerificationSchema, fulfillmentDocumentSchema, invoiceSchema, orderSchema, orderTrackingSchema, vendorDeliveryExceptionSchema, vendorOrderDetailSchema, vendorPickupRequestSchema, type VendorDeliveryExceptionInput, type VendorOrderTransition, type VendorPickupRequestInput } from "@amiyo/contracts";
-import type { User } from "firebase/auth";
+import type { User } from "@firebase/auth";
 import { withReadDeadline } from "../../network/request-deadline";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");

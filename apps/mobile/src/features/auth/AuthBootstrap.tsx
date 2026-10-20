@@ -1,4 +1,4 @@
-import { onIdTokenChanged, signOut } from "firebase/auth";
+import { onIdTokenChanged, signOut } from "@firebase/auth";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createSession } from "./auth.api";

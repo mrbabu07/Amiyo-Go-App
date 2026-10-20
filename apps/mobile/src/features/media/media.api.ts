@@ -4,7 +4,7 @@ import * as ImagePicker from "expo-image-picker";
 import type { MediaUploadInput } from "@amiyo/contracts";
 import { mediaUploadResultSchema, mediaUploadTicketSchema, mediaUploadStatusSchema } from "@amiyo/contracts";
 import { withReadDeadline } from "../../network/request-deadline";
-import type { User } from "firebase/auth";
+import type { User } from "@firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
 type PickedFile = { fileName: string; mimeType: MediaUploadInput["mimeType"]; size: number; uri: string };

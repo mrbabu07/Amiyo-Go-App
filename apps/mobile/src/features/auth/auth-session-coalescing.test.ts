@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { User } from "firebase/auth";
+import type { User } from "@firebase/auth";
 import { createSession } from "./auth.api";
 
 const session = {

@@ -1,6 +1,6 @@
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
-import { GoogleAuthProvider, signInWithCredential, type User } from "firebase/auth";
+import { GoogleAuthProvider, signInWithCredential, type User } from "@firebase/auth";
 import { useEffect, useRef } from "react";
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";

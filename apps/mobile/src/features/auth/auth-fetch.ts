@@ -1,4 +1,4 @@
-import { signOut, type Auth } from "firebase/auth";
+import { signOut, type Auth } from "@firebase/auth";
 
 let installed = false;
 

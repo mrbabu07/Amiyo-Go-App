@@ -1,5 +1,5 @@
 import { adminCodWorkspaceSchema, adminOrderRefundResultSchema, deliveryQueueItemSchema, deliveryRetryResultSchema, payoutRequestResultSchema, returnSchema, vendorFinanceSchema, type AdminCodConfirmationInput, type AdminCodDeliveryInput, type AdminOrderRefundInput, type CancelOrder, type CreatePayoutRequest, type CreateReturn, type DeliveryRetryInput, type SellerReturnReceipt, type SellerReturnResponse } from "@amiyo/contracts";
-import type { User } from "firebase/auth";
+import type { User } from "@firebase/auth";
 import { withReadDeadline } from "../../network/request-deadline";
 import { approveOrderSettlementSchema, orderSettlementResultSchema, vendorChargeReportSchema, vendorCommissionInvoiceSchema, vendorStatementSchema } from "@amiyo/contracts";
 import * as Crypto from "expo-crypto";

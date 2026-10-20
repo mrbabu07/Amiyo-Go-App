@@ -1,5 +1,5 @@
 import { adminNotificationWorkspaceSchema, flashAlertSchema, chatThreadCreatedSchema, chatThreadSchema, growthFeedSchema, newsletterWorkspaceSchema, notificationSchema, productReportResultSchema, questionSchema, reviewSchema, sharedWishlistSchema, wishlistSchema, wishlistCollectionSchema, type AdminNotificationBroadcastInput, type ContentModerationInput, type NewsletterBroadcastInput, type ProductReportInput } from "@amiyo/contracts";
-import type { User } from "firebase/auth";
+import type { User } from "@firebase/auth";
 import { withRequestDeadline } from "./request-deadline";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");

@@ -1,4 +1,4 @@
-import { getAuth } from "firebase/auth";
+import { getAuth } from "@firebase/auth";
 import { firebaseApp, firebaseConfigured } from "./firebase.config";
 import { connectConfiguredAuthEmulator } from "./firebase-auth-emulator";
 

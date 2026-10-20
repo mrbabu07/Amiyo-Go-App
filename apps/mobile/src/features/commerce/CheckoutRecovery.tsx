@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
-import type { User } from "firebase/auth";
+import type { User } from "@firebase/auth";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";

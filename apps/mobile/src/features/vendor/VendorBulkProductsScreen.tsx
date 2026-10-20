@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { User } from "firebase/auth";
+import type { User } from "@firebase/auth";
 import { useEffect, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator, Platform, Pressable, Share, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";

@@ -1,5 +1,5 @@
 import { bulkProductImportResultSchema, categorySchema, productDetailSchema, productListResponseSchema, shopDetailSchema, shopListResponseSchema, vendorInventorySchema, type ArchiveProduct, type BulkProductCsvInput, type CatalogQuery, type CreateProductInput, type InventoryAdjustmentInput, type ModerationInput, type ReplaceProductMedia, type ReplaceProductVariants, type UpdateProductInput } from "@amiyo/contracts";
-import type { User } from "firebase/auth";
+import type { User } from "@firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
 

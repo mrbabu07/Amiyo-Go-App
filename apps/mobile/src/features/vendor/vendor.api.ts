@@ -1,5 +1,5 @@
 import { returnSchema, vendorCategoryRequestSchema, vendorReportSchema, vendorStaffSchema, vendorVoucherSchema, vendorWorkspaceSchema, type CreateVendorCategoryRequest, type CreateVendorVoucher, type SaveVendorBankAccount, type SubmitVendorKyc, type UpdateVendorShop, type UpdateVendorStaff, type VendorRegistration } from "@amiyo/contracts";
-import type { User } from "firebase/auth";
+import type { User } from "@firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
 async function request(user: User, path: string, init?: RequestInit) { const token = await user.getIdToken(); const response = await fetch(`${apiUrl}${path}`, { ...init, headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...init?.headers } }); if (!response.ok) { const problem = await response.json().catch(() => null) as { title?: string; detail?: string } | null; throw new Error(problem?.detail || problem?.title || `Vendor request failed (${response.status})`); } return response.json() as Promise<unknown>; }

@@ -1,5 +1,5 @@
 import { supportAttachmentAccessSchema, supportTicketSchema, type CreateSupportTicket, type SupportTicketStatusInput } from "@amiyo/contracts";
-import type { User } from "firebase/auth";
+import type { User } from "@firebase/auth";
 import { withReadDeadline } from "../../network/request-deadline";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");

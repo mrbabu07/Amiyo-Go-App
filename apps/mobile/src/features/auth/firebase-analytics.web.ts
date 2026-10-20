@@ -1,4 +1,4 @@
-import { getAnalytics, isSupported, type Analytics } from "firebase/analytics";
+import { getAnalytics, isSupported, type Analytics } from "@firebase/analytics";
 import { firebaseAnalyticsEnabled, firebaseApp } from "./firebase.config";
 
 let analytics: Promise<Analytics | null> | null = null;

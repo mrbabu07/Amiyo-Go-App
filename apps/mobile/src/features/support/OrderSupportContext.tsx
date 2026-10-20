@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { User } from "firebase/auth";
+import type { User } from "@firebase/auth";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { getCustomerOrder } from "../orders/orders.api";

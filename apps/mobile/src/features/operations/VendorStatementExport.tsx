@@ -1,4 +1,4 @@
-import type { User } from "firebase/auth";
+import type { User } from "@firebase/auth";
 import { useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { vendorStatementQuerySchema } from "@amiyo/contracts";

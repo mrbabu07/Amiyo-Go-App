@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { User } from "firebase/auth";
+import type { User } from "@firebase/auth";
 import { useEffect, useRef, useState } from "react";
 import { Image, Linking, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { useCurrentUser } from "../auth/use-current-user";

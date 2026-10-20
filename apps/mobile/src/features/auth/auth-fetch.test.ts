@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { Auth } from "firebase/auth";
+import type { Auth } from "@firebase/auth";
 import { installAuthenticatedFetchRetry } from "./auth-fetch";
 
 test("Amiyo API retries one invalid access token with a forced refresh", async () => {

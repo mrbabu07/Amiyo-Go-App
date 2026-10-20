@@ -1,4 +1,4 @@
-import { onIdTokenChanged } from "firebase/auth";
+import { onIdTokenChanged } from "@firebase/auth";
 import { useSyncExternalStore } from "react";
 import { firebaseAuth } from "./firebase";
 

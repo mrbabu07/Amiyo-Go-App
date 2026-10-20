@@ -1,5 +1,5 @@
 import type { FulfillmentDocument } from "@amiyo/contracts";
-import type { User } from "firebase/auth";
+import type { User } from "@firebase/auth";
 import { useEffect, useRef, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { DocumentQrCode } from "../../ui/DocumentQrCode";

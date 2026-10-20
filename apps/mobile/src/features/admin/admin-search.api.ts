@@ -1,4 +1,4 @@
-import type { User } from "firebase/auth";
+import type { User } from "@firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
 

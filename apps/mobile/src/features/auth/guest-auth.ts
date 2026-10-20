@@ -1,4 +1,4 @@
-import { signInAnonymously, type User } from "firebase/auth";
+import { signInAnonymously, type User } from "@firebase/auth";
 import { createSession } from "./auth.api";
 import { firebaseAuth } from "./firebase";
 import { useAuthStore } from "./auth.store";

@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import type { User } from "firebase/auth";
+import type { User } from "@firebase/auth";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ModuleCard } from "../../ui/ModuleCard";
 import { Screen } from "../../ui/Screen";

@@ -1,6 +1,6 @@
 import * as Application from "expo-application";
 import * as Device from "expo-device";
-import { onIdTokenChanged, type User } from "firebase/auth";
+import { onIdTokenChanged, type User } from "@firebase/auth";
 import { useEffect } from "react";
 import { Platform } from "react-native";
 import { firebaseAuth } from "../auth/firebase";

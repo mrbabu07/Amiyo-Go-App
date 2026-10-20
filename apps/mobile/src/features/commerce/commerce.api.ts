@@ -1,5 +1,5 @@
 import { cartSchema, checkoutQuoteSchema, checkoutResultSchema, type CheckoutInput } from "@amiyo/contracts";
-import type { User } from "firebase/auth";
+import type { User } from "@firebase/auth";
 import { pendingCheckoutStore } from "./checkout-recovery.storage";
 import { mayDiscardRejectedCheckout } from "./pending-checkout";
 

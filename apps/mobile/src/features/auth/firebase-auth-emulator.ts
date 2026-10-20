@@ -1,4 +1,4 @@
-import { connectAuthEmulator, type Auth } from "firebase/auth";
+import { connectAuthEmulator, type Auth } from "@firebase/auth";
 
 const emulatorUrl = process.env.EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL;
 

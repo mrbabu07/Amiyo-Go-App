@@ -1,5 +1,5 @@
 import { accountDashboardSchema, accountDataExportSchema, accountDeletionSchema, accountPreferencesSchema, addressSchema, deviceSchema, sessionSchema, type AccountDeletionInput, type AccountPreferences, type AddressInput, type Session, type UpdateProfile } from "@amiyo/contracts";
-import type { User } from "firebase/auth";
+import type { User } from "@firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
 const pendingSessions = new WeakMap<User, Promise<Session>>();
