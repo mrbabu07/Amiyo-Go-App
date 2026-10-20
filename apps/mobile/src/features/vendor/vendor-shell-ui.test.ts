@@ -9,6 +9,7 @@ const dashboard = readFileSync(resolve(root, "app/vendor/dashboard.tsx"), "utf8"
 const vendorIndex = readFileSync(resolve(root, "app/vendor/index.tsx"), "utf8");
 const orders = readFileSync(resolve(root, "src/features/orders/VendorOrdersScreen.tsx"), "utf8");
 const orderDetail = readFileSync(resolve(root, "src/features/orders/VendorOrderDetailScreen.tsx"), "utf8");
+const vendorNotifications = readFileSync(resolve(root, "app/vendor/notifications.tsx"), "utf8");
 
 test("seller workspace uses responsive grouped navigation", () => {
   assert.match(vendorIndex, /<Redirect href="\/vendor\/dashboard"/);
@@ -17,6 +18,9 @@ test("seller workspace uses responsive grouped navigation", () => {
   assert.match(shell, /mobileSidebarOpen/);
   assert.match(shell, /vendorMobileLinks/);
   assert.match(shell, /accessibilityLabel="Seller primary navigation"/);
+  assert.match(shell, /href: "\/vendor\/notifications"/);
+  assert.match(shell, /href === "\/notifications" \? "\/vendor\/notifications" : href/);
+  assert.match(vendorNotifications, /<NotificationsScreen workspace="vendor"/);
   assert.match(shell, /styles\.vendorBottomDock/);
   assert.match(shell, /accessibilityLabel="More seller tools"/);
   assert.match(shell, /compact=\{!desktop\}/);

@@ -18,6 +18,7 @@ type AdminGroup = { label: string; icon: string; links: WorkspaceLink[] };
 
 const vendorPrimaryLinks: WorkspaceLink[] = [
   { label: "Dashboard", href: "/vendor/dashboard", icon: "grid-outline" },
+  { label: "Notifications", href: "/vendor/notifications", icon: "notifications-outline" },
   { label: "University", href: "/vendor/university", icon: "school-outline" }
 ];
 
@@ -234,7 +235,7 @@ function VendorScreen({ children, description, desktop, eyebrow, hideHeading = f
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const sidebarWidth = collapsed ? 80 : 272;
-  const open = (href: string) => { if (Platform.OS === "web" && document.activeElement instanceof HTMLElement) document.activeElement.blur(); setMobileSidebarOpen(false); setMobileSearchOpen(false); router.push(href as never); };
+  const open = (href: string) => { if (Platform.OS === "web" && document.activeElement instanceof HTMLElement) document.activeElement.blur(); setMobileSidebarOpen(false); setMobileSearchOpen(false); router.push((href === "/notifications" ? "/vendor/notifications" : href) as never); };
   const accountName = session?.profile.displayName || session?.email || "Seller account";
   const accountInitials = accountName.split(/[\s@]+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toLocaleUpperCase()).join("") || "S";
   const logout = async () => { if (firebaseAuth) await signOut(firebaseAuth); open("/login"); };

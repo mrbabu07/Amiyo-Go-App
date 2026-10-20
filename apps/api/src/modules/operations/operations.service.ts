@@ -17,6 +17,7 @@ import { validateCustomerReturnEvidence } from "./return-evidence.js";
 
 const json = (value: unknown) => JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 const money = (amountMinor: bigint, currency = "BDT") => ({ amountMinor: amountMinor.toString(), currency });
+const notificationMoney = (amount: bigint) => `${(amount / 100n).toLocaleString("en-BD")}.${(amount % 100n).toString().padStart(2, "0")}`;
 const requestHash = (input: unknown) => createHash("sha256").update(JSON.stringify(input)).digest("hex");
 const elevated = (session: Session) => session.principal.roles.some((role) => ["FINANCE_ADMIN", "OPERATIONS_ADMIN", "SUPER_ADMIN"].includes(role));
 const deliveryOperator = (session: Session) => session.principal.roles.some((role) => ["OPERATIONS_ADMIN", "SUPER_ADMIN"].includes(role));
@@ -49,6 +50,15 @@ async function remember(transaction: TransactionClient, scope: string, key: stri
 
 async function wallet(transaction: TransactionClient, vendorId: string) {
   return transaction.vendorWallet.upsert({ where: { vendorId }, create: { vendorId }, update: {}, include: { entries: true } });
+}
+
+export async function notifyVendorPayoutStatus(transaction: TransactionClient, input: { requestId: string; vendorId: string; amountMinor: bigint; status: "APPROVED" | "REJECTED" | "PAID"; reason?: string | null }) {
+  const members = await transaction.vendorMember.findMany({ where: { vendorId: input.vendorId, status: "active", user: { status: "ACTIVE" } }, select: { userId: true } });
+  for (const userId of new Set(members.map((member) => member.userId))) {
+    const idempotencyKey = `vendor-payout-${input.status.toLowerCase()}:${input.requestId}:${userId}`;
+    const statusCopy = input.status === "PAID" ? "has been paid" : input.status === "APPROVED" ? "was approved" : `was rejected${input.reason ? `: ${input.reason}` : ""}`;
+    await transaction.notification.upsert({ where: { idempotencyKey }, update: {}, create: { userId, type: `vendor.payout.${input.status.toLowerCase()}`, title: `Payout ${input.status.toLowerCase()}`, body: `Your BDT ${notificationMoney(input.amountMinor)} payout request ${statusCopy}.`, data: { href: "/vendor/finance/payouts", payoutRequestId: input.requestId }, idempotencyKey, deliveries: { create: { channel: "in_app", status: "DELIVERED", deliveredAt: new Date() } } } });
+  }
 }
 
 export class OperationsService {
@@ -273,6 +283,7 @@ export class OperationsService {
       if (current.status !== "REQUESTED" || current.version !== input.expectedVersion) throw new ApiProblem(409, "PAYOUT_REVIEW_CONFLICT", "Payout request is no longer reviewable"); const status = input.action === "APPROVE" ? "APPROVED" : "REJECTED";
       await transaction.vendorPayoutRequest.update({ where: { id }, data: { status, reviewedAt: new Date(), reviewedBy: session.principal.userId, rejectionReason: input.action === "REJECT" ? input.reason ?? null : null, version: { increment: 1 } } });
       if (status === "REJECTED") { const currentWallet = await wallet(transaction, current.vendorId); await transaction.vendorLedgerEntry.create({ data: { walletId: currentWallet.id, direction: "CREDIT", amountMinor: current.amountMinor, entryType: "PAYOUT_RELEASE", referenceType: "payout_request", referenceId: id, idempotencyKey: `payout-release:${id}` } }); }
+      await notifyVendorPayoutStatus(transaction, { requestId: id, vendorId: current.vendorId, amountMinor: current.amountMinor, status, reason: input.reason ?? null });
       await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "admin", action: `payout.${status.toLowerCase()}`, resourceType: "payout_request", resourceId: id, before: json({ status: current.status }), after: json({ status, reason: input.reason }) } }); const result = { id, status, version: current.version + 1 }; await remember(transaction, scope, key, prior.hash, result); return result;
     });
   }
@@ -282,6 +293,7 @@ export class OperationsService {
     return withSerializableTransaction(this.client, async (transaction) => {
       const prior = await replay(transaction, scope, key, input); if (prior.response) return prior.response; const current = await transaction.vendorPayoutRequest.findUnique({ where: { id }, include: { bankAccount: { select: { verifiedAt: true } } } }); if (!current) throw new ApiProblem(404, "PAYOUT_NOT_FOUND", "Payout request not found"); const { rules } = await loadBusinessRules(transaction); const settlement = settlementDecision({ amountMinor: current.amountMinor, status: current.status, provider: input.provider, providerRef: input.providerRef, bankAccountVerified: Boolean(current.bankAccount.verifiedAt) }, rules.settlement.minimumPayoutMinor); if (!settlement.eligible) throw new ApiProblem(409, settlement.code, settlement.reason);
       const payout = await transaction.vendorPayout.create({ data: { vendorId: current.vendorId, requestId: id, provider: input.provider, providerRef: input.providerRef, amountMinor: current.amountMinor, currency: current.currency, status: "PAID", paidAt: new Date() } }); await transaction.vendorPayoutRequest.update({ where: { id }, data: { status: "PAID", version: { increment: 1 } } });
+      await notifyVendorPayoutStatus(transaction, { requestId: id, vendorId: current.vendorId, amountMinor: current.amountMinor, status: "PAID" });
       await this.outbox.enqueue(transaction, { aggregateType: "payout", aggregateId: payout.id, eventType: "payout.paid", idempotencyKey: `payout-paid:${id}`, payload: { requestId: id, vendorId: current.vendorId } }); await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "admin", action: "payout.paid", resourceType: "payout_request", resourceId: id, after: json({ provider: input.provider, providerRef: input.providerRef }) } }); const result = { id, payoutId: payout.id, status: "PAID" }; await remember(transaction, scope, key, prior.hash, result); return result;
     });
   }

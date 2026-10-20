@@ -1,0 +1,32 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import type { Prisma } from "@prisma/client";
+import { notifyVendorPayoutStatus } from "./operations.service.js";
+
+test("payout decisions notify active seller members once with finance routing", async () => {
+  const created: Array<Record<string, unknown>> = [];
+  const transaction = {
+    vendorMember: { findMany: async () => [{ userId: "owner-1" }, { userId: "owner-1" }, { userId: "finance-1" }] },
+    notification: { upsert: async ({ create }: { create: Record<string, unknown> }) => { created.push(create); } }
+  } as unknown as Prisma.TransactionClient;
+
+  await notifyVendorPayoutStatus(transaction, { requestId: "request-1", vendorId: "vendor-1", amountMinor: 250050n, status: "REJECTED", reason: "Bank details do not match" });
+
+  assert.equal(created.length, 2);
+  assert.deepEqual(created.map((item) => item.userId).sort(), ["finance-1", "owner-1"]);
+  assert.equal(created[0]?.type, "vendor.payout.rejected");
+  assert.equal(created[0]?.body, "Your BDT 2,500.50 payout request was rejected: Bank details do not match.");
+  assert.deepEqual(created[0]?.data, { href: "/vendor/finance/payouts", payoutRequestId: "request-1" });
+});
+
+test("paid payout notification preserves exact minor units", async () => {
+  let created: Record<string, unknown> | undefined;
+  const transaction = {
+    vendorMember: { findMany: async () => [{ userId: "owner-1" }] },
+    notification: { upsert: async (input: { create: Record<string, unknown> }) => { created = input.create; } }
+  } as unknown as Prisma.TransactionClient;
+
+  await notifyVendorPayoutStatus(transaction, { requestId: "request-2", vendorId: "vendor-1", amountMinor: 50000n, status: "PAID" });
+  assert.equal(created?.body, "Your BDT 500.00 payout request has been paid.");
+  assert.equal(created?.idempotencyKey, "vendor-payout-paid:request-2:owner-1");
+});

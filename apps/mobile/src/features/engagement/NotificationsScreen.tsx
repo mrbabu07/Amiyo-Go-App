@@ -16,7 +16,7 @@ function notificationIcon(type: string) {
   return "notifications-outline";
 }
 
-export function NotificationsScreen() {
+export function NotificationsScreen({ workspace = "customer" }: { workspace?: "customer" | "vendor" }) {
   const compact = useWindowDimensions().width < 620;
   const router = useRouter();
   const cache = useQueryClient();
@@ -39,7 +39,8 @@ export function NotificationsScreen() {
   if (query.error) return <EngagementState eyebrow="ACTIVITY" icon="alert-circle-outline" title="Could not load notifications" copy={query.error.message} action="Try again" onPress={() => query.refetch()} />;
 
   const unread = query.data?.filter((item) => !item.readAt).length ?? 0;
-  return <Screen eyebrow="ACTIVITY" title="Notifications" description="Order, conversation, stock and campaign updates in one timeline.">
+  const seller = workspace === "vendor";
+  return <Screen eyebrow={seller ? "SELLER ACTIVITY" : "ACTIVITY"} title={seller ? "Seller notifications" : "Notifications"} description={seller ? "Orders, returns, payouts, catalog reviews and customer conversations in one operational timeline." : "Order, conversation, stock and campaign updates in one timeline."}>
     <View style={[styles.summary, compact && styles.summaryCompact]}><View style={styles.summaryIcon}><Ionicons color={colors.surface} name="notifications" size={24} /></View><View style={styles.flex}><Text accessibilityRole="header" style={styles.summaryTitle}>{unread ? `${unread} unread update${unread === 1 ? "" : "s"}` : "You're all caught up"}</Text><Text style={styles.summaryCopy}>Automatically refreshes every 30 seconds.</Text></View><View style={styles.total}><Text style={styles.totalNumber}>{query.data?.length ?? 0}</Text><Text style={styles.totalLabel}>TOTAL</Text></View></View>
     {query.data?.length ? <View style={styles.list}>{query.data.map((item) => <Pressable accessibilityLabel={`${item.readAt ? "Read" : "Unread"} notification: ${item.title}`} accessibilityRole="button" key={item.id} onPress={() => open(item.id, item.href)} style={[styles.card, compact && styles.cardCompact, !item.readAt && styles.cardUnread]}><View style={[styles.icon, !item.readAt && styles.iconUnread]}><Ionicons color={colors.primary} name={notificationIcon(item.type) as never} size={21} /></View><View style={styles.flex}><View style={styles.titleRow}><Text style={styles.title}>{item.title}</Text>{!item.readAt ? <View style={styles.newBadge}><Text style={styles.newText}>NEW</Text></View> : null}</View><Text style={styles.body}>{item.body}</Text><Text style={styles.date}>{new Date(item.createdAt).toLocaleString("en-BD")}</Text></View>{item.href ? <Ionicons color={colors.muted} name="chevron-forward" size={19} /> : null}</Pressable>)}</View> : <View style={styles.empty}><Ionicons color={colors.primary} name="checkmark-circle-outline" size={52} /><Text style={styles.emptyTitle}>No notifications yet</Text><Text style={styles.muted}>Important marketplace updates will appear here.</Text></View>}
   </Screen>;
