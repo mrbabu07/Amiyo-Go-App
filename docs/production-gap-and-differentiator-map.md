@@ -63,6 +63,7 @@ Order-document follow-up: COD collection is now payment-state aware, customer in
 - Cart recovery: the worker creates deduplicated in-app/push reminders for signed-in customers whose active carts remain untouched for one hour.
 - Intelligent marketplace discovery: 250ms live suggestions, product/shop/category results, typo-tolerant matching, recent searches, and 14-day trending terms are available from the shared search header.
 - Personalized ranking: anonymous discovery sessions feed product-view, wishlist, and add-to-cart signals into category affinity, marketplace engagement, review, freshness, and active-campaign ranking.
+- Review media: processed customer photos are owner-validated, projected through configured HTTPS storage without private keys, and rendered in product and personal-review galleries with enlarged navigation, broken-image retry, and touch-safe thumbnails.
 
 ## Production Work Still Pending
 

@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Image, Modal, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
@@ -8,7 +9,7 @@ export function ReviewImages({ images }: { images: Array<{ id: string; url: stri
   const selected = images[selectedIndex];
   if (!images.length) return null;
   return <View style={styles.row}>
-    {images.map((image, index) => <Pressable key={image.id} accessibilityRole="button" accessibilityLabel={`Open customer review photo ${index + 1}`} onPress={() => setSelectedId(image.id)}><Image accessibilityLabel={`Customer review photo ${index + 1}`} source={{ uri: image.url }} resizeMode="contain" style={styles.image} /></Pressable>)}
+    {images.map((image, index) => <ReviewThumbnail image={image} index={index} key={image.id} onOpen={() => setSelectedId(image.id)} />)}
     <Modal visible={Boolean(selected)} animationType="fade" onRequestClose={() => setSelectedId(null)}>
       <SafeAreaView style={styles.safe}>
       <View style={styles.viewer} accessibilityViewIsModal>
@@ -21,6 +22,15 @@ export function ReviewImages({ images }: { images: Array<{ id: string; url: stri
   </View>;
 }
 
+function ReviewThumbnail({ image, index, onOpen }: { image: { id: string; url: string }; index: number; onOpen(): void }) {
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const label = failed ? `Retry customer review photo ${index + 1}` : `Open customer review photo ${index + 1}`;
+  return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={() => failed ? (setFailed(false), setAttempt((value) => value + 1)) : onOpen()} style={({ pressed }) => [styles.thumbnail, pressed && styles.pressed]}>
+    {failed ? <View style={styles.thumbnailFeedback}><Ionicons color={colors.muted} name="refresh-outline" size={22} /><Text style={styles.thumbnailFeedbackText}>Retry</Text></View> : <Image key={attempt} accessibilityLabel={`Customer review photo ${index + 1}`} source={{ uri: image.url }} onError={() => setFailed(true)} resizeMode="cover" style={styles.image} />}
+  </Pressable>;
+}
+
 function ReviewPhoto({ url, position }: { url: string; position: number }) {
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -30,7 +40,11 @@ function ReviewPhoto({ url, position }: { url: string; position: number }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  image: { width: 96, height: 96, borderRadius: radius.md },
+  thumbnail: { backgroundColor: colors.accentSoft, borderRadius: radius.md, boxShadow: "0 5px 16px rgba(11,31,58,.08)", height: 96, minHeight: 44, minWidth: 44, overflow: "hidden", width: 96 },
+  image: { height: "100%", width: "100%" },
+  thumbnailFeedback: { alignItems: "center", flex: 1, gap: 3, justifyContent: "center" },
+  thumbnailFeedbackText: { color: colors.muted, fontSize: 10, fontWeight: "700" },
+  pressed: { opacity: 0.78, transform: [{ scale: 0.98 }] },
   viewer: { flex: 1, backgroundColor: colors.background, padding: spacing.lg, gap: spacing.md },
   controls: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: spacing.sm },
   button: { minHeight: 44, minWidth: 44, padding: spacing.sm, justifyContent: "center" },
