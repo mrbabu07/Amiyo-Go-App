@@ -12,7 +12,7 @@ import { DeliveryCallbackService } from "./delivery-callback.service.js";
 import { OrderService } from "./order.service.js";
 
 const idSchema = z.object({ id: z.string().uuid() });
-const listSchema = z.object({ status: vendorOrderStatusSchema.optional() });
+const listSchema = z.object({ cursor: z.string().uuid().optional(), limit: z.coerce.number().int().min(1).max(100).default(30), status: vendorOrderStatusSchema.optional(), orderId: z.string().uuid().optional() });
 
 export function createOrderRouter() {
   const router = Router();
@@ -34,7 +34,7 @@ export function createOrderRouter() {
   router.get("/api/v2/orders/:id/tracking", async (req, res, next) => { try { res.json(await service.tracking(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   router.get("/api/v2/orders/:id", async (req, res, next) => { try { res.json(await service.customerOrder(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   router.get("/api/v2/orders/:id/invoice", async (req, res, next) => { try { res.json(await service.invoice(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
-  router.get("/api/v2/vendor/orders", async (req, res, next) => { try { res.json(await service.vendorOrders(requireSession(req), listSchema.parse(req.query).status)); } catch (error) { next(error); } });
+  router.get("/api/v2/vendor/orders", async (req, res, next) => { try { res.json(await service.vendorOrders(requireSession(req), listSchema.parse(req.query))); } catch (error) { next(error); } });
   router.get("/api/v2/vendor/orders/:id", async (req, res, next) => { try { res.json(await service.vendorOrder(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   router.post("/api/v2/vendor/orders/:id/customer-thread", async (req, res, next) => { try { res.json(await service.customerThread(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   router.post("/api/v2/vendor/orders/:id/delivery-exceptions", async (req, res, next) => {

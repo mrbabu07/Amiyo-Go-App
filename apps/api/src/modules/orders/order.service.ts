@@ -139,12 +139,15 @@ export class OrderService {
   private readonly outbox = new OutboxRepository();
   constructor(private readonly client: PrismaClient) {}
 
-  async vendorOrders(session: Session, status?: VendorOrderStatus) {
+  async vendorOrders(session: Session, query: { cursor?: string | undefined; limit?: number | undefined; status?: VendorOrderStatus | undefined; orderId?: string | undefined } = {}) {
     if (session.status !== "ACTIVE" || !session.permissions.includes("orders:read")) throw new ApiProblem(403, "ORDERS_FORBIDDEN", "Order access is not allowed");
     const elevated = session.principal.roles.some((role) => ["SUPER_ADMIN", "OPERATIONS_ADMIN"].includes(role));
-    if (!elevated && session.principal.vendorIds.length === 0) return [];
-    const rows = await this.client.vendorOrder.findMany({ where: { ...(elevated ? {} : { vendorId: { in: session.principal.vendorIds } }), ...(status ? { status } : {}) }, select: vendorOrderSummarySelect, orderBy: { createdAt: "desc" }, take: 100 });
-    return rows.map(vendorOrderSummaryDto);
+    if (!elevated && session.principal.vendorIds.length === 0) return { data: [], pageInfo: { hasNextPage: false, nextCursor: null } };
+    const limit = query.limit ?? 30;
+    const rows = await this.client.vendorOrder.findMany({ where: { ...(elevated ? {} : { vendorId: { in: session.principal.vendorIds } }), ...(query.status ? { status: query.status } : {}), ...(query.orderId ? { orderId: query.orderId } : {}) }, select: vendorOrderSummarySelect, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: limit + 1, ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}) });
+    const hasNextPage = rows.length > limit;
+    const page = hasNextPage ? rows.slice(0, limit) : rows;
+    return { data: page.map(vendorOrderSummaryDto), pageInfo: { hasNextPage, nextCursor: hasNextPage ? page.at(-1)?.id ?? null : null } };
   }
 
   async vendorOrder(session: Session, id: string) {

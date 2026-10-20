@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { pathToFileURL } from "node:url";
 import { z } from "zod";
 import { returnSchema } from "@amiyo/contracts";
-import { adminOrderDetailSchema, adminWorkspaceSchema, customerOrderSummarySchema, fulfillmentDocumentSchema, orderSchema, orderTrackingSchema, sessionSchema, vendorCommissionInvoiceSchema, vendorFinanceSchema, vendorOrderDetailSchema, vendorStatementSchema } from "@amiyo/contracts";
+import { adminOrderDetailSchema, adminWorkspaceSchema, customerOrderSummarySchema, fulfillmentDocumentSchema, orderSchema, orderTrackingSchema, sessionSchema, vendorCommissionInvoiceSchema, vendorFinanceSchema, vendorOrderDetailSchema, vendorOrderListResponseSchema, vendorStatementSchema } from "@amiyo/contracts";
 
 export function loopbackOrigin(value) {
   const url = new URL(value);
@@ -63,7 +63,8 @@ export async function runAuthenticatedSmoke({ apiUrl = "http://127.0.0.1:4000", 
   if (returns?.length) {
     await check("admin", `/api/v2/admin/returns/${evidenceCaseId}/evidence`, 200, z.array(z.object({ id: z.string().uuid(), name: z.string(), mimeType: z.string() }).strict()));
   } else results.push({ role: "admin", check: "return-evidence-list", status: "skipped", reason: "No existing return fixture; none was created" });
-  const vendorOrders = await check("vendor", "/api/v2/vendor/orders", 200, vendorOrderDetailSchema.array());
+  const vendorOrderPage = await check("vendor", "/api/v2/vendor/orders?limit=30", 200, vendorOrderListResponseSchema);
+  const vendorOrders = vendorOrderPage?.data ?? [];
   const finance = await check("vendor", "/api/v2/vendor/finance", 200, vendorFinanceSchema);
   await check("admin", "/api/v2/admin/workspace", 200, adminWorkspaceSchema);
   await check("customer", "/api/v2/admin/workspace", 403);

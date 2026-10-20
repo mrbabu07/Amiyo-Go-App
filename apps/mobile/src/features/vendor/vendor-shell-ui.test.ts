@@ -64,6 +64,9 @@ test("seller orders stay inside the workspace with reference controls", () => {
   assert.match(orders, /thumbnailUrl/);
   assert.match(orders, /useLocalSearchParams<\{ orderId\?: string \}>/);
   assert.match(orders, /`\$\{order\.orderId\} \$\{order\.orderNumber\}/);
+  assert.match(orders, /useInfiniteQuery/);
+  assert.match(orders, /page\.pageInfo\.nextCursor/);
+  assert.match(orders, /Load more orders/);
   assert.match(orders, /formatMinor\(order\.total\.amountMinor\)/);
   assert.doesNotMatch(orders, /Number\(amount\)/);
   assert.match(orders, /useCurrentUser/);

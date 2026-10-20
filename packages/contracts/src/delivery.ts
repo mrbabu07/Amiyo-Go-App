@@ -2,6 +2,7 @@ import { z } from "zod";
 import { moneySchema, timestampSchema, uuidSchema, versionSchema } from "./common.js";
 import { orderItemSchema, parentOrderStatusSchema, vendorOrderStatusSchema } from "./orders.js";
 import { documentQrPayloadSchema } from "./document-qr.js";
+import { paginatedResponseSchema } from "./pagination.js";
 
 export const shipmentStatusSchema = z.enum(["PENDING", "READY_TO_SHIP", "PICKED_UP", "IN_TRANSIT", "DELIVERED", "FAILED", "CANCELLED"]);
 export const dispatchStatusSchema = z.enum(["PENDING", "DISPATCHED", "ACCEPTED", "FAILED", "CANCELLED"]);
@@ -80,6 +81,7 @@ export const vendorOrderSummarySchema = vendorOrderDetailSchema.pick({
   createdAt: true,
   items: true
 });
+export const vendorOrderListResponseSchema = paginatedResponseSchema(vendorOrderSummarySchema);
 
 export const customerOrderSummarySchema = z.object({
   id: uuidSchema,
@@ -143,6 +145,7 @@ export const amiyoDeliveryCallbackSchema = z.object({
 
 export type VendorOrderDetail = z.infer<typeof vendorOrderDetailSchema>;
 export type VendorOrderSummary = z.infer<typeof vendorOrderSummarySchema>;
+export type VendorOrderListResponse = z.infer<typeof vendorOrderListResponseSchema>;
 export type VendorOrderTransition = z.infer<typeof vendorOrderTransitionSchema>;
 export type VendorDeliveryExceptionInput = z.infer<typeof vendorDeliveryExceptionInputSchema>;
 export type VendorPickupRequestInput = z.infer<typeof vendorPickupRequestInputSchema>;

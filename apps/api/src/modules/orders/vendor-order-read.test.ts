@@ -24,17 +24,17 @@ test("vendor list keeps scope, status and limit with a summary-only projection",
   let calls = 0;
   const service = new OrderService({ vendorOrder: { findMany: async (query: { where: unknown; select: Record<string, unknown>; take: number }) => {
     calls++;
-    assert.deepEqual(query.where, { vendorId: { in: ["vendor"] }, status: "IN_TRANSIT" });
-    assert.equal(query.take, 100);
+    assert.deepEqual(query.where, { vendorId: { in: ["vendor"] }, status: "IN_TRANSIT", orderId: "11111111-1111-4111-8111-111111111111" });
+    assert.equal(query.take, 31);
     assert.equal(query.select.vendor, undefined);
     assert.equal(query.select.shipments, undefined);
     assert.equal(query.select.dispatches, undefined);
     assert.equal((query.select.order as { select: Record<string, unknown> }).select.addresses, undefined);
     return [];
   } } } as never);
-  assert.deepEqual(await service.vendorOrders(seller, "IN_TRANSIT"), []);
+  assert.deepEqual(await service.vendorOrders(seller, { status: "IN_TRANSIT", orderId: "11111111-1111-4111-8111-111111111111" }), { data: [], pageInfo: { hasNextPage: false, nextCursor: null } });
   assert.equal(calls, 1);
-  assert.deepEqual(await service.vendorOrders({ ...seller, principal: { ...seller.principal, vendorIds: [] } }), []);
+  assert.deepEqual(await service.vendorOrders({ ...seller, principal: { ...seller.principal, vendorIds: [] } }), { data: [], pageInfo: { hasNextPage: false, nextCursor: null } });
   assert.equal(calls, 1);
   await assert.rejects(() => service.vendorOrders({ ...seller, status: "SUSPENDED" }), (error: unknown) => error instanceof ApiProblem && error.status === 403);
 });
@@ -159,8 +159,24 @@ test("vendor list returns card summaries without loading detail-only relations",
     } }
   } as never);
   const result = await service.vendorOrders(seller);
-  assert.equal(result.length, 2);
-  assert.deepEqual(Object.keys(result[0] ?? {}).sort(), ["createdAt", "customer", "id", "items", "orderId", "orderNumber", "payment", "shopId", "shopName", "status", "total", "vendorId"]);
-  assert.equal(result[0]?.items[0]?.thumbnailUrl, "https://cdn.amiyo.test/products/item.webp");
+  assert.equal(result.data.length, 2);
+  assert.deepEqual(Object.keys(result.data[0] ?? {}).sort(), ["createdAt", "customer", "id", "items", "orderId", "orderNumber", "payment", "shopId", "shopName", "status", "total", "vendorId"]);
+  assert.equal(result.data[0]?.items[0]?.thumbnailUrl, "https://cdn.amiyo.test/products/item.webp");
+  assert.deepEqual(result.pageInfo, { hasNextPage: false, nextCursor: null });
   assert.equal(reads, 1);
+});
+
+test("vendor list returns a stable cursor without exposing the lookahead row", async () => {
+  const createdAt = new Date("2026-10-03T00:00:00Z");
+  const rows = ["third", "second", "first"].map((id) => ({ id, orderId: "parent", vendorId: "vendor", shopId: "shop", shop: { name: "Shop" }, status: "PLACED", createdAt, totalMinor: 120n, order: { orderNumber: "ORDER", currency: "BDT", payments: [], user: null }, items: [] }));
+  const service = new OrderService({ vendorOrder: { findMany: async (query: { cursor?: unknown; skip?: number; take: number; orderBy: unknown }) => {
+    assert.equal(query.take, 3);
+    assert.deepEqual(query.cursor, { id: "cursor-package" });
+    assert.equal(query.skip, 1);
+    assert.deepEqual(query.orderBy, [{ createdAt: "desc" }, { id: "desc" }]);
+    return rows;
+  } } } as never);
+  const result = await service.vendorOrders(seller, { cursor: "cursor-package", limit: 2 });
+  assert.deepEqual(result.data.map((item) => item.id), ["third", "second"]);
+  assert.deepEqual(result.pageInfo, { hasNextPage: true, nextCursor: "second" });
 });
