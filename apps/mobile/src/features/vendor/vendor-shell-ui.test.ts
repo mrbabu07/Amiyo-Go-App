@@ -44,6 +44,12 @@ test("seller workspace uses responsive grouped navigation", () => {
   assert.match(shell, /width >= 350/);
   assert.match(shell, /vendorBrandCopy/);
   assert.match(shell, /vendorPage: \{[^}]*backgroundColor: colors\.background/);
+  assert.match(shell, /filterVendorTargets\(vendorMobileLinks, permissions\)/);
+  assert.match(shell, /filterVendorTargets\(vendorLinks, permissions\)/);
+  assert.match(shell, /filterVendorTargets\(vendorPrimaryLinks, permissions\)/);
+  assert.match(shell, /canAccessVendorPath\(pathname, permissions\)/);
+  assert.match(shell, /This seller tool is restricted/);
+  assert.match(shell, /amiyo:vendor-sidebar-collapsed/);
 });
 
 test("seller dashboard exposes live operational hierarchy", () => {
