@@ -6,7 +6,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDim
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
-import { getVendorStaff, inviteVendorStaff, updateVendorStaff } from "./vendor.api";
+import { getVendorStaff, getVendorStaffAudit, inviteVendorStaff, removeVendorStaff, updateVendorStaff } from "./vendor.api";
 
 const permissions = ["orders:read", "orders:manage", "products:manage", "inventory:manage", "returns:manage", "finance:read", "support:manage"] as const;
 type Permission = typeof permissions[number];
@@ -24,6 +24,7 @@ export function VendorStaffScreen() {
   activeUid.current = user?.uid;
   const cache = useQueryClient();
   const query = useQuery({ queryKey: ["vendor", "staff", user?.uid], queryFn: () => getVendorStaff(user!), enabled: Boolean(user) });
+  const audit = useQuery({ queryKey: ["vendor", "staff-audit", user?.uid], queryFn: () => getVendorStaffAudit(user!), enabled: Boolean(user) });
   const [drafts, setDrafts] = useState<Record<string, Permission[]>>({});
   const [email, setEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"VENDOR_MANAGER" | "VENDOR_STAFF">("VENDOR_STAFF");
@@ -49,6 +50,11 @@ export function VendorStaffScreen() {
       setEmail(""); setInviteRole("VENDOR_STAFF"); setInvitePermissions(permissionPresets[0].permissions); setNotice("Team member added successfully.");
       await cache.invalidateQueries({ queryKey: ["vendor", "staff", variables.owner.uid] });
     }
+  });
+  const remove = useMutation({
+    retry: false,
+    mutationFn: ({ owner, id }: { owner: User; id: string }) => removeVendorStaff(owner, id),
+    onSuccess: async (_data, variables) => { if (activeUid.current !== variables.owner.uid) return; await Promise.all([cache.invalidateQueries({ queryKey: ["vendor", "staff", variables.owner.uid] }), cache.invalidateQueries({ queryKey: ["vendor", "staff-audit", variables.owner.uid] })]); }
   });
 
   const selectedFor = (id: string, current: string[]) => drafts[id] ?? current.filter((item): item is Permission => permissions.includes(item as Permission));
@@ -97,19 +103,22 @@ export function VendorStaffScreen() {
             return <Pressable key={permission} onPress={() => toggle(member.id, member.permissions, permission)} style={[styles.permission, active && styles.permissionActive]}><Ionicons color={active ? colors.surface : colors.muted} name={active ? "checkmark-circle" : "ellipse-outline"} size={16} /><Text style={[styles.permissionText, active && styles.permissionTextActive]}>{permissionLabel(permission)}</Text></Pressable>;
           })}</View>
           <View style={[styles.actions, compact && styles.actionsCompact]}>
-            <Pressable disabled={!user || save.isPending} onPress={() => user && save.mutate({ owner: user, id: member.id, status: member.status === "active" ? "suspended" : "active", selected })} style={[styles.secondary, compact && styles.actionCompact]}><Text style={styles.secondaryText}>{member.status === "active" ? "Suspend access" : "Restore access"}</Text></Pressable>
+            <Pressable disabled={!user || save.isPending || remove.isPending} onPress={() => user && save.mutate({ owner: user, id: member.id, status: member.status === "active" ? "suspended" : "active", selected })} style={[styles.secondary, compact && styles.actionCompact]}><Text style={styles.secondaryText}>{member.status === "active" ? "Suspend access" : "Restore access"}</Text></Pressable>
+            <Pressable accessibilityLabel={`Remove ${member.displayName || member.email || "team member"}`} disabled={!user || save.isPending || remove.isPending} onPress={() => user && remove.mutate({ owner: user, id: member.id })} style={[styles.remove, compact && styles.actionCompact]}><Text style={styles.removeText}>Remove member</Text></Pressable>
             <Pressable accessibilityState={{ disabled: !user || save.isPending || !changed }} disabled={!user || save.isPending || !changed} onPress={() => user && save.mutate({ owner: user, id: member.id, status: member.status as "active" | "suspended", selected })} style={[styles.primary, compact && styles.actionCompact, !changed && styles.disabled]}><Text style={styles.primaryText}>{changed ? "Save permissions" : "Permissions saved"}</Text></Pressable>
           </View>
         </>}
       </View>;
     })}</View>
     {query.data?.length === 0 ? <View style={styles.empty}><Ionicons color={colors.primary} name="person-add-outline" size={42} /><Text style={styles.emptyTitle}>No staff members yet</Text><Text style={styles.email}>Staff invited to your workspace will appear here.</Text></View> : null}
-    {query.error || save.error ? <Text style={styles.error}>{(query.error || save.error)?.message}</Text> : null}
+    <View style={styles.auditCard}><View style={styles.auditHeader}><View><Text style={styles.inviteEyebrow}>SECURITY HISTORY</Text><Text style={styles.auditTitle}>Team access activity</Text></View><Ionicons color={colors.accent} name="time-outline" size={23} /></View>{audit.isLoading ? <ActivityIndicator color={colors.primary} /> : audit.data?.length ? <View style={styles.auditList}>{audit.data.map((entry) => <View key={entry.id} style={styles.auditRow}><View style={styles.auditDot} /><View style={styles.flex}><Text style={styles.auditAction}>{auditLabel(entry.action)}</Text><Text style={styles.auditMeta}>{new Date(entry.createdAt).toLocaleString()} · Member {entry.memberId.slice(0, 8)}</Text></View></View>)}</View> : <Text style={styles.email}>Invites, permission changes and removals will appear here.</Text>}</View>
+    {query.error || save.error || remove.error || audit.error ? <Text style={styles.error}>{(query.error || save.error || remove.error || audit.error)?.message}</Text> : null}
   </Screen>;
 }
 
 function permissionLabel(value: Permission) { return value.replace(":", " · ").replaceAll("_", " "); }
 function samePermissions(left: readonly Permission[], right: readonly Permission[]) { return [...left].sort().join("|") === [...right].sort().join("|"); }
+function auditLabel(action: string) { return action.endsWith("invited") ? "Team member added" : action.endsWith("removed") ? "Team member removed" : "Team access updated"; }
 function TeamMetric({ label, value }: { label: string; value: number }) { return <View style={styles.summaryMetric}><Text style={styles.summaryMetricValue}>{value}</Text><Text style={styles.summaryMetricLabel}>{label}</Text></View>; }
 
 const styles = StyleSheet.create({
@@ -176,10 +185,20 @@ const styles = StyleSheet.create({
   actionCompact: { alignItems: "center", width: "100%" },
   secondary: { borderColor: colors.danger, borderRadius: radius.md, borderWidth: 1, paddingHorizontal: spacing.md, paddingVertical: 11 },
   secondaryText: { color: colors.danger, fontWeight: "700" },
+  remove: { backgroundColor: colors.danger, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 11 },
+  removeText: { color: colors.surface, fontWeight: "700" },
   primary: { backgroundColor: colors.primary, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 11 },
   primaryText: { color: colors.surface, fontWeight: "700" },
   disabled: { opacity: .45 },
   empty: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl, borderStyle: "dashed", borderWidth: 1, gap: spacing.sm, padding: 40 },
   emptyTitle: { color: colors.text, fontSize: 18, fontWeight: "700" },
+  auditCard: { backgroundColor: colors.navy, borderRadius: radius.xl, gap: spacing.md, padding: spacing.lg },
+  auditHeader: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
+  auditTitle: { color: colors.surface, fontSize: 18, fontWeight: "700", marginTop: 3 },
+  auditList: { gap: spacing.sm },
+  auditRow: { alignItems: "center", backgroundColor: "rgba(255,255,255,.07)", borderRadius: radius.md, flexDirection: "row", gap: spacing.sm, padding: spacing.md },
+  auditDot: { backgroundColor: colors.accent, borderRadius: radius.pill, height: 9, width: 9 },
+  auditAction: { color: colors.surface, fontSize: 11, fontWeight: "700" },
+  auditMeta: { color: "#C9C2B6", fontSize: 9, marginTop: 3 },
   error: { color: colors.danger }
 });

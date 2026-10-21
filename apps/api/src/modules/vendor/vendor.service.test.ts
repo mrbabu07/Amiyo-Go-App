@@ -107,6 +107,27 @@ test("vendor staff invite rejects unavailable and cross-workspace accounts", asy
   await assert.rejects(() => new VendorService(occupied).inviteStaff(shopSession, { email: "team@example.com", role: "VENDOR_MANAGER", permissions: ["finance:read"] }), /another seller workspace/);
 });
 
+test("vendor owner removes staff atomically but can never remove the owner", async () => {
+  const memberId = "88888888-8888-4888-8888-888888888888";
+  const staffMember = { id: memberId, vendorId, userId: "77777777-7777-4777-8777-777777777777", role: "VENDOR_STAFF", status: "active", permissions: [{ permissionKey: "orders:read", granted: true }] };
+  let deleted = false; let audited = false;
+  const transaction = { vendorMember: { delete: async () => { deleted = true; } }, auditLog: { create: async ({ data }: any) => { audited = data.metadata.vendorId === vendorId; } } };
+  const client = { vendorMember: { findFirst: async () => staffMember, findMany: async () => [] }, $transaction: async (operation: (value: typeof transaction) => Promise<unknown>) => operation(transaction) } as unknown as PrismaClient;
+  assert.deepEqual(await new VendorService(client).removeStaff(shopSession, memberId), []);
+  assert.equal(deleted, true); assert.equal(audited, true);
+  const ownerClient = { vendorMember: { findFirst: async () => ({ ...staffMember, userId, role: "VENDOR_OWNER" }) } } as unknown as PrismaClient;
+  await assert.rejects(() => new VendorService(ownerClient).removeStaff(shopSession, memberId), /owner cannot be removed/);
+});
+
+test("vendor staff audit remains vendor scoped after a member is removed", async () => {
+  const createdAt = new Date("2026-10-21T10:00:00.000Z");
+  let where: any;
+  const client = { vendorMember: { findMany: async () => [] }, auditLog: { findMany: async (input: any) => { where = input.where; return [{ id: "88888888-8888-4888-8888-888888888888", action: "vendor.staff.removed", resourceId: "77777777-7777-4777-8777-777777777777", actorUserId: userId, before: {}, after: null, createdAt }]; } } } as unknown as PrismaClient;
+  const result = await new VendorService(client).staffAudit(shopSession);
+  assert.deepEqual(where.OR[1].metadata, { path: ["vendorId"], equals: vendorId });
+  assert.equal(result[0]?.createdAt, createdAt.toISOString());
+});
+
 test("vendor report applies the selected period and derives fulfilment metrics", async () => {
   const reportSession = { ...session, principal: { ...session.principal, vendorIds: ["33333333-3333-4333-8333-333333333333"] }, permissions: ["vendor:read"], vendorMemberships: [{ vendorId: "33333333-3333-4333-8333-333333333333", role: "VENDOR_OWNER", permissions: ["vendor:read"] }] } as Session;
   let since: Date | undefined;

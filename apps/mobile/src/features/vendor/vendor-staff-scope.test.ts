@@ -30,4 +30,7 @@ test("seller owner can add a registered team member responsively", () => {
   assert.match(source, /VENDOR_MANAGER/);
   assert.match(source, /Team member account email/);
   assert.match(source, /compact && styles\.inviteCardCompact/);
+  assert.match(source, /removeVendorStaff/);
+  assert.match(source, /Team access activity/);
+  assert.match(source, /getVendorStaffAudit/);
 });

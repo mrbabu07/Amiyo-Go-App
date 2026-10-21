@@ -126,6 +126,12 @@ export class VendorService {
     const rows = await this.client.vendorMember.findMany({ where: { vendorId: id }, include: { user: { include: { profile: true } }, permissions: true }, orderBy: { createdAt: "asc" } });
     return rows.map((member) => ({ id: member.id, userId: member.userId, displayName: member.user.profile?.displayName ?? null, email: member.user.normalizedEmail, role: member.role, status: member.status, permissions: member.permissions.filter((item) => item.granted).map((item) => item.permissionKey) }));
   }
+  async staffAudit(session: Session) {
+    const id = vendorId(session); requirePermission(session, "vendor:manage");
+    const memberIds = (await this.client.vendorMember.findMany({ where: { vendorId: id }, select: { id: true } })).map((member) => member.id);
+    const rows = await this.client.auditLog.findMany({ where: { action: { in: ["vendor.staff.invited", "vendor.staff.updated", "vendor.staff.removed"] }, OR: [{ resourceId: { in: memberIds } }, { metadata: { path: ["vendorId"], equals: id } }] }, orderBy: { createdAt: "desc" }, take: 30 });
+    return rows.map((row) => ({ id: row.id, action: row.action, memberId: row.resourceId, actorUserId: row.actorUserId, before: row.before, after: row.after, createdAt: row.createdAt.toISOString() }));
+  }
   async inviteStaff(session: Session, input: InviteVendorStaff) {
     const id = vendorId(session); requirePermission(session, "vendor:manage");
     const account = await this.client.user.findUnique({ where: { normalizedEmail: input.email }, select: { id: true, status: true } });
@@ -137,7 +143,7 @@ export class VendorService {
     try {
       await withSerializableTransaction(this.client, async (transaction) => {
         const member = await transaction.vendorMember.create({ data: { vendorId: id, userId: account.id, role: input.role, permissions: { create: ["vendor:read", ...input.permissions].map((permissionKey) => ({ permissionKey })) } } });
-        await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "vendor.staff.invited", resourceType: "vendor_member", resourceId: member.id, after: json({ email: input.email, role: input.role, permissions: input.permissions }) } });
+        await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "vendor.staff.invited", resourceType: "vendor_member", resourceId: member.id, metadata: json({ vendorId: id }), after: json({ email: input.email, role: input.role, permissions: input.permissions }) } });
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") throw new ApiProblem(409, "VENDOR_STAFF_ALREADY_EXISTS", "This account already belongs to a seller workspace");
@@ -149,7 +155,15 @@ export class VendorService {
     const id = vendorId(session); requirePermission(session, "vendor:manage");
     const member = await this.client.vendorMember.findFirst({ where: { id: memberId, vendorId: id } }); if (!member) throw new ApiProblem(404, "VENDOR_STAFF_NOT_FOUND", "Vendor staff member not found");
     if (member.userId === session.principal.userId) throw new ApiProblem(409, "VENDOR_SELF_STAFF_CHANGE_FORBIDDEN", "You cannot change your own vendor membership");
-    await this.client.$transaction(async (transaction) => { await transaction.vendorMember.update({ where: { id: memberId }, data: { status: input.status } }); await transaction.vendorStaffPermission.deleteMany({ where: { memberId } }); if (input.permissions.length) await transaction.vendorStaffPermission.createMany({ data: input.permissions.map((permissionKey) => ({ memberId, permissionKey })) }); await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "vendor.staff.updated", resourceType: "vendor_member", resourceId: memberId, after: json(input) } }); });
+    await this.client.$transaction(async (transaction) => { await transaction.vendorMember.update({ where: { id: memberId }, data: { status: input.status } }); await transaction.vendorStaffPermission.deleteMany({ where: { memberId } }); if (input.permissions.length) await transaction.vendorStaffPermission.createMany({ data: input.permissions.map((permissionKey) => ({ memberId, permissionKey })) }); await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "vendor.staff.updated", resourceType: "vendor_member", resourceId: memberId, metadata: json({ vendorId: id }), before: json({ status: member.status }), after: json(input) } }); });
+    return this.staff(session);
+  }
+  async removeStaff(session: Session, memberId: string) {
+    const id = vendorId(session); requirePermission(session, "vendor:manage");
+    const member = await this.client.vendorMember.findFirst({ where: { id: memberId, vendorId: id }, include: { permissions: true } });
+    if (!member) throw new ApiProblem(404, "VENDOR_STAFF_NOT_FOUND", "Vendor staff member not found");
+    if (member.role === "VENDOR_OWNER" || member.userId === session.principal.userId) throw new ApiProblem(409, "VENDOR_OWNER_REMOVE_FORBIDDEN", "The seller workspace owner cannot be removed");
+    await this.client.$transaction(async (transaction) => { await transaction.vendorMember.delete({ where: { id: memberId } }); await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "vendor.staff.removed", resourceType: "vendor_member", resourceId: memberId, metadata: json({ vendorId: id }), before: json({ userId: member.userId, role: member.role, status: member.status, permissions: member.permissions.filter((item) => item.granted).map((item) => item.permissionKey) }) } }); });
     return this.staff(session);
   }
   async vouchers(session: Session) { const id = vendorId(session); requirePermission(session, "vendor:read"); const rows = await this.client.voucher.findMany({ where: { ownerType: "vendor", ownerId: id }, orderBy: { startsAt: "desc" }, take: 100 }); return rows.map((row) => ({ ...row, startsAt: row.startsAt.toISOString(), endsAt: row.endsAt.toISOString() })); }

@@ -100,6 +100,7 @@ export const saveVendorBankAccountSchema = z.object({
 });
 
 export const vendorStaffSchema = z.object({ id: uuidSchema, userId: uuidSchema, displayName: z.string().nullable(), email: z.string().nullable(), role: z.string(), status: z.string(), permissions: z.array(z.string()) });
+export const vendorStaffAuditSchema = z.object({ id: uuidSchema, action: z.string(), memberId: z.string(), actorUserId: uuidSchema.nullable(), before: z.unknown().nullable(), after: z.unknown().nullable(), createdAt: timestampSchema });
 export const vendorStaffPermissionSchema = z.enum(["orders:read", "orders:manage", "products:manage", "inventory:manage", "returns:manage", "finance:read", "support:manage"]);
 const vendorStaffPermissionsSchema = z.array(vendorStaffPermissionSchema).min(1).max(12).refine((values) => new Set(values).size === values.length, "Permissions must be unique");
 export const inviteVendorStaffSchema = z.object({
