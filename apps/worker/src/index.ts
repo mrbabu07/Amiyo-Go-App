@@ -23,6 +23,7 @@ import { FlashAlertScheduler } from "./growth/flash-alert.scheduler.js";
 import { bindWorkerObservability } from "./worker-observability.js";
 import { withShutdownTimeout } from "./shutdown-timeout.js";
 import { closeWorkerHealthServer, createWorkerHealthServer } from "./health-server.js";
+import { SellerOperationsAlertScheduler } from "./vendor/seller-operations-alert.scheduler.js";
 
 const env = parseWorkerEnv(process.env);
 const logger = createLogger("amiyo-worker", env.LOG_LEVEL);
@@ -51,6 +52,7 @@ const newsletterRelay = new NewsletterOutboxRelay(prisma, newsletterQueue, (erro
 const loyaltyRelay = new LoyaltyOutboxRelay(prisma, loyaltyQueue, (error) => logger.error({ error }, "Loyalty outbox relay failed"));
 const abandonedCartScheduler = new AbandonedCartScheduler(prisma, (error) => logger.error({ error }, "Abandoned cart scheduler failed"));
 const productAlertScheduler = new ProductAlertScheduler(prisma, (error) => logger.error({ error }, "Product alert scheduler failed"));
+const sellerOperationsAlertScheduler = new SellerOperationsAlertScheduler(prisma, (error) => logger.error({ error }, "Seller operations alert scheduler failed"));
 let shuttingDown = false;
 const queueWorkers = [worker, mediaWorker, notificationWorker, newsletterWorker, loyaltyWorker];
 const healthServer = createWorkerHealthServer({
@@ -71,6 +73,7 @@ newsletterRelay.start();
 loyaltyRelay.start();
 abandonedCartScheduler.start();
 productAlertScheduler.start();
+sellerOperationsAlertScheduler.start();
 const flashAlertScheduler = new FlashAlertScheduler(prisma, (error) => logger.error({ error }, "Flash alert scheduler failed"));
 flashAlertScheduler.start();
 healthServer.listen(env.WORKER_HEALTH_PORT, "0.0.0.0", () => logger.info({ port: env.WORKER_HEALTH_PORT }, "Worker health server listening"));
@@ -83,7 +86,7 @@ async function shutdown(signal: string) {
   relay.stop(); mediaRelay.stop(); notificationRelay.stop(); newsletterRelay.stop(); loyaltyRelay.stop(); abandonedCartScheduler.stop();
   await withShutdownTimeout((async () => {
     await closeWorkerHealthServer(healthServer);
-    await Promise.all([productAlertScheduler.stop(), flashAlertScheduler.stop()]);
+    await Promise.all([productAlertScheduler.stop(), flashAlertScheduler.stop(), sellerOperationsAlertScheduler.stop()]);
     await Promise.all([worker.close(), mediaWorker.close(), notificationWorker.close(), newsletterWorker.close(), loyaltyWorker.close()]);
     await Promise.all([queue.close(), mediaQueue.close(), notificationQueue.close(), newsletterQueue.close(), loyaltyQueue.close()]);
     await Promise.all([prisma.$disconnect(), connection.quit()]);
