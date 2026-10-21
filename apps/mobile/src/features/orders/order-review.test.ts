@@ -34,4 +34,6 @@ test("inline reviews retain explicit submission and account guards without mutat
   assert.match(expansion, /detail.status === "DELIVERED"/);
   assert.match(expansion, /key=\{`actions:\$\{user.uid\}:\$\{item.id\}`\}/);
   assert.match(expansion, /OrderReviewForm orderItemId=\{item.id\}/);
+  const detail = readFileSync(new URL("./CustomerOrderDetailScreen.tsx", import.meta.url), "utf8");
+  assert.match(detail, /vendorOrder.status === "DELIVERED" \? <OrderReviewForm orderItemId=\{item.id\} productName=\{item.productName\}/);
 });
