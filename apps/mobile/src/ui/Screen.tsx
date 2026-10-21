@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { signOut } from "@firebase/auth";
 import { useQuery } from "@tanstack/react-query";
 import { usePathname, useRouter } from "expo-router";
-import { useEffect, useMemo, useState, type Dispatch, type PropsWithChildren, type SetStateAction } from "react";
+import { useEffect, useMemo, useRef, useState, type Dispatch, type PropsWithChildren, type SetStateAction } from "react";
 import { Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, useColorScheme, useWindowDimensions, View } from "react-native";
 import { AdminGlobalSearch } from "../features/admin/AdminGlobalSearch";
 import { BottomNav } from "../features/home/components/BottomNav";
@@ -237,6 +237,7 @@ function AdminNavLink({ collapsed, link, nested = false, onOpen, pathname }: { c
 
 function VendorScreen({ children, description, desktop, eyebrow, hideHeading = false, pathname, title, width }: ScreenProps & { desktop: boolean; pathname: string; width: number }) {
   const router = useRouter();
+  const pageScrollRef = useRef<ScrollView>(null);
   const session = useAuthStore((state) => state.session);
   const user = useCurrentUser();
   const [collapsed, setCollapsed] = useState(readVendorSidebarCollapsed);
@@ -254,6 +255,11 @@ function VendorScreen({ children, description, desktop, eyebrow, hideHeading = f
   const accountInitials = accountName.split(/[\s@]+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toLocaleUpperCase()).join("") || "S";
   const logout = async () => { if (firebaseAuth) await signOut(firebaseAuth); open("/login"); };
   useEffect(() => persistVendorSidebarCollapsed(collapsed), [collapsed]);
+  useEffect(() => {
+    pageScrollRef.current?.scrollTo({ animated: false, y: 0 });
+    setMobileSidebarOpen(false);
+    setMobileSearchOpen(false);
+  }, [pathname]);
 
   return <SafeAreaView style={styles.safe}>
     <View style={[styles.vendorTopbar, !desktop && styles.vendorMobileTopbar]}>
@@ -263,7 +269,7 @@ function VendorScreen({ children, description, desktop, eyebrow, hideHeading = f
     </View>
     {!desktop && mobileSearchOpen ? <View style={styles.vendorSearchPopover}><VendorRouteSearch compact onOpen={open} /></View> : null}
     {!desktop && mobileSidebarOpen ? <View style={[styles.adminDrawerLayer, styles.vendorDrawerLayer]}><Pressable accessibilityLabel="Close seller menu" onPress={() => setMobileSidebarOpen(false)} style={styles.adminDrawerBackdrop} /><View accessibilityLabel="Seller navigation" style={[styles.vendorDrawer, { width: Math.min(width - 42, 286) }]}><VendorSidebar collapsed={false} expandedGroups={expandedGroups} onOpen={open} pathname={pathname} setExpandedGroups={setExpandedGroups} /><View style={styles.vendorDrawerFooter}><Pressable onPress={() => open("/account")} style={styles.vendorDrawerAction}><Ionicons color="#cbd5e1" name="person-outline" size={19} /><Text style={styles.storefrontText}>Account</Text></Pressable><Pressable onPress={logout} style={styles.vendorDrawerAction}><Ionicons color="#fca5a5" name="log-out-outline" size={19} /><Text style={styles.vendorDrawerLogoutText}>Sign out</Text></Pressable></View></View></View> : null}
-    <View style={styles.adminBody}>{desktop ? <View style={[styles.vendorSidebar, { width: sidebarWidth }]}><VendorSidebar collapsed={collapsed} expandedGroups={expandedGroups} onOpen={open} pathname={pathname} setExpandedGroups={setExpandedGroups} /></View> : null}<ScrollView contentContainerStyle={[styles.vendorPage, !desktop && styles.vendorMobilePage]} showsVerticalScrollIndicator={false} style={styles.adminMain}>{!hideHeading ? <VendorHeading compact={!desktop} description={description} eyebrow={eyebrow} onBack={() => open("/vendor/dashboard")} showBack={pathname !== "/vendor/dashboard"} title={title} /> : null}<View style={styles.content}>{accessDenied ? <VendorAccessDenied onBack={() => open("/vendor/dashboard")} /> : children}</View></ScrollView></View>
+    <View style={styles.adminBody}>{desktop ? <View style={[styles.vendorSidebar, { width: sidebarWidth }]}><VendorSidebar collapsed={collapsed} expandedGroups={expandedGroups} onOpen={open} pathname={pathname} setExpandedGroups={setExpandedGroups} /></View> : null}<ScrollView contentContainerStyle={[styles.vendorPage, !desktop && styles.vendorMobilePage]} ref={pageScrollRef} showsVerticalScrollIndicator={false} style={styles.adminMain}>{!hideHeading ? <VendorHeading compact={!desktop} description={description} eyebrow={eyebrow} onBack={() => open("/vendor/dashboard")} showBack={pathname !== "/vendor/dashboard"} title={title} /> : null}<View style={styles.content}>{accessDenied ? <VendorAccessDenied onBack={() => open("/vendor/dashboard")} /> : children}</View></ScrollView></View>
     {!desktop ? <View accessibilityLabel="Seller primary navigation" style={styles.vendorBottomDock}>{visibleMobileLinks.slice(0, 2).map((link) => <VendorDockLink key={link.href} link={link} onOpen={open} pathname={pathname} />)}{canAccessVendorPath("/vendor/products/add", permissions) ? <Pressable accessibilityLabel="Add product" onPress={() => open("/vendor/products/add")} style={styles.vendorCreateItem}><View style={styles.vendorCreateIcon}><Ionicons color={colors.surface} name="add" size={25} /></View><Text style={styles.vendorCreateText}>Add</Text></Pressable> : null}{visibleMobileLinks.slice(2, 3).map((link) => <VendorDockLink key={link.href} link={link} onOpen={open} pathname={pathname} />)}<Pressable accessibilityLabel="More seller tools" onPress={() => { setMobileSearchOpen(false); setMobileSidebarOpen(true); }} style={styles.vendorDockItem}><View style={[styles.vendorDockIcon, mobileSidebarOpen && styles.vendorDockIconActive]}><Ionicons color={mobileSidebarOpen ? colors.surface : colors.muted} name="grid-outline" size={19} /></View><Text style={[styles.vendorDockText, mobileSidebarOpen && styles.vendorDockTextActive]}>More</Text></Pressable></View> : null}
   </SafeAreaView>;
 }

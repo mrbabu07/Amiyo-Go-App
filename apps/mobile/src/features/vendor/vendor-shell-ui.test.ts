@@ -32,6 +32,9 @@ test("seller workspace uses responsive grouped navigation", () => {
   assert.match(shell, /compact && styles\.vendorPageTitleCompact/);
   assert.match(shell, /vendorDockItem: \{[^}]*minHeight: 52/);
   assert.match(shell, /vendorMobilePage: \{[^}]*paddingBottom: 104/);
+  assert.match(shell, /const pageScrollRef = useRef<ScrollView>\(null\)/);
+  assert.match(shell, /pageScrollRef\.current\?\.scrollTo\(\{ animated: false, y: 0 \}\)/);
+  assert.match(shell, /ref=\{pageScrollRef\}/);
   assert.match(shell, /function VendorDockLink/);
   assert.match(shell, /styles\.vendorCreateIcon/);
   assert.match(shell, /showBack=\{pathname !== "\/vendor\/dashboard"\}/);
