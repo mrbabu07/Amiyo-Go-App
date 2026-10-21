@@ -954,6 +954,7 @@ model VendorOrder {
 
   @@unique([orderId, vendorId])
   @@index([vendorId, status, createdAt])
+  @@index([vendorId, createdAt])
   @@map("vendor_orders")
 }
 
