@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createVendorCategoryRequestSchema, createVendorVoucherSchema, saveVendorBankAccountSchema, submitVendorKycSchema, updateVendorBankAccountSchema, updateVendorShopSchema, updateVendorStaffSchema, vendorVacationSchema } from "./vendor.js";
+import { createVendorCategoryRequestSchema, createVendorVoucherSchema, saveVendorBankAccountSchema, sellerNotificationPreferencesSchema, submitVendorKycSchema, updateVendorBankAccountSchema, updateVendorShopSchema, updateVendorStaffSchema, vendorVacationSchema } from "./vendor.js";
 
 test("vendor bank account requires a supported payout provider", () => {
   assert.equal(saveVendorBankAccountSchema.parse({ provider: "BKASH", accountName: "Demo Seller", accountNumber: "01700000000" }).isDefault, true);
@@ -20,6 +20,7 @@ test("shop updates require optimistic version and a changed field", () => {
   assert.equal(updateVendorShopSchema.parse({ version: 1, name: "Updated Shop" }).name, "Updated Shop");
 });
 test("seller vacation requires a valid bounded window and buyer message", () => { const value = { enabled: true, startsAt: "2026-12-20T00:00:00.000Z", endsAt: "2026-12-28T00:00:00.000Z", reason: "Eid holiday", buyerMessage: "Back on December 28" }; assert.equal(vendorVacationSchema.parse(value).enabled, true); assert.throws(() => vendorVacationSchema.parse({ ...value, endsAt: value.startsAt })); });
+test("seller notifications require every supported operational event", () => { const value = Object.fromEntries(["newOrder", "shipmentDue", "returnRequest", "payoutUpdate", "lowStock", "campaignAlert", "customerMessage"].map((key) => [key, { push: true }])); assert.equal(sellerNotificationPreferencesSchema.parse(value).newOrder.push, true); assert.throws(() => sellerNotificationPreferencesSchema.parse({ newOrder: { push: true } })); });
 test("vendor vouchers normalize codes and require a valid window", () => { const parsed = createVendorVoucherSchema.parse({ code: " save10 ", discountType: "PERCENT", value: 10, startsAt: "2026-08-01T00:00:00.000Z", endsAt: "2026-09-01T00:00:00.000Z" }); assert.equal(parsed.code, "SAVE10"); assert.throws(() => createVendorVoucherSchema.parse({ ...parsed, endsAt: parsed.startsAt })); });
 test("vendor staff permissions stay inside the delegated allowlist", () => { assert.equal(updateVendorStaffSchema.parse({ status: "active", permissions: ["orders:read"] }).permissions.length, 1); assert.throws(() => updateVendorStaffSchema.parse({ status: "active", permissions: ["admin:manage"] })); assert.throws(() => updateVendorStaffSchema.parse({ status: "active", permissions: [] })); });
 

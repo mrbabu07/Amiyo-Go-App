@@ -70,6 +70,8 @@ export const vendorPickupAddressSchema = z.object({
   union: z.string().trim().max(80).default("")
 });
 export const vendorVacationSchema = z.object({ enabled: z.boolean(), startsAt: z.string().datetime(), endsAt: z.string().datetime(), reason: z.string().trim().min(3).max(240), buyerMessage: z.string().trim().min(3).max(240) }).refine((value) => value.startsAt < value.endsAt, "Vacation start must precede end");
+const sellerNotificationChannelSchema = z.object({ push: z.boolean() });
+export const sellerNotificationPreferencesSchema = z.object({ newOrder: sellerNotificationChannelSchema, shipmentDue: sellerNotificationChannelSchema, returnRequest: sellerNotificationChannelSchema, payoutUpdate: sellerNotificationChannelSchema, lowStock: sellerNotificationChannelSchema, campaignAlert: sellerNotificationChannelSchema, customerMessage: sellerNotificationChannelSchema });
 
 export const updateVendorShopSchema = z.object({
   version: versionSchema,
@@ -87,6 +89,10 @@ export const updateVendorShopSchema = z.object({
   if (input.settings && Object.prototype.hasOwnProperty.call(input.settings, "vacationMode") && input.settings.vacationMode !== null) {
     const result = vendorVacationSchema.safeParse(input.settings.vacationMode);
     if (!result.success) for (const issue of result.error.issues) context.addIssue({ ...issue, path: ["settings", "vacationMode", ...issue.path] });
+  }
+  if (input.settings && Object.prototype.hasOwnProperty.call(input.settings, "notificationPreferences")) {
+    const result = sellerNotificationPreferencesSchema.safeParse(input.settings.notificationPreferences);
+    if (!result.success) for (const issue of result.error.issues) context.addIssue({ ...issue, path: ["settings", "notificationPreferences", ...issue.path] });
   }
 });
 
