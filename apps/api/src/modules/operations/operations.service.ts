@@ -52,20 +52,34 @@ async function wallet(transaction: TransactionClient, vendorId: string) {
   return transaction.vendorWallet.upsert({ where: { vendorId }, create: { vendorId }, update: {}, include: { entries: true } });
 }
 
+async function sellerPushEnabled(transaction: TransactionClient, vendorId: string, event: "payoutUpdate" | "returnRequest") {
+  const shop = await transaction.vendorShop.findFirst({ where: { vendorId }, select: { settings: true } });
+  const settings = shop?.settings && typeof shop.settings === "object" && !Array.isArray(shop.settings) ? shop.settings as Record<string, unknown> : {};
+  const preferences = settings.notificationPreferences && typeof settings.notificationPreferences === "object" && !Array.isArray(settings.notificationPreferences) ? settings.notificationPreferences as Record<string, unknown> : {};
+  const channel = preferences[event] && typeof preferences[event] === "object" && !Array.isArray(preferences[event]) ? preferences[event] as Record<string, unknown> : {};
+  return channel.push !== false;
+}
+
+async function createSellerNotification(transaction: TransactionClient, input: { userId: string; type: string; title: string; body: string; data: Prisma.InputJsonValue; idempotencyKey: string; push: boolean }) {
+  const deliveries = [{ channel: "in_app", status: "DELIVERED" as const, deliveredAt: new Date() }, ...(input.push ? [{ channel: "push", status: "PENDING" as const }] : [])];
+  const notification = await transaction.notification.upsert({ where: { idempotencyKey: input.idempotencyKey }, update: {}, create: { userId: input.userId, type: input.type, title: input.title, body: input.body, data: input.data, idempotencyKey: input.idempotencyKey, deliveries: { create: deliveries } }, include: { deliveries: true } });
+  for (const delivery of notification.deliveries.filter((item) => item.status === "PENDING")) await transaction.outboxEvent.upsert({ where: { idempotencyKey: `notification-delivery:${delivery.id}` }, update: {}, create: { aggregateType: "notification_delivery", aggregateId: delivery.id, eventType: "notification.delivery.requested", idempotencyKey: `notification-delivery:${delivery.id}`, payload: { notificationDeliveryId: delivery.id } } });
+}
+
 export async function notifyVendorPayoutStatus(transaction: TransactionClient, input: { requestId: string; vendorId: string; amountMinor: bigint; status: "APPROVED" | "REJECTED" | "PAID"; reason?: string | null }) {
-  const members = await transaction.vendorMember.findMany({ where: { vendorId: input.vendorId, status: "active", user: { status: "ACTIVE" } }, select: { userId: true } });
+  const [members, push] = await Promise.all([transaction.vendorMember.findMany({ where: { vendorId: input.vendorId, status: "active", user: { status: "ACTIVE" } }, select: { userId: true } }), sellerPushEnabled(transaction, input.vendorId, "payoutUpdate")]);
   for (const userId of new Set(members.map((member) => member.userId))) {
     const idempotencyKey = `vendor-payout-${input.status.toLowerCase()}:${input.requestId}:${userId}`;
     const statusCopy = input.status === "PAID" ? "has been paid" : input.status === "APPROVED" ? "was approved" : `was rejected${input.reason ? `: ${input.reason}` : ""}`;
-    await transaction.notification.upsert({ where: { idempotencyKey }, update: {}, create: { userId, type: `vendor.payout.${input.status.toLowerCase()}`, title: `Payout ${input.status.toLowerCase()}`, body: `Your BDT ${notificationMoney(input.amountMinor)} payout request ${statusCopy}.`, data: { href: "/vendor/finance/payouts", payoutRequestId: input.requestId }, idempotencyKey, deliveries: { create: { channel: "in_app", status: "DELIVERED", deliveredAt: new Date() } } } });
+    await createSellerNotification(transaction, { userId, type: `vendor.payout.${input.status.toLowerCase()}`, title: `Payout ${input.status.toLowerCase()}`, body: `Your BDT ${notificationMoney(input.amountMinor)} payout request ${statusCopy}.`, data: { href: "/vendor/finance/payouts", payoutRequestId: input.requestId }, idempotencyKey, push });
   }
 }
 
 export async function notifyVendorReturnRequested(transaction: TransactionClient, input: { returnId: string; vendorId: string; orderNumber: string; reasonCode: string }) {
-  const members = await transaction.vendorMember.findMany({ where: { vendorId: input.vendorId, status: "active", user: { status: "ACTIVE" } }, select: { userId: true } });
+  const [members, push] = await Promise.all([transaction.vendorMember.findMany({ where: { vendorId: input.vendorId, status: "active", user: { status: "ACTIVE" } }, select: { userId: true } }), sellerPushEnabled(transaction, input.vendorId, "returnRequest")]);
   for (const userId of new Set(members.map((member) => member.userId))) {
     const idempotencyKey = `vendor-return-requested:${input.returnId}:${userId}`;
-    await transaction.notification.upsert({ where: { idempotencyKey }, update: {}, create: { userId, type: "vendor.return.requested", title: `Return requested for ${input.orderNumber}`, body: `A customer submitted a ${input.reasonCode.toLowerCase().replaceAll("_", " ")} return request that needs review.`, data: { href: `/vendor/returns/${input.returnId}`, returnId: input.returnId }, idempotencyKey, deliveries: { create: { channel: "in_app", status: "DELIVERED", deliveredAt: new Date() } } } });
+    await createSellerNotification(transaction, { userId, type: "vendor.return.requested", title: `Return requested for ${input.orderNumber}`, body: `A customer submitted a ${input.reasonCode.toLowerCase().replaceAll("_", " ")} return request that needs review.`, data: { href: `/vendor/returns/${input.returnId}`, returnId: input.returnId }, idempotencyKey, push });
   }
 }
 

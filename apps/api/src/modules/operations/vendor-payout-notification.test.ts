@@ -7,7 +7,9 @@ test("payout decisions notify active seller members once with finance routing", 
   const created: Array<Record<string, unknown>> = [];
   const transaction = {
     vendorMember: { findMany: async () => [{ userId: "owner-1" }, { userId: "owner-1" }, { userId: "finance-1" }] },
-    notification: { upsert: async ({ create }: { create: Record<string, unknown> }) => { created.push(create); } }
+    vendorShop: { findFirst: async () => ({ settings: { notificationPreferences: { payoutUpdate: { push: true } } } }) },
+    notification: { upsert: async ({ create }: { create: Record<string, unknown> }) => { created.push(create); return { deliveries: [{ id: `delivery-${created.length}`, status: "PENDING" }] }; } },
+    outboxEvent: { upsert: async () => undefined }
   } as unknown as Prisma.TransactionClient;
 
   await notifyVendorPayoutStatus(transaction, { requestId: "request-1", vendorId: "vendor-1", amountMinor: 250050n, status: "REJECTED", reason: "Bank details do not match" });
@@ -23,23 +25,29 @@ test("paid payout notification preserves exact minor units", async () => {
   let created: Record<string, unknown> | undefined;
   const transaction = {
     vendorMember: { findMany: async () => [{ userId: "owner-1" }] },
-    notification: { upsert: async (input: { create: Record<string, unknown> }) => { created = input.create; } }
+    vendorShop: { findFirst: async () => ({ settings: { notificationPreferences: { payoutUpdate: { push: false } } } }) },
+    notification: { upsert: async (input: { create: Record<string, unknown> }) => { created = input.create; return { deliveries: [] }; } },
+    outboxEvent: { upsert: async () => undefined }
   } as unknown as Prisma.TransactionClient;
 
   await notifyVendorPayoutStatus(transaction, { requestId: "request-2", vendorId: "vendor-1", amountMinor: 50000n, status: "PAID" });
   assert.equal(created?.body, "Your BDT 500.00 payout request has been paid.");
   assert.equal(created?.idempotencyKey, "vendor-payout-paid:request-2:owner-1");
+  assert.deepEqual((created?.deliveries as { create: Array<{ channel: string }> }).create.map((item) => item.channel), ["in_app"]);
 });
 
 test("new returns notify the seller with the owned case route", async () => {
   let created: Record<string, unknown> | undefined;
   const transaction = {
     vendorMember: { findMany: async () => [{ userId: "owner-1" }] },
-    notification: { upsert: async (input: { create: Record<string, unknown> }) => { created = input.create; } }
+    vendorShop: { findFirst: async () => ({ settings: { notificationPreferences: { returnRequest: { push: true } } } }) },
+    notification: { upsert: async (input: { create: Record<string, unknown> }) => { created = input.create; return { deliveries: [{ id: "delivery-return", status: "PENDING" }] }; } },
+    outboxEvent: { upsert: async () => undefined }
   } as unknown as Prisma.TransactionClient;
 
   await notifyVendorReturnRequested(transaction, { returnId: "return-1", vendorId: "vendor-1", orderNumber: "AGO-200", reasonCode: "WRONG_ITEM" });
   assert.equal(created?.type, "vendor.return.requested");
   assert.equal(created?.body, "A customer submitted a wrong item return request that needs review.");
   assert.deepEqual(created?.data, { href: "/vendor/returns/return-1", returnId: "return-1" });
+  assert.deepEqual((created?.deliveries as { create: Array<{ channel: string }> }).create.map((item) => item.channel), ["in_app", "push"]);
 });
