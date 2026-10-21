@@ -54,3 +54,19 @@ test("due shipments route sellers to the owned package and honor push preference
   assert.equal(notifications[0].idempotencyKey, "vendor-shipment-due:package:2026-10-20T10:00:00.000Z:owner");
   assert.deepEqual(notifications[0].deliveries.create.map((item: any) => item.channel), ["in_app"]);
 });
+
+test("campaign alerts group seller products and create a versioned route", async () => {
+  const notifications: any[] = [];
+  const transaction = {
+    campaign: { findFirst: async () => ({ id: "campaign", name: "Winter Sale", version: 3, startsAt: new Date("2026-10-22T00:00:00.000Z"), endsAt: new Date("2026-10-30T00:00:00.000Z"), products: [{ product: { vendorId: "vendor", name: "Rice", shop: { settings: { notificationPreferences: { campaignAlert: { push: true } } } } } }, { product: { vendorId: "vendor", name: "Oil", shop: { settings: {} } } }] }) },
+    vendorMember: { findMany: async () => [{ userId: "owner" }] },
+    notification: { upsert: async ({ create }: any) => { notifications.push(create); return { deliveries: create.deliveries.create.map((delivery: any, index: number) => ({ ...delivery, id: `campaign-delivery-${index}` })) }; } },
+    outboxEvent: { upsert: async () => undefined }
+  };
+  const client = { $transaction: async (operation: (value: typeof transaction) => unknown) => operation(transaction) } as unknown as PrismaClient;
+  const scheduler = new SellerOperationsAlertScheduler(client, () => undefined);
+  assert.equal(await scheduler.deliverCampaign("campaign", new Date("2026-10-21T00:00:00.000Z")), true);
+  assert.equal(notifications[0].idempotencyKey, "vendor-campaign:campaign:3:vendor:owner");
+  assert.equal(notifications[0].data.href, "/vendor/marketing/campaigns");
+  assert.match(notifications[0].body, /2 of your products/);
+});

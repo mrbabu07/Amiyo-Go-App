@@ -1,6 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 
-type SellerAlertEvent = "lowStock" | "shipmentDue";
+type SellerAlertEvent = "campaignAlert" | "lowStock" | "shipmentDue";
 
 export function sellerAlertPushEnabled(settings: Prisma.JsonValue | null | undefined, event: SellerAlertEvent) {
   if (!settings || typeof settings !== "object" || Array.isArray(settings)) return true;
@@ -61,16 +61,33 @@ export class SellerOperationsAlertScheduler {
     });
   }
 
+  async deliverCampaign(campaignId: string, now = new Date()) {
+    return this.client.$transaction(async (transaction) => {
+      const campaign = await transaction.campaign.findFirst({ where: { id: campaignId, status: "active", endsAt: { gt: now } }, include: { products: { include: { product: { include: { shop: true } } } } } });
+      if (!campaign) return false;
+      const byVendor = new Map<string, { names: string[]; settings: Prisma.JsonValue | null }>();
+      for (const row of campaign.products) {
+        const current = byVendor.get(row.product.vendorId) ?? { names: [], settings: row.product.shop.settings };
+        current.names.push(row.product.name);
+        byVendor.set(row.product.vendorId, current);
+      }
+      for (const [vendorId, products] of byVendor) await this.notify(transaction, { vendorId, settings: products.settings, event: "campaignAlert", type: "vendor.campaign.eligible", title: `Campaign opportunity: ${campaign.name}`, body: `${products.names.length} of your products ${campaign.startsAt > now ? "are selected for an upcoming campaign" : "are live in this campaign"}. Review pricing and stock before ${campaign.endsAt.toLocaleDateString("en-BD")}.`, href: "/vendor/marketing/campaigns", key: `vendor-campaign:${campaign.id}:${campaign.version}:${vendorId}` });
+      return byVendor.size > 0;
+    });
+  }
+
   async poll(now = new Date()) {
     if (this.running) return;
     this.running = true;
     try {
-      const [inventory, orders] = await Promise.all([
+      const [inventory, orders, campaigns] = await Promise.all([
         this.client.inventoryItem.findMany({ where: { reorderLevel: { gt: 0 }, variant: { active: true, product: { status: "APPROVED", vendor: { status: "APPROVED" }, shop: { status: "ACTIVE" } } } }, select: { id: true, onHand: true, reserved: true, reorderLevel: true }, orderBy: { updatedAt: "asc" }, take: 100 }),
-        this.client.vendorOrder.findMany({ where: { status: { in: ["PLACED", "ACCEPTED", "PROCESSING"] }, createdAt: { lte: new Date(now.getTime() - 18 * 60 * 60_000) } }, select: { id: true }, orderBy: { createdAt: "asc" }, take: 100 })
+        this.client.vendorOrder.findMany({ where: { status: { in: ["PLACED", "ACCEPTED", "PROCESSING"] }, createdAt: { lte: new Date(now.getTime() - 18 * 60 * 60_000) } }, select: { id: true }, orderBy: { createdAt: "asc" }, take: 100 }),
+        this.client.campaign.findMany({ where: { status: "active", startsAt: { lte: new Date(now.getTime() + 24 * 60 * 60_000) }, endsAt: { gt: now }, products: { some: {} } }, select: { id: true }, orderBy: { startsAt: "asc" }, take: 100 })
       ]);
       for (const item of inventory.filter((entry) => entry.onHand - entry.reserved <= entry.reorderLevel)) try { await this.deliverLowStock(item.id); } catch (error) { this.onError(error); }
       for (const order of orders) try { await this.deliverShipmentDue(order.id, now); } catch (error) { this.onError(error); }
+      for (const campaign of campaigns) try { await this.deliverCampaign(campaign.id, now); } catch (error) { this.onError(error); }
     } catch (error) { this.onError(error); } finally { this.running = false; }
   }
 }
