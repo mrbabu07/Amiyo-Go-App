@@ -41,6 +41,9 @@ test("seller workspace uses responsive grouped navigation", () => {
   assert.match(shell, /accessibilityLabel="Add product"/);
   assert.match(shell, /mobileSearchOpen/);
   assert.match(shell, /vendorDrawerLogoutText/);
+  assert.match(shell, /width >= 350/);
+  assert.match(shell, /vendorBrandCopy/);
+  assert.match(shell, /vendorPage: \{[^}]*backgroundColor: colors\.background/);
 });
 
 test("seller dashboard exposes live operational hierarchy", () => {
@@ -55,6 +58,9 @@ test("seller dashboard exposes live operational hierarchy", () => {
   assert.doesNotMatch(dashboard, /getVendorOrders/);
   assert.match(dashboard, /report\.data\?\.recentOrders/);
   assert.match(dashboard, /formatMinor\(order\.totalMinor\)/);
+  for (const onboarding of ["Guided shop setup", "Product and inventory tools", "Orders, invoices and payouts", "Business profile", "KYC verification", "Payout account"]) assert.match(dashboard, new RegExp(onboarding));
+  assert.match(dashboard, /compact && styles\.accessHeroCompact/);
+  assert.match(dashboard, /compact && styles\.accessPrimaryCompact/);
   assert.match(dashboard, /useCurrentUser/);
   assert.match(dashboard, /\["vendor", "workspace", user\?\.uid\]/);
   assert.match(dashboard, /\["vendor", "report", user\?\.uid\]/);
