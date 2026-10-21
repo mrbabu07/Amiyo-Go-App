@@ -24,7 +24,7 @@
 ## Acceptance
 
 1. Confirm the API pre-deploy migration succeeds before the new instance starts.
-2. Verify API `/health` is `200` and `/ready` is `200`; verify the worker logs its health listener and every queue processor as running.
+2. Verify API `/health` is `200` and `/ready` is `200`; both responses must expose the expected deployed commit in `release`. Verify the worker health payload reports the same release and every queue processor as running.
 3. Run `npm run smoke:marketplace`, `npm run smoke:authenticated`, and bounded public/authenticated `npm run smoke:load` checks against staging.
    The manual **Staging Smoke** workflow automates the public contract and bounded catalog checks. Enable its authenticated input only after setting the three short-lived role tokens; it verifies identity projection and customer/vendor/admin boundaries without printing tokens. JSON reports are retained for 30 days. Never reuse emulator demo credentials.
 4. Retain immutable smoke reports, deploy ID, commit SHA, migration IDs, service logs and approver names.

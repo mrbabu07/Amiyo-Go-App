@@ -128,6 +128,20 @@
           "version": {
             "type": "string"
           },
+          "release": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "unknown"
+                ]
+              },
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{7,64}$"
+              }
+            ]
+          },
           "checkedAt": {
             "type": "string",
             "format": "date-time"
@@ -137,6 +151,7 @@
           "service",
           "status",
           "version",
+          "release",
           "checkedAt"
         ]
       },

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { healthResponseSchema } from "@amiyo/contracts";
+import { releaseIdentity } from "@amiyo/observability";
 import { prisma } from "../../infrastructure/database/prisma.js";
 
 export type ReadinessCheck = () => Promise<void>;
@@ -16,6 +17,7 @@ export function createHealthRouter(readinessCheck: ReadinessCheck = databaseRead
       service: "amiyo-api",
       status: "ok",
       version: process.env.npm_package_version || "0.1.0",
+      release: releaseIdentity(),
       checkedAt: new Date().toISOString()
     }));
   });
@@ -27,6 +29,7 @@ export function createHealthRouter(readinessCheck: ReadinessCheck = databaseRead
         service: "amiyo-api",
         status: "ok",
         version: process.env.npm_package_version || "0.1.0",
+        release: releaseIdentity(),
         checkedAt: new Date().toISOString()
       }));
     } catch {
@@ -34,6 +37,7 @@ export function createHealthRouter(readinessCheck: ReadinessCheck = databaseRead
         service: "amiyo-api",
         status: "not_ready",
         version: process.env.npm_package_version || "0.1.0",
+        release: releaseIdentity(),
         checkedAt: new Date().toISOString()
       }));
     }

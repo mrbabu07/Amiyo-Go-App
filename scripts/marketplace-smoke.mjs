@@ -6,6 +6,8 @@ const origin = new URL(process.env.SMOKE_API_URL || "http://127.0.0.1:4000");
 if (!['http:', 'https:'].includes(origin.protocol) || origin.username || origin.password) throw new Error("SMOKE_API_URL must be an HTTP(S) URL without credentials");
 const results = [];
 const requireData = process.env.SMOKE_REQUIRE_DATA !== "0";
+const expectedRelease = process.env.SMOKE_EXPECTED_RELEASE?.trim().toLowerCase() || null;
+if (expectedRelease && !/^[a-f0-9]{7,64}$/.test(expectedRelease)) throw new Error("SMOKE_EXPECTED_RELEASE must be a commit SHA");
 
 async function check(path, expectedStatus, schema, validate) {
   const started = performance.now();
@@ -22,8 +24,9 @@ async function check(path, expectedStatus, schema, validate) {
   }
 }
 
-await check("/health", 200, healthResponseSchema);
-await check("/ready", 200, healthResponseSchema);
+const validateRelease = expectedRelease ? (health) => assert.equal(health.release, expectedRelease, "Deployed release does not match the expected commit") : undefined;
+await check("/health", 200, healthResponseSchema, validateRelease);
+await check("/ready", 200, healthResponseSchema, validateRelease);
 await check("/api/v2/catalog/categories", 200, categorySchema.array(), (rows) => { if (requireData) assert.ok(rows.length, "No published categories"); });
 const products = await check("/api/v2/catalog/products?limit=2", 200, productListResponseSchema, (page) => { if (requireData) assert.ok(page.data.length, "No published products"); });
 await check("/api/v2/shops?limit=2", 200, shopListResponseSchema, (page) => { if (requireData) assert.ok(page.data.length, "No published shops"); });
