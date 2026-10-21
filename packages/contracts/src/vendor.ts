@@ -69,6 +69,7 @@ export const vendorPickupAddressSchema = z.object({
   upazila: z.string().trim().min(2).max(80),
   union: z.string().trim().max(80).default("")
 });
+export const vendorVacationSchema = z.object({ enabled: z.boolean(), startsAt: z.string().datetime(), endsAt: z.string().datetime(), reason: z.string().trim().min(3).max(240), buyerMessage: z.string().trim().min(3).max(240) }).refine((value) => value.startsAt < value.endsAt, "Vacation start must precede end");
 
 export const updateVendorShopSchema = z.object({
   version: versionSchema,
@@ -82,6 +83,10 @@ export const updateVendorShopSchema = z.object({
   if (input.settings && Object.prototype.hasOwnProperty.call(input.settings, "pickupAddress")) {
     const result = vendorPickupAddressSchema.safeParse(input.settings.pickupAddress);
     if (!result.success) for (const issue of result.error.issues) context.addIssue({ ...issue, path: ["settings", "pickupAddress", ...issue.path] });
+  }
+  if (input.settings && Object.prototype.hasOwnProperty.call(input.settings, "vacationMode") && input.settings.vacationMode !== null) {
+    const result = vendorVacationSchema.safeParse(input.settings.vacationMode);
+    if (!result.success) for (const issue of result.error.issues) context.addIssue({ ...issue, path: ["settings", "vacationMode", ...issue.path] });
   }
 });
 

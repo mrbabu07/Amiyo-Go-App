@@ -28,11 +28,12 @@ function mediaUrl(storageKey: string | null) {
 
 function publicStorefront(settings: Prisma.JsonValue | null) {
   if (!settings || typeof settings !== "object" || Array.isArray(settings)) return null;
-  const raw = (settings as Record<string, unknown>).storefront;
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
-  const value = raw as Record<string, unknown>;
+  const source = settings as Record<string, unknown>;
+  const raw = source.storefront;
+  const value = raw && typeof raw === "object" && !Array.isArray(raw) ? raw as Record<string, unknown> : {};
   const text = (key: string, max: number) => typeof value[key] === "string" && value[key].trim() ? value[key].trim().slice(0, max) : null;
-  const storefront = { tagline: text("tagline", 120), announcement: text("announcement", 180), trustMessage: text("trustMessage", 180) };
+  const vacationRaw = source.vacationMode; const vacation = vacationRaw && typeof vacationRaw === "object" && !Array.isArray(vacationRaw) ? vacationRaw as Record<string, unknown> : null; const now = Date.now(); const starts = typeof vacation?.startsAt === "string" ? Date.parse(vacation.startsAt) : NaN; const ends = typeof vacation?.endsAt === "string" ? Date.parse(vacation.endsAt) : NaN; const vacationPublic = vacation?.enabled === true && Number.isFinite(starts) && Number.isFinite(ends) && starts <= now && now < ends && typeof vacation.buyerMessage === "string" ? { active: true, endsAt: new Date(ends).toISOString(), buyerMessage: vacation.buyerMessage.trim().slice(0, 240) } : null;
+  const storefront = { tagline: text("tagline", 120), announcement: text("announcement", 180), trustMessage: text("trustMessage", 180), vacation: vacationPublic };
   return Object.values(storefront).some(Boolean) ? storefront : null;
 }
 

@@ -13,6 +13,7 @@ import { getVendorWorkspace, saveVendorBankAccount, submitVendorKyc, updateVendo
 
 const emptyBank = { provider: "BANK" as "BANK" | "BKASH" | "NAGAD" | "ROCKET", accountName: "", accountNumber: "" };
 const emptyDocument = { storageKey: "", checksum: "", mimeType: "application/pdf", originalName: "" };
+const emptyVacation = { startsAt: "", endsAt: "", reason: "", buyerMessage: "" };
 
 export function VendorSettingsScreen() {
   const compact = useWindowDimensions().width < 620;
@@ -27,9 +28,10 @@ export function VendorSettingsScreen() {
   const [description, setDescription] = useState("");
   const [bank, setBank] = useState(emptyBank);
   const [document, setDocument] = useState(emptyDocument);
+  const [vacation, setVacation] = useState(emptyVacation);
 
   useEffect(() => {
-    if (shop) { setShopName(shop.name); setDescription(shop.description ?? ""); }
+    if (shop) { setShopName(shop.name); setDescription(shop.description ?? ""); const raw = shop.settings?.vacationMode; const value = raw && typeof raw === "object" && !Array.isArray(raw) ? raw as Record<string, unknown> : {}; setVacation({ startsAt: typeof value.startsAt === "string" ? value.startsAt : "", endsAt: typeof value.endsAt === "string" ? value.endsAt : "", reason: typeof value.reason === "string" ? value.reason : "", buyerMessage: typeof value.buyerMessage === "string" ? value.buyerMessage : "" }); }
   }, [shop?.id, shop?.name, shop?.description, shop?.version, user?.uid]);
   useEffect(() => { setBank(emptyBank); setDocument(emptyDocument); }, [user?.uid]);
 
@@ -64,9 +66,10 @@ export function VendorSettingsScreen() {
     mutationFn: ({ owner }: { owner: User }) => submitVendorKyc(owner, { documents: [{ documentType: "TRADE_LICENSE", storageKey: document.storageKey, mimeType: document.mimeType, checksum: document.checksum }] }),
     onSuccess: async (_data, variables) => { if (activeUid.current === variables.owner.uid) await refresh(variables.owner); }
   });
+  const saveVacation = useMutation({ retry: false, mutationFn: ({ owner, enabled }: { owner: User; enabled: boolean }) => updateVendorShop(owner, shop!.id, { version: shop!.version, settings: { ...(shop!.settings || {}), vacationMode: { enabled, ...vacation } } }), onSuccess: async (_data, variables) => { if (activeUid.current === variables.owner.uid) await refresh(variables.owner); } });
 
   if (workspace.isLoading) return <Screen title="Vendor settings"><ActivityIndicator color={colors.primary} /></Screen>;
-  const error = [workspace.error, saveShop.error, saveBank.error, uploadKyc.error, saveKyc.error].find(Boolean);
+  const error = [workspace.error, saveShop.error, saveBank.error, uploadKyc.error, saveKyc.error, saveVacation.error].find(Boolean);
   const readinessChecks = [shop?.status === "ACTIVE", workspace.data?.kycSubmissions[0]?.status === "APPROVED", Boolean(workspace.data?.bankAccounts.length)];
   const readiness = Math.round((readinessChecks.filter(Boolean).length / readinessChecks.length) * 100);
   return <Screen eyebrow="SELLER CENTER" title={workspace.data?.displayName || "Vendor settings"} description={`Account status: ${workspace.data?.status || "UNKNOWN"}`}>
@@ -81,6 +84,7 @@ export function VendorSettingsScreen() {
       <Field label="Description" multiline value={description} onChangeText={setDescription} />
       <Action busy={saveShop.isPending} disabled={!user || !shop} label="Save shop" onPress={() => user && shop && saveShop.mutate({ owner: user, shopId: shop.id, version: shop.version })} />
     </ModuleCard>
+    <ModuleCard title="Holiday and vacation mode" meta="Pause new orders and show buyers when you will return."><View style={[vacationStyles.grid, compact && vacationStyles.gridCompact]}><Field label="Start (ISO date and time)" placeholder="2026-12-20T00:00:00.000Z" value={vacation.startsAt} onChangeText={(startsAt) => setVacation((current) => ({ ...current, startsAt }))} /><Field label="Back on (ISO date and time)" placeholder="2026-12-28T00:00:00.000Z" value={vacation.endsAt} onChangeText={(endsAt) => setVacation((current) => ({ ...current, endsAt }))} /><Field label="Internal reason" placeholder="Eid holiday" value={vacation.reason} onChangeText={(reason) => setVacation((current) => ({ ...current, reason }))} /><Field label="Buyer message" placeholder="We will accept new orders again on December 28." value={vacation.buyerMessage} onChangeText={(buyerMessage) => setVacation((current) => ({ ...current, buyerMessage }))} /></View><View style={[vacationStyles.actions, compact && vacationStyles.actionsCompact]}><Action busy={saveVacation.isPending} disabled={!user || !shop || !vacation.startsAt || !vacation.endsAt || vacation.reason.trim().length < 3 || vacation.buyerMessage.trim().length < 3} label="Schedule vacation" onPress={() => user && saveVacation.mutate({ owner: user, enabled: true })} /><Pressable disabled={!user || !shop || !vacation.startsAt || saveVacation.isPending} onPress={() => user && saveVacation.mutate({ owner: user, enabled: false })} style={[vacationStyles.cancel, (!user || !shop || !vacation.startsAt || saveVacation.isPending) && styles.disabled]}><Text style={vacationStyles.cancelText}>Cancel vacation</Text></Pressable></View><View style={vacationStyles.note}><Ionicons color={colors.warning} name="information-circle-outline" size={19} /><Text style={styles.muted}>Existing orders stay active. New checkout attempts are blocked only during the scheduled window.</Text></View></ModuleCard>
     <ModuleCard title="KYC verification" meta={workspace.data?.kycSubmissions[0] ? `Latest: ${workspace.data.kycSubmissions[0].status}` : "No submission yet"}>
       <Text style={styles.muted}>Trade-license files use private signed uploads and are verified before submission.</Text>
       <Action busy={uploadKyc.isPending} disabled={!user} label={document.storageKey ? "Replace trade license" : "Choose trade license"} onPress={() => user && uploadKyc.mutate({ owner: user })} />
@@ -101,6 +105,8 @@ export function VendorSettingsScreen() {
 function Field(props: React.ComponentProps<typeof TextInput> & { label: string }) { const { label, ...rest } = props; return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput placeholderTextColor={colors.muted} style={[styles.input, rest.multiline && styles.multiline]} {...rest} /></View>; }
 function Action({ busy, disabled, label, onPress }: { busy: boolean; disabled?: boolean; label: string; onPress(): void }) { return <Pressable disabled={busy || disabled} onPress={onPress} style={[styles.button, (busy || disabled) && styles.disabled]}>{busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{label}</Text>}</Pressable>; }
 function Summary({ icon, label, onPress, ready, value }: { icon: React.ComponentProps<typeof Ionicons>["name"]; label: string; onPress(): void; ready: boolean; value: string }) { return <Pressable accessibilityRole="link" onPress={onPress} style={({ pressed }) => [styles.summaryCard, pressed && styles.summaryPressed]}><View style={[styles.summaryIcon, ready && styles.summaryIconReady]}><Ionicons color={ready ? colors.success : colors.primary} name={icon} size={20} /></View><View style={styles.summaryCopy}><Text style={styles.summaryLabel}>{label}</Text><Text numberOfLines={1} style={[styles.summaryValue, ready && styles.summaryValueReady]}>{value.replaceAll("_", " ")}</Text></View><Ionicons color={colors.muted} name="chevron-forward" size={17} /></Pressable>; }
+
+const vacationStyles = StyleSheet.create({ grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md }, gridCompact: { flexDirection: "column" }, actions: { alignItems: "center", flexDirection: "row", gap: spacing.sm }, actionsCompact: { alignItems: "stretch", flexDirection: "column" }, cancel: { alignItems: "center", borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, justifyContent: "center", minHeight: 46, paddingHorizontal: spacing.lg }, cancelText: { color: colors.text, fontWeight: "700" }, note: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.md, flexDirection: "row", gap: spacing.sm, padding: spacing.md } });
 
 const styles = StyleSheet.create({
   hero: { alignItems: "center", backgroundColor: colors.navy, borderRadius: radius.xl, flexDirection: "row", gap: spacing.lg, justifyContent: "space-between", padding: spacing.xl }, heroCompact: { alignItems: "flex-start", flexDirection: "column", padding: spacing.lg }, heroCopy: { flex: 1, gap: 5 }, heroEyebrow: { color: colors.accent, fontSize: 10, fontWeight: "700", letterSpacing: 1.2 }, heroTitle: { color: colors.background, fontSize: 21, fontWeight: "700" }, heroText: { color: colors.background, fontSize: 12, lineHeight: 18, opacity: 0.8 }, readiness: { alignItems: "center", backgroundColor: colors.accentSoft, borderRadius: radius.lg, minWidth: 90, padding: spacing.md }, readinessValue: { color: colors.success, fontSize: 26, fontWeight: "700" }, readinessLabel: { color: colors.navy, fontSize: 10, fontWeight: "700", textTransform: "uppercase" },

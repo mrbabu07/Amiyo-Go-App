@@ -57,6 +57,7 @@ export function ShopScreen({ identifier }: { identifier: string }) {
       {chat.error ? <Text style={styles.error}>{chat.error.message}</Text> : null}
       {result.data.storefront?.tagline ? <Text style={styles.tagline}>{result.data.storefront.tagline}</Text> : null}
       {result.data.storefront?.announcement ? <View style={styles.announcement}><Ionicons color={colors.primary} name="megaphone-outline" size={18} /><Text style={styles.announcementText}>{result.data.storefront.announcement}</Text></View> : null}
+      {result.data.storefront?.vacation?.active ? <View accessibilityRole="alert" style={vacationStyles.banner}><Ionicons color={colors.warning} name="calendar-outline" size={20} /><View style={vacationStyles.copy}><Text style={vacationStyles.title}>This shop is on vacation</Text><Text style={vacationStyles.message}>{result.data.storefront.vacation.buyerMessage}</Text><Text style={vacationStyles.back}>Accepting new orders after {new Date(result.data.storefront.vacation.endsAt).toLocaleString("en-BD")}</Text></View></View> : null}
       {result.data.storefront?.trustMessage ? <View style={styles.trustBar}><Ionicons color={colors.accent} name="shield-checkmark-outline" size={19} /><Text style={styles.trustText}>{result.data.storefront.trustMessage}</Text></View> : null}
       {!desktop ? <Pressable accessibilityRole="button" onPress={() => setShowMobileFilters((visible) => !visible)} style={styles.mobileFilterButton}><View style={styles.mobileFilterCopy}><Ionicons color={colors.text} name="options-outline" size={19} /><Text style={styles.mobileFilterText}>Filters & Sort</Text></View><View style={styles.mobileFilterCopy}><Text style={styles.mobileFilterMeta}>{filteredProducts.length} items</Text><Ionicons color={colors.muted} name={showMobileFilters ? "chevron-up" : "chevron-down"} size={18} /></View></Pressable> : null}
       {!desktop && showMobileFilters ? <View style={styles.mobileFilters}>{filters}</View> : null}
@@ -70,6 +71,8 @@ export function ShopScreen({ identifier }: { identifier: string }) {
 }
 
 const responsive = StyleSheet.create({ contentCompact: { padding: spacing.sm }, heroCompact: { alignItems: "flex-start", flexDirection: "column", gap: spacing.md, marginBottom: spacing.lg, marginTop: spacing.md, padding: spacing.lg }, messageButtonCompact: { justifyContent: "center", width: "100%" }, productsHeaderCompact: { alignItems: "flex-start", flexDirection: "column", gap: spacing.sm }, shopCopyCompact: { minWidth: 0, width: "100%" }, titleCompact: { fontSize: 24 } });
+
+const vacationStyles = StyleSheet.create({ banner: { alignItems: "flex-start", backgroundColor: colors.primarySoft, borderRadius: radius.lg, flexDirection: "row", gap: spacing.sm, marginBottom: spacing.md, padding: spacing.md }, copy: { flex: 1, gap: 3 }, title: { color: colors.warning, fontSize: 13, fontWeight: "700" }, message: { color: colors.text, fontSize: 12, lineHeight: 18 }, back: { color: colors.muted, fontSize: 10 } });
 
 const styles = StyleSheet.create({
   safe: { backgroundColor: colors.background, flex: 1 }, content: { alignSelf: "center", maxWidth: 1208, padding: spacing.lg, width: "100%" },

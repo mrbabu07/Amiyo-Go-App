@@ -746,12 +746,36 @@
                   "string",
                   "null"
                 ]
+              },
+              "vacation": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "active": {
+                    "type": "boolean"
+                  },
+                  "endsAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "buyerMessage": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "active",
+                  "endsAt",
+                  "buyerMessage"
+                ]
               }
             },
             "required": [
               "tagline",
               "announcement",
-              "trustMessage"
+              "trustMessage",
+              "vacation"
             ]
           },
           "productCount": {
@@ -986,12 +1010,36 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "vacation": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "active": {
+                          "type": "boolean"
+                        },
+                        "endsAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "buyerMessage": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "active",
+                        "endsAt",
+                        "buyerMessage"
+                      ]
                     }
                   },
                   "required": [
                     "tagline",
                     "announcement",
-                    "trustMessage"
+                    "trustMessage",
+                    "vacation"
                   ]
                 },
                 "productCount": {
