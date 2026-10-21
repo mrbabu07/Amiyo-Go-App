@@ -1,7 +1,7 @@
 import { returnProductDetails, returnProductSelect } from "../operations/return-product.js";
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { Prisma, type PrismaClient } from "@prisma/client";
-import type { CreateVendorCategoryRequest, CreateVendorVoucher, SaveVendorBankAccount, Session, SubmitVendorKyc, UpdateVendorShop, UpdateVendorStaff, VendorRegistration } from "@amiyo/contracts";
+import type { CreateVendorCategoryRequest, CreateVendorVoucher, InviteVendorStaff, SaveVendorBankAccount, Session, SubmitVendorKyc, UpdateVendorShop, UpdateVendorStaff, VendorRegistration } from "@amiyo/contracts";
 import { withSerializableTransaction } from "../../infrastructure/database/transaction.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
 
@@ -125,6 +125,25 @@ export class VendorService {
     const id = vendorId(session); requirePermission(session, "vendor:read");
     const rows = await this.client.vendorMember.findMany({ where: { vendorId: id }, include: { user: { include: { profile: true } }, permissions: true }, orderBy: { createdAt: "asc" } });
     return rows.map((member) => ({ id: member.id, userId: member.userId, displayName: member.user.profile?.displayName ?? null, email: member.user.normalizedEmail, role: member.role, status: member.status, permissions: member.permissions.filter((item) => item.granted).map((item) => item.permissionKey) }));
+  }
+  async inviteStaff(session: Session, input: InviteVendorStaff) {
+    const id = vendorId(session); requirePermission(session, "vendor:manage");
+    const account = await this.client.user.findUnique({ where: { normalizedEmail: input.email }, select: { id: true, status: true } });
+    if (!account || account.status !== "ACTIVE") throw new ApiProblem(404, "VENDOR_STAFF_ACCOUNT_NOT_FOUND", "Ask this team member to create an active Amiyo account first");
+    if (account.id === session.principal.userId) throw new ApiProblem(409, "VENDOR_SELF_INVITE_FORBIDDEN", "You already own this seller workspace");
+    const existing = await this.client.vendorMember.findFirst({ where: { userId: account.id }, select: { id: true, vendorId: true } });
+    if (existing?.vendorId === id) throw new ApiProblem(409, "VENDOR_STAFF_ALREADY_EXISTS", "This account already belongs to your seller workspace");
+    if (existing) throw new ApiProblem(409, "VENDOR_STAFF_OTHER_WORKSPACE", "This account already belongs to another seller workspace");
+    try {
+      await withSerializableTransaction(this.client, async (transaction) => {
+        const member = await transaction.vendorMember.create({ data: { vendorId: id, userId: account.id, role: input.role, permissions: { create: ["vendor:read", ...input.permissions].map((permissionKey) => ({ permissionKey })) } } });
+        await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "vendor.staff.invited", resourceType: "vendor_member", resourceId: member.id, after: json({ email: input.email, role: input.role, permissions: input.permissions }) } });
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") throw new ApiProblem(409, "VENDOR_STAFF_ALREADY_EXISTS", "This account already belongs to a seller workspace");
+      throw error;
+    }
+    return this.staff(session);
   }
   async updateStaff(session: Session, memberId: string, input: UpdateVendorStaff) {
     const id = vendorId(session); requirePermission(session, "vendor:manage");

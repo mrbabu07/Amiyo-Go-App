@@ -19,5 +19,13 @@ test("shop updates require optimistic version and a changed field", () => {
   assert.equal(updateVendorShopSchema.parse({ version: 1, name: "Updated Shop" }).name, "Updated Shop");
 });
 test("vendor vouchers normalize codes and require a valid window", () => { const parsed = createVendorVoucherSchema.parse({ code: " save10 ", discountType: "PERCENT", value: 10, startsAt: "2026-08-01T00:00:00.000Z", endsAt: "2026-09-01T00:00:00.000Z" }); assert.equal(parsed.code, "SAVE10"); assert.throws(() => createVendorVoucherSchema.parse({ ...parsed, endsAt: parsed.startsAt })); });
-test("vendor staff permissions stay inside the delegated allowlist", () => { assert.equal(updateVendorStaffSchema.parse({ status: "active", permissions: ["orders:read"] }).permissions.length, 1); assert.throws(() => updateVendorStaffSchema.parse({ status: "active", permissions: ["admin:manage"] })); });
+test("vendor staff permissions stay inside the delegated allowlist", () => { assert.equal(updateVendorStaffSchema.parse({ status: "active", permissions: ["orders:read"] }).permissions.length, 1); assert.throws(() => updateVendorStaffSchema.parse({ status: "active", permissions: ["admin:manage"] })); assert.throws(() => updateVendorStaffSchema.parse({ status: "active", permissions: [] })); });
+
+test("vendor staff invite normalizes registered account email and bounds roles", async () => {
+  const { inviteVendorStaffSchema } = await import("./vendor.js");
+  const invite = inviteVendorStaffSchema.parse({ email: " Team@Example.COM ", role: "VENDOR_STAFF", permissions: ["orders:read"] });
+  assert.equal(invite.email, "team@example.com");
+  assert.throws(() => inviteVendorStaffSchema.parse({ email: "team@example.com", role: "VENDOR_OWNER", permissions: ["orders:read"] }));
+  assert.throws(() => inviteVendorStaffSchema.parse({ email: "team@example.com", role: "VENDOR_STAFF", permissions: ["orders:read", "orders:read"] }));
+});
 test("category access requests require an operational reason", () => { assert.equal(createVendorCategoryRequestSchema.safeParse({ categoryId: crypto.randomUUID(), reason: "We stock verified electronics" }).success, true); assert.equal(createVendorCategoryRequestSchema.safeParse({ categoryId: crypto.randomUUID(), reason: "no" }).success, false); });

@@ -2,11 +2,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { User } from "@firebase/auth";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
-import { getVendorStaff, updateVendorStaff } from "./vendor.api";
+import { getVendorStaff, inviteVendorStaff, updateVendorStaff } from "./vendor.api";
 
 const permissions = ["orders:read", "orders:manage", "products:manage", "inventory:manage", "returns:manage", "finance:read", "support:manage"] as const;
 type Permission = typeof permissions[number];
@@ -25,6 +25,10 @@ export function VendorStaffScreen() {
   const cache = useQueryClient();
   const query = useQuery({ queryKey: ["vendor", "staff", user?.uid], queryFn: () => getVendorStaff(user!), enabled: Boolean(user) });
   const [drafts, setDrafts] = useState<Record<string, Permission[]>>({});
+  const [email, setEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<"VENDOR_MANAGER" | "VENDOR_STAFF">("VENDOR_STAFF");
+  const [invitePermissions, setInvitePermissions] = useState<Permission[]>(permissionPresets[0].permissions);
+  const [notice, setNotice] = useState("");
 
   useEffect(() => { setDrafts({}); }, [user?.uid]);
 
@@ -34,6 +38,15 @@ export function VendorStaffScreen() {
     onSuccess: async (_data, variables) => {
       if (activeUid.current !== variables.owner.uid) return;
       setDrafts((current) => { const next = { ...current }; delete next[variables.id]; return next; });
+      await cache.invalidateQueries({ queryKey: ["vendor", "staff", variables.owner.uid] });
+    }
+  });
+  const invite = useMutation({
+    retry: false,
+    mutationFn: ({ owner, emailAddress }: { owner: User; emailAddress: string }) => inviteVendorStaff(owner, { email: emailAddress, role: inviteRole, permissions: invitePermissions }),
+    onSuccess: async (_data, variables) => {
+      if (activeUid.current !== variables.owner.uid) return;
+      setEmail(""); setInviteRole("VENDOR_STAFF"); setInvitePermissions(permissionPresets[0].permissions); setNotice("Team member added successfully.");
       await cache.invalidateQueries({ queryKey: ["vendor", "staff", variables.owner.uid] });
     }
   });
@@ -49,6 +62,21 @@ export function VendorStaffScreen() {
   return <Screen eyebrow="TEAM ACCESS" title="Staff and permissions" description="Control who can operate your seller workspace and what each member can do.">
     <View style={[styles.summary, compact && styles.summaryCompact]}><View style={styles.summaryLead}><View style={styles.summaryIcon}><Ionicons color={colors.surface} name="people" size={25} /></View><View style={styles.flex}><Text style={styles.summaryEyebrow}>TEAM SECURITY</Text><Text adjustsFontSizeToFit numberOfLines={1} style={styles.summaryValue}>Seller workspace access</Text><Text style={styles.summaryMeta}>Use least-privilege roles and suspend access immediately when responsibilities change.</Text></View></View><View style={[styles.summaryMetrics, compact && styles.summaryMetricsCompact]}><TeamMetric label="Members" value={query.data?.length ?? 0} /><TeamMetric label="Active" value={activeCount} /><TeamMetric label="Suspended" value={suspendedCount} /></View></View>
     {query.isLoading ? <ActivityIndicator color={colors.primary} /> : null}
+    <View style={[styles.inviteCard, compact && styles.inviteCardCompact]}>
+      <View style={styles.inviteCopy}><Text style={styles.inviteEyebrow}>OWNER CONTROL</Text><Text style={styles.inviteTitle}>Add a team member</Text><Text style={styles.inviteDescription}>The team member must already have an active Amiyo account. Access starts immediately with only the permissions you select.</Text></View>
+      <View style={styles.inviteForm}>
+        <Text style={styles.label}>ACCOUNT EMAIL</Text>
+        <TextInput accessibilityLabel="Team member account email" autoCapitalize="none" autoComplete="email" inputMode="email" onChangeText={(value) => { setEmail(value); setNotice(""); }} placeholder="name@example.com" placeholderTextColor={colors.muted} style={styles.input} value={email} />
+        <Text style={styles.label}>WORKSPACE ROLE</Text>
+        <View style={styles.roleOptions}>{(["VENDOR_STAFF", "VENDOR_MANAGER"] as const).map((role) => <Pressable key={role} onPress={() => setInviteRole(role)} style={[styles.roleOption, inviteRole === role && styles.roleOptionActive]}><Ionicons color={inviteRole === role ? colors.surface : colors.primary} name={role === "VENDOR_MANAGER" ? "shield-checkmark-outline" : "person-outline"} size={18} /><View style={styles.flex}><Text style={[styles.roleOptionTitle, inviteRole === role && styles.roleOptionTitleActive]}>{role === "VENDOR_MANAGER" ? "Manager" : "Staff"}</Text><Text style={[styles.roleOptionCopy, inviteRole === role && styles.roleOptionCopyActive]}>{role === "VENDOR_MANAGER" ? "Senior operational team member" : "Task-focused delegated access"}</Text></View></Pressable>)}</View>
+        <Text style={styles.label}>ACCESS PRESET</Text>
+        <View style={styles.presets}>{permissionPresets.map((preset) => { const active = samePermissions(preset.permissions, invitePermissions); return <Pressable key={preset.label} onPress={() => setInvitePermissions(preset.permissions)} style={[styles.preset, active && styles.presetActive]}><View style={styles.presetIcon}><Ionicons color={active ? colors.surface : colors.primary} name={preset.label === "Order desk" ? "bag-check-outline" : preset.label === "Catalog" ? "cube-outline" : preset.label === "Support" ? "headset-outline" : "shield-checkmark-outline"} size={18} /></View><View><Text style={[styles.presetTitle, active && styles.presetTitleActive]}>{preset.label}</Text><Text style={[styles.presetCopy, active && styles.presetCopyActive]}>{preset.copy}</Text></View></Pressable>; })}</View>
+        <View style={styles.permissions}>{permissions.map((permission) => { const active = invitePermissions.includes(permission); return <Pressable key={permission} onPress={() => setInvitePermissions((current) => active ? current.filter((item) => item !== permission) : [...current, permission])} style={[styles.permission, active && styles.permissionActive]}><Ionicons color={active ? colors.surface : colors.muted} name={active ? "checkmark-circle" : "ellipse-outline"} size={16} /><Text style={[styles.permissionText, active && styles.permissionTextActive]}>{permissionLabel(permission)}</Text></Pressable>; })}</View>
+        <Pressable accessibilityRole="button" disabled={!user || invite.isPending || !email.trim() || invitePermissions.length === 0} onPress={() => user && invite.mutate({ owner: user, emailAddress: email.trim() })} style={[styles.inviteButton, (!user || invite.isPending || !email.trim() || invitePermissions.length === 0) && styles.disabled]}>{invite.isPending ? <ActivityIndicator color={colors.surface} /> : <Ionicons color={colors.surface} name="person-add-outline" size={19} />}<Text style={styles.primaryText}>{invite.isPending ? "Adding member..." : "Add team member"}</Text></Pressable>
+        {notice ? <Text style={styles.success}>{notice}</Text> : null}
+        {invite.error ? <Text style={styles.error}>{invite.error.message}</Text> : null}
+      </View>
+    </View>
     <View style={styles.list}>{query.data?.map((member) => {
       const owner = member.role === "VENDOR_OWNER";
       const selected = selectedFor(member.id, member.permissions);
@@ -81,6 +109,7 @@ export function VendorStaffScreen() {
 }
 
 function permissionLabel(value: Permission) { return value.replace(":", " · ").replaceAll("_", " "); }
+function samePermissions(left: readonly Permission[], right: readonly Permission[]) { return [...left].sort().join("|") === [...right].sort().join("|"); }
 function TeamMetric({ label, value }: { label: string; value: number }) { return <View style={styles.summaryMetric}><Text style={styles.summaryMetricValue}>{value}</Text><Text style={styles.summaryMetricLabel}>{label}</Text></View>; }
 
 const styles = StyleSheet.create({
@@ -98,6 +127,23 @@ const styles = StyleSheet.create({
   summaryMetricValue: { color: colors.surface, fontSize: 19, fontWeight: "700" },
   summaryMetricLabel: { color: "#C9C2B6", fontSize: 8, marginTop: 3 },
   list: { gap: spacing.md },
+  inviteCard: { alignItems: "flex-start", backgroundColor: colors.surface, borderRadius: radius.xl, boxShadow: "0 10px 30px rgba(11,31,58,.08)", flexDirection: "row", gap: spacing.xl, padding: spacing.xl },
+  inviteCardCompact: { flexDirection: "column", gap: spacing.lg, padding: spacing.lg },
+  inviteCopy: { flex: 0.7, gap: spacing.sm, minWidth: 210 },
+  inviteEyebrow: { color: colors.primary, fontSize: 9, fontWeight: "700", letterSpacing: 1 },
+  inviteTitle: { color: colors.text, fontSize: 22, fontWeight: "700" },
+  inviteDescription: { color: colors.muted, fontSize: 12, lineHeight: 19 },
+  inviteForm: { flex: 1.3, gap: spacing.sm, minWidth: 0, width: "100%" },
+  input: { backgroundColor: colors.background, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, fontSize: 14, minHeight: 48, paddingHorizontal: spacing.md },
+  roleOptions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  roleOption: { alignItems: "center", backgroundColor: colors.background, borderRadius: radius.md, flex: 1, flexDirection: "row", gap: spacing.sm, minHeight: 60, minWidth: 180, padding: spacing.sm },
+  roleOptionActive: { backgroundColor: colors.navy },
+  roleOptionTitle: { color: colors.text, fontSize: 11, fontWeight: "700" },
+  roleOptionTitleActive: { color: colors.surface },
+  roleOptionCopy: { color: colors.muted, fontSize: 9, marginTop: 2 },
+  roleOptionCopyActive: { color: "#C9C2B6" },
+  inviteButton: { alignItems: "center", alignSelf: "flex-end", backgroundColor: colors.primary, borderRadius: radius.md, flexDirection: "row", gap: spacing.sm, justifyContent: "center", minHeight: 46, paddingHorizontal: spacing.lg },
+  success: { color: colors.success, fontSize: 11, fontWeight: "600" },
   card: { backgroundColor: colors.surface, borderRadius: radius.lg, boxShadow: "0 8px 24px rgba(11,31,58,.07)", gap: spacing.md, padding: spacing.lg },
   cardHeader: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
   cardHeaderCompact: { alignItems: "flex-start", flexWrap: "wrap" },

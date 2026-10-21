@@ -100,7 +100,14 @@ export const saveVendorBankAccountSchema = z.object({
 });
 
 export const vendorStaffSchema = z.object({ id: uuidSchema, userId: uuidSchema, displayName: z.string().nullable(), email: z.string().nullable(), role: z.string(), status: z.string(), permissions: z.array(z.string()) });
-export const updateVendorStaffSchema = z.object({ status: z.enum(["active", "suspended"]), permissions: z.array(z.enum(["orders:read", "orders:manage", "products:manage", "inventory:manage", "returns:manage", "finance:read", "support:manage"])).max(12) });
+export const vendorStaffPermissionSchema = z.enum(["orders:read", "orders:manage", "products:manage", "inventory:manage", "returns:manage", "finance:read", "support:manage"]);
+const vendorStaffPermissionsSchema = z.array(vendorStaffPermissionSchema).min(1).max(12).refine((values) => new Set(values).size === values.length, "Permissions must be unique");
+export const inviteVendorStaffSchema = z.object({
+  email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
+  role: z.enum(["VENDOR_MANAGER", "VENDOR_STAFF"]),
+  permissions: vendorStaffPermissionsSchema
+});
+export const updateVendorStaffSchema = z.object({ status: z.enum(["active", "suspended"]), permissions: vendorStaffPermissionsSchema });
 export const vendorVoucherSchema = z.object({ id: uuidSchema, code: z.string(), active: z.boolean(), startsAt: timestampSchema, endsAt: timestampSchema, version: versionSchema, rules: z.record(z.unknown()) });
 export const createVendorVoucherSchema = z.object({ code: z.string().trim().min(3).max(40).transform((value) => value.toUpperCase()), discountType: z.enum(["PERCENT", "FIXED"]), value: z.number().int().positive(), startsAt: z.string().datetime(), endsAt: z.string().datetime() }).refine((value) => value.startsAt < value.endsAt, "startsAt must precede endsAt");
 export const vendorReportSchema = z.object({ periodDays: z.number().int().positive(), orderCount: z.number().int().nonnegative(), deliveredCount: z.number().int().nonnegative(), cancelledCount: z.number().int().nonnegative(), returnCount: z.number().int().nonnegative(), grossSalesMinor: z.string(), averageOrderMinor: z.string(), fulfilmentRate: z.number().nonnegative(), productCount: z.number().int().nonnegative(), lowStockCount: z.number().int().nonnegative(), statusCounts: z.record(z.number().int().nonnegative()), recentOrders: z.array(z.object({ id: uuidSchema, orderNumber: z.string(), shopName: z.string(), itemCount: z.number().int().nonnegative(), status: z.string(), totalMinor: z.string(), createdAt: timestampSchema })) });
@@ -110,6 +117,7 @@ export const createVendorCategoryRequestSchema = z.object({ categoryId: uuidSche
 export type UpdateVendorShop = z.infer<typeof updateVendorShopSchema>;
 export type SubmitVendorKyc = z.infer<typeof submitVendorKycSchema>;
 export type SaveVendorBankAccount = z.infer<typeof saveVendorBankAccountSchema>;
+export type InviteVendorStaff = z.infer<typeof inviteVendorStaffSchema>;
 export type UpdateVendorStaff = z.infer<typeof updateVendorStaffSchema>;
 export type CreateVendorVoucher = z.infer<typeof createVendorVoucherSchema>;
 export type CreateVendorCategoryRequest = z.infer<typeof createVendorCategoryRequestSchema>;

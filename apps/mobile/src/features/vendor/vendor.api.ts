@@ -1,4 +1,4 @@
-import { returnSchema, vendorCategoryRequestSchema, vendorReportSchema, vendorStaffSchema, vendorVoucherSchema, vendorWorkspaceSchema, type CreateVendorCategoryRequest, type CreateVendorVoucher, type SaveVendorBankAccount, type SubmitVendorKyc, type UpdateVendorShop, type UpdateVendorStaff, type VendorRegistration } from "@amiyo/contracts";
+import { returnSchema, vendorCategoryRequestSchema, vendorReportSchema, vendorStaffSchema, vendorVoucherSchema, vendorWorkspaceSchema, type CreateVendorCategoryRequest, type CreateVendorVoucher, type InviteVendorStaff, type SaveVendorBankAccount, type SubmitVendorKyc, type UpdateVendorShop, type UpdateVendorStaff, type VendorRegistration } from "@amiyo/contracts";
 import type { User } from "@firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
@@ -9,6 +9,7 @@ export async function updateVendorShop(user: User, id: string, input: UpdateVend
 export async function submitVendorKyc(user: User, input: SubmitVendorKyc) { return vendorWorkspaceSchema.parse(await request(user, "/api/v2/vendor/workspace/kyc", { method: "POST", body: JSON.stringify(input) })); }
 export async function saveVendorBankAccount(user: User, input: SaveVendorBankAccount) { return vendorWorkspaceSchema.parse(await request(user, "/api/v2/vendor/workspace/bank-accounts", { method: "POST", body: JSON.stringify(input) })); }
 export async function getVendorStaff(user: User) { return vendorStaffSchema.array().parse(await request(user, "/api/v2/vendor/workspace/staff")); }
+export async function inviteVendorStaff(user: User, input: InviteVendorStaff) { return vendorStaffSchema.array().parse(await request(user, "/api/v2/vendor/workspace/staff", { method: "POST", body: JSON.stringify(input) })); }
 export async function updateVendorStaff(user: User, id: string, input: UpdateVendorStaff) { return vendorStaffSchema.array().parse(await request(user, `/api/v2/vendor/workspace/staff/${id}`, { method: "PATCH", body: JSON.stringify(input) })); }
 export async function getVendorVouchers(user: User) { return vendorVoucherSchema.array().parse(await request(user, "/api/v2/vendor/workspace/vouchers")); }
 export async function createVendorVoucher(user: User, input: CreateVendorVoucher) { return vendorVoucherSchema.array().parse(await request(user, "/api/v2/vendor/workspace/vouchers", { method: "POST", body: JSON.stringify(input) })); }

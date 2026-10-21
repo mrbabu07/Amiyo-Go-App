@@ -30762,6 +30762,159 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "Vendor Workspace"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "maxLength": 254,
+                    "format": "email"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "VENDOR_MANAGER",
+                      "VENDOR_STAFF"
+                    ]
+                  },
+                  "permissions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "orders:read",
+                        "orders:manage",
+                        "products:manage",
+                        "inventory:manage",
+                        "returns:manage",
+                        "finance:read",
+                        "support:manage"
+                      ]
+                    },
+                    "minItems": 1,
+                    "maxItems": 12
+                  }
+                },
+                "required": [
+                  "email",
+                  "role",
+                  "permissions"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registered account added to the vendor workspace",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "displayName": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "email": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "role": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "permissions": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "userId",
+                      "displayName",
+                      "email",
+                      "role",
+                      "status",
+                      "permissions"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v2/vendor/workspace/staff/{id}": {
@@ -30812,6 +30965,7 @@
                         "support:manage"
                       ]
                     },
+                    "minItems": 1,
                     "maxItems": 12
                   }
                 },

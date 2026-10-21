@@ -22,3 +22,12 @@ test("seller staff UI exposes least-privilege presets and clean save state", () 
   assert.match(source, /compact && styles\.summaryMetricsCompact/);
   assert.match(source, /accessibilityState=\{\{ disabled:/);
 });
+
+test("seller owner can add a registered team member responsively", () => {
+  assert.match(source, /Add a team member/);
+  assert.match(source, /active Amiyo account/);
+  assert.match(source, /inviteVendorStaff/);
+  assert.match(source, /VENDOR_MANAGER/);
+  assert.match(source, /Team member account email/);
+  assert.match(source, /compact && styles\.inviteCardCompact/);
+});

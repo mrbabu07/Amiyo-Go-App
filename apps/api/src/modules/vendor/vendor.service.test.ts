@@ -87,6 +87,26 @@ test("KYC submission is atomic and blocks another active review", async () => {
   assert.equal(audited, true);
 });
 
+test("vendor owner adds a registered staff account with delegated access", async () => {
+  const staffUserId = "77777777-7777-4777-8777-777777777777";
+  let createdData: any;
+  let audited = false;
+  const staffRows = [{ id: "88888888-8888-4888-8888-888888888888", vendorId, userId: staffUserId, role: "VENDOR_STAFF", status: "active", user: { normalizedEmail: "team@example.com", profile: { displayName: "Team Member" } }, permissions: [{ permissionKey: "vendor:read", granted: true }, { permissionKey: "orders:read", granted: true }] }];
+  const transaction = { vendorMember: { create: async ({ data }: any) => { createdData = data; return { id: staffRows[0]!.id }; } }, auditLog: { create: async () => { audited = true; } } };
+  const client = { user: { findUnique: async () => ({ id: staffUserId, status: "ACTIVE" }) }, vendorMember: { findFirst: async () => null, findMany: async () => staffRows }, $transaction: async (operation: (value: typeof transaction) => Promise<unknown>) => operation(transaction) } as unknown as PrismaClient;
+  const result = await new VendorService(client).inviteStaff(shopSession, { email: "team@example.com", role: "VENDOR_STAFF", permissions: ["orders:read"] });
+  assert.deepEqual(createdData.permissions.create, [{ permissionKey: "vendor:read" }, { permissionKey: "orders:read" }]);
+  assert.equal(result[0]?.email, "team@example.com");
+  assert.equal(audited, true);
+});
+
+test("vendor staff invite rejects unavailable and cross-workspace accounts", async () => {
+  const missing = { user: { findUnique: async () => null } } as unknown as PrismaClient;
+  await assert.rejects(() => new VendorService(missing).inviteStaff(shopSession, { email: "missing@example.com", role: "VENDOR_STAFF", permissions: ["orders:read"] }), /create an active Amiyo account/);
+  const occupied = { user: { findUnique: async () => ({ id: "77777777-7777-4777-8777-777777777777", status: "ACTIVE" }) }, vendorMember: { findFirst: async () => ({ id: "member", vendorId: "99999999-9999-4999-8999-999999999999" }) } } as unknown as PrismaClient;
+  await assert.rejects(() => new VendorService(occupied).inviteStaff(shopSession, { email: "team@example.com", role: "VENDOR_MANAGER", permissions: ["finance:read"] }), /another seller workspace/);
+});
+
 test("vendor report applies the selected period and derives fulfilment metrics", async () => {
   const reportSession = { ...session, principal: { ...session.principal, vendorIds: ["33333333-3333-4333-8333-333333333333"] }, permissions: ["vendor:read"], vendorMemberships: [{ vendorId: "33333333-3333-4333-8333-333333333333", role: "VENDOR_OWNER", permissions: ["vendor:read"] }] } as Session;
   let since: Date | undefined;
