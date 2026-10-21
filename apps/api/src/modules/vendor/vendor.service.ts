@@ -1,7 +1,7 @@
 import { returnProductDetails, returnProductSelect } from "../operations/return-product.js";
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { Prisma, type PrismaClient } from "@prisma/client";
-import type { CreateVendorCategoryRequest, CreateVendorVoucher, InviteVendorStaff, SaveVendorBankAccount, Session, SubmitVendorKyc, UpdateVendorShop, UpdateVendorStaff, VendorRegistration } from "@amiyo/contracts";
+import type { CreateVendorCategoryRequest, CreateVendorVoucher, InviteVendorStaff, SaveVendorBankAccount, Session, SubmitVendorKyc, UpdateVendorBankAccount, UpdateVendorShop, UpdateVendorStaff, VendorRegistration } from "@amiyo/contracts";
 import { withSerializableTransaction } from "../../infrastructure/database/transaction.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
 
@@ -118,6 +118,29 @@ export class VendorService {
       if (input.isDefault) await transaction.vendorBankAccount.updateMany({ where: { vendorId: id, isDefault: true }, data: { isDefault: false } });
       await transaction.vendorBankAccount.create({ data: { vendorId: id, provider: input.provider, accountName: input.accountName, accountNumberMasked: mask(normalized), encryptedPayload, isDefault: input.isDefault } });
       await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "vendor.bank_account.created", resourceType: "vendor_bank_account", resourceId: id, after: json({ provider: input.provider, accountNumberMasked: mask(normalized) }) } });
+    });
+    return this.getWorkspace(session);
+  }
+  async updateBankAccount(session: Session, accountId: string, input: UpdateVendorBankAccount) {
+    const id = vendorId(session); requirePermission(session, "finance:manage");
+    await this.client.$transaction(async (transaction) => {
+      const account = await transaction.vendorBankAccount.findFirst({ where: { id: accountId, vendorId: id } });
+      if (!account) throw new ApiProblem(404, "VENDOR_BANK_ACCOUNT_NOT_FOUND", "Payout account not found");
+      if (input.isDefault) await transaction.vendorBankAccount.updateMany({ where: { vendorId: id, isDefault: true, id: { not: accountId } }, data: { isDefault: false } });
+      await transaction.vendorBankAccount.update({ where: { id: accountId }, data: { ...(input.accountName !== undefined ? { accountName: input.accountName } : {}), ...(input.isDefault ? { isDefault: true } : {}) } });
+      await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "vendor.bank_account.updated", resourceType: "vendor_bank_account", resourceId: accountId, metadata: json({ vendorId: id }), after: json({ accountNameChanged: input.accountName !== undefined, madeDefault: input.isDefault === true }) } });
+    });
+    return this.getWorkspace(session);
+  }
+  async removeBankAccount(session: Session, accountId: string) {
+    const id = vendorId(session); requirePermission(session, "finance:manage");
+    await this.client.$transaction(async (transaction) => {
+      const account = await transaction.vendorBankAccount.findFirst({ where: { id: accountId, vendorId: id }, include: { _count: { select: { payoutRequests: true } } } });
+      if (!account) throw new ApiProblem(404, "VENDOR_BANK_ACCOUNT_NOT_FOUND", "Payout account not found");
+      if (account._count.payoutRequests) throw new ApiProblem(409, "VENDOR_BANK_ACCOUNT_IN_USE", "A payout account with settlement history cannot be removed");
+      await transaction.vendorBankAccount.delete({ where: { id: accountId } });
+      if (account.isDefault) { const replacement = await transaction.vendorBankAccount.findFirst({ where: { vendorId: id }, orderBy: { createdAt: "desc" }, select: { id: true } }); if (replacement) await transaction.vendorBankAccount.update({ where: { id: replacement.id }, data: { isDefault: true } }); }
+      await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "vendor.bank_account.removed", resourceType: "vendor_bank_account", resourceId: accountId, metadata: json({ vendorId: id }), before: json({ provider: account.provider, accountNumberMasked: account.accountNumberMasked, isDefault: account.isDefault }) } });
     });
     return this.getWorkspace(session);
   }

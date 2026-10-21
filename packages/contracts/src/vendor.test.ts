@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createVendorCategoryRequestSchema, createVendorVoucherSchema, saveVendorBankAccountSchema, submitVendorKycSchema, updateVendorShopSchema, updateVendorStaffSchema } from "./vendor.js";
+import { createVendorCategoryRequestSchema, createVendorVoucherSchema, saveVendorBankAccountSchema, submitVendorKycSchema, updateVendorBankAccountSchema, updateVendorShopSchema, updateVendorStaffSchema } from "./vendor.js";
 
 test("vendor bank account requires a supported payout provider", () => {
   assert.equal(saveVendorBankAccountSchema.parse({ provider: "BKASH", accountName: "Demo Seller", accountNumber: "01700000000" }).isDefault, true);
   assert.throws(() => saveVendorBankAccountSchema.parse({ provider: "PAYPAL", accountName: "Demo Seller", accountNumber: "01700000000" }));
 });
+test("payout account updates allow only a name or default promotion", () => { assert.equal(updateVendorBankAccountSchema.parse({ accountName: "Updated Seller" }).accountName, "Updated Seller"); assert.equal(updateVendorBankAccountSchema.parse({ isDefault: true }).isDefault, true); assert.throws(() => updateVendorBankAccountSchema.parse({})); assert.throws(() => updateVendorBankAccountSchema.parse({ isDefault: false })); });
 
 test("KYC submission requires durable document metadata", () => {
   assert.throws(() => submitVendorKycSchema.parse({ documents: [] }));

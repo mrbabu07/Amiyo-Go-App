@@ -1,4 +1,4 @@
-import { returnSchema, vendorCategoryRequestSchema, vendorReportSchema, vendorStaffAuditSchema, vendorStaffSchema, vendorVoucherSchema, vendorWorkspaceSchema, type CreateVendorCategoryRequest, type CreateVendorVoucher, type InviteVendorStaff, type SaveVendorBankAccount, type SubmitVendorKyc, type UpdateVendorShop, type UpdateVendorStaff, type VendorRegistration } from "@amiyo/contracts";
+import { returnSchema, vendorCategoryRequestSchema, vendorReportSchema, vendorStaffAuditSchema, vendorStaffSchema, vendorVoucherSchema, vendorWorkspaceSchema, type CreateVendorCategoryRequest, type CreateVendorVoucher, type InviteVendorStaff, type SaveVendorBankAccount, type SubmitVendorKyc, type UpdateVendorBankAccount, type UpdateVendorShop, type UpdateVendorStaff, type VendorRegistration } from "@amiyo/contracts";
 import type { User } from "@firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
@@ -8,6 +8,8 @@ export async function registerVendor(user: User, input: VendorRegistration) { re
 export async function updateVendorShop(user: User, id: string, input: UpdateVendorShop) { return vendorWorkspaceSchema.parse(await request(user, `/api/v2/vendor/workspace/shops/${id}`, { method: "PATCH", body: JSON.stringify(input) })); }
 export async function submitVendorKyc(user: User, input: SubmitVendorKyc) { return vendorWorkspaceSchema.parse(await request(user, "/api/v2/vendor/workspace/kyc", { method: "POST", body: JSON.stringify(input) })); }
 export async function saveVendorBankAccount(user: User, input: SaveVendorBankAccount) { return vendorWorkspaceSchema.parse(await request(user, "/api/v2/vendor/workspace/bank-accounts", { method: "POST", body: JSON.stringify(input) })); }
+export async function updateVendorBankAccount(user: User, id: string, input: UpdateVendorBankAccount) { return vendorWorkspaceSchema.parse(await request(user, `/api/v2/vendor/workspace/bank-accounts/${id}`, { method: "PATCH", body: JSON.stringify(input) })); }
+export async function removeVendorBankAccount(user: User, id: string) { return vendorWorkspaceSchema.parse(await request(user, `/api/v2/vendor/workspace/bank-accounts/${id}`, { method: "DELETE" })); }
 export async function getVendorStaff(user: User) { return vendorStaffSchema.array().parse(await request(user, "/api/v2/vendor/workspace/staff")); }
 export async function getVendorStaffAudit(user: User) { return vendorStaffAuditSchema.array().parse(await request(user, "/api/v2/vendor/workspace/staff-audit")); }
 export async function inviteVendorStaff(user: User, input: InviteVendorStaff) { return vendorStaffSchema.array().parse(await request(user, "/api/v2/vendor/workspace/staff", { method: "POST", body: JSON.stringify(input) })); }

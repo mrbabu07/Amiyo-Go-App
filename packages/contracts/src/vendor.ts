@@ -98,6 +98,10 @@ export const saveVendorBankAccountSchema = z.object({
   accountNumber: z.string().trim().min(8).max(40),
   isDefault: z.boolean().default(true)
 });
+export const updateVendorBankAccountSchema = z.object({
+  accountName: z.string().trim().min(2).max(160).optional(),
+  isDefault: z.literal(true).optional()
+}).refine((value) => value.accountName !== undefined || value.isDefault === true, "At least one payout account change is required");
 
 export const vendorStaffSchema = z.object({ id: uuidSchema, userId: uuidSchema, displayName: z.string().nullable(), email: z.string().nullable(), role: z.string(), status: z.string(), permissions: z.array(z.string()) });
 export const vendorStaffAuditSchema = z.object({ id: uuidSchema, action: z.string(), memberId: z.string(), actorUserId: uuidSchema.nullable(), before: z.unknown().nullable(), after: z.unknown().nullable(), createdAt: timestampSchema });
@@ -118,6 +122,7 @@ export const createVendorCategoryRequestSchema = z.object({ categoryId: uuidSche
 export type UpdateVendorShop = z.infer<typeof updateVendorShopSchema>;
 export type SubmitVendorKyc = z.infer<typeof submitVendorKycSchema>;
 export type SaveVendorBankAccount = z.infer<typeof saveVendorBankAccountSchema>;
+export type UpdateVendorBankAccount = z.infer<typeof updateVendorBankAccountSchema>;
 export type InviteVendorStaff = z.infer<typeof inviteVendorStaffSchema>;
 export type UpdateVendorStaff = z.infer<typeof updateVendorStaffSchema>;
 export type CreateVendorVoucher = z.infer<typeof createVendorVoucherSchema>;

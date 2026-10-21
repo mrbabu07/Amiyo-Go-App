@@ -16,6 +16,10 @@ test("vendor payout destinations stay identity scoped and clear on account chang
 
 test("vendor payout form uses the shared contract and explicit confirmation", () => {
   assert.match(source, /saveVendorBankAccountSchema\.safeParse/);
+  assert.match(source, /updateVendorBankAccount/);
+  assert.match(source, /removeVendorBankAccount/);
+  assert.match(source, /Make default/);
+  assert.match(source, /settlement history cannot be removed|Manage payout accounts/);
   assert.match(source, /form\.accountNumber === form\.confirmAccountNumber/);
   assert.match(source, /secureTextEntry/);
   assert.match(source, /retry: false/);

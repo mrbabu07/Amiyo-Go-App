@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { createVendorCategoryRequestSchema, createVendorVoucherSchema, inviteVendorStaffSchema, saveVendorBankAccountSchema, submitVendorKycSchema, updateVendorShopSchema, updateVendorStaffSchema, vendorRegistrationSchema } from "@amiyo/contracts";
+import { createVendorCategoryRequestSchema, createVendorVoucherSchema, inviteVendorStaffSchema, saveVendorBankAccountSchema, submitVendorKycSchema, updateVendorBankAccountSchema, updateVendorShopSchema, updateVendorStaffSchema, vendorRegistrationSchema } from "@amiyo/contracts";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { FirebaseTokenVerifier } from "../identity/firebase-token.verifier.js";
 import { createAuthenticationMiddleware, requireSession } from "../identity/identity.middleware.js";
@@ -18,6 +18,8 @@ export function createVendorRouter() {
   router.patch("/api/v2/vendor/workspace/shops/:id", writeLimit, async (req, res, next) => { try { res.json(await service.updateShop(requireSession(req), idSchema.parse(req.params).id, updateVendorShopSchema.parse(req.body))); } catch (error) { next(error); } });
   router.post("/api/v2/vendor/workspace/kyc", writeLimit, async (req, res, next) => { try { res.status(201).json(await service.submitKyc(requireSession(req), submitVendorKycSchema.parse(req.body))); } catch (error) { next(error); } });
   router.post("/api/v2/vendor/workspace/bank-accounts", writeLimit, async (req, res, next) => { try { res.status(201).json(await service.saveBankAccount(requireSession(req), saveVendorBankAccountSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.patch("/api/v2/vendor/workspace/bank-accounts/:id", writeLimit, async (req, res, next) => { try { res.json(await service.updateBankAccount(requireSession(req), idSchema.parse(req.params).id, updateVendorBankAccountSchema.parse(req.body))); } catch (error) { next(error); } });
+  router.delete("/api/v2/vendor/workspace/bank-accounts/:id", writeLimit, async (req, res, next) => { try { res.json(await service.removeBankAccount(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   router.get("/api/v2/vendor/workspace/staff", async (req, res, next) => { try { res.json(await service.staff(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/vendor/workspace/staff-audit", async (req, res, next) => { try { res.json(await service.staffAudit(requireSession(req))); } catch (error) { next(error); } });
   router.post("/api/v2/vendor/workspace/staff", writeLimit, async (req, res, next) => { try { res.status(201).json(await service.inviteStaff(requireSession(req), inviteVendorStaffSchema.parse(req.body))); } catch (error) { next(error); } });

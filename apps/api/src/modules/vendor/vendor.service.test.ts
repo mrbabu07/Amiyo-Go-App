@@ -87,6 +87,32 @@ test("KYC submission is atomic and blocks another active review", async () => {
   assert.equal(audited, true);
 });
 
+test("seller can rename and promote only an owned payout account", async () => {
+  const accountId = "66666666-6666-4666-8666-666666666666";
+  let updated: any; let cleared = false;
+  const workspace = { id: vendorId, legalName: "Seller Commerce", displayName: "Seller Shop", status: "APPROVED", version: 1, shops: [], kycSubmissions: [], bankAccounts: [] };
+  const transaction = { vendorBankAccount: { findFirst: async () => ({ id: accountId }), updateMany: async () => { cleared = true; }, update: async ({ data }: any) => { updated = data; } }, auditLog: { create: async () => ({}) } };
+  const client = { $transaction: async (operation: (value: typeof transaction) => Promise<unknown>) => operation(transaction), vendor: { findUniqueOrThrow: async () => workspace }, vendorShop: { findMany: async () => [] }, vendorKycSubmission: { findMany: async () => [] }, vendorBankAccount: { findMany: async () => [] } } as unknown as PrismaClient;
+  await new VendorService(client).updateBankAccount({ ...shopSession, permissions: ["vendor:read", "finance:manage"] }, accountId, { accountName: "Updated Seller", isDefault: true });
+  assert.equal(updated.accountName, "Updated Seller"); assert.equal(updated.isDefault, true); assert.equal(cleared, true);
+  transaction.vendorBankAccount.findFirst = async () => null as never;
+  await assert.rejects(() => new VendorService(client).updateBankAccount({ ...shopSession, permissions: ["vendor:read", "finance:manage"] }, accountId, { isDefault: true }), /not found/);
+});
+
+test("payout account removal preserves settlement history and promotes a replacement", async () => {
+  const accountId = "66666666-6666-4666-8666-666666666666";
+  const financeSession = { ...shopSession, permissions: ["vendor:read", "finance:manage"] } as Session;
+  const inUseTransaction = { vendorBankAccount: { findFirst: async () => ({ id: accountId, vendorId, isDefault: true, provider: "BANK", accountNumberMasked: "••••1234", _count: { payoutRequests: 1 } }) } };
+  const inUseClient = { $transaction: async (operation: (value: typeof inUseTransaction) => Promise<unknown>) => operation(inUseTransaction) } as unknown as PrismaClient;
+  await assert.rejects(() => new VendorService(inUseClient).removeBankAccount(financeSession, accountId), /settlement history/);
+  let promoted = "";
+  const workspace = { id: vendorId, legalName: "Seller Commerce", displayName: "Seller Shop", status: "APPROVED", version: 1, shops: [], kycSubmissions: [], bankAccounts: [] };
+  const transaction = { vendorBankAccount: { findFirst: async ({ where }: any) => where.id ? ({ id: accountId, vendorId, isDefault: true, provider: "BANK", accountNumberMasked: "••••1234", _count: { payoutRequests: 0 } }) : ({ id: "77777777-7777-4777-8777-777777777777" }), delete: async () => ({}), update: async ({ where }: any) => { promoted = where.id; } }, auditLog: { create: async () => ({}) } };
+  const client = { $transaction: async (operation: (value: typeof transaction) => Promise<unknown>) => operation(transaction), vendor: { findUniqueOrThrow: async () => workspace }, vendorShop: { findMany: async () => [] }, vendorKycSubmission: { findMany: async () => [] }, vendorBankAccount: { findMany: async () => [] } } as unknown as PrismaClient;
+  await new VendorService(client).removeBankAccount(financeSession, accountId);
+  assert.equal(promoted, "77777777-7777-4777-8777-777777777777");
+});
+
 test("vendor owner adds a registered staff account with delegated access", async () => {
   const staffUserId = "77777777-7777-4777-8777-777777777777";
   let createdData: any;
