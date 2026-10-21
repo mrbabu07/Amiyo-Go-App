@@ -56,6 +56,12 @@ test("seller workspace uses responsive grouped navigation", () => {
   assert.match(shell, /canAccessVendorPath\(pathname, permissions\)/);
   assert.match(shell, /This seller tool is restricted/);
   assert.match(shell, /amiyo:vendor-sidebar-collapsed/);
+  assert.match(shell, /const authStatus = useAuthStore\(\(state\) => state\.status\)/);
+  assert.match(shell, /const sessionLoading = authStatus === "loading" && Boolean\(user\) && !session/);
+  assert.match(shell, /function VendorSessionLoading/);
+  assert.match(shell, /Restoring seller workspace/);
+  assert.match(shell, /function VendorSidebarLoading/);
+  assert.match(shell, /!desktop && !sessionLoading/);
 });
 
 test("seller dashboard exposes live operational hierarchy", () => {

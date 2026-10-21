@@ -44,6 +44,8 @@ test("seller catalog becomes a full-width mobile workspace", () => {
   assert.match(products, /compact && styles\.cardCompact/);
   assert.match(products, /cardCompact: \{ minWidth: 0, width: "100%" \}/);
   assert.match(products, /Submit for review/);
+  assert.match(products, /title="Loading products"/);
+  assert.match(products, /Syncing seller catalog/);
 });
 
 test("seller orders preserve readable mobile cards and actions", () => {
@@ -57,6 +59,8 @@ test("seller orders preserve readable mobile cards and actions", () => {
   assert.match(orders, /successPill/);
   assert.match(orders, /transitPill/);
   assert.match(orders, /dangerPill/);
+  assert.match(orders, /title="Loading seller orders"/);
+  assert.match(orders, /Syncing fulfillment queue/);
 });
 
 test("seller finance protects the balance hero on narrow screens", () => {
