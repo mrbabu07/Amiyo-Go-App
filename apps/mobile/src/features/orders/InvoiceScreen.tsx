@@ -26,7 +26,7 @@ export function InvoiceScreen() {
     if (!invoice.data) return;
     setExporting(true);
     setExportError("");
-    try { await shareInvoice(invoice.data.order, invoice.data.number, invoice.data.issuedAt, qr.current); }
+    try { await shareInvoice(invoice.data.order, invoice.data.number, invoice.data.issuedAt, qr.current, false, printId); }
     catch (error) { setExportError(error instanceof Error ? error.message : "Could not export invoice."); }
     finally { setExporting(false); }
   }

@@ -29,7 +29,7 @@ export function AdminOrderInvoiceScreen() {
     if (!query.data?.invoice) return;
     setExporting(true);
     setExportError("");
-    try { await shareInvoice(query.data, query.data.invoice?.number ?? `INV-${query.data.orderNumber}`, query.data.invoice?.issuedAt ?? query.data.createdAt, qr.current, true); }
+    try { await shareInvoice(query.data, query.data.invoice?.number ?? `INV-${query.data.orderNumber}`, query.data.invoice?.issuedAt ?? query.data.createdAt, qr.current, true, printId); }
     catch (error) { setExportError(error instanceof Error ? error.message : "Could not export invoice."); }
     finally { setExporting(false); }
   }
