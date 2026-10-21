@@ -94,17 +94,19 @@ test("session synchronization avoids repeated writes for active users", async ()
 
 test("session synchronization refreshes stale login activity without a serializable transaction", async () => {
   let updateData: Record<string, unknown> | undefined;
+  let updateIncludedRelations = false;
   const user = sessionUser(new Date(Date.now() - 10 * 60_000));
   const client = {
     ...sessionRelations(user),
     user: {
       findUnique: async () => user,
-      update: async ({ data }: { data: Record<string, unknown> }) => { updateData = data; return { ...user, lastLoginAt: data.lastLoginAt as Date }; }
+      update: async (input: { data: Record<string, unknown>; include?: unknown }) => { updateData = input.data; updateIncludedRelations = input.include !== undefined; return { ...user, lastLoginAt: input.data.lastLoginAt as Date }; }
     },
     $transaction: async () => { throw new Error("transaction should not run"); }
   } as unknown as PrismaClient;
   await new IdentityService(client).synchronizeSession({ subject: "firebase-customer", email: "customer@example.com" });
   assert.ok(updateData?.lastLoginAt instanceof Date);
+  assert.equal(updateIncludedRelations, false);
 });
 
 test("session synchronization recovers from a concurrent login activity write", async () => {

@@ -241,15 +241,15 @@ export class IdentityService {
     const phone = !user.normalizedPhone && identity.phone ? normalized(identity.phone) : undefined;
     if (!loginWriteDue && email === undefined && phone === undefined) return user;
     try {
-      return await this.client.user.update({
+      const updated = await this.client.user.update({
         where: { id: user.id },
         data: {
           ...(loginWriteDue ? { lastLoginAt: new Date() } : {}),
           ...(email === undefined ? {} : { normalizedEmail: email }),
           ...(phone === undefined ? {} : { normalizedPhone: phone })
-        },
-        include: sessionInclude
+        }
       });
+      return { ...user, ...updated };
     } catch (error) {
       if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2034") throw error;
       const current = await this.readSessionUser({ id: user.id });
