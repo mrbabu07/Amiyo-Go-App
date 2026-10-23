@@ -8,6 +8,9 @@ test("payout amounts preserve exact minor units and respect the available balanc
   assert.equal(payoutAmountMinor("12.5", "1250"), "1250");
   assert.equal(payoutAmountMinor("90071992547409.93", "9007199254740993"), "9007199254740993");
   assert.equal(payoutAmountMinor("100.30", "10029"), null);
+  assert.equal(payoutAmountMinor("499.99", "100000", "50000"), null);
+  assert.equal(payoutAmountMinor("500", "100000", "50000"), "50000");
+  assert.equal(payoutAmountMinor("500", "100000", "invalid"), null);
   for (const invalid of ["", "0", "-1", "1.005", "1e3", "Infinity", "1.2.3"]) assert.equal(payoutAmountMinor(invalid, "100000"), null);
   assert.equal(payoutAmountMinor("1", "-100"), null);
 });

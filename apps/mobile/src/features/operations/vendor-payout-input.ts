@@ -1,9 +1,9 @@
-export function payoutAmountMinor(amount: string, availableMinor: string): string | null {
+export function payoutAmountMinor(amount: string, availableMinor: string, minimumMinor = "1"): string | null {
   const normalized = amount.trim();
-  if (!/^\d+(?:\.\d{1,2})?$/.test(normalized) || !/^-?\d+$/.test(availableMinor)) return null;
+  if (!/^\d+(?:\.\d{1,2})?$/.test(normalized) || !/^-?\d+$/.test(availableMinor) || !/^[1-9]\d*$/.test(minimumMinor)) return null;
   const [whole, fractional = ""] = normalized.split(".");
   const minor = BigInt(whole) * 100n + BigInt(fractional.padEnd(2, "0"));
-  return minor > 0n && minor <= BigInt(availableMinor) ? String(minor) : null;
+  return minor >= BigInt(minimumMinor) && minor <= BigInt(availableMinor) ? String(minor) : null;
 }
 
 export function payoutMinorToMajorInput(amountMinor: string): string {

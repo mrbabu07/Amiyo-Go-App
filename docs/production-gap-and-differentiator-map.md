@@ -122,7 +122,7 @@ Sources:
 ### Customer Trust Advantage
 
 - Store-wise invoice and order package breakdown gives customers transparency when one order contains multiple sellers.
-- 30-minute customer cancellation window is explicit and enforceable.
+- Admin-controlled customer cancellation window is explicit in the order UI and enforced against the same server-provided deadline.
 - Evidence-backed returns, product images in order details, tracking timeline, invoice, support, and seller contact live in one account flow.
 - Wishlist is first-class in navigation, not buried inside account.
 - Referral rewards and a transparent points ledger give customers a visible reason to invite and return.

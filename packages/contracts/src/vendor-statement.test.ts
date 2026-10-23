@@ -10,7 +10,8 @@ test("statement query rejects malformed month and vendor ID", () => {
 });
 
 test("vendor balance supports an outstanding debit without allowing fractional minor units", () => {
-  const value = { vendorId: "11111111-1111-4111-8111-111111111111", balance: { amountMinor: "-100", currency: "BDT" }, entries: [], payoutRequests: [] };
+  const value = { vendorId: "11111111-1111-4111-8111-111111111111", balance: { amountMinor: "-100", currency: "BDT" }, payoutPolicy: { minimum: { amountMinor: "50000", currency: "BDT" }, holdDays: 7, cadenceDays: 7 }, entries: [], payoutRequests: [] };
   assert.equal(vendorFinanceSchema.parse(value).balance.amountMinor, "-100");
+  assert.equal(vendorFinanceSchema.parse(value).payoutPolicy.minimum.amountMinor, "50000");
   assert.equal(vendorFinanceSchema.safeParse({ ...value, balance: { ...value.balance, amountMinor: "-1.5" } }).success, false);
 });
