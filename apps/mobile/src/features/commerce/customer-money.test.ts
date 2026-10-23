@@ -21,7 +21,9 @@ test("customer prices, totals and documents avoid floating-point minor-unit math
   }
   const checkout = readFileSync(new URL("./CheckoutScreen.tsx", import.meta.url), "utf8");
   assert.match(checkout, /subtractMinor\(quote\.data\.discount\.amountMinor/);
-  assert.match(checkout, /BigInt\(quote\.data\.loyalty\.availablePoints\) < 100n/);
+  assert.match(checkout, /loyalty\.policy\.minimumRedemptionPoints/);
+  assert.match(checkout, /loyalty\.policy\.maximumRedemptionBps/);
+  assert.doesNotMatch(checkout, /availablePoints\) < 100n/);
   const product = readFileSync(new URL("../catalog/ProductDetailScreen.tsx", import.meta.url), "utf8");
   assert.match(product, /percentageDiscount/);
   assert.match(product, /multiplyMinor/);
