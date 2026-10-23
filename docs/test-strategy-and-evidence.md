@@ -15,7 +15,7 @@ Authenticated load checks use the same `npm run smoke:load` command with `LOAD_B
 
 The staging role-boundary workflow also enforces `SMOKE_MAX_P95_MS` across its authenticated customer, seller and admin checks. The checked-in staging budget is 2,500 ms. Its immutable report records p50, p95, maximum, threshold and violations without tokens or response bodies; status correctness alone cannot pass the job when the latency budget is exceeded.
 
-When authenticated verification is enabled, the workflow also sends 40 bounded seller-list requests at concurrency 4 to `AUTHENTICATED_LOAD_TARGET_URL`, using `STAGING_VENDOR_TOKEN` only through the process environment. The load report records `authenticated: true` but never the token or URL query, and requires zero failures plus p95 at or below 2,500 ms.
+When authenticated verification is enabled, the workflow also sends 40 bounded seller-list requests at concurrency 4 to `/api/v2/vendor/orders?limit=1`, deriving the origin from the existing `API_PUBLIC_URL` staging variable. It uses `STAGING_VENDOR_TOKEN` only through the process environment, so no additional authenticated-target variable is required. The load report records `authenticated: true` but never the token or URL query, and requires zero failures plus p95 at or below 2,500 ms.
 
 ## Latest local evidence
 

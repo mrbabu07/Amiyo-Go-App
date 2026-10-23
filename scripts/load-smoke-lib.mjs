@@ -11,8 +11,20 @@ const decimal = (value, fallback, name, minimum, maximum) => {
 };
 
 export function loadSmokeConfiguration(environment) {
-  if (!environment.LOAD_TARGET_URL) throw new Error("LOAD_TARGET_URL is required");
-  const target = new URL(environment.LOAD_TARGET_URL);
+  const targetUrl = environment.LOAD_TARGET_URL?.trim();
+  const targetOrigin = environment.LOAD_TARGET_ORIGIN?.trim();
+  const targetPath = environment.LOAD_TARGET_PATH?.trim();
+  if (targetUrl && (targetOrigin || targetPath)) throw new Error("Use either LOAD_TARGET_URL or LOAD_TARGET_ORIGIN with LOAD_TARGET_PATH");
+  if (!targetUrl && (!targetOrigin || !targetPath)) throw new Error("LOAD_TARGET_URL or LOAD_TARGET_ORIGIN with LOAD_TARGET_PATH is required");
+  let target;
+  if (targetUrl) {
+    target = new URL(targetUrl);
+  } else {
+    const origin = new URL(targetOrigin);
+    if (origin.pathname !== "/" || origin.search || origin.hash) throw new Error("LOAD_TARGET_ORIGIN must contain only an origin");
+    if (!targetPath.startsWith("/") || targetPath.startsWith("//") || targetPath.length > 2_048 || /[\r\n]/.test(targetPath)) throw new Error("LOAD_TARGET_PATH must be a bounded absolute path");
+    target = new URL(targetPath, origin);
+  }
   if (!["http:", "https:"].includes(target.protocol) || target.username || target.password) throw new Error("LOAD_TARGET_URL must be an HTTP(S) URL without credentials");
   const bearerToken = environment.LOAD_BEARER_TOKEN?.trim() || null;
   if (bearerToken && (bearerToken.length > 16_384 || /[\r\n]/.test(bearerToken))) throw new Error("LOAD_BEARER_TOKEN must be a single bounded token");

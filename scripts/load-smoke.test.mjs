@@ -8,6 +8,18 @@ test("load smoke configuration rejects credential-bearing and invalid thresholds
   assert.throws(() => loadSmokeConfiguration({ LOAD_TARGET_URL: "https://example.test/health", LOAD_BEARER_TOKEN: "first\nsecond" }), /single bounded token/);
 });
 
+test("load smoke configuration composes an authenticated target from origin and path", () => {
+  const configuration = loadSmokeConfiguration({ LOAD_TARGET_ORIGIN: "https://api.example.test", LOAD_TARGET_PATH: "/api/v2/vendor/orders?limit=1" });
+  assert.equal(configuration.target.href, "https://api.example.test/api/v2/vendor/orders?limit=1");
+});
+
+test("load smoke configuration rejects ambiguous or unsafe split targets", () => {
+  assert.throws(() => loadSmokeConfiguration({ LOAD_TARGET_URL: "https://example.test/ready", LOAD_TARGET_ORIGIN: "https://example.test", LOAD_TARGET_PATH: "/ready" }), /Use either/);
+  assert.throws(() => loadSmokeConfiguration({ LOAD_TARGET_ORIGIN: "https://user:pass@example.test", LOAD_TARGET_PATH: "/ready" }), /without credentials/);
+  assert.throws(() => loadSmokeConfiguration({ LOAD_TARGET_ORIGIN: "https://example.test/api", LOAD_TARGET_PATH: "/ready" }), /only an origin/);
+  assert.throws(() => loadSmokeConfiguration({ LOAD_TARGET_ORIGIN: "https://example.test", LOAD_TARGET_PATH: "//attacker.test/ready" }), /bounded absolute path/);
+});
+
 test("load smoke reports bounded latency, throughput and status counts", async () => {
   let time = 0;
   const result = await runLoadSmoke(loadSmokeConfiguration({ LOAD_TARGET_URL: "https://example.test/products?token=secret", LOAD_REQUESTS: "4", LOAD_CONCURRENCY: "1", LOAD_WARMUP_REQUESTS: "1", LOAD_MAX_P95_MS: "20" }), {

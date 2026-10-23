@@ -62,7 +62,8 @@ jobs:
         if: ${{ inputs.include_authenticated }}
         run: npm run smoke:load
         env:
-          LOAD_TARGET_URL: ${{ vars.AUTHENTICATED_LOAD_TARGET_URL }}
+          LOAD_TARGET_ORIGIN: ${{ vars.API_PUBLIC_URL }}
+          LOAD_TARGET_PATH: /api/v2/vendor/orders?limit=1
           LOAD_BEARER_TOKEN: ${{ secrets.STAGING_VENDOR_TOKEN }}
           LOAD_REQUESTS: "40"
           LOAD_CONCURRENCY: "4"
