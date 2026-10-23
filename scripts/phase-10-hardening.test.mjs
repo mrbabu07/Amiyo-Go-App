@@ -24,11 +24,16 @@ test("release artifacts enforce immutable builds and non-root containers", async
   const apiDockerfile = await readFile(new URL("../apps/api/Dockerfile", import.meta.url), "utf8");
   const workerDockerfile = await readFile(new URL("../apps/worker/Dockerfile", import.meta.url), "utf8");
   const workflow = await readFile(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+  const dependabot = await readFile(new URL("../.github/dependabot.yml", import.meta.url), "utf8");
   assert.match(apiDockerfile, /USER node/);
   assert.match(apiDockerfile, /\/app\/prisma \.\/prisma/);
   assert.match(workerDockerfile, /USER node/);
   assert.match(workflow, /npm audit --audit-level=high/);
   assert.match(workflow, /docker build/);
+  assert.match(dependabot, /package-ecosystem: npm/);
+  assert.match(dependabot, /package-ecosystem: github-actions/);
+  assert.match(dependabot, /timezone: Asia\/Dhaka/);
+  assert.match(dependabot, /expo-runtime:[\s\S]*"@expo\/\*"[\s\S]*"@react-native\/\*"/);
 });
 
 test("Render blueprint deploys API and worker only after checks pass", async () => {

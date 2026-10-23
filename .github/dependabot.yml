@@ -1,0 +1,35 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "03:00"
+      timezone: Asia/Dhaka
+    target-branch: main
+    versioning-strategy: increase-if-necessary
+    open-pull-requests-limit: 5
+    groups:
+      expo-runtime:
+        patterns:
+          - "expo*"
+          - "@expo/*"
+          - "react-native*"
+          - "@react-native/*"
+      backend-runtime:
+        patterns:
+          - "@prisma/*"
+          - prisma
+          - express
+          - bullmq
+          - ioredis
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "03:30"
+      timezone: Asia/Dhaka
+    target-branch: main
+    open-pull-requests-limit: 5
