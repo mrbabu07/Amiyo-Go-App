@@ -70,7 +70,7 @@ try {
 const releaseBlocked = blockers.length > 0 || dependencyAudit.status !== "passed";
 const provenance = {
   commitSha: boundedMetadata(process.env.RELEASE_COMMIT_SHA, "RELEASE_COMMIT_SHA", /^[0-9a-f]{40}$/i),
-  environment: boundedMetadata(process.env.RELEASE_ENVIRONMENT, "RELEASE_ENVIRONMENT", /^(staging|production)$/),
+  environment: boundedMetadata(process.env.RELEASE_ENVIRONMENT, "RELEASE_ENVIRONMENT", /^(ci|staging|production)$/),
   runId: boundedMetadata(process.env.RELEASE_RUN_ID, "RELEASE_RUN_ID", /^[0-9]+$/)
 };
 const result = {

@@ -34,6 +34,10 @@ test("release artifacts enforce immutable builds and non-root containers", async
   assert.match(workflow, /npm audit --audit-level=high/);
   assert.match(workflow, /docker build/);
   assert.doesNotMatch(workflow, /uses:\s+[^\s]+@v\d+/);
+  assert.match(workflow, /RELEASE_REPORT_PATH: ci-release-readiness\.json/);
+  assert.match(workflow, /RELEASE_ENVIRONMENT: ci/);
+  assert.match(workflow, /name: ci-release-readiness-\$\{\{ github\.sha \}\}-\$\{\{ github\.run_attempt \}\}/);
+  assert.ok(workflow.indexOf("npm run export:web --workspace @amiyo/mobile") < workflow.indexOf("npm audit --audit-level=high"));
   assert.match(dependabot, /package-ecosystem: npm/);
   assert.match(dependabot, /package-ecosystem: github-actions/);
   assert.match(dependabot, /timezone: Asia\/Dhaka/);

@@ -25,9 +25,22 @@ jobs:
       - run: npm test
       - run: npm run openapi:generate && git diff --exit-code
       - run: npm run secret:scan
-      - run: npm audit --audit-level=high
       - run: npm run release:check
+        env:
+          RELEASE_REPORT_PATH: ci-release-readiness.json
+          RELEASE_COMMIT_SHA: ${{ github.sha }}
+          RELEASE_ENVIRONMENT: ci
+          RELEASE_RUN_ID: ${{ github.run_id }}
       - run: npm run export:web --workspace @amiyo/mobile
+      - run: npm audit --audit-level=high
+      - name: Upload CI release-readiness evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ci-release-readiness-${{ github.sha }}-${{ github.run_attempt }}
+          path: ci-release-readiness.json
+          if-no-files-found: ignore
+          retention-days: 30
 
   containers:
     runs-on: ubuntu-latest
