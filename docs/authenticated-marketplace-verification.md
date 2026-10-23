@@ -32,3 +32,9 @@ The first authenticated smoke rerun could not run successfully because local API
 - `npm run release:check`: reports `blocked`, 27 unresolved decisions, 16 required files checked. The command's default zero exit code is documentary mode, not release approval; set `REQUIRE_PRODUCTION_READY=true` for a failing gate when blocked.
 
 Still unverified: full browser/native purchase journeys, real provider callbacks/refunds, native camera/PDF/push acceptance, production deployment/restore and approved legacy balance reconciliation. Local smoke success does not remove these gates.
+
+## 2026-10-23 Follow-up
+
+All 32 loopback authenticated checks passed after customer and admin order-detail relations were separated into ownership-first, concurrent reads. In this run, customer order detail completed in 7,851 ms and admin order detail in 7,003 ms, down from the prior roughly 10-second observations but still above a production-quality latency target. The same run observed 1,391-7,266 ms across the remaining authenticated checks. These numbers use a local API with a remote development database and are diagnostic evidence, not staging percentiles or a capacity result.
+
+Expo SDK 57 compatibility patches were also applied and verified with `expo install --check`, mobile TypeScript, all 450 mobile tests, and a production web export. Release readiness remains blocked on external decisions and 19 dependency audit findings (16 high, 3 moderate); unsafe Expo/React Native downgrades suggested by automated audit tooling were not applied.
