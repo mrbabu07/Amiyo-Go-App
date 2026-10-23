@@ -60,7 +60,14 @@
       "@sentry/react-native",
       "expo-web-browser",
       "expo-sharing",
-      ["expo-camera", { "cameraPermission": "Allow Amiyo-Go to scan invoice and parcel QR codes.", "recordAudioAndroid": false }]
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Amiyo-Go to scan invoice and parcel QR codes.",
+          "recordAudioAndroid": false
+        }
+      ],
+      "expo-status-bar"
     ]
   }
 }
