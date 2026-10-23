@@ -26,6 +26,10 @@ jobs:
         with:
           node-version: 20
           cache: npm
+      - name: Verify production source branch
+        if: ${{ inputs.environment == 'production' }}
+        shell: bash
+        run: test "$GITHUB_REF" = "refs/heads/main"
       - run: npm ci
       - name: Verify release readiness
         run: npm run release:check
