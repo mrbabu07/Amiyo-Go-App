@@ -18,4 +18,6 @@ test("partial Firebase setup remains a production readiness blocker", async () =
   assert.match(checker, /TBD\|PARTIAL\|BLOCKED/);
   assert.match(checker, /"audit", "--omit=dev", "--json"/);
   assert.match(checker, /dependencyAudit\.status !== "passed"/);
+  assert.match(checker, /unresolvedDecisionNames/);
+  assert.match(checker, /blockingPackages/);
 });

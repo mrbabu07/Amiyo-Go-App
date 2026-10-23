@@ -26,7 +26,7 @@ Recorded 2026-08-02 for the Phase 10/handover baseline:
 - Phase 10 focused suite passed: readiness degradation, non-root/container CI contracts, Expo/EAS release profiles, and blocked-gate truthfulness.
 - Expo SDK 57 web production export passed.
 - Secret scan passed.
-- npm audit reported no critical/high findings; moderate transitive tooling findings remain visible.
+- This historical baseline is superseded by the current audit evidence below; dependency status must always be taken from a fresh `npm run release:check`.
 
 Docker is unavailable on the current workstation, so container build evidence must come from GitHub CI. Load/security, managed restore, production-scale migration, and Android/iOS device E2E evidence are still required and must be attached to the release record.
 
@@ -37,7 +37,7 @@ Docker is unavailable on the current workstation, so container build evidence mu
 - Expo web production export completed successfully. The missing Sentry organization/project warning remains an external production configuration gate.
 - Public catalog load smoke passed against the configured database through the local API: 100 requests, concurrency 10, zero failures, 717.43 requests/second, 11 ms p50, 28 ms p95, 29 ms p99, and 32 ms maximum latency after five warm-up requests.
 - Authenticated local browser verification covered the seller dashboard at 360px and desktop widths plus seller products and notifications. A bounded vendor-workspace load check used a short-lived local Firebase token entirely through process memory: 20 requests, concurrency 2, zero failures, 0.81 requests/second, 1,956 ms p50, 4,184 ms p95, and 4,185 ms maximum latency. The endpoint already runs its independent workspace reads concurrently, so production hosting must be colocated with PostgreSQL and the same authenticated check must pass against staging before release.
-- `npm audit --omit=dev` reported 16 high and 12 moderate findings in the Expo/React Native dependency graph. Expo's compatibility checks are green, but npm proposes incompatible major downgrades; do not use `npm audit fix --force`. Production approval remains blocked until a compatible upstream SDK resolution or documented security acceptance is available.
+- `npm audit --omit=dev` currently reports 16 high and 3 moderate findings in the Expo/React Native dependency graph. Expo's compatibility checks are green, but npm proposes incompatible major downgrades; do not use `npm audit fix --force`. Production approval remains blocked until a compatible upstream SDK resolution or documented security acceptance is available.
 
 ## 2026-09-01 business-rule evidence
 

@@ -10,7 +10,7 @@ The complete production Definition of Done must pass with staging/provider/devic
 - Pull-request CI for build, lint, strict type-check, tests, generated OpenAPI drift, secret scan, high dependency findings, release checks, mobile web export, and API/worker container builds.
 - Manually approved release workflow that publishes immutable SHA-tagged images and runs Prisma deploy migrations with encrypted secrets; provider-specific deployment remains pending a target decision.
 - Non-root API and worker container definitions, Expo development/staging/production build profiles, configurable load smoke tooling, and release-readiness reporting.
-- Expo SDK 57 dependency alignment removes all known critical/high npm audit findings; remaining moderate transitive tooling findings stay visible in the audit report.
+- Expo SDK 57 dependency alignment and Expo compatibility checks pass, but current npm advisories still flag the Expo/Metro/React Native build graph. The release audit remains blocking; npm's suggested incompatible Expo/React Native downgrades are not applied.
 - Incident response, backup/restore drill, release, migration cutover, and rollback procedures.
 - Authenticated delivery queue inspection/retry APIs reset the original transactional outbox event and retry the retained stable BullMQ job without creating another provider identity.
 

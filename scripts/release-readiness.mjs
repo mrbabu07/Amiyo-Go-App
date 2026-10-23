@@ -28,26 +28,41 @@ const requiredFiles = [
 
 await Promise.all(requiredFiles.map((file) => access(new URL(`../${file}`, import.meta.url))));
 const decisions = await readFile(new URL("../docs/decisions-needed.md", import.meta.url), "utf8");
-const blockers = decisions.split("\n").filter((line) => /^\|.*\| (TBD|PARTIAL|BLOCKED) \|/.test(line));
+const blockers = decisions.split("\n").flatMap((line) => {
+  if (!/^\|.*\| (TBD|PARTIAL|BLOCKED) \|/.test(line)) return [];
+  const [decision, status] = line.split("|").slice(1, 3).map((value) => value.trim());
+  return [{ decision, status }];
+});
 const root = fileURLToPath(new URL("..", import.meta.url));
 const npmCli = process.env.npm_execpath;
 const audit = npmCli
   ? spawnSync(process.execPath, [npmCli, "audit", "--omit=dev", "--json"], { cwd: root, encoding: "utf8", maxBuffer: 10 * 1024 * 1024 })
   : spawnSync("npm", ["audit", "--omit=dev", "--json"], { cwd: root, encoding: "utf8", maxBuffer: 10 * 1024 * 1024, shell: process.platform === "win32" });
-let dependencyAudit = { status: "unavailable", critical: 0, high: 0, moderate: 0, low: 0, total: 0 };
+let dependencyAudit = { status: "unavailable", critical: 0, high: 0, moderate: 0, low: 0, total: 0, blockingPackages: [] };
 try {
   const report = JSON.parse(audit.stdout);
   const vulnerabilities = report.metadata?.vulnerabilities ?? {};
+  const blockingPackages = Object.values(report.vulnerabilities ?? {})
+    .filter((finding) => finding.severity === "critical" || finding.severity === "high")
+    .map((finding) => finding.name)
+    .sort();
   dependencyAudit = {
     status: Number(vulnerabilities.critical || 0) + Number(vulnerabilities.high || 0) === 0 ? "passed" : "blocked",
     critical: Number(vulnerabilities.critical || 0),
     high: Number(vulnerabilities.high || 0),
     moderate: Number(vulnerabilities.moderate || 0),
     low: Number(vulnerabilities.low || 0),
-    total: Number(vulnerabilities.total || 0)
+    total: Number(vulnerabilities.total || 0),
+    blockingPackages
   };
 } catch {}
 const releaseBlocked = blockers.length > 0 || dependencyAudit.status !== "passed";
-const result = { status: releaseBlocked ? "blocked" : "ready", unresolvedDecisions: blockers.length, checkedFiles: requiredFiles.length, dependencyAudit };
+const result = {
+  status: releaseBlocked ? "blocked" : "ready",
+  unresolvedDecisions: blockers.length,
+  unresolvedDecisionNames: blockers,
+  checkedFiles: requiredFiles.length,
+  dependencyAudit
+};
 console.log(JSON.stringify(result, null, 2));
 if (process.env.REQUIRE_PRODUCTION_READY === "true" && releaseBlocked) process.exitCode = 1;
