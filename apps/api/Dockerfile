@@ -12,6 +12,10 @@ COPY packages/observability/package.json packages/observability/package.json
 RUN npm ci
 COPY . .
 RUN npm run prisma:generate && npm run build
+RUN rm -rf node_modules \
+    && npm ci --omit=dev --workspace @amiyo/api --include-workspace-root \
+    && npm run prisma:generate \
+    && npm cache clean --force
 
 FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS runtime
 ARG RELEASE_COMMIT_SHA=unknown

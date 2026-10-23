@@ -56,5 +56,7 @@ jobs:
           docker run --rm --entrypoint node amiyo-worker:${{ github.sha }} --check apps/worker/dist/index.js
           docker run --rm --entrypoint node amiyo-api:${{ github.sha }} -e 'if (process.getuid?.() === 0) process.exit(1)'
           docker run --rm --entrypoint node amiyo-worker:${{ github.sha }} -e 'if (process.getuid?.() === 0) process.exit(1)'
+          docker run --rm --entrypoint node amiyo-api:${{ github.sha }} -e "require.resolve('@prisma/client'); require.resolve('express'); for (const name of ['expo','firebase-tools']) { try { require.resolve(name); process.exit(1) } catch (error) { if (error.code !== 'MODULE_NOT_FOUND') throw error } }"
+          docker run --rm --entrypoint node amiyo-worker:${{ github.sha }} -e "require.resolve('@prisma/client'); require.resolve('bullmq'); for (const name of ['expo','firebase-tools']) { try { require.resolve(name); process.exit(1) } catch (error) { if (error.code !== 'MODULE_NOT_FOUND') throw error } }"
           test "$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' amiyo-api:${{ github.sha }})" = "$GITHUB_SHA"
           test "$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' amiyo-worker:${{ github.sha }})" = "$GITHUB_SHA"
