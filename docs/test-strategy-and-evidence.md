@@ -7,7 +7,7 @@
 - `npm run openapi:generate`: generated contract drift check.
 - `npm run export:web --workspace @amiyo/mobile`: Expo web production bundle.
 - `npm audit --audit-level=high`: blocks critical/high dependency findings.
-- `npm run secret:scan`: blocks committed secret patterns.
+- `npm run secret:scan`: blocks committed and untracked database credentials, private keys, Neon passwords, SSLCommerz store passwords, GitHub tokens, and AWS access keys without printing the detected value.
 - `npm run release:check`: reports unresolved production decisions and missing handover artifacts.
 - GitHub CI builds API and worker images, parses each compiled entrypoint inside its image, verifies both containers execute as non-root, and checks the embedded OCI revision equals the workflow commit SHA.
 
