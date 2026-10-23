@@ -31,6 +31,10 @@ test("release artifacts enforce immutable builds and non-root containers", async
   assert.match(apiDockerfile, /USER node/);
   assert.match(apiDockerfile, /\/app\/prisma \.\/prisma/);
   assert.match(workerDockerfile, /USER node/);
+  assert.doesNotMatch(apiDockerfile, /^FROM\s+[^\s@]+(?=\s|$)/m);
+  assert.doesNotMatch(workerDockerfile, /^FROM\s+[^\s@]+(?=\s|$)/m);
+  assert.equal((apiDockerfile.match(/node:20-alpine@sha256:[0-9a-f]{64}/g) ?? []).length, 2);
+  assert.equal((workerDockerfile.match(/node:20-alpine@sha256:[0-9a-f]{64}/g) ?? []).length, 2);
   assert.match(workflow, /npm audit --audit-level=high/);
   assert.match(workflow, /docker build/);
   assert.doesNotMatch(workflow, /uses:\s+[^\s]+@v\d+/);
@@ -40,6 +44,7 @@ test("release artifacts enforce immutable builds and non-root containers", async
   assert.ok(workflow.indexOf("npm run export:web --workspace @amiyo/mobile") < workflow.indexOf("npm audit --audit-level=high"));
   assert.match(dependabot, /package-ecosystem: npm/);
   assert.match(dependabot, /package-ecosystem: github-actions/);
+  assert.equal((dependabot.match(/package-ecosystem: docker/g) ?? []).length, 2);
   assert.match(dependabot, /timezone: Asia\/Dhaka/);
   assert.match(dependabot, /expo-runtime:[\s\S]*"@expo\/\*"[\s\S]*"@react-native\/\*"/);
   assert.match(codeowners, /^\* @mrbabu07$/m);
