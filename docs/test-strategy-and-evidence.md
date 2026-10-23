@@ -9,7 +9,7 @@
 - `npm audit --audit-level=high`: blocks critical/high dependency findings.
 - `npm run secret:scan`: blocks committed secret patterns.
 - `npm run release:check`: reports unresolved production decisions and missing handover artifacts.
-- GitHub CI builds non-root API and worker images.
+- GitHub CI builds API and worker images, parses each compiled entrypoint inside its image, verifies both containers execute as non-root, and checks the embedded OCI revision equals the workflow commit SHA.
 
 CI writes a commit/run-bound `ci-release-readiness.json` before the blocking dependency audit and uploads it even when a later gate fails. The production web export also runs before the audit, so a known advisory still fails CI without hiding independent build/export evidence.
 

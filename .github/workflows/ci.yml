@@ -47,5 +47,14 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - run: docker build -f apps/api/Dockerfile -t amiyo-api:${{ github.sha }} .
-      - run: docker build -f apps/worker/Dockerfile -t amiyo-worker:${{ github.sha }} .
+      - run: docker build --build-arg RELEASE_COMMIT_SHA=${{ github.sha }} -f apps/api/Dockerfile -t amiyo-api:${{ github.sha }} .
+      - run: docker build --build-arg RELEASE_COMMIT_SHA=${{ github.sha }} -f apps/worker/Dockerfile -t amiyo-worker:${{ github.sha }} .
+      - name: Verify container runtime contracts
+        shell: bash
+        run: |
+          docker run --rm --entrypoint node amiyo-api:${{ github.sha }} --check apps/api/dist/index.js
+          docker run --rm --entrypoint node amiyo-worker:${{ github.sha }} --check apps/worker/dist/index.js
+          docker run --rm --entrypoint node amiyo-api:${{ github.sha }} -e 'if (process.getuid?.() === 0) process.exit(1)'
+          docker run --rm --entrypoint node amiyo-worker:${{ github.sha }} -e 'if (process.getuid?.() === 0) process.exit(1)'
+          test "$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' amiyo-api:${{ github.sha }})" = "$GITHUB_SHA"
+          test "$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' amiyo-worker:${{ github.sha }})" = "$GITHUB_SHA"

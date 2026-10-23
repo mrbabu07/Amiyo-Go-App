@@ -39,6 +39,12 @@ test("release artifacts enforce immutable builds and non-root containers", async
   assert.match(workerDockerfile, /org\.opencontainers\.image\.revision=\$RELEASE_COMMIT_SHA/);
   assert.match(workflow, /npm audit --audit-level=high/);
   assert.match(workflow, /docker build/);
+  assert.equal((workflow.match(/--build-arg RELEASE_COMMIT_SHA=\$\{\{ github\.sha \}\}/g) ?? []).length, 2);
+  assert.match(workflow, /name: Verify container runtime contracts/);
+  assert.match(workflow, /node amiyo-api:\$\{\{ github\.sha \}\} --check apps\/api\/dist\/index\.js/);
+  assert.match(workflow, /node amiyo-worker:\$\{\{ github\.sha \}\} --check apps\/worker\/dist\/index\.js/);
+  assert.equal((workflow.match(/process\.getuid\?\.\(\) === 0/g) ?? []).length, 2);
+  assert.equal((workflow.match(/org\.opencontainers\.image\.revision/g) ?? []).length, 2);
   assert.doesNotMatch(workflow, /uses:\s+[^\s]+@v\d+/);
   assert.match(workflow, /RELEASE_REPORT_PATH: ci-release-readiness\.json/);
   assert.match(workflow, /RELEASE_ENVIRONMENT: ci/);
