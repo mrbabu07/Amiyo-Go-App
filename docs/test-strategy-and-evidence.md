@@ -39,6 +39,13 @@ Docker is unavailable on the current workstation, so container build evidence mu
 - Authenticated local browser verification covered the seller dashboard at 360px and desktop widths plus seller products and notifications. A bounded vendor-workspace load check used a short-lived local Firebase token entirely through process memory: 20 requests, concurrency 2, zero failures, 0.81 requests/second, 1,956 ms p50, 4,184 ms p95, and 4,185 ms maximum latency. The endpoint already runs its independent workspace reads concurrently, so production hosting must be colocated with PostgreSQL and the same authenticated check must pass against staging before release.
 - `npm audit --omit=dev` currently reports 16 high and 3 moderate findings in the Expo/React Native dependency graph. Expo's compatibility checks are green, but npm proposes incompatible major downgrades; do not use `npm audit fix --force`. Production approval remains blocked until a compatible upstream SDK resolution or documented security acceptance is available.
 
+## 2026-10-23 supply-chain hardening regression
+
+- Full `npm test` passed after release-readiness evidence, mandatory authenticated staging smoke, deployment guards, immutable image manifests, least-privilege workflow permissions, Dependabot/CODEOWNERS controls, security reporting and commit-pinned GitHub Actions were integrated.
+- The run passed 1,007 tests: 285 API, 450 mobile, 41 worker, 10 config, 75 contracts, 28 domain, 2 migration, 2 observability and 114 repository acceptance/integration checks.
+- PostgreSQL-backed migration, constraint, concurrency, inventory reservation, checkout idempotency, payment replay, delivery restart, finance, chat, notifications, loyalty, restore reconciliation and wishlist migration checks all executed successfully.
+- This local result verifies repository regression only. It does not replace remote GitHub Actions, container-build, staging provider/load, restore-drill or real-device evidence, and it does not clear the current dependency or decision gates.
+
 ## 2026-09-01 business-rule evidence
 
 - Full `npm test` repository gate passed, including API, worker, contracts, domain, migration, PostgreSQL constraints/concurrency, and reference-parity source contracts.
