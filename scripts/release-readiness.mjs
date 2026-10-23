@@ -1,4 +1,4 @@
-import { access, readFile } from "node:fs/promises";
+import { access, readFile, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -65,4 +65,7 @@ const result = {
   dependencyAudit
 };
 console.log(JSON.stringify(result, null, 2));
+if (process.env.RELEASE_REPORT_PATH?.trim()) {
+  await writeFile(process.env.RELEASE_REPORT_PATH.trim(), `${JSON.stringify(result, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
+}
 if (process.env.REQUIRE_PRODUCTION_READY === "true" && releaseBlocked) process.exitCode = 1;

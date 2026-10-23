@@ -48,6 +48,8 @@ test("deploy workflow validates environment before publishing images", async () 
   assert.match(workflow, /name: Verify production source branch[\s\S]*inputs\.environment == 'production'[\s\S]*test "\$GITHUB_REF" = "refs\/heads\/main"/);
   assert.match(workflow, /name: Verify release readiness[\s\S]*npm run release:check/);
   assert.match(workflow, /REQUIRE_PRODUCTION_READY: \$\{\{ inputs\.environment == 'production' && 'true' \|\| 'false' \}\}/);
+  assert.match(workflow, /RELEASE_REPORT_PATH: release-readiness\.json/);
+  assert.match(workflow, /name: release-readiness-\$\{\{ inputs\.environment \}\}-\$\{\{ github\.sha \}\}-\$\{\{ github\.run_attempt \}\}/);
   assert.match(workflow, /npm run release:deploy-env/);
   assert.match(workflow, /needs: preflight/);
   assert.match(workflow, /group: deploy-\$\{\{ inputs\.environment \}\}/);
