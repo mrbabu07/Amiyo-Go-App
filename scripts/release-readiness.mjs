@@ -46,28 +46,38 @@ const blockers = decisions.split("\n").flatMap((line) => {
 });
 const root = fileURLToPath(new URL("..", import.meta.url));
 const npmCli = process.env.npm_execpath;
-const audit = npmCli
-  ? spawnSync(process.execPath, [npmCli, "audit", "--omit=dev", "--json"], { cwd: root, encoding: "utf8", maxBuffer: 10 * 1024 * 1024 })
-  : spawnSync("npm", ["audit", "--omit=dev", "--json"], { cwd: root, encoding: "utf8", maxBuffer: 10 * 1024 * 1024, shell: process.platform === "win32" });
-let dependencyAudit = { status: "unavailable", critical: 0, high: 0, moderate: 0, low: 0, total: 0, blockingPackages: [] };
-try {
-  const report = JSON.parse(audit.stdout);
-  const vulnerabilities = report.metadata?.vulnerabilities ?? {};
-  const blockingPackages = Object.values(report.vulnerabilities ?? {})
-    .filter((finding) => finding.severity === "critical" || finding.severity === "high")
-    .map((finding) => finding.name)
-    .sort();
-  dependencyAudit = {
-    status: Number(vulnerabilities.critical || 0) + Number(vulnerabilities.high || 0) === 0 ? "passed" : "blocked",
-    critical: Number(vulnerabilities.critical || 0),
-    high: Number(vulnerabilities.high || 0),
-    moderate: Number(vulnerabilities.moderate || 0),
-    low: Number(vulnerabilities.low || 0),
-    total: Number(vulnerabilities.total || 0),
-    blockingPackages
-  };
-} catch {}
-const releaseBlocked = blockers.length > 0 || dependencyAudit.status !== "passed";
+const unavailableAudit = () => ({ status: "unavailable", critical: 0, high: 0, moderate: 0, low: 0, total: 0, blockingPackages: [] });
+const runAudit = (workspace) => {
+  const args = ["audit", "--omit=dev", ...(workspace ? ["--workspace", workspace] : []), "--json"];
+  const audit = npmCli
+    ? spawnSync(process.execPath, [npmCli, ...args], { cwd: root, encoding: "utf8", maxBuffer: 10 * 1024 * 1024 })
+    : spawnSync("npm", args, { cwd: root, encoding: "utf8", maxBuffer: 10 * 1024 * 1024, shell: process.platform === "win32" });
+  try {
+    const report = JSON.parse(audit.stdout);
+    const vulnerabilities = report.metadata?.vulnerabilities ?? {};
+    const blockingPackages = Object.values(report.vulnerabilities ?? {})
+      .filter((finding) => finding.severity === "critical" || finding.severity === "high")
+      .map((finding) => finding.name)
+      .sort();
+    return {
+      status: Number(vulnerabilities.critical || 0) + Number(vulnerabilities.high || 0) === 0 ? "passed" : "blocked",
+      critical: Number(vulnerabilities.critical || 0),
+      high: Number(vulnerabilities.high || 0),
+      moderate: Number(vulnerabilities.moderate || 0),
+      low: Number(vulnerabilities.low || 0),
+      total: Number(vulnerabilities.total || 0),
+      blockingPackages
+    };
+  } catch {
+    return unavailableAudit();
+  }
+};
+const dependencyAudit = runAudit();
+const runtimeDependencyAudits = {
+  api: runAudit("@amiyo/api"),
+  worker: runAudit("@amiyo/worker")
+};
+const releaseBlocked = blockers.length > 0 || dependencyAudit.status !== "passed" || Object.values(runtimeDependencyAudits).some((audit) => audit.status !== "passed");
 const provenance = {
   commitSha: boundedMetadata(process.env.RELEASE_COMMIT_SHA, "RELEASE_COMMIT_SHA", /^[0-9a-f]{40}$/i),
   environment: boundedMetadata(process.env.RELEASE_ENVIRONMENT, "RELEASE_ENVIRONMENT", /^(ci|staging|production)$/),
@@ -81,7 +91,8 @@ const result = {
   unresolvedDecisions: blockers.length,
   unresolvedDecisionNames: blockers,
   checkedFiles: requiredFiles.length,
-  dependencyAudit
+  dependencyAudit,
+  runtimeDependencyAudits
 };
 console.log(JSON.stringify(result, null, 2));
 if (process.env.RELEASE_REPORT_PATH?.trim()) {
