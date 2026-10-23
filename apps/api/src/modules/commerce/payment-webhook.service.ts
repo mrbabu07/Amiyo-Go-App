@@ -4,6 +4,7 @@ import { z } from "zod";
 import { withSerializableTransaction } from "../../infrastructure/database/transaction.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
 import { OutboxRepository } from "../outbox/outbox.repository.js";
+import { consumeOrderReservations, releaseOrderReservations } from "./inventory-reservation.js";
 
 const eventSchema = z.object({ eventId: z.string().min(1).max(200), paymentId: z.string().uuid(), status: z.enum(["CAPTURED", "FAILED", "CANCELLED"]), transactionId: z.string().min(1).max(200).optional(), amountMinor: z.string().regex(/^\d+$/) });
 
@@ -27,8 +28,15 @@ export class PaymentWebhookService {
       if (payment.status !== "CAPTURED") {
         await transaction.payment.update({ where: { id: payment.id }, data: { status: event.status as PaymentStatus, ...(event.transactionId ? { providerTransactionId: event.transactionId } : {}), version: { increment: 1 } } });
         if (event.status === "CAPTURED" && payment.order.status === "PENDING_PAYMENT") {
+          await consumeOrderReservations(transaction, payment.orderId);
           await transaction.order.update({ where: { id: payment.orderId }, data: { status: "CONFIRMED", version: { increment: 1 } } });
           await transaction.orderStatusEvent.create({ data: { orderId: payment.orderId, fromStatus: "PENDING_PAYMENT", toStatus: "CONFIRMED", actorType: "payment_provider" } });
+        } else if (["FAILED", "CANCELLED"].includes(event.status) && payment.order.status === "PENDING_PAYMENT") {
+          const reservations = await transaction.inventoryReservation.findMany({ where: { orderId: payment.orderId, status: "ACTIVE" }, select: { id: true, variantId: true, quantity: true, status: true } });
+          await releaseOrderReservations(transaction, payment.orderId, reservations);
+          await transaction.vendorOrder.updateMany({ where: { orderId: payment.orderId }, data: { status: "CANCELLED", version: { increment: 1 } } });
+          await transaction.order.update({ where: { id: payment.orderId }, data: { status: "CANCELLED", version: { increment: 1 } } });
+          await transaction.orderStatusEvent.create({ data: { orderId: payment.orderId, fromStatus: "PENDING_PAYMENT", toStatus: "CANCELLED", actorType: "payment_provider", reason: `Payment ${event.status.toLowerCase()}` } });
         }
         await this.outbox.enqueue(transaction, { aggregateType: "payment", aggregateId: payment.id, eventType: `payment.${event.status.toLowerCase()}`, idempotencyKey: `payment-webhook:${provider}:${event.eventId}`, payload: { paymentId: payment.id, orderId: payment.orderId, status: event.status } });
       }

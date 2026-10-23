@@ -29,7 +29,7 @@ test("customers can cancel their own order with order read access inside 30 minu
   const { client, calls } = clientFor({ id: orderId, userId, status: "CONFIRMED", version: 2, placedAt: new Date(Date.now() - 5 * 60_000), createdAt: new Date(Date.now() - 5 * 60_000), vendorOrders: [{ status: "PLACED" }], payments: [], reservations: [] });
   const result = await new OperationsService(client).cancelOrder(customer, orderId, { reason: "Changed my mind", expectedVersion: 2 }, key);
   assert.deepEqual(result, { id: orderId, status: "CANCELLED", version: 3 });
-  assert.deepEqual(calls, ["reservations", "vendor-orders", "order", "outbox", "audit", "idempotency"]);
+  assert.deepEqual(calls, ["vendor-orders", "order", "outbox", "audit", "idempotency"]);
 });
 
 test("customer cancellation expires 30 minutes after placement", async () => {

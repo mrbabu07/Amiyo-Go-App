@@ -23,11 +23,12 @@ function replayClient(kind: "cancel" | "return", now: number) {
       }
     },
     order: {
-      findFirst: async ({ where }: { where: { userId: string } }) => completed || where.userId !== "customer" ? null : { id: "order", version: 2, status: "CONFIRMED", placedAt: new Date(now), createdAt: new Date(now), vendorOrders: [{ status: "PLACED" }], payments: [{ id: "payment", status: "CAPTURED", amountMinor: 500n, refundedMinor: 0n, currency: "BDT" }], reservations: [{ id: "reservation", variantId: "variant", quantity: 2 }] },
+      findFirst: async ({ where }: { where: { userId: string } }) => completed || where.userId !== "customer" ? null : { id: "order", version: 2, status: "CONFIRMED", placedAt: new Date(now), createdAt: new Date(now), vendorOrders: [{ status: "PLACED" }], payments: [{ id: "payment", status: "CAPTURED", amountMinor: 500n, refundedMinor: 0n, currency: "BDT" }], reservations: [{ id: "reservation", variantId: "variant", quantity: 2, status: "CONSUMED" }] },
       update: async () => { write("order"); }
     },
-    inventoryItem: { findUniqueOrThrow: async () => ({ id: "inventory" }), update: async () => { write("inventory-release"); } },
-    inventoryReservation: { updateMany: async () => { write("reservation-release"); } },
+    $queryRaw: async () => [],
+    inventoryItem: { findUnique: async () => ({ id: "inventory", onHand: 3, reserved: 0 }), update: async () => { write("inventory-release"); } },
+    inventoryReservation: { updateMany: async () => { write("reservation-release"); return { count: 1 }; } },
     vendorOrder: {
       updateMany: async () => { write("packages-cancelled"); },
       findFirst: async ({ where }: { where: { order: { userId: string }; status: string } }) => {
