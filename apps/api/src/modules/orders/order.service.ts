@@ -324,15 +324,21 @@ export class OrderService {
   async customerOrder(session: Session, id: string) {
     const order = await this.client.order.findFirst({ where: { id, userId: session.principal.userId }, include: { user: { include: { profile: true } } } });
     if (!order) throw new ApiProblem(404, "ORDER_NOT_FOUND", "Order not found");
-    const [addresses, payments, vendorOrders, policy] = await Promise.all([
+    const [addresses, payments, vendorOrderRows, items, shipments, policy] = await Promise.all([
       this.client.orderAddress.findMany({ where: { orderId: id } }),
       this.client.payment.findMany({ where: { orderId: id }, orderBy: { createdAt: "desc" }, take: 1, include: { attempts: { orderBy: { attemptNumber: "desc" }, take: 1 } } }),
-      this.client.vendorOrder.findMany({ where: { orderId: id }, include: { vendor: true, shop: true, items: { include: { returnItems: { where: { returnRequest: { status: { notIn: ["REJECTED", "CLOSED"] } } }, select: { quantity: true } }, product: { select: { media: { orderBy: { displayOrder: "asc" }, take: 1, select: { storageKey: true } } } } } }, shipments: { take: 1, orderBy: { createdAt: "desc" } } } }),
+      this.client.vendorOrder.findMany({ where: { orderId: id }, select: { id: true, vendorId: true, shopId: true, status: true, subtotalMinor: true, discountMinor: true, deliveryMinor: true, totalMinor: true, commissionMinor: true, version: true, vendor: { select: { displayName: true } }, shop: { select: { name: true } } }, orderBy: { createdAt: "asc" } }),
+      this.client.orderItem.findMany({ where: { orderId: id }, include: { returnItems: { where: { returnRequest: { status: { notIn: ["REJECTED", "CLOSED"] } } }, select: { quantity: true } }, product: { select: { media: { orderBy: { displayOrder: "asc" }, take: 1, select: { storageKey: true } } } } }, orderBy: { id: "asc" } }),
+      this.client.shipment.findMany({ where: { vendorOrder: { orderId: id } }, select: { vendorOrderId: true, status: true, provider: true, trackingNumber: true, deliveredAt: true } }),
       loadReturnPolicy(this.client).catch((error: unknown) => {
         if (error instanceof ApiProblem && error.code === "RETURN_POLICY_INVALID") return null;
         throw error;
       })
     ]);
+    const itemsByPackage = new Map<string, typeof items>();
+    for (const item of items) itemsByPackage.set(item.vendorOrderId, [...(itemsByPackage.get(item.vendorOrderId) ?? []), item]);
+    const shipmentByPackage = new Map(shipments.map((shipment) => [shipment.vendorOrderId, shipment]));
+    const vendorOrders = vendorOrderRows.map((vendor) => ({ ...vendor, items: itemsByPackage.get(vendor.id) ?? [], shipments: shipmentByPackage.has(vendor.id) ? [shipmentByPackage.get(vendor.id)!] : [] }));
     const now = Date.now();
     const eligibility = (vendor: typeof vendorOrders[number]) => {
       const window = policy ? returnWindow({ deadline: order.returnWindowUntil, deliveredAt: vendor.shipments[0]?.deliveredAt ?? null, policy, now }) : { deadline: null, reason: "POLICY_UNAVAILABLE" as const };

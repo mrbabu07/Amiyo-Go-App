@@ -12,7 +12,9 @@ for (const image of ["https://images.example.test/product.jpg", null]) {
       order: { findFirst: async (query: any) => { assert.deepEqual(query.where, { id: "order", userId: "buyer" }); assert.deepEqual(Object.keys(query.include), ["user"]); return { id: "order", orderNumber: "AG-1", status: "CONFIRMED", currency: "BDT", subtotalMinor: 100n, discountMinor: 0n, deliveryMinor: 0n, taxMinor: 0n, totalMinor: 100n, version: 1, createdAt: new Date(), user: null }; } },
       orderAddress: { findMany: async (query: any) => { assert.deepEqual(query.where, { orderId: "order" }); return []; } },
       payment: { findMany: async (query: any) => { assert.deepEqual(query.where, { orderId: "order" }); assert.equal(query.take, 1); return []; } },
-      vendorOrder: { findMany: async (query: any) => { assert.deepEqual(query.where, { orderId: "order" }); assert.equal(query.include.items.include.product.select.media.take, 1); assert.deepEqual(query.include.items.include.returnItems.where, { returnRequest: { status: { notIn: ["REJECTED", "CLOSED"] } } }); return [{ id: "package", status: "DELIVERED", vendor: { displayName: "Seller" }, shop: { name: "Shop" }, shipments: [], subtotalMinor: 100n, discountMinor: 0n, deliveryMinor: 0n, totalMinor: 100n, commissionMinor: 6n, items: [{ id: "item", productNameSnapshot: "Purchased name", skuSnapshot: "SKU", currency: "BDT", unitPriceMinor: 100n, discountMinor: 0n, lineTotalMinor: 100n, quantity: 3, returnItems: image ? [{ quantity: 1 }, { quantity: 1 }] : [], product: { media: image ? [{ storageKey: image }] : [] } }] }]; } }
+      vendorOrder: { findMany: async (query: any) => { assert.deepEqual(query.where, { orderId: "order" }); assert.equal(query.select.items, undefined); return [{ id: "package", vendorId: "vendor", shopId: "shop", status: "DELIVERED", vendor: { displayName: "Seller" }, shop: { name: "Shop" }, subtotalMinor: 100n, discountMinor: 0n, deliveryMinor: 0n, totalMinor: 100n, commissionMinor: 6n, version: 1 }]; } },
+      orderItem: { findMany: async (query: any) => { assert.deepEqual(query.where, { orderId: "order" }); assert.equal(query.include.product.select.media.take, 1); assert.deepEqual(query.include.returnItems.where, { returnRequest: { status: { notIn: ["REJECTED", "CLOSED"] } } }); return [{ id: "item", vendorOrderId: "package", productId: "product", variantId: "variant", productNameSnapshot: "Purchased name", skuSnapshot: "SKU", attributesSnapshot: null, currency: "BDT", unitPriceMinor: 100n, discountMinor: 0n, lineTotalMinor: 100n, quantity: 3, returnItems: image ? [{ quantity: 1 }, { quantity: 1 }] : [], product: { media: image ? [{ storageKey: image }] : [] } }]; } },
+      shipment: { findMany: async () => [] }
     };
     const result = await new OrderService(client as never).customerOrder(session, "order");
     const item = result.vendorOrders[0]?.items[0];
@@ -44,7 +46,9 @@ test("customer packages expose the configured deadline, extension, evidence and 
     order: { findFirst: async () => ({ id: "order", createdAt: deliveredAt, returnWindowUntil, currency: "BDT", subtotalMinor: 100n, discountMinor: 0n, deliveryMinor: 0n, taxMinor: 0n, totalMinor: 100n, user: null }) },
     orderAddress: { findMany: async () => [] },
     payment: { findMany: async () => [] },
-    vendorOrder: { findMany: async () => [{ id: "package", status, vendor: { displayName: "Seller" }, shop: { name: "Shop" }, shipments: [{ deliveredAt }], subtotalMinor: 100n, discountMinor: 0n, deliveryMinor: 0n, totalMinor: 100n, commissionMinor: 0n, items: [{ quantity: 1, returnItems: [{ quantity: returned }], currency: "BDT", unitPriceMinor: 100n, discountMinor: 0n, lineTotalMinor: 100n }] }] }
+    vendorOrder: { findMany: async () => [{ id: "package", vendorId: "vendor", shopId: "shop", status, vendor: { displayName: "Seller" }, shop: { name: "Shop" }, subtotalMinor: 100n, discountMinor: 0n, deliveryMinor: 0n, totalMinor: 100n, commissionMinor: 0n, version: 1 }] },
+    orderItem: { findMany: async () => [{ id: "item", vendorOrderId: "package", productId: "product", variantId: "variant", productNameSnapshot: "Item", skuSnapshot: "SKU", attributesSnapshot: null, quantity: 1, returnItems: [{ quantity: returned }], product: { media: [] }, currency: "BDT", unitPriceMinor: 100n, discountMinor: 0n, lineTotalMinor: 100n }] },
+    shipment: { findMany: async () => [{ vendorOrderId: "package", deliveredAt, status: "DELIVERED", provider: "courier", trackingNumber: "TRACK" }] }
   };
   const read = async () => (await new OrderService(client as never).customerOrder(session, "order")).vendorOrders[0]?.returnEligibility;
   assert.deepEqual(await read(), { deadline: new Date(deliveredAt.getTime() + 3 * 86400000).toISOString(), reason: "AVAILABLE", requireEvidence: false });
@@ -65,14 +69,16 @@ test("customer order loads independent relations concurrently after ownership", 
   let started = 0;
   let release!: () => void;
   const barrier = new Promise<void>((resolve) => { release = resolve; });
-  const relation = async (value: unknown) => { started += 1; if (started === 4) release(); await barrier; return value; };
+  const relation = async (value: unknown) => { started += 1; if (started === 6) release(); await barrier; return value; };
   const client = {
     order: { findFirst: async () => ({ id: "order", orderNumber: "AG-1", status: "CONFIRMED", currency: "BDT", subtotalMinor: 0n, discountMinor: 0n, deliveryMinor: 0n, taxMinor: 0n, totalMinor: 0n, version: 1, createdAt: new Date(), user: null }) },
     orderAddress: { findMany: async () => relation([]) },
     payment: { findMany: async () => relation([]) },
     vendorOrder: { findMany: async () => relation([]) },
+    orderItem: { findMany: async () => relation([]) },
+    shipment: { findMany: async () => relation([]) },
     platformConfiguration: { findUnique: async () => relation(null) }
   };
   await new OrderService(client as never).customerOrder(session, "order");
-  assert.equal(started, 4);
+  assert.equal(started, 6);
 });
