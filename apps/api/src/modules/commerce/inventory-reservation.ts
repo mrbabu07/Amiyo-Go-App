@@ -20,6 +20,7 @@ export async function consumeOrderReservations(transaction: Prisma.TransactionCl
     const changed = await transaction.inventoryReservation.updateMany({ where: { id: reservation.id, status: "ACTIVE" }, data: { status: "CONSUMED" } });
     if (!changed.count) throw new ApiProblem(409, "INVENTORY_RESERVATION_CHANGED", "Inventory reservation changed during payment confirmation");
   }
+  return reservations.length;
 }
 
 export async function releaseOrderReservations(transaction: Prisma.TransactionClient, orderId: string, reservations: Reservation[]) {

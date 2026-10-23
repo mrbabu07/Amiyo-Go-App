@@ -49,12 +49,30 @@ test("failed payment cancels the order and releases its inventory hold", async (
   assert.equal(state.reservationStatus, "RELEASED");
 });
 
-function webhookClient(eventStatus: "CAPTURED" | "FAILED") {
+test("late capture keeps a cancelled order closed and opens finance reconciliation", async () => {
+  const state = webhookClient("CAPTURED", "CANCELLED");
+  const service = new PaymentWebhookService(state.client as PrismaClient);
+
+  await service.process("sandbox", {
+    eventId: "late-capture-1",
+    paymentId,
+    status: "CAPTURED",
+    transactionId: "provider-late-1",
+    amountMinor: "1000"
+  });
+
+  assert.equal(state.orderStatus, "CANCELLED");
+  assert.deepEqual(state.verifications, [{ paymentId, status: "reconciliation_required", transactionRef: "provider-late-1" }]);
+  assert.deepEqual(state.inventoryWrites, []);
+});
+
+function webhookClient(eventStatus: "CAPTURED" | "FAILED", orderStatus = "PENDING_PAYMENT") {
   const state = {
-    orderStatus: "PENDING_PAYMENT",
+    orderStatus,
     vendorOrderStatus: "PLACED",
     reservationStatus: "ACTIVE",
     inventoryWrites: [] as unknown[],
+    verifications: [] as unknown[],
     client: {} as unknown
   };
   const transaction = {
@@ -65,9 +83,10 @@ function webhookClient(eventStatus: "CAPTURED" | "FAILED") {
       update: async () => undefined
     },
     payment: {
-      findUnique: async () => ({ id: paymentId, orderId: "order", amountMinor: 1000n, status: "REQUIRES_ACTION", order: { status: "PENDING_PAYMENT" } }),
+      findUnique: async () => ({ id: paymentId, orderId: "order", amountMinor: 1000n, status: "REQUIRES_ACTION", order: { status: orderStatus } }),
       update: async () => undefined
     },
+    paymentVerification: { create: async ({ data }: { data: unknown }) => { state.verifications.push(data); } },
     inventoryReservation: {
       findMany: async () => [{ id: "reservation", variantId: "variant", quantity: 2, status: "ACTIVE" }],
       updateMany: async ({ data }: { data: { status: string } }) => { state.reservationStatus = data.status; return { count: 1 }; }

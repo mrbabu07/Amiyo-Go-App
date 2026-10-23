@@ -28,9 +28,15 @@ export class PaymentWebhookService {
       if (payment.status !== "CAPTURED") {
         await transaction.payment.update({ where: { id: payment.id }, data: { status: event.status as PaymentStatus, ...(event.transactionId ? { providerTransactionId: event.transactionId } : {}), version: { increment: 1 } } });
         if (event.status === "CAPTURED" && payment.order.status === "PENDING_PAYMENT") {
-          await consumeOrderReservations(transaction, payment.orderId);
-          await transaction.order.update({ where: { id: payment.orderId }, data: { status: "CONFIRMED", version: { increment: 1 } } });
-          await transaction.orderStatusEvent.create({ data: { orderId: payment.orderId, fromStatus: "PENDING_PAYMENT", toStatus: "CONFIRMED", actorType: "payment_provider" } });
+          const consumed = await consumeOrderReservations(transaction, payment.orderId);
+          if (consumed) {
+            await transaction.order.update({ where: { id: payment.orderId }, data: { status: "CONFIRMED", version: { increment: 1 } } });
+            await transaction.orderStatusEvent.create({ data: { orderId: payment.orderId, fromStatus: "PENDING_PAYMENT", toStatus: "CONFIRMED", actorType: "payment_provider" } });
+          } else {
+            await transaction.paymentVerification.create({ data: { paymentId: payment.id, status: "reconciliation_required", transactionRef: event.transactionId ?? `capture:${provider}:${event.eventId}` } });
+          }
+        } else if (event.status === "CAPTURED" && payment.order.status === "CANCELLED") {
+          await transaction.paymentVerification.create({ data: { paymentId: payment.id, status: "reconciliation_required", transactionRef: event.transactionId ?? `late-capture:${provider}:${event.eventId}` } });
         } else if (["FAILED", "CANCELLED"].includes(event.status) && payment.order.status === "PENDING_PAYMENT") {
           const reservations = await transaction.inventoryReservation.findMany({ where: { orderId: payment.orderId, status: "ACTIVE" }, select: { id: true, variantId: true, quantity: true, status: true } });
           await releaseOrderReservations(transaction, payment.orderId, reservations);
