@@ -36,6 +36,9 @@ jobs:
         env:
           REQUIRE_PRODUCTION_READY: ${{ inputs.environment == 'production' && 'true' || 'false' }}
           RELEASE_REPORT_PATH: release-readiness.json
+          RELEASE_COMMIT_SHA: ${{ github.sha }}
+          RELEASE_ENVIRONMENT: ${{ inputs.environment }}
+          RELEASE_RUN_ID: ${{ github.run_id }}
       - name: Upload release-readiness evidence
         if: always()
         uses: actions/upload-artifact@v4

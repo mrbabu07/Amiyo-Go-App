@@ -22,4 +22,6 @@ test("partial Firebase setup remains a production readiness blocker", async () =
   assert.match(checker, /blockingPackages/);
   assert.match(checker, /RELEASE_REPORT_PATH/);
   assert.match(checker, /flag: "wx"/);
+  assert.match(checker, /schemaVersion: 1/);
+  assert.match(checker, /commitSha: boundedMetadata/);
 });

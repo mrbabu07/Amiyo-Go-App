@@ -26,6 +26,13 @@ const requiredFiles = [
   "docs/known-limitations.md"
 ];
 
+const boundedMetadata = (value, name, pattern) => {
+  const normalized = value?.trim();
+  if (!normalized) return null;
+  if (normalized.length > 200 || /[\r\n]/.test(normalized) || !pattern.test(normalized)) throw new Error(`${name} is invalid`);
+  return normalized;
+};
+
 await Promise.all(requiredFiles.map((file) => access(new URL(`../${file}`, import.meta.url))));
 const decisions = await readFile(new URL("../docs/decisions-needed.md", import.meta.url), "utf8");
 const blockers = decisions.split("\n").flatMap((line) => {
@@ -57,7 +64,15 @@ try {
   };
 } catch {}
 const releaseBlocked = blockers.length > 0 || dependencyAudit.status !== "passed";
+const provenance = {
+  commitSha: boundedMetadata(process.env.RELEASE_COMMIT_SHA, "RELEASE_COMMIT_SHA", /^[0-9a-f]{40}$/i),
+  environment: boundedMetadata(process.env.RELEASE_ENVIRONMENT, "RELEASE_ENVIRONMENT", /^(staging|production)$/),
+  runId: boundedMetadata(process.env.RELEASE_RUN_ID, "RELEASE_RUN_ID", /^[0-9]+$/)
+};
 const result = {
+  schemaVersion: 1,
+  measuredAt: new Date().toISOString(),
+  provenance,
   status: releaseBlocked ? "blocked" : "ready",
   unresolvedDecisions: blockers.length,
   unresolvedDecisionNames: blockers,
