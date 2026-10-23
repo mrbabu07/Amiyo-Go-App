@@ -12,6 +12,10 @@ test("admin order detail and refunds keep monetary values exact", () => {
   assert.match(refund, /minorToMajorInput\(remaining\)/);
   assert.match(refund, /parseMajorToMinor\(amount\)/);
   assert.match(refund, /formatMinor\(minor\)/);
+  assert.match(refund, /\["admin", "settings", userId\]/);
+  assert.match(refund, /policy\.allowPartial \|\| amountMinor === remaining/);
+  assert.match(refund, /policy\.requireProviderReference \|\| providerRefundId\.trim\(\)\.length >= 2/);
+  assert.match(refund, /providerRefundId\.trim\(\) \|\| null/);
   assert.doesNotMatch(refund, /Number\(remaining\)/);
   assert.doesNotMatch(refund, /Math\.round\(parsed \* 100\)/);
 });
