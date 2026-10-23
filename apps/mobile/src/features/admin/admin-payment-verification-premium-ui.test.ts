@@ -10,4 +10,7 @@ test("admin payment verification uses a premium responsive evidence desk", async
   assert.match(source, /Verification queue is clear/);
   assert.match(source, /shadowColor: colors\.navy/);
   assert.match(source, /accessAdminPaymentEvidence/);
+  assert.match(source, /reconciliation_required/);
+  assert.match(source, /Captured payment needs finance reconciliation/);
+  assert.match(source, /Open refund workspace/);
 });
