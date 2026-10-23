@@ -254,13 +254,19 @@ export class AdminService {
     requireAdmin(session);
     const order = await this.client.order.findUnique({ where: { id }, include: { user: { include: { profile: true } } } });
     if (!order) throw new ApiProblem(404, "ORDER_NOT_FOUND", "Order not found");
-    const [addresses, payments, invoice, statusEvents, vendorOrders] = await Promise.all([
+    const [addresses, payments, invoice, statusEvents, vendorOrderRows, items, shipments] = await Promise.all([
       this.client.orderAddress.findMany({ where: { orderId: id } }),
       this.client.payment.findMany({ where: { orderId: id }, orderBy: { createdAt: "desc" }, take: 1 }),
       this.client.invoice.findUnique({ where: { orderId: id } }),
       this.client.orderStatusEvent.findMany({ where: { orderId: id }, orderBy: { createdAt: "asc" } }),
-      this.client.vendorOrder.findMany({ where: { orderId: id }, include: { vendor: true, shop: true, items: { include: { product: { select: { media: { orderBy: { displayOrder: "asc" }, take: 1 } } } } }, shipments: { orderBy: { createdAt: "desc" }, take: 1 } } })
+      this.client.vendorOrder.findMany({ where: { orderId: id }, select: { id: true, vendorId: true, status: true, version: true, subtotalMinor: true, discountMinor: true, deliveryMinor: true, totalMinor: true, commissionMinor: true, vendor: { select: { displayName: true } }, shop: { select: { name: true } } }, orderBy: { createdAt: "asc" } }),
+      this.client.orderItem.findMany({ where: { orderId: id }, select: { id: true, vendorOrderId: true, productNameSnapshot: true, skuSnapshot: true, quantity: true, unitPriceMinor: true, lineTotalMinor: true, currency: true, product: { select: { media: { orderBy: { displayOrder: "asc" }, take: 1, select: { storageKey: true } } } } }, orderBy: { id: "asc" } }),
+      this.client.shipment.findMany({ where: { vendorOrder: { orderId: id } }, select: { vendorOrderId: true, status: true, provider: true, trackingNumber: true } })
     ]);
+    const itemsByPackage = new Map<string, typeof items>();
+    for (const item of items) itemsByPackage.set(item.vendorOrderId, [...(itemsByPackage.get(item.vendorOrderId) ?? []), item]);
+    const shipmentByPackage = new Map(shipments.map((shipment) => [shipment.vendorOrderId, shipment]));
+    const vendorOrders = vendorOrderRows.map((vendorOrder) => ({ ...vendorOrder, items: itemsByPackage.get(vendorOrder.id) ?? [], shipments: shipmentByPackage.has(vendorOrder.id) ? [shipmentByPackage.get(vendorOrder.id)!] : [] }));
     const payment = payments[0];
     const deliveryAddress = addresses.find((address) => address.type === "delivery") ?? null;
     const invoiceQr = invoice ? buildInvoiceQrPayload({ invoiceId: invoice.id, invoiceNumber: invoice.number, orderId: order.id, orderNumber: order.orderNumber, totalMinor: order.totalMinor.toString(), currency: order.currency, issuedAt: invoice.issuedAt.toISOString() }) : null;
