@@ -58,6 +58,19 @@ jobs:
           STAGING_ADMIN_TOKEN: ${{ secrets.STAGING_ADMIN_TOKEN }}
           SMOKE_MAX_P95_MS: "2500"
           SMOKE_REPORT_PATH: staging-authenticated-smoke.json
+      - name: Bounded authenticated seller load smoke
+        if: ${{ inputs.include_authenticated }}
+        run: npm run smoke:load
+        env:
+          LOAD_TARGET_URL: ${{ vars.AUTHENTICATED_LOAD_TARGET_URL }}
+          LOAD_BEARER_TOKEN: ${{ secrets.STAGING_VENDOR_TOKEN }}
+          LOAD_REQUESTS: "40"
+          LOAD_CONCURRENCY: "4"
+          LOAD_WARMUP_REQUESTS: "4"
+          LOAD_TIMEOUT_MS: "20000"
+          LOAD_MAX_FAILURE_RATE: "0"
+          LOAD_MAX_P95_MS: "2500"
+          LOAD_REPORT_PATH: staging-authenticated-load-smoke.json
       - name: Upload immutable smoke evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -67,5 +80,6 @@ jobs:
             staging-marketplace-smoke.json
             staging-load-smoke.json
             staging-authenticated-smoke.json
+            staging-authenticated-load-smoke.json
           if-no-files-found: error
           retention-days: 30
