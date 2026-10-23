@@ -56,6 +56,7 @@ jobs:
           STAGING_CUSTOMER_TOKEN: ${{ secrets.STAGING_CUSTOMER_TOKEN }}
           STAGING_VENDOR_TOKEN: ${{ secrets.STAGING_VENDOR_TOKEN }}
           STAGING_ADMIN_TOKEN: ${{ secrets.STAGING_ADMIN_TOKEN }}
+          SMOKE_MAX_P95_MS: "2500"
           SMOKE_REPORT_PATH: staging-authenticated-smoke.json
       - name: Upload immutable smoke evidence
         if: always()

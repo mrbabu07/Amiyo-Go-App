@@ -13,6 +13,8 @@
 
 Authenticated load checks use the same `npm run smoke:load` command with `LOAD_BEARER_TOKEN` supplied only through the process environment. Reports expose only `authenticated: true`; they never include the token or URL query values. Use a short-lived staging token, never a production user credential or a token committed to a file.
 
+The staging role-boundary workflow also enforces `SMOKE_MAX_P95_MS` across its authenticated customer, seller and admin checks. The checked-in staging budget is 2,500 ms. Its immutable report records p50, p95, maximum, threshold and violations without tokens or response bodies; status correctness alone cannot pass the job when the latency budget is exceeded.
+
 ## Latest local evidence
 
 Recorded 2026-08-02 for the Phase 10/handover baseline:
