@@ -1,0 +1,12 @@
+* @mrbabu07
+
+/.github/ @mrbabu07
+/prisma/ @mrbabu07
+/apps/api/src/modules/identity/ @mrbabu07
+/apps/api/src/modules/commerce/ @mrbabu07
+/apps/api/src/modules/orders/ @mrbabu07
+/apps/api/src/modules/finance/ @mrbabu07
+/apps/api/src/modules/admin/ @mrbabu07
+/apps/worker/src/ @mrbabu07
+/scripts/release-*.mjs @mrbabu07
+/docs/runbooks/ @mrbabu07

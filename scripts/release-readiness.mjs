@@ -7,6 +7,7 @@ const requiredFiles = [
   ".github/workflows/deploy.yml",
   ".github/workflows/staging-smoke.yml",
   ".github/dependabot.yml",
+  ".github/CODEOWNERS",
   "render.yaml",
   "apps/api/Dockerfile",
   "apps/worker/Dockerfile",

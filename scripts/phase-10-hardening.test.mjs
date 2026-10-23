@@ -25,6 +25,7 @@ test("release artifacts enforce immutable builds and non-root containers", async
   const workerDockerfile = await readFile(new URL("../apps/worker/Dockerfile", import.meta.url), "utf8");
   const workflow = await readFile(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
   const dependabot = await readFile(new URL("../.github/dependabot.yml", import.meta.url), "utf8");
+  const codeowners = await readFile(new URL("../.github/CODEOWNERS", import.meta.url), "utf8");
   assert.match(apiDockerfile, /USER node/);
   assert.match(apiDockerfile, /\/app\/prisma \.\/prisma/);
   assert.match(workerDockerfile, /USER node/);
@@ -34,6 +35,12 @@ test("release artifacts enforce immutable builds and non-root containers", async
   assert.match(dependabot, /package-ecosystem: github-actions/);
   assert.match(dependabot, /timezone: Asia\/Dhaka/);
   assert.match(dependabot, /expo-runtime:[\s\S]*"@expo\/\*"[\s\S]*"@react-native\/\*"/);
+  assert.match(codeowners, /^\* @mrbabu07$/m);
+  assert.match(codeowners, /^\/\.github\/ @mrbabu07$/m);
+  assert.match(codeowners, /^\/prisma\/ @mrbabu07$/m);
+  assert.match(codeowners, /^\/apps\/api\/src\/modules\/identity\/ @mrbabu07$/m);
+  assert.match(codeowners, /^\/apps\/api\/src\/modules\/commerce\/ @mrbabu07$/m);
+  assert.match(codeowners, /^\/apps\/api\/src\/modules\/orders\/ @mrbabu07$/m);
 });
 
 test("Render blueprint deploys API and worker only after checks pass", async () => {
