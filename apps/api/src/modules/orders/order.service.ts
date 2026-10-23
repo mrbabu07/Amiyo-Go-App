@@ -356,8 +356,13 @@ export class OrderService {
   }
 
   async tracking(session: Session, id: string) {
-    const order = await this.client.order.findFirst({ where: { id, userId: session.principal.userId }, include: { vendorOrders: { include: { shop: true, shipments: { orderBy: { createdAt: "desc" }, take: 1, include: { assignment: true, events: { orderBy: { occurredAt: "asc" } } } } } } } });
+    const order = await this.client.order.findFirst({ where: { id, userId: session.principal.userId }, select: { id: true, orderNumber: true, status: true } });
     if (!order) throw new ApiProblem(404, "ORDER_NOT_FOUND", "Order not found");
-    return { orderId: order.id, orderNumber: order.orderNumber, status: order.status, shipments: order.vendorOrders.map((vendorOrder) => ({ vendorOrderId: vendorOrder.id, shopName: vendorOrder.shop.name, shipment: shipmentDto(vendorOrder.shipments[0]) })) };
+    const [vendorOrders, shipments] = await Promise.all([
+      this.client.vendorOrder.findMany({ where: { orderId: order.id }, select: { id: true, shop: { select: { name: true } } }, orderBy: { createdAt: "asc" } }),
+      this.client.shipment.findMany({ where: { vendorOrder: { orderId: order.id } }, include: { assignment: true, events: { orderBy: { occurredAt: "asc" } } } })
+    ]);
+    const shipmentByVendorOrder = new Map(shipments.map((shipment) => [shipment.vendorOrderId, shipment]));
+    return { orderId: order.id, orderNumber: order.orderNumber, status: order.status, shipments: vendorOrders.map((vendorOrder) => ({ vendorOrderId: vendorOrder.id, shopName: vendorOrder.shop.name, shipment: shipmentDto(shipmentByVendorOrder.get(vendorOrder.id) as LoadedVendorOrder["shipments"][number] | undefined) })) };
   }
 }
