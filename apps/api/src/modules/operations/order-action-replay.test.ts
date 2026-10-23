@@ -36,7 +36,8 @@ function replayClient(kind: "cancel" | "return", now: number) {
       }
     },
     vendorMember: { findMany: async () => [{ userId: "vendor-owner" }] },
-    notification: { upsert: async () => { write("notification"); } },
+    vendorShop: { findFirst: async () => ({ settings: { notificationPreferences: { returnRequest: { push: false } } } }) },
+    notification: { upsert: async () => { write("notification"); return { deliveries: [] }; } },
     return: { create: async ({ data }: { data: { requestedMinor: bigint; reasonCode: string; reasonDetail?: string; items: { create: Array<{ orderItemId: string; quantity: number; requestedMinor: bigint }> } } }) => {
       write("return");
       return { ...data, id: "return", orderId: "order", vendorOrderId: "package", status: "REQUESTED", currency: "BDT", approvedMinor: null, reasonDetail: data.reasonDetail ?? null, version: 1, createdAt: new Date(now), items: data.items.create.map((item) => ({ ...item, id: "return-item", inspection: null })) };

@@ -19,6 +19,24 @@ const vendorOrderInclude = {
 } satisfies Prisma.VendorOrderInclude;
 type LoadedVendorOrder = Prisma.VendorOrderGetPayload<{ include: typeof vendorOrderInclude }>;
 
+const vendorOrderBaseSelect = {
+  id: true,
+  orderId: true,
+  vendorId: true,
+  shopId: true,
+  status: true,
+  subtotalMinor: true,
+  discountMinor: true,
+  deliveryMinor: true,
+  totalMinor: true,
+  commissionMinor: true,
+  version: true,
+  createdAt: true,
+  updatedAt: true,
+  order: { select: { orderNumber: true, currency: true, user: { include: { profile: true } } } },
+  shop: true
+} satisfies Prisma.VendorOrderSelect;
+
 const vendorOrderSummarySelect = {
   id: true,
   orderId: true,
@@ -152,10 +170,17 @@ export class OrderService {
 
   async vendorOrder(session: Session, id: string) {
     requireVendorReader(session);
-    const row = await this.client.vendorOrder.findUnique({ where: { id }, include: vendorOrderInclude });
-    if (!row) throw new ApiProblem(404, "VENDOR_ORDER_NOT_FOUND", "Vendor order not found");
-    requireVendorAccess(session, row.vendorId, "orders:read");
-    return vendorOrderDto(row);
+    const base = await this.client.vendorOrder.findUnique({ where: { id }, select: vendorOrderBaseSelect });
+    if (!base) throw new ApiProblem(404, "VENDOR_ORDER_NOT_FOUND", "Vendor order not found");
+    requireVendorAccess(session, base.vendorId, "orders:read");
+    const [addresses, payments, items, shipments, dispatches] = await Promise.all([
+      this.client.orderAddress.findMany({ where: { orderId: base.orderId } }),
+      this.client.payment.findMany({ where: { orderId: base.orderId }, orderBy: { createdAt: "desc" }, take: 1 }),
+      this.client.orderItem.findMany({ where: { vendorOrderId: base.id }, include: { product: { select: { media: { orderBy: { displayOrder: "asc" }, take: 1, select: { storageKey: true } } } } } }),
+      this.client.shipment.findMany({ where: { vendorOrderId: base.id }, orderBy: { createdAt: "desc" }, take: 1, include: { assignment: true, events: { orderBy: { occurredAt: "asc" } } } }),
+      this.client.deliveryDispatch.findMany({ where: { vendorOrderId: base.id }, orderBy: { createdAt: "desc" }, take: 1 })
+    ]);
+    return vendorOrderDto({ ...base, order: { ...base.order, addresses, payments }, items, shipments, dispatches } as LoadedVendorOrder);
   }
 
   async customerThread(session: Session, id: string) {
@@ -229,18 +254,22 @@ export class OrderService {
 
   async fulfillmentDocument(session: Session, id: string) {
     requireVendorReader(session);
-    const row = await this.client.vendorOrder.findUnique({ where: { id }, include: vendorOrderInclude });
+    const row = await this.client.vendorOrder.findUnique({ where: { id }, select: { id: true, orderId: true, vendorId: true, status: true, subtotalMinor: true, discountMinor: true, deliveryMinor: true, totalMinor: true, createdAt: true, order: { select: { orderNumber: true, currency: true } }, shop: { select: { name: true, settings: true } } } });
     if (!row) throw new ApiProblem(404, "VENDOR_ORDER_NOT_FOUND", "Vendor order not found");
     requireVendorAccess(session, row.vendorId, "orders:read");
-    const deliveryAddress = row.order.addresses.find((address) => address.type === "delivery");
+    const [deliveryAddress, payment, items, shipment] = await Promise.all([
+      this.client.orderAddress.findUnique({ where: { orderId_type: { orderId: row.orderId, type: "delivery" } } }),
+      this.client.payment.findFirst({ where: { orderId: row.orderId }, orderBy: { createdAt: "desc" } }),
+      this.client.orderItem.findMany({ where: { vendorOrderId: row.id }, select: { id: true, productNameSnapshot: true, skuSnapshot: true, quantity: true, unitPriceMinor: true, lineTotalMinor: true, currency: true } }),
+      this.client.shipment.findUnique({ where: { vendorOrderId: row.id }, select: { trackingNumber: true } })
+    ]);
     if (!deliveryAddress) throw new ApiProblem(409, "DELIVERY_ADDRESS_MISSING", "Order delivery address is missing");
     const pickup = pickupFromSettings(row.shop.settings, row.shop.name);
-    const payment = row.order.payments[0];
     const parcelId = `AG-${row.order.orderNumber}-${row.id.slice(-6).toUpperCase()}`;
-    const trackingNumber = row.shipments[0]?.trackingNumber ?? parcelId;
-    const qrPayload = buildParcelQrPayload({ orderId: row.orderId, vendorId: row.vendorId, vendorOrderId: row.id, trackingNumber, paymentMode: payment?.method === "COD" ? "C" : payment ? "P" : "U", paymentStatus: payment?.status ?? "UNKNOWN", orderStatus: row.status, amountMinor: row.totalMinor.toString(), currency: row.order.currency, itemCount: row.items.length, quantity: row.items.reduce((sum, item) => sum + item.quantity, 0) });
+    const trackingNumber = shipment?.trackingNumber ?? parcelId;
+    const qrPayload = buildParcelQrPayload({ orderId: row.orderId, vendorId: row.vendorId, vendorOrderId: row.id, trackingNumber, paymentMode: payment?.method === "COD" ? "C" : payment ? "P" : "U", paymentStatus: payment?.status ?? "UNKNOWN", orderStatus: row.status, amountMinor: row.totalMinor.toString(), currency: row.order.currency, itemCount: items.length, quantity: items.reduce((sum, item) => sum + item.quantity, 0) });
     const address = (parts: Array<string | null | undefined>) => parts.filter(Boolean).join(", ");
-    return { parcelId, orderId: row.orderId, orderNumber: row.order.orderNumber, vendorOrderId: row.id, shopName: row.shop.name, status: row.status, createdAt: row.createdAt.toISOString(), qrPayload, qrExpiresAt: verifiedExpiry(qrPayload), customer: { name: deliveryAddress.recipientName, phone: deliveryAddress.phone, address: address([deliveryAddress.line1, deliveryAddress.line2, deliveryAddress.unionName, deliveryAddress.upazila, deliveryAddress.district, deliveryAddress.division, deliveryAddress.postalCode]) }, pickup: { name: pickup.name, phone: pickup.phone, address: address([pickup.address, pickup.union, pickup.upazila, pickup.district, pickup.division]) }, payment: { method: payment?.method ?? "UNKNOWN", collectAmount: money(parcelCollectionAmount(row.totalMinor, payment, row.status), row.order.currency) }, subtotal: money(row.subtotalMinor, row.order.currency), delivery: money(row.deliveryMinor, row.order.currency), discount: money(row.discountMinor, row.order.currency), total: money(row.totalMinor, row.order.currency), trackingNumber: row.shipments[0]?.trackingNumber ?? null, items: row.items.map((item) => ({ id: item.id, name: item.productNameSnapshot, sku: item.skuSnapshot, quantity: item.quantity, unitPrice: money(item.unitPriceMinor, item.currency), lineTotal: money(item.lineTotalMinor, item.currency) })) };
+    return { parcelId, orderId: row.orderId, orderNumber: row.order.orderNumber, vendorOrderId: row.id, shopName: row.shop.name, status: row.status, createdAt: row.createdAt.toISOString(), qrPayload, qrExpiresAt: verifiedExpiry(qrPayload), customer: { name: deliveryAddress.recipientName, phone: deliveryAddress.phone, address: address([deliveryAddress.line1, deliveryAddress.line2, deliveryAddress.unionName, deliveryAddress.upazila, deliveryAddress.district, deliveryAddress.division, deliveryAddress.postalCode]) }, pickup: { name: pickup.name, phone: pickup.phone, address: address([pickup.address, pickup.union, pickup.upazila, pickup.district, pickup.division]) }, payment: { method: payment?.method ?? "UNKNOWN", collectAmount: money(parcelCollectionAmount(row.totalMinor, payment ?? undefined, row.status), row.order.currency) }, subtotal: money(row.subtotalMinor, row.order.currency), delivery: money(row.deliveryMinor, row.order.currency), discount: money(row.discountMinor, row.order.currency), total: money(row.totalMinor, row.order.currency), trackingNumber: shipment?.trackingNumber ?? null, items: items.map((item) => ({ id: item.id, name: item.productNameSnapshot, sku: item.skuSnapshot, quantity: item.quantity, unitPrice: money(item.unitPriceMinor, item.currency), lineTotal: money(item.lineTotalMinor, item.currency) })) };
   }
 
   async transitionVendorOrder(session: Session, id: string, input: VendorOrderTransition, idempotencyKey: string, correlationId?: string) {

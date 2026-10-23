@@ -54,6 +54,32 @@ test("seller membership never grants access to a different vendor order", async 
   await assert.rejects(() => service.vendorOrder(seller, "other-package"), (error: unknown) => error instanceof ApiProblem && error.status === 403);
 });
 
+test("vendor detail authorizes first and starts bounded relation reads concurrently", async () => {
+  const createdAt = new Date("2026-10-03T00:00:00Z");
+  const base = { id: "package", orderId: "parent", vendorId: "vendor", shopId: "shop", status: "PLACED", subtotalMinor: 100n, discountMinor: 0n, deliveryMinor: 20n, totalMinor: 120n, commissionMinor: 6n, version: 1, createdAt, updatedAt: createdAt, order: { orderNumber: "AG-100", currency: "BDT", user: null }, shop: { id: "shop", vendorId: "vendor", name: "Shop", slug: "shop", status: "ACTIVE", settings: {}, createdAt, updatedAt: createdAt } };
+  let started = 0;
+  let release: (() => void) | undefined;
+  const barrier = new Promise<void>((resolve) => { release = resolve; });
+  const branch = async <T>(value: T) => {
+    started++;
+    if (started === 5) release?.();
+    await barrier;
+    return value;
+  };
+  const client = {
+    vendorOrder: { findUnique: async ({ select }: { select: Record<string, unknown> }) => { assert.equal(select.items, undefined); return base; } },
+    orderAddress: { findMany: async () => branch([]) },
+    payment: { findMany: async () => branch([]) },
+    orderItem: { findMany: async () => branch([]) },
+    shipment: { findMany: async () => branch([]) },
+    deliveryDispatch: { findMany: async () => branch([]) }
+  };
+  const result = await new OrderService(client as never).vendorOrder(seller, "package");
+  assert.equal(started, 5);
+  assert.equal(result.id, "package");
+  assert.equal(result.shopName, "Shop");
+});
+
 test("seller opens an audited order-scoped customer thread with active shop members", async () => {
   const createdParticipants: Array<{ userId: string; role: string }> = [];
   const client = {
