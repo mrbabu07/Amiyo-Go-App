@@ -255,7 +255,9 @@ test("seller operations command center stacks cleanly on mobile", () => {
 test("seller category requests stay usable on narrow screens", () => {
   assert.match(categoryRequests, /useWindowDimensions\(\)\.width < 620/);
   assert.match(categoryRequests, /\["vendor", "category-requests", user\?\.uid\]/);
-  assert.match(categoryRequests, /horizontal=\{compact\}/);
+  assert.match(categoryRequests, /accessibilityLabel="Search categories"/);
+  assert.match(categoryRequests, /categoryList: \{ maxHeight: 230 \}/);
+  assert.doesNotMatch(categoryRequests, /horizontal=\{compact\}/);
   assert.match(categoryRequests, /compact && styles\.primaryCompact/);
   assert.match(categoryRequests, /activeUid\.current !== owner\.uid/);
 });

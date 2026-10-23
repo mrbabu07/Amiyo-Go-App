@@ -25,3 +25,10 @@ test("seller product editor preserves exact variant money", () => {
   assert.doesNotMatch(source, /Math\.round\(Number\(value\) \* 100\)/);
   assert.doesNotMatch(source, /String\(Number\(value\) \/ 100\)/);
 });
+
+test("seller variant generator keeps custom color and size fields separated on mobile", () => {
+  assert.match(source, /<Field fullWidth label="Custom colors \(comma separated\)"/);
+  assert.match(source, /<Field fullWidth label="Sizes \(comma separated\)"/);
+  assert.match(source, /colorOptions: \{ flexBasis: "auto", flexGrow: 0, flexShrink: 0, minWidth: 0, width: "100%" \}/);
+  assert.match(source, /fieldFullWidth: \{ flexBasis: "auto", flexGrow: 0, flexShrink: 0, minWidth: 0, width: "100%" \}/);
+});

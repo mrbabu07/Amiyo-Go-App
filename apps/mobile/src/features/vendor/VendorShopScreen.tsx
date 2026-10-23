@@ -97,7 +97,7 @@ function Row({ icon, label, value }: { icon: React.ComponentProps<typeof Ionicon
 const styles = StyleSheet.create({
   flex: { flex: 1, minWidth: 0 },
   preview: { alignItems: "center", backgroundColor: colors.navy, borderRadius: radius.xl, flexDirection: "row", flexWrap: "wrap", gap: spacing.md, minHeight: 170, overflow: "hidden", padding: spacing.xl, position: "relative" },
-  previewCompact: { alignItems: "flex-start", padding: spacing.lg },
+  previewCompact: { alignItems: "flex-start", flexDirection: "column", padding: spacing.lg },
   banner: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 },
   overlay: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, backgroundColor: "rgba(5,11,20,.68)" },
   logo: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.pill, height: 68, justifyContent: "center", width: 68 },
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   previewMeta: { color: "#cbd5e1", fontSize: 11, marginTop: 4 },
   status: { backgroundColor: "rgba(107,122,58,.35)", borderRadius: radius.pill, color: "#eef1e4", fontSize: 9, fontWeight: "700", overflow: "hidden", paddingHorizontal: 10, paddingVertical: 7 },
   previewActions: { alignItems: "flex-end", gap: spacing.sm },
-  previewActionsCompact: { alignItems: "flex-start", marginLeft: 84, width: "100%" },
+  previewActionsCompact: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", width: "100%" },
   publicButton: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, flexDirection: "row", gap: 6, minHeight: 40, paddingHorizontal: 12 },
   publicButtonText: { color: colors.surface, fontSize: 10, fontWeight: "700" },
   readiness: { alignItems: "stretch", backgroundColor: colors.surface, borderRadius: radius.xl, boxShadow: "0 10px 28px rgba(11,31,58,.08)", flexDirection: "row", gap: spacing.xl, padding: spacing.lg },
