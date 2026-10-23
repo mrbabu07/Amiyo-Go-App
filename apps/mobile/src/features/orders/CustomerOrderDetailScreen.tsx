@@ -96,9 +96,9 @@ function ScopedOrderDetailScreen({ id }: { id: string }) {
   if (!order.data) return <OrderState title="Order unavailable" copy={order.error?.message || "Order not found"} action="Back to orders" onPress={() => router.replace("/orders")} />;
 
   const data = order.data;
-  const { remainingMs, statusAllowsCancel, cancellable } = cancellationState(data, now);
+  const { remainingMs, statusAllowsCancel, windowMinutes, cancellable } = cancellationState(data, now);
   const itemCount = data.vendorOrders.reduce((sum, vendorOrder) => sum + vendorOrder.items.reduce((count, item) => count + item.quantity, 0), 0);
-  const cancellationCopy = data.status === "CANCELLED" ? "This order has been cancelled." : statusAllowsCancel ? remainingMs > 0 ? `Cancel available for ${formatRemaining(remainingMs)} more.` : "The 30 minute cancellation window has ended." : "Fulfillment has started, so cancellation is no longer available.";
+  const cancellationCopy = data.status === "CANCELLED" ? "This order has been cancelled." : !windowMinutes ? "Cancellation policy is temporarily unavailable. Refresh before trying again." : statusAllowsCancel ? remainingMs > 0 ? `Cancel available for ${formatRemaining(remainingMs)} more.` : `The ${windowMinutes} minute cancellation window has ended.` : "Fulfillment has started, so cancellation is no longer available.";
   const stageIndex = ["CANCELLED", "REFUNDED", "RETURNED"].includes(data.status) ? -1 : progressIndex(orderSteps, data.status);
 
   return <Screen eyebrow="MY ORDER" title={data.orderNumber} description={`Placed ${new Date(data.createdAt).toLocaleString("en-BD")}`}>

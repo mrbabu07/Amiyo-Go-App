@@ -84,6 +84,10 @@ export const orderSchema = z.object({
   createdAt: timestampSchema,
   customer: z.object({ displayName: z.string(), email: z.string().nullable(), phone: z.string().nullable() }).optional(),
   placedAt: timestampSchema.nullable().optional(),
+  cancellation: z.object({
+    deadline: timestampSchema,
+    windowMinutes: z.number().int().min(5).max(1440)
+  }).optional(),
   deliveryAddress: orderAddressSchema.nullable().optional(),
   payment: orderPaymentSchema.nullable().optional(),
   vendorOrders: z.array(vendorOrderSchema)

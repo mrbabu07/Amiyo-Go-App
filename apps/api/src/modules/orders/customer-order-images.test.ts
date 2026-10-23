@@ -23,6 +23,8 @@ for (const image of ["https://images.example.test/product.jpg", null]) {
     assert.equal(item.productName, "Purchased name");
     assert.equal(item.lineTotal.amountMinor, "100");
     assert.equal(item.returnableQuantity, image ? 1 : 3);
+    assert.equal(result.cancellation.windowMinutes, 30);
+    assert.equal(Date.parse(result.cancellation.deadline) - Date.parse(result.createdAt), 30 * 60_000);
     assert.deepEqual(result.vendorOrders[0]?.returnEligibility, { deadline: null, reason: "DELIVERY_UNVERIFIED", requireEvidence: true });
   });
 }
@@ -69,7 +71,7 @@ test("customer order loads independent relations concurrently after ownership", 
   let started = 0;
   let release!: () => void;
   const barrier = new Promise<void>((resolve) => { release = resolve; });
-  const relation = async (value: unknown) => { started += 1; if (started === 6) release(); await barrier; return value; };
+  const relation = async (value: unknown) => { started += 1; if (started === 7) release(); await barrier; return value; };
   const client = {
     order: { findFirst: async () => ({ id: "order", orderNumber: "AG-1", status: "CONFIRMED", currency: "BDT", subtotalMinor: 0n, discountMinor: 0n, deliveryMinor: 0n, taxMinor: 0n, totalMinor: 0n, version: 1, createdAt: new Date(), user: null }) },
     orderAddress: { findMany: async () => relation([]) },
@@ -80,5 +82,5 @@ test("customer order loads independent relations concurrently after ownership", 
     platformConfiguration: { findUnique: async () => relation(null) }
   };
   await new OrderService(client as never).customerOrder(session, "order");
-  assert.equal(started, 6);
+  assert.equal(started, 7);
 });
