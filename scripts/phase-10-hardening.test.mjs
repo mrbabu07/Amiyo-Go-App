@@ -33,6 +33,7 @@ test("release artifacts enforce immutable builds and non-root containers", async
   assert.match(workerDockerfile, /USER node/);
   assert.match(workflow, /npm audit --audit-level=high/);
   assert.match(workflow, /docker build/);
+  assert.doesNotMatch(workflow, /uses:\s+[^\s]+@v\d+/);
   assert.match(dependabot, /package-ecosystem: npm/);
   assert.match(dependabot, /package-ecosystem: github-actions/);
   assert.match(dependabot, /timezone: Asia\/Dhaka/);
@@ -63,6 +64,7 @@ test("deploy workflow validates environment before publishing images", async () 
   const workflow = await readFile(new URL("../.github/workflows/deploy.yml", import.meta.url), "utf8");
   const preflight = await readFile(new URL("./deployment-env.mjs", import.meta.url), "utf8");
   assert.match(workflow, /preflight:/);
+  assert.doesNotMatch(workflow, /uses:\s+[^\s]+@v\d+/);
   assert.match(workflow, /^permissions:\n  contents: read\n\nconcurrency:/m);
   assert.match(workflow, /images:[\s\S]*permissions:\n      contents: read\n      packages: write[\s\S]*docker\/login-action/);
   assert.match(workflow, /name: Verify production source branch[\s\S]*inputs\.environment == 'production'[\s\S]*test "\$GITHUB_REF" = "refs\/heads\/main"/);
@@ -90,10 +92,11 @@ test("staging smoke retains public contract and load evidence", async () => {
   const workflow = await readFile(new URL("../.github/workflows/staging-smoke.yml", import.meta.url), "utf8");
   const smoke = await readFile(new URL("./marketplace-smoke.mjs", import.meta.url), "utf8");
   assert.match(workflow, /environment: staging/);
+  assert.doesNotMatch(workflow, /uses:\s+[^\s]+@v\d+/);
   assert.doesNotMatch(workflow, /include_authenticated|inputs\.include_authenticated/);
   assert.match(workflow, /npm run smoke:marketplace/);
   assert.match(workflow, /npm run smoke:load/);
-  assert.match(workflow, /actions\/upload-artifact@v4/);
+  assert.match(workflow, /actions\/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4/);
   assert.match(workflow, /LOAD_MAX_FAILURE_RATE: "0"/);
   assert.match(workflow, /LOAD_TARGET_ORIGIN: \$\{\{ vars\.API_PUBLIC_URL \}\}/);
   assert.match(workflow, /LOAD_TARGET_PATH: \/api\/v2\/vendor\/orders\?limit=1/);
