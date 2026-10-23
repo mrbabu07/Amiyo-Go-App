@@ -3,7 +3,7 @@ import { signOut } from "@firebase/auth";
 import { useQuery } from "@tanstack/react-query";
 import { usePathname, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState, type Dispatch, type PropsWithChildren, type SetStateAction } from "react";
-import { ActivityIndicator, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, useColorScheme, useWindowDimensions, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, useColorScheme, useWindowDimensions, View, type ScrollViewInstance } from "react-native";
 import { AdminGlobalSearch } from "../features/admin/AdminGlobalSearch";
 import { BottomNav } from "../features/home/components/BottomNav";
 import { StoreHeader } from "../features/home/components/StoreHeader";
@@ -237,7 +237,7 @@ function AdminNavLink({ collapsed, link, nested = false, onOpen, pathname }: { c
 
 function VendorScreen({ children, description, desktop, eyebrow, hideHeading = false, pathname, title, width }: ScreenProps & { desktop: boolean; pathname: string; width: number }) {
   const router = useRouter();
-  const pageScrollRef = useRef<ScrollView>(null);
+  const pageScrollRef = useRef<ScrollViewInstance>(null);
   const session = useAuthStore((state) => state.session);
   const authStatus = useAuthStore((state) => state.status);
   const user = useCurrentUser();

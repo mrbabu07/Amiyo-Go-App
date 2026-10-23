@@ -37,6 +37,11 @@ test("seller finance wires a real idempotent payout workflow", () => {
 test("seller finance exposes reference navigation and ledger evidence", () => {
   for (const label of ["Overview", "Reconciliation", "Payouts", "Transactions", "Statements", "Commissions"]) assert.match(finance, new RegExp(label));
   for (const label of ["Recent transactions", "Payout history", "AVAILABLE FOR PAYOUT"]) assert.match(finance, new RegExp(label));
+  assert.match(finance, /compact && styles\.statsCompact/);
+  assert.match(finance, /compact && styles\.statCompact/);
+  assert.match(finance, /compact && styles\.columnsCompact/);
+  assert.match(finance, /flexBasis: "47%"/);
+  assert.match(finance, /columnsCompact: \{ flexDirection: "column", flexWrap: "nowrap" \}/);
   assert.doesNotMatch(finance, /Â|Ã|à§|â†|â€œ|â€/);
 });
 
