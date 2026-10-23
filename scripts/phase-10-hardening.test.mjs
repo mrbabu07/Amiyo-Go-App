@@ -26,6 +26,8 @@ test("release artifacts enforce immutable builds and non-root containers", async
   const workflow = await readFile(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
   const dependabot = await readFile(new URL("../.github/dependabot.yml", import.meta.url), "utf8");
   const codeowners = await readFile(new URL("../.github/CODEOWNERS", import.meta.url), "utf8");
+  const securityPolicy = await readFile(new URL("../SECURITY.md", import.meta.url), "utf8");
+  const pullRequestTemplate = await readFile(new URL("../.github/pull_request_template.md", import.meta.url), "utf8");
   assert.match(apiDockerfile, /USER node/);
   assert.match(apiDockerfile, /\/app\/prisma \.\/prisma/);
   assert.match(workerDockerfile, /USER node/);
@@ -41,6 +43,10 @@ test("release artifacts enforce immutable builds and non-root containers", async
   assert.match(codeowners, /^\/apps\/api\/src\/modules\/identity\/ @mrbabu07$/m);
   assert.match(codeowners, /^\/apps\/api\/src\/modules\/commerce\/ @mrbabu07$/m);
   assert.match(codeowners, /^\/apps\/api\/src\/modules\/orders\/ @mrbabu07$/m);
+  assert.match(securityPolicy, /GitHub Security Advisory/);
+  assert.match(securityPolicy, /Never include passwords, access tokens, private keys/);
+  assert.match(pullRequestTemplate, /authorization boundaries/);
+  assert.match(pullRequestTemplate, /No unresolved business decision/);
 });
 
 test("Render blueprint deploys API and worker only after checks pass", async () => {
