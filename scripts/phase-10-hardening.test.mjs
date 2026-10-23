@@ -35,6 +35,8 @@ test("release artifacts enforce immutable builds and non-root containers", async
   assert.doesNotMatch(workerDockerfile, /^FROM\s+[^\s@]+(?=\s|$)/m);
   assert.equal((apiDockerfile.match(/node:20-alpine@sha256:[0-9a-f]{64}/g) ?? []).length, 2);
   assert.equal((workerDockerfile.match(/node:20-alpine@sha256:[0-9a-f]{64}/g) ?? []).length, 2);
+  assert.match(apiDockerfile, /org\.opencontainers\.image\.revision=\$RELEASE_COMMIT_SHA/);
+  assert.match(workerDockerfile, /org\.opencontainers\.image\.revision=\$RELEASE_COMMIT_SHA/);
   assert.match(workflow, /npm audit --audit-level=high/);
   assert.match(workflow, /docker build/);
   assert.doesNotMatch(workflow, /uses:\s+[^\s]+@v\d+/);
@@ -89,6 +91,7 @@ test("deploy workflow validates environment before publishing images", async () 
   assert.match(workflow, /id: api_image[\s\S]*id: worker_image/);
   assert.equal((workflow.match(/provenance: mode=max/g) ?? []).length, 2);
   assert.equal((workflow.match(/sbom: true/g) ?? []).length, 2);
+  assert.equal((workflow.match(/RELEASE_COMMIT_SHA=\$\{\{ github\.sha \}\}/g) ?? []).length, 2);
   assert.match(workflow, /npm run release:manifest/);
   assert.match(workflow, /API_IMAGE_DIGEST: \$\{\{ steps\.api_image\.outputs\.digest \}\}/);
   assert.match(workflow, /WORKER_IMAGE_DIGEST: \$\{\{ steps\.worker_image\.outputs\.digest \}\}/);

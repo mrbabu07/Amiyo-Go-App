@@ -96,6 +96,8 @@ jobs:
           push: true
           provenance: mode=max
           sbom: true
+          build-args: |
+            RELEASE_COMMIT_SHA=${{ github.sha }}
           tags: ghcr.io/${{ github.repository_owner }}/amiyo-api:${{ github.sha }}
       - id: worker_image
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
@@ -105,6 +107,8 @@ jobs:
           push: true
           provenance: mode=max
           sbom: true
+          build-args: |
+            RELEASE_COMMIT_SHA=${{ github.sha }}
           tags: ghcr.io/${{ github.repository_owner }}/amiyo-worker:${{ github.sha }}
       - name: Create immutable image manifest
         run: npm run release:manifest
