@@ -55,6 +55,11 @@ test("deploy workflow validates environment before publishing images", async () 
   assert.match(workflow, /name: release-readiness-\$\{\{ inputs\.environment \}\}-\$\{\{ github\.sha \}\}-\$\{\{ github\.run_attempt \}\}/);
   assert.match(workflow, /npm run release:deploy-env/);
   assert.match(workflow, /needs: preflight/);
+  assert.match(workflow, /id: api_image[\s\S]*id: worker_image/);
+  assert.match(workflow, /npm run release:manifest/);
+  assert.match(workflow, /API_IMAGE_DIGEST: \$\{\{ steps\.api_image\.outputs\.digest \}\}/);
+  assert.match(workflow, /WORKER_IMAGE_DIGEST: \$\{\{ steps\.worker_image\.outputs\.digest \}\}/);
+  assert.match(workflow, /release-images-\$\{\{ inputs\.environment \}\}-\$\{\{ github\.sha \}\}-\$\{\{ github\.run_attempt \}\}/);
   assert.match(workflow, /group: deploy-\$\{\{ inputs\.environment \}\}/);
   assert.match(preflight, /parseApiEnv\(process\.env\)/);
   assert.match(preflight, /parseWorkerEnv\(process\.env\)/);

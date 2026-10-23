@@ -86,18 +86,37 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - id: api_image
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/api/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/amiyo-api:${{ github.sha }}
-      - uses: docker/build-push-action@v6
+      - id: worker_image
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/worker/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/amiyo-worker:${{ github.sha }}
+      - name: Create immutable image manifest
+        run: npm run release:manifest
+        env:
+          RELEASE_COMMIT_SHA: ${{ github.sha }}
+          RELEASE_ENVIRONMENT: ${{ inputs.environment }}
+          RELEASE_RUN_ID: ${{ github.run_id }}
+          RELEASE_MANIFEST_PATH: release-image-manifest.json
+          API_IMAGE_REFERENCE: ghcr.io/${{ github.repository_owner }}/amiyo-api:${{ github.sha }}
+          API_IMAGE_DIGEST: ${{ steps.api_image.outputs.digest }}
+          WORKER_IMAGE_REFERENCE: ghcr.io/${{ github.repository_owner }}/amiyo-worker:${{ github.sha }}
+          WORKER_IMAGE_DIGEST: ${{ steps.worker_image.outputs.digest }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-images-${{ inputs.environment }}-${{ github.sha }}-${{ github.run_attempt }}
+          path: release-image-manifest.json
+          if-no-files-found: error
+          retention-days: 30
 
   migrate:
     environment: ${{ inputs.environment }}
