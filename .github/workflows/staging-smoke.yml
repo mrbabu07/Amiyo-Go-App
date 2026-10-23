@@ -2,12 +2,6 @@ name: Staging Smoke
 
 on:
   workflow_dispatch:
-    inputs:
-      include_authenticated:
-        description: Run role-boundary checks with short-lived staging tokens
-        required: true
-        default: true
-        type: boolean
 
 permissions:
   contents: read
@@ -49,7 +43,6 @@ jobs:
           LOAD_MAX_P95_MS: "1500"
           LOAD_REPORT_PATH: staging-load-smoke.json
       - name: Authenticated role-boundary smoke
-        if: ${{ inputs.include_authenticated }}
         run: npm run smoke:staging-authenticated
         env:
           SMOKE_API_URL: ${{ vars.API_PUBLIC_URL }}
@@ -59,7 +52,6 @@ jobs:
           SMOKE_MAX_P95_MS: "2500"
           SMOKE_REPORT_PATH: staging-authenticated-smoke.json
       - name: Bounded authenticated seller load smoke
-        if: ${{ inputs.include_authenticated }}
         run: npm run smoke:load
         env:
           LOAD_TARGET_ORIGIN: ${{ vars.API_PUBLIC_URL }}

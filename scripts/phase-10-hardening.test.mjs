@@ -57,7 +57,7 @@ test("staging smoke retains public contract and load evidence", async () => {
   const workflow = await readFile(new URL("../.github/workflows/staging-smoke.yml", import.meta.url), "utf8");
   const smoke = await readFile(new URL("./marketplace-smoke.mjs", import.meta.url), "utf8");
   assert.match(workflow, /environment: staging/);
-  assert.match(workflow, /include_authenticated:[\s\S]*default: true/);
+  assert.doesNotMatch(workflow, /include_authenticated|inputs\.include_authenticated/);
   assert.match(workflow, /npm run smoke:marketplace/);
   assert.match(workflow, /npm run smoke:load/);
   assert.match(workflow, /actions\/upload-artifact@v4/);
