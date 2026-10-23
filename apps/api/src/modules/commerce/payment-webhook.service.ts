@@ -22,6 +22,8 @@ export class PaymentWebhookService {
     const event = eventSchema.parse(payload);
     return withSerializableTransaction(this.client, async (transaction) => {
       const duplicate = await transaction.paymentWebhook.findUnique({ where: { provider_providerEventId: { provider, providerEventId: event.eventId } } }); if (duplicate) return { received: true, duplicate: true };
+      const paymentReference = await transaction.payment.findUnique({ where: { id: event.paymentId }, select: { orderId: true } }); if (!paymentReference) throw new ApiProblem(404, "PAYMENT_NOT_FOUND", "Payment not found");
+      await transaction.$queryRaw`SELECT id FROM orders WHERE id = ${paymentReference.orderId}::uuid FOR UPDATE`;
       const payment = await transaction.payment.findUnique({ where: { id: event.paymentId }, include: { order: true } }); if (!payment) throw new ApiProblem(404, "PAYMENT_NOT_FOUND", "Payment not found");
       if (BigInt(event.amountMinor) !== payment.amountMinor) throw new ApiProblem(409, "PAYMENT_AMOUNT_MISMATCH", "Payment amount does not match the order");
       const webhook = await transaction.paymentWebhook.create({ data: { provider, providerEventId: event.eventId, signatureValid: true, payload: payload as Prisma.InputJsonValue } });
