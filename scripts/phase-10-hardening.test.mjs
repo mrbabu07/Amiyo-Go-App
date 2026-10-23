@@ -87,6 +87,8 @@ test("deploy workflow validates environment before publishing images", async () 
   assert.match(workflow, /npm run release:deploy-env/);
   assert.match(workflow, /needs: preflight/);
   assert.match(workflow, /id: api_image[\s\S]*id: worker_image/);
+  assert.equal((workflow.match(/provenance: mode=max/g) ?? []).length, 2);
+  assert.equal((workflow.match(/sbom: true/g) ?? []).length, 2);
   assert.match(workflow, /npm run release:manifest/);
   assert.match(workflow, /API_IMAGE_DIGEST: \$\{\{ steps\.api_image\.outputs\.digest \}\}/);
   assert.match(workflow, /WORKER_IMAGE_DIGEST: \$\{\{ steps\.worker_image\.outputs\.digest \}\}/);
