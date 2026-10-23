@@ -4,9 +4,9 @@ These decisions block production implementation. Do not guess them in code.
 
 | Decision | Status | Needed Answer |
 |---|---|---|
-| App name | TBD | Confirm final app/store display name. |
-| Android package ID | TBD | Example: `com.amiyo.go`. |
-| iOS bundle ID | TBD | Example: `com.amiyo.go`. |
+| App name | IMPLEMENTED | Expo and release configuration use `Amiyo-Go`. |
+| Android package ID | IMPLEMENTED | Expo release configuration uses `com.amiyo.go`. |
+| iOS bundle ID | IMPLEMENTED | Expo release configuration uses `com.amiyo.go`. |
 | Supported countries | TBD | Bangladesh only or additional countries. |
 | Languages | TBD | Bangla, English, or both in release one. |
 | Currency and rounding | TBD | Confirm BDT-only and minor-unit rounding policy. |

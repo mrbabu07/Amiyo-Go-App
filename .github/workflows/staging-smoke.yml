@@ -24,6 +24,17 @@ jobs:
       - run: npm ci
       - run: npm run prisma:generate
       - run: npm run build
+      - name: Mint fresh Firebase staging tokens
+        id: staging_auth
+        run: node scripts/staging-firebase-tokens.mjs
+        env:
+          STAGING_FIREBASE_API_KEY: ${{ secrets.STAGING_FIREBASE_API_KEY }}
+          STAGING_CUSTOMER_EMAIL: ${{ secrets.STAGING_CUSTOMER_EMAIL }}
+          STAGING_CUSTOMER_PASSWORD: ${{ secrets.STAGING_CUSTOMER_PASSWORD }}
+          STAGING_VENDOR_EMAIL: ${{ secrets.STAGING_VENDOR_EMAIL }}
+          STAGING_VENDOR_PASSWORD: ${{ secrets.STAGING_VENDOR_PASSWORD }}
+          STAGING_ADMIN_EMAIL: ${{ secrets.STAGING_ADMIN_EMAIL }}
+          STAGING_ADMIN_PASSWORD: ${{ secrets.STAGING_ADMIN_PASSWORD }}
       - name: Public marketplace contract smoke
         run: npm run smoke:marketplace
         env:
@@ -46,9 +57,9 @@ jobs:
         run: npm run smoke:staging-authenticated
         env:
           SMOKE_API_URL: ${{ vars.API_PUBLIC_URL }}
-          STAGING_CUSTOMER_TOKEN: ${{ secrets.STAGING_CUSTOMER_TOKEN }}
-          STAGING_VENDOR_TOKEN: ${{ secrets.STAGING_VENDOR_TOKEN }}
-          STAGING_ADMIN_TOKEN: ${{ secrets.STAGING_ADMIN_TOKEN }}
+          STAGING_CUSTOMER_TOKEN: ${{ steps.staging_auth.outputs.customer_token }}
+          STAGING_VENDOR_TOKEN: ${{ steps.staging_auth.outputs.vendor_token }}
+          STAGING_ADMIN_TOKEN: ${{ steps.staging_auth.outputs.admin_token }}
           SMOKE_MAX_P95_MS: "2500"
           SMOKE_REPORT_PATH: staging-authenticated-smoke.json
       - name: Bounded authenticated seller load smoke
@@ -56,7 +67,7 @@ jobs:
         env:
           LOAD_TARGET_ORIGIN: ${{ vars.API_PUBLIC_URL }}
           LOAD_TARGET_PATH: /api/v2/vendor/orders?limit=1
-          LOAD_BEARER_TOKEN: ${{ secrets.STAGING_VENDOR_TOKEN }}
+          LOAD_BEARER_TOKEN: ${{ steps.staging_auth.outputs.vendor_token }}
           LOAD_REQUESTS: "40"
           LOAD_CONCURRENCY: "4"
           LOAD_WARMUP_REQUESTS: "4"

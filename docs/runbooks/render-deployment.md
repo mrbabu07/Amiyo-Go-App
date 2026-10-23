@@ -19,7 +19,7 @@
 5. Keep `SSLCOMMERZ_SANDBOX=false` only when the supplied credentials and callback URLs are live. Use a separate staging Blueprint/environment for sandbox credentials.
 6. Confirm the worker receives the API-generated `PARCEL_QR_SIGNING_SECRET` through the Blueprint service reference.
 7. In the GitHub `staging` Environment, set `API_PUBLIC_URL` to the staging API origin and `LOAD_TARGET_URL` to a representative public catalog endpoint on that same origin.
-8. For authenticated acceptance, create short-lived staging customer, vendor and admin ID tokens immediately before the run and place them in `STAGING_CUSTOMER_TOKEN`, `STAGING_VENDOR_TOKEN` and `STAGING_ADMIN_TOKEN`. Remove or rotate them after evidence collection.
+8. For authenticated acceptance, configure the GitHub `staging` Environment secrets `STAGING_FIREBASE_API_KEY`, `STAGING_CUSTOMER_EMAIL`, `STAGING_CUSTOMER_PASSWORD`, `STAGING_VENDOR_EMAIL`, `STAGING_VENDOR_PASSWORD`, `STAGING_ADMIN_EMAIL`, and `STAGING_ADMIN_PASSWORD`. The workflow signs in these dedicated non-production identities at run time, masks the fresh ID tokens, and reuses the vendor token for the bounded authenticated load check. Do not store manually copied expiring ID tokens.
 
 ## Acceptance
 

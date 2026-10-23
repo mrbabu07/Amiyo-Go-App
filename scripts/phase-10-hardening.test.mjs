@@ -125,7 +125,8 @@ test("staging smoke retains public contract and load evidence", async () => {
   assert.match(workflow, /LOAD_MAX_FAILURE_RATE: "0"/);
   assert.match(workflow, /LOAD_TARGET_ORIGIN: \$\{\{ vars\.API_PUBLIC_URL \}\}/);
   assert.match(workflow, /LOAD_TARGET_PATH: \/api\/v2\/vendor\/orders\?limit=1/);
-  assert.match(workflow, /LOAD_BEARER_TOKEN: \$\{\{ secrets\.STAGING_VENDOR_TOKEN \}\}/);
+  assert.match(workflow, /node scripts\/staging-firebase-tokens\.mjs/);
+  assert.match(workflow, /LOAD_BEARER_TOKEN: \$\{\{ steps\.staging_auth\.outputs\.vendor_token \}\}/);
   assert.match(workflow, /staging-authenticated-load-smoke\.json/);
   assert.match(smoke, /SMOKE_REPORT_PATH/);
   assert.match(smoke, /flag: "wx"/);

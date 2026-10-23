@@ -20,7 +20,7 @@ test("staging authenticated smoke checks roles without exposing tokens", async (
     const role = Object.entries(configuration.tokens).find(([, value]) => value === token)?.[0];
     if (url.pathname === "/api/v2/me") return response(200, { principal: { userId: "00000000-0000-4000-8000-000000000000", roles: [role === "customer" ? "CUSTOMER" : role === "vendor" ? "VENDOR_OWNER" : "SUPER_ADMIN"], vendorIds: [] }, status: "ACTIVE", email: `${role}@example.com`, phone: null, profile: { firstName: null, lastName: null, displayName: role, avatarStorageKey: null, locale: "en", currency: "BDT" }, permissions: [], vendorMemberships: [] });
     if (url.pathname === "/api/v2/vendor/orders") return response(200, { data: [], pageInfo: { nextCursor: null, hasNextPage: false } });
-    if (url.pathname === "/api/v2/vendor/finance") return role === "vendor" ? response(200, { vendorId: "00000000-0000-4000-8000-000000000001", balance: { amountMinor: "0", currency: "BDT" }, entries: [], payoutRequests: [] }) : response(403, {});
+    if (url.pathname === "/api/v2/vendor/finance") return role === "vendor" ? response(200, { vendorId: "00000000-0000-4000-8000-000000000001", balance: { amountMinor: "0", currency: "BDT" }, payoutPolicy: { minimum: { amountMinor: "50000", currency: "BDT" }, holdDays: 7, cadenceDays: 7 }, entries: [], payoutRequests: [] }) : response(403, {});
     if (url.pathname === "/api/v2/admin/workspace") return role === "admin" ? response(200, { users: [], vendors: [], kyc: [], trustCases: [] }) : response(403, {});
     return response(404, {});
   };
@@ -40,7 +40,7 @@ test("staging authenticated smoke fails its latency budget without leaking token
     const role = Object.entries(configuration.tokens).find(([, value]) => value === token)?.[0];
     if (url.pathname === "/api/v2/me") return response(200, { principal: { userId: "00000000-0000-4000-8000-000000000000", roles: [role === "customer" ? "CUSTOMER" : role === "vendor" ? "VENDOR_OWNER" : "SUPER_ADMIN"], vendorIds: [] }, status: "ACTIVE", email: `${role}@example.com`, phone: null, profile: { firstName: null, lastName: null, displayName: role, avatarStorageKey: null, locale: "en", currency: "BDT" }, permissions: [], vendorMemberships: [] });
     if (url.pathname === "/api/v2/vendor/orders") return response(200, { data: [], pageInfo: { nextCursor: null, hasNextPage: false } });
-    if (url.pathname === "/api/v2/vendor/finance") return role === "vendor" ? response(200, { vendorId: "00000000-0000-4000-8000-000000000001", balance: { amountMinor: "0", currency: "BDT" }, entries: [], payoutRequests: [] }) : response(403, {});
+    if (url.pathname === "/api/v2/vendor/finance") return role === "vendor" ? response(200, { vendorId: "00000000-0000-4000-8000-000000000001", balance: { amountMinor: "0", currency: "BDT" }, payoutPolicy: { minimum: { amountMinor: "50000", currency: "BDT" }, holdDays: 7, cadenceDays: 7 }, entries: [], payoutRequests: [] }) : response(403, {});
     return role === "admin" ? response(200, { users: [], vendors: [], kyc: [], trustCases: [] }) : response(403, {});
   };
   const result = await runStagingAuthenticatedSmoke(configuration, fetcher, clock);
