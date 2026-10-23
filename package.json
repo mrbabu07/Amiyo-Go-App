@@ -38,6 +38,7 @@
     "release:manifest": "node scripts/release-manifest.mjs",
     "restore:verify": "node scripts/restore-verification.mjs",
     "smoke:load": "node scripts/load-smoke.mjs",
+    "smoke:staging-preflight": "node scripts/staging-smoke-preflight.mjs",
     "smoke:marketplace": "node scripts/marketplace-smoke.mjs",
     "smoke:authenticated": "node scripts/authenticated-marketplace-smoke.mjs",
     "smoke:staging-authenticated": "node scripts/staging-authenticated-smoke.mjs",

@@ -24,6 +24,11 @@ jobs:
       - run: npm ci
       - run: npm run prisma:generate
       - run: npm run build
+      - name: Validate staging smoke targets
+        run: npm run smoke:staging-preflight
+        env:
+          API_PUBLIC_URL: ${{ vars.API_PUBLIC_URL }}
+          LOAD_TARGET_URL: ${{ vars.LOAD_TARGET_URL }}
       - name: Mint fresh Firebase staging tokens
         id: staging_auth
         run: node scripts/staging-firebase-tokens.mjs

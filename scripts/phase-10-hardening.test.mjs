@@ -121,6 +121,9 @@ test("staging smoke retains public contract and load evidence", async () => {
   assert.doesNotMatch(workflow, /include_authenticated|inputs\.include_authenticated/);
   assert.match(workflow, /npm run smoke:marketplace/);
   assert.match(workflow, /npm run smoke:load/);
+  assert.match(workflow, /npm run smoke:staging-preflight/);
+  assert.match(workflow, /API_PUBLIC_URL: \$\{\{ vars\.API_PUBLIC_URL \}\}/);
+  assert.match(workflow, /LOAD_TARGET_URL: \$\{\{ vars\.LOAD_TARGET_URL \}\}/);
   assert.match(workflow, /actions\/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4/);
   assert.match(workflow, /LOAD_MAX_FAILURE_RATE: "0"/);
   assert.match(workflow, /LOAD_TARGET_ORIGIN: \$\{\{ vars\.API_PUBLIC_URL \}\}/);
@@ -135,7 +138,7 @@ test("staging smoke retains public contract and load evidence", async () => {
 test("mobile release uses the hardened Expo SDK and explicit build profiles", async () => {
   const mobilePackage = JSON.parse(await readFile(new URL("../apps/mobile/package.json", import.meta.url), "utf8"));
   const eas = JSON.parse(await readFile(new URL("../apps/mobile/eas.json", import.meta.url), "utf8"));
-  assert.match(mobilePackage.dependencies.expo, /57/);
+  assert.match(mobilePackage.dependencies.expo, /58/);
   assert.ok(eas.build.preview);
   assert.ok(eas.build.production);
 });
