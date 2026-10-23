@@ -45,6 +45,8 @@ test("deploy workflow validates environment before publishing images", async () 
   const workflow = await readFile(new URL("../.github/workflows/deploy.yml", import.meta.url), "utf8");
   const preflight = await readFile(new URL("./deployment-env.mjs", import.meta.url), "utf8");
   assert.match(workflow, /preflight:/);
+  assert.match(workflow, /name: Verify release readiness[\s\S]*npm run release:check/);
+  assert.match(workflow, /REQUIRE_PRODUCTION_READY: \$\{\{ inputs\.environment == 'production' && 'true' \|\| 'false' \}\}/);
   assert.match(workflow, /npm run release:deploy-env/);
   assert.match(workflow, /needs: preflight/);
   assert.match(workflow, /group: deploy-\$\{\{ inputs\.environment \}\}/);

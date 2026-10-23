@@ -27,6 +27,10 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Verify release readiness
+        run: npm run release:check
+        env:
+          REQUIRE_PRODUCTION_READY: ${{ inputs.environment == 'production' && 'true' || 'false' }}
       - run: npm run build --workspace @amiyo/config
       - run: npm run release:deploy-env
         env:
