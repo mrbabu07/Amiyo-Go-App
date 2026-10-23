@@ -14,7 +14,7 @@ These decisions block production implementation. Do not guess them in code.
 | Guest checkout | TBD | Enabled/disabled and account-linking behavior. |
 | Authentication | PARTIAL | Firebase web project is configured locally. Confirm enabled email/password, phone OTP, social providers, test identities, and server Admin credentials. |
 | Product approval | TBD | Draft/submitted/approved/rejected transitions and owner actions. |
-| Inventory policy | TBD | Reservation duration, overselling, backorder rules. |
+| Inventory policy | IMPLEMENTED | Admin controls a 5-120 minute unpaid reservation window; overselling prevention is mandatory, backorders are disabled, and the worker atomically expires unpaid holds with audit/outbox evidence. |
 | Order split | Proposed | One parent order and one vendor order per vendor. Needs approval. |
 | Commission | IMPLEMENTED | Global, category, vendor, and vendor-category percentage/fixed rules with effective dates and checkout snapshots. |
 | Payments | PARTIAL | COD and validated SSLCommerz hosted sandbox checkout are implemented. Approve live credentials and final bKash, Nagad, card, and manual-proof scope. |

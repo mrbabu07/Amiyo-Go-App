@@ -5,6 +5,7 @@ export type BusinessRules = {
   loyalty: LoyaltyPolicy;
   promotions: { maximumStackedDiscountBps: number; allowCodeWithAutomatic: boolean };
   orders: { customerCancellationMinutes: number };
+  inventory: { reservationMinutes: number; allowBackorders: false; preventOverselling: true };
   settlement: { minimumPayoutMinor: bigint; holdDays: number; cadenceDays: number; automaticProposal: boolean };
   refunds: { requireProviderReference: boolean; allowPartial: boolean };
 };
@@ -13,6 +14,7 @@ type StoredBusinessRules = {
   loyalty?: Partial<Record<keyof LoyaltyPolicy, boolean | number | string>>;
   promotions?: Partial<BusinessRules["promotions"]>;
   orders?: Partial<BusinessRules["orders"]>;
+  inventory?: Partial<BusinessRules["inventory"]>;
   settlement?: Partial<{ minimumPayoutMinor: string; holdDays: number; cadenceDays: number; automaticProposal: boolean }>;
   refunds?: Partial<BusinessRules["refunds"]>;
 };
@@ -21,6 +23,7 @@ export const defaultBusinessRules: BusinessRules = {
   loyalty: { enabled: true, earnAmountMinorPerPoint: 10_000n, redeemMinorPerPoint: 100n, minimumRedemptionPoints: 100n, maximumRedemptionBps: 2_000, fraudHoldDays: 7, expiryDays: 365, referralRewardPoints: 500n },
   promotions: { maximumStackedDiscountBps: 3_500, allowCodeWithAutomatic: true },
   orders: { customerCancellationMinutes: 30 },
+  inventory: { reservationMinutes: 30, allowBackorders: false, preventOverselling: true },
   settlement: { minimumPayoutMinor: 50_000n, holdDays: 7, cadenceDays: 7, automaticProposal: true },
   refunds: { requireProviderReference: true, allowPartial: true }
 };
@@ -30,6 +33,7 @@ export function serializeBusinessRules(rules: BusinessRules) {
     loyalty: { ...rules.loyalty, earnAmountMinorPerPoint: rules.loyalty.earnAmountMinorPerPoint.toString(), redeemMinorPerPoint: rules.loyalty.redeemMinorPerPoint.toString(), minimumRedemptionPoints: rules.loyalty.minimumRedemptionPoints.toString(), referralRewardPoints: rules.loyalty.referralRewardPoints.toString() },
     promotions: rules.promotions,
     orders: rules.orders,
+    inventory: rules.inventory,
     settlement: { ...rules.settlement, minimumPayoutMinor: rules.settlement.minimumPayoutMinor.toString() },
     refunds: rules.refunds
   };
@@ -51,6 +55,7 @@ export function parseBusinessRules(value: Prisma.JsonValue | null | undefined): 
     },
     promotions: { ...defaultBusinessRules.promotions, ...stored.promotions },
     orders: { ...defaultBusinessRules.orders, ...stored.orders },
+    inventory: { ...defaultBusinessRules.inventory, ...stored.inventory, allowBackorders: false, preventOverselling: true },
     settlement: { ...defaultBusinessRules.settlement, ...stored.settlement, minimumPayoutMinor: BigInt(stored.settlement?.minimumPayoutMinor ?? defaultBusinessRules.settlement.minimumPayoutMinor) },
     refunds: { ...defaultBusinessRules.refunds, ...stored.refunds }
   };
