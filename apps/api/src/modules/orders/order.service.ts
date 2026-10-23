@@ -37,7 +37,7 @@ const vendorOrderBaseSelect = {
   shop: true
 } satisfies Prisma.VendorOrderSelect;
 
-const vendorOrderSummarySelect = {
+const vendorOrderSummaryBaseSelect = {
   id: true,
   orderId: true,
   vendorId: true,
@@ -45,32 +45,31 @@ const vendorOrderSummarySelect = {
   status: true,
   totalMinor: true,
   createdAt: true,
-  shop: { select: { name: true } },
-  order: {
-    select: {
-      orderNumber: true,
-      currency: true,
-      payments: { orderBy: { createdAt: "desc" as const }, take: 1, select: { provider: true, method: true, status: true, amountMinor: true, currency: true, providerTransactionId: true, createdAt: true } },
-      user: { select: { normalizedEmail: true, normalizedPhone: true, profile: { select: { displayName: true } } } }
-    }
-  },
-  items: {
-    select: {
-      id: true,
-      productId: true,
-      variantId: true,
-      productNameSnapshot: true,
-      skuSnapshot: true,
-      attributesSnapshot: true,
-      quantity: true,
-      unitPriceMinor: true,
-      discountMinor: true,
-      lineTotalMinor: true,
-      currency: true,
-      product: { select: { media: { orderBy: { displayOrder: "asc" as const }, take: 1, select: { storageKey: true } } } }
-    }
-  }
+  shop: { select: { name: true } }
 } satisfies Prisma.VendorOrderSelect;
+const vendorOrderSummaryOrderSelect = {
+  id: true,
+  orderNumber: true,
+  currency: true,
+  payments: { orderBy: { createdAt: "desc" as const }, take: 1, select: { provider: true, method: true, status: true, amountMinor: true, currency: true, providerTransactionId: true, createdAt: true } },
+  user: { select: { normalizedEmail: true, normalizedPhone: true, profile: { select: { displayName: true } } } }
+} satisfies Prisma.OrderSelect;
+const vendorOrderSummaryItemSelect = {
+  id: true,
+  vendorOrderId: true,
+  productId: true,
+  variantId: true,
+  productNameSnapshot: true,
+  skuSnapshot: true,
+  attributesSnapshot: true,
+  quantity: true,
+  unitPriceMinor: true,
+  discountMinor: true,
+  lineTotalMinor: true,
+  currency: true,
+  product: { select: { media: { orderBy: { displayOrder: "asc" as const }, take: 1, select: { storageKey: true } } } }
+} satisfies Prisma.OrderItemSelect;
+const vendorOrderSummarySelect = { ...vendorOrderSummaryBaseSelect, order: { select: vendorOrderSummaryOrderSelect }, items: { select: vendorOrderSummaryItemSelect } } satisfies Prisma.VendorOrderSelect;
 type LoadedVendorOrderSummary = Prisma.VendorOrderGetPayload<{ select: typeof vendorOrderSummarySelect }>;
 
 const money = (amount: bigint, currency = "BDT") => ({ amountMinor: amount.toString(), currency });
@@ -162,10 +161,25 @@ export class OrderService {
     const elevated = session.principal.roles.some((role) => ["SUPER_ADMIN", "OPERATIONS_ADMIN"].includes(role));
     if (!elevated && session.principal.vendorIds.length === 0) return { data: [], pageInfo: { hasNextPage: false, nextCursor: null } };
     const limit = query.limit ?? 30;
-    const rows = await this.client.vendorOrder.findMany({ where: { ...(elevated ? {} : { vendorId: { in: session.principal.vendorIds } }), ...(query.status ? { status: query.status } : {}), ...(query.orderId ? { orderId: query.orderId } : {}) }, select: vendorOrderSummarySelect, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: limit + 1, ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}) });
+    const rows = await this.client.vendorOrder.findMany({ where: { ...(elevated ? {} : { vendorId: { in: session.principal.vendorIds } }), ...(query.status ? { status: query.status } : {}), ...(query.orderId ? { orderId: query.orderId } : {}) }, select: vendorOrderSummaryBaseSelect, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: limit + 1, ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}) });
     const hasNextPage = rows.length > limit;
     const page = hasNextPage ? rows.slice(0, limit) : rows;
-    return { data: page.map(vendorOrderSummaryDto), pageInfo: { hasNextPage, nextCursor: hasNextPage ? page.at(-1)?.id ?? null : null } };
+    if (page.length === 0) return { data: [], pageInfo: { hasNextPage: false, nextCursor: null } };
+    const orderIds = [...new Set(page.map((row) => row.orderId))];
+    const packageIds = page.map((row) => row.id);
+    const [orders, items] = await Promise.all([
+      this.client.order.findMany({ where: { id: { in: orderIds } }, select: vendorOrderSummaryOrderSelect }),
+      this.client.orderItem.findMany({ where: { vendorOrderId: { in: packageIds } }, select: vendorOrderSummaryItemSelect, orderBy: { id: "asc" } })
+    ]);
+    const orderById = new Map(orders.map((order) => [order.id, order]));
+    const itemsByPackage = new Map<string, typeof items>();
+    for (const item of items) itemsByPackage.set(item.vendorOrderId, [...(itemsByPackage.get(item.vendorOrderId) ?? []), item]);
+    const loaded = page.map((row) => {
+      const order = orderById.get(row.orderId);
+      if (!order) throw new ApiProblem(503, "ORDER_READ_INCOMPLETE", "Order data is temporarily unavailable");
+      return { ...row, order, items: itemsByPackage.get(row.id) ?? [] } as LoadedVendorOrderSummary;
+    });
+    return { data: loaded.map(vendorOrderSummaryDto), pageInfo: { hasNextPage, nextCursor: hasNextPage ? page.at(-1)?.id ?? null : null } };
   }
 
   async vendorOrder(session: Session, id: string) {

@@ -29,7 +29,8 @@ test("vendor list keeps scope, status and limit with a summary-only projection",
     assert.equal(query.select.vendor, undefined);
     assert.equal(query.select.shipments, undefined);
     assert.equal(query.select.dispatches, undefined);
-    assert.equal((query.select.order as { select: Record<string, unknown> }).select.addresses, undefined);
+    assert.equal(query.select.order, undefined);
+    assert.equal(query.select.items, undefined);
     return [];
   } } } as never);
   assert.deepEqual(await service.vendorOrders(seller, { status: "IN_TRANSIT", orderId: "11111111-1111-4111-8111-111111111111" }), { data: [], pageInfo: { hasNextPage: false, nextCursor: null } });
@@ -174,14 +175,25 @@ test("pickup request rejects another seller, assigned pickups and non-ready parc
 
 test("vendor list returns card summaries without loading detail-only relations", async () => {
   const createdAt = new Date("2026-10-03T00:00:00Z");
-  const rows = ["second", "first"].map((id) => ({ id, orderId: "parent", vendorId: "vendor", shopId: "shop", shop: { name: "Shop" }, status: "PLACED", createdAt, totalMinor: 120n, order: { orderNumber: "ORDER", currency: "BDT", payments: [], user: null }, items: [{ id: `item-${id}`, productId: "product", variantId: null, productNameSnapshot: "Purchased name", skuSnapshot: "SKU", attributesSnapshot: null, quantity: 1, unitPriceMinor: 100n, discountMinor: 0n, lineTotalMinor: 100n, currency: "BDT", product: { media: [{ storageKey: "https://cdn.amiyo.test/products/item.webp" }] } }] }));
+  const rows = ["second", "first"].map((id) => ({ id, orderId: "parent", vendorId: "vendor", shopId: "shop", shop: { name: "Shop" }, status: "PLACED", createdAt, totalMinor: 120n }));
   let reads = 0;
+  let branches = 0;
+  let release: (() => void) | undefined;
+  const barrier = new Promise<void>((resolve) => { release = resolve; });
+  const branch = async <T>(value: T) => { branches++; if (branches === 2) release?.(); await barrier; return value; };
   const service = new OrderService({
     vendorOrder: { findMany: async (query: { select: Record<string, unknown> }) => {
       reads++;
       assert.equal(query.select.shipments, undefined);
       assert.equal(query.select.dispatches, undefined);
+      assert.equal(query.select.order, undefined);
+      assert.equal(query.select.items, undefined);
       return rows;
+    } },
+    order: { findMany: async ({ where }: { where: unknown }) => { assert.deepEqual(where, { id: { in: ["parent"] } }); return branch([{ id: "parent", orderNumber: "ORDER", currency: "BDT", payments: [], user: null }]); } },
+    orderItem: { findMany: async ({ where }: { where: unknown }) => {
+      assert.deepEqual(where, { vendorOrderId: { in: ["second", "first"] } });
+      return branch(rows.map((row) => ({ id: `item-${row.id}`, vendorOrderId: row.id, productId: "product", variantId: null, productNameSnapshot: "Purchased name", skuSnapshot: "SKU", attributesSnapshot: null, quantity: 1, unitPriceMinor: 100n, discountMinor: 0n, lineTotalMinor: 100n, currency: "BDT", product: { media: [{ storageKey: "https://cdn.amiyo.test/products/item.webp" }] } })));
     } }
   } as never);
   const result = await service.vendorOrders(seller);
@@ -190,18 +202,23 @@ test("vendor list returns card summaries without loading detail-only relations",
   assert.equal(result.data[0]?.items[0]?.thumbnailUrl, "https://cdn.amiyo.test/products/item.webp");
   assert.deepEqual(result.pageInfo, { hasNextPage: false, nextCursor: null });
   assert.equal(reads, 1);
+  assert.equal(branches, 2);
 });
 
 test("vendor list returns a stable cursor without exposing the lookahead row", async () => {
   const createdAt = new Date("2026-10-03T00:00:00Z");
-  const rows = ["third", "second", "first"].map((id) => ({ id, orderId: "parent", vendorId: "vendor", shopId: "shop", shop: { name: "Shop" }, status: "PLACED", createdAt, totalMinor: 120n, order: { orderNumber: "ORDER", currency: "BDT", payments: [], user: null }, items: [] }));
-  const service = new OrderService({ vendorOrder: { findMany: async (query: { cursor?: unknown; skip?: number; take: number; orderBy: unknown }) => {
-    assert.equal(query.take, 3);
-    assert.deepEqual(query.cursor, { id: "cursor-package" });
-    assert.equal(query.skip, 1);
-    assert.deepEqual(query.orderBy, [{ createdAt: "desc" }, { id: "desc" }]);
-    return rows;
-  } } } as never);
+  const rows = ["third", "second", "first"].map((id) => ({ id, orderId: "parent", vendorId: "vendor", shopId: "shop", shop: { name: "Shop" }, status: "PLACED", createdAt, totalMinor: 120n }));
+  const service = new OrderService({
+    vendorOrder: { findMany: async (query: { cursor?: unknown; skip?: number; take: number; orderBy: unknown }) => {
+      assert.equal(query.take, 3);
+      assert.deepEqual(query.cursor, { id: "cursor-package" });
+      assert.equal(query.skip, 1);
+      assert.deepEqual(query.orderBy, [{ createdAt: "desc" }, { id: "desc" }]);
+      return rows;
+    } },
+    order: { findMany: async () => [{ id: "parent", orderNumber: "ORDER", currency: "BDT", payments: [], user: null }] },
+    orderItem: { findMany: async ({ where }: { where: unknown }) => { assert.deepEqual(where, { vendorOrderId: { in: ["third", "second"] } }); return []; } }
+  } as never);
   const result = await service.vendorOrders(seller, { cursor: "cursor-package", limit: 2 });
   assert.deepEqual(result.data.map((item) => item.id), ["third", "second"]);
   assert.deepEqual(result.pageInfo, { hasNextPage: true, nextCursor: "second" });
