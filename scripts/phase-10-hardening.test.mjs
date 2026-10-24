@@ -174,10 +174,12 @@ test("release-one market boundaries are explicitly approved", async () => {
     readFile(new URL("../docs/decisions-needed.md", import.meta.url), "utf8"),
     readFile(new URL("../docs/release-one-operating-policy.md", import.meta.url), "utf8")
   ]);
-  for (const decision of ["Supported countries", "Currency and rounding", "Release-one roles", "Guest checkout", "Order split", "Product approval", "Commission precedence", "Rider contact exposure", "COD split collection", "Vendor pickup address", "Geography", "KYC", "Cancellation", "Returns"]) {
+  for (const decision of ["Supported countries", "Languages", "Currency and rounding", "Release-one roles", "Guest checkout", "Order split", "Product approval", "Commission precedence", "Rider contact exposure", "COD split collection", "Vendor pickup address", "Geography", "KYC", "Cancellation", "Returns"]) {
     assert.match(decisions, new RegExp(`\\| ${decision.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")} \\| IMPLEMENTED \\|`));
   }
   assert.match(policy, /Bangladesh only/);
+  assert.match(policy, /English is the release-one operational interface/);
+  assert.match(policy, /does not claim to translate the complete application/);
   assert.match(policy, /BDT only/);
   assert.match(policy, /Firebase anonymous identity/);
   assert.match(policy, /one parent order and one vendor order/);

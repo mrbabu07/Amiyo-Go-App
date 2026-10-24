@@ -8,7 +8,7 @@ These decisions block production implementation. Do not guess them in code.
 | Android package ID | IMPLEMENTED | Expo release configuration uses `com.amiyo.go`. |
 | iOS bundle ID | IMPLEMENTED | Expo release configuration uses `com.amiyo.go`. |
 | Supported countries | IMPLEMENTED | Bangladesh only for release one; address/serviceability uses the admin-controlled village operation model in `release-one-operating-policy.md`. |
-| Languages | TBD | Bangla, English, or both in release one. |
+| Languages | IMPLEMENTED | English is the release-one operational UI. Bangla is supported for the village banner, bilingual learning content, Bengali input and persisted locale metadata; full-app Bangla translation is explicitly outside release-one scope. |
 | Currency and rounding | IMPLEMENTED | BDT only; financial writes and calculations use integer minor units, with formatting at the presentation edge. |
 | Release-one roles | IMPLEMENTED | Customer, vendor owner/manager/staff, support agent, finance admin, operations admin, and super admin are the approved bounded roles. |
 | Guest checkout | IMPLEMENTED | Enabled through Firebase anonymous identity with normal protected customer scope; no unauthenticated order-write endpoint. |

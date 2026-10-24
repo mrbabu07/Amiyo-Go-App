@@ -13,8 +13,10 @@ This policy records the launch scope already enforced by the application. It doe
 
 ## Language
 
-- Bangla and English are the intended customer languages.
-- The village-operation default locale is admin controlled. Full copy translation and native-device language acceptance remain launch evidence rather than a completed policy decision.
+- English is the release-one operational interface for customer, seller and admin workflows.
+- Bangla is supported for the admin-selected village banner, bilingual customer/seller learning content, Bengali text input and persisted `bn` user locale metadata.
+- The village language control changes the village banner only; it does not claim to translate the complete application.
+- A complete Bangla interface is outside release-one scope and requires a versioned translation catalogue plus native-device acceptance before it can be advertised.
 
 ## Identities and roles
 
