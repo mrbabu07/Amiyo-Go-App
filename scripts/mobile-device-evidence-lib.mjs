@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 
-export const requiredMobileFlows = ["customer", "vendor", "admin", "camera-denial", "signed-document", "offline-reconnect"];
+export const requiredMobileFlowsByPlatform = {
+  android: ["customer", "vendor", "admin", "camera-denial", "signed-document", "offline-reconnect"],
+  ios: ["customer", "vendor", "admin", "camera-denial", "signed-document"]
+};
+export const requiredMobileFlows = requiredMobileFlowsByPlatform.android;
 
 export const parseMobileDeviceEvidence = (source) => JSON.parse(source.replace(/^\uFEFF/, ""));
 
@@ -40,20 +44,22 @@ export function validateMobileDeviceEvidence(report, { expectedCommitSha, now = 
 
   assert.ok(report.app && typeof report.app === "object", "app metadata is required");
   exactKeys(report.app, "app", ["platform", "packageId", "buildId"]);
-  assert.equal(report.app.platform, "android", "This evidence profile requires Android");
+  assert.ok(Object.hasOwn(requiredMobileFlowsByPlatform, report.app.platform), "app.platform must be android or ios");
   assert.equal(report.app.packageId, "com.amiyo.go", "Unexpected application package");
   const buildId = bounded(report.app.buildId, "app.buildId", /^[a-zA-Z0-9._+-]+$/, 120);
 
   assert.ok(report.device && typeof report.device === "object", "device metadata is required");
   exactKeys(report.device, "device", ["kind", "model", "osVersion"]);
-  assert.ok(["physical", "emulator"].includes(report.device.kind), "device.kind must be physical or emulator");
+  const supportedDeviceKinds = report.app.platform === "android" ? ["physical", "emulator"] : ["physical", "simulator"];
+  assert.ok(supportedDeviceKinds.includes(report.device.kind), `device.kind is invalid for ${report.app.platform}`);
   const deviceModel = bounded(report.device.model, "device.model", /^[a-zA-Z0-9()_.,+ -]+$/, 120);
   const osVersion = bounded(report.device.osVersion, "device.osVersion", /^[a-zA-Z0-9._ -]+$/, 80);
 
   assert.ok(Array.isArray(report.flows), "flows must be an array");
   const flowNames = report.flows.map((flow) => flow?.name);
   assert.equal(new Set(flowNames).size, flowNames.length, "Flow evidence names must be unique");
-  assert.deepEqual([...flowNames].sort(), [...requiredMobileFlows].sort(), "Every required mobile flow must have evidence");
+  const requiredFlows = requiredMobileFlowsByPlatform[report.app.platform];
+  assert.deepEqual([...flowNames].sort(), [...requiredFlows].sort(), `Every required ${report.app.platform} mobile flow must have evidence`);
   const flows = report.flows.map((flow) => {
     assert.ok(flow && typeof flow === "object" && !Array.isArray(flow), "Each flow must be an object");
     exactKeys(flow, `${flow.name ?? "unknown"} flow`, ["name", "status", "durationSeconds", "screenshotCount"]);

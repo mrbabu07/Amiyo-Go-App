@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { parseMobileDeviceEvidence, requiredMobileFlows, validateMobileDeviceEvidence } from "./mobile-device-evidence-lib.mjs";
+import { parseMobileDeviceEvidence, requiredMobileFlows, requiredMobileFlowsByPlatform, validateMobileDeviceEvidence } from "./mobile-device-evidence-lib.mjs";
 
 const now = Date.parse("2026-10-24T12:00:00.000Z");
 const commitSha = "a".repeat(40);
@@ -23,6 +23,16 @@ test("mobile evidence binds every passing flow to one staged release", () => {
   assert.equal(result.app.packageId, "com.amiyo.go");
 });
 
+test("iOS evidence requires cross-platform flows without Android airplane mode", () => {
+  const report = valid();
+  report.app.platform = "ios";
+  report.device = { kind: "simulator", model: "iPhone 17 Pro", osVersion: "iOS 20.0" };
+  report.flows = requiredMobileFlowsByPlatform.ios.map((name) => ({ name, status: "passed", durationSeconds: 30, screenshotCount: 1 }));
+  const result = validateMobileDeviceEvidence(report, { expectedCommitSha: commitSha, now });
+  assert.equal(result.app.platform, "ios");
+  assert.doesNotMatch(result.flows.map((flow) => flow.name).join(","), /offline-reconnect/);
+});
+
 test("mobile evidence accepts standard and PowerShell BOM JSON", () => {
   assert.equal(parseMobileDeviceEvidence(JSON.stringify(valid())).schemaVersion, 1);
   assert.equal(parseMobileDeviceEvidence(`\uFEFF${JSON.stringify(valid())}`).schemaVersion, 1);
@@ -31,7 +41,7 @@ test("mobile evidence accepts standard and PowerShell BOM JSON", () => {
 test("mobile evidence rejects missing, failed, stale and mismatched runs", () => {
   const missing = valid();
   missing.flows.pop();
-  assert.throws(() => validateMobileDeviceEvidence(missing, { expectedCommitSha: commitSha, now }), /Every required mobile flow/);
+  assert.throws(() => validateMobileDeviceEvidence(missing, { expectedCommitSha: commitSha, now }), /Every required android mobile flow/);
   const failed = valid();
   failed.flows[0].status = "failed";
   assert.throws(() => validateMobileDeviceEvidence(failed, { expectedCommitSha: commitSha, now }), /did not pass/);
@@ -52,4 +62,9 @@ test("mobile evidence rejects unbounded metadata and absent screenshots", () => 
   const leaked = valid();
   leaked.token = "must-not-be-recorded";
   assert.throws(() => validateMobileDeviceEvidence(leaked, { now }), /unsupported fields/);
+  const invalidIosDevice = valid();
+  invalidIosDevice.app.platform = "ios";
+  invalidIosDevice.device.kind = "emulator";
+  invalidIosDevice.flows = requiredMobileFlowsByPlatform.ios.map((name) => ({ name, status: "passed", durationSeconds: 30, screenshotCount: 1 }));
+  assert.throws(() => validateMobileDeviceEvidence(invalidIosDevice, { now }), /device.kind is invalid for ios/);
 });
