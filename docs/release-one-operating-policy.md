@@ -89,6 +89,14 @@ This policy records the launch scope already enforced by the application. It doe
 - The internal user row and Firebase subject remain as an anonymized tombstone so a later token cannot recreate the deleted account or restore contact data. Commerce, finance, dispute, support and audit records remain linked to the opaque internal identifier until the final legal retention schedule is approved.
 - Firebase-provider identity deletion and time-based cleanup of retained legal records remain production approvals. The application must not claim those external/provider steps have completed based only on database anonymization.
 
+## Ephemeral data retention
+
+- Expired idempotency receipts are removed after their explicit expiry time; clients must never retry an uncertain mutation after its documented recovery window.
+- Successfully processed outbox events are retained for 30 days for operational diagnosis, then removed. Pending, processing or failed events are never age-purged by this policy.
+- Expired refresh-session rows are retained for a 30-day investigation buffer, then removed. Revocation remains immediate at the authorization layer.
+- Delivered, failed or read notification-delivery logs are retained for 90 days, then removed. Pending deliveries are excluded from age cleanup.
+- Orders, payments, refunds, settlements, payouts, returns, disputes, audit logs, KYC/payment/return evidence and provider callbacks are not covered by this ephemeral policy. Their periods require named legal, finance, privacy and operations approval.
+
 ## Change control
 
 Changing country, currency, role, guest-checkout identity, or order-split policy requires a versioned product/operations decision, contract and migration review, updated tests, and release-owner approval. Admin settings may control operational parameters only within these approved boundaries.

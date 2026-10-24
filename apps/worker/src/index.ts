@@ -26,6 +26,7 @@ import { closeWorkerHealthServer, createWorkerHealthServer } from "./health-serv
 import { SellerOperationsAlertScheduler } from "./vendor/seller-operations-alert.scheduler.js";
 import { ReservationExpiryScheduler } from "./inventory/reservation-expiry.scheduler.js";
 import { AccountDeletionScheduler } from "./identity/account-deletion.scheduler.js";
+import { EphemeralRetentionScheduler } from "./retention/ephemeral-retention.scheduler.js";
 
 const env = parseWorkerEnv(process.env);
 const logger = createLogger("amiyo-worker", env.LOG_LEVEL);
@@ -57,6 +58,7 @@ const productAlertScheduler = new ProductAlertScheduler(prisma, (error) => logge
 const sellerOperationsAlertScheduler = new SellerOperationsAlertScheduler(prisma, (error) => logger.error({ error }, "Seller operations alert scheduler failed"));
 const reservationExpiryScheduler = new ReservationExpiryScheduler(prisma, (error) => logger.error({ error }, "Inventory reservation expiry scheduler failed"));
 const accountDeletionScheduler = new AccountDeletionScheduler(prisma, (error) => logger.error({ error }, "Account deletion scheduler failed"));
+const ephemeralRetentionScheduler = new EphemeralRetentionScheduler(prisma, (error) => logger.error({ error }, "Ephemeral retention scheduler failed"));
 let shuttingDown = false;
 const queueWorkers = [worker, mediaWorker, notificationWorker, newsletterWorker, loyaltyWorker];
 const healthServer = createWorkerHealthServer({
@@ -80,6 +82,7 @@ productAlertScheduler.start();
 sellerOperationsAlertScheduler.start();
 reservationExpiryScheduler.start();
 accountDeletionScheduler.start();
+ephemeralRetentionScheduler.start();
 const flashAlertScheduler = new FlashAlertScheduler(prisma, (error) => logger.error({ error }, "Flash alert scheduler failed"));
 flashAlertScheduler.start();
 healthServer.listen(env.WORKER_HEALTH_PORT, "0.0.0.0", () => logger.info({ port: env.WORKER_HEALTH_PORT }, "Worker health server listening"));
@@ -89,7 +92,7 @@ async function shutdown(signal: string) {
   if (shuttingDown) return;
   shuttingDown = true;
   logger.info({ signal }, "Worker shutting down");
-  relay.stop(); mediaRelay.stop(); notificationRelay.stop(); newsletterRelay.stop(); loyaltyRelay.stop(); abandonedCartScheduler.stop(); reservationExpiryScheduler.stop(); accountDeletionScheduler.stop();
+  relay.stop(); mediaRelay.stop(); notificationRelay.stop(); newsletterRelay.stop(); loyaltyRelay.stop(); abandonedCartScheduler.stop(); reservationExpiryScheduler.stop(); accountDeletionScheduler.stop(); ephemeralRetentionScheduler.stop();
   await withShutdownTimeout((async () => {
     await closeWorkerHealthServer(healthServer);
     await Promise.all([productAlertScheduler.stop(), flashAlertScheduler.stop(), sellerOperationsAlertScheduler.stop()]);
