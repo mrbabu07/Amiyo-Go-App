@@ -60,7 +60,7 @@ test("lost cancellation response replays after eligibility expires without repea
   let now = Date.parse("2026-10-03T00:00:00Z");
   context.mock.method(Date, "now", () => now);
   const { service, effects } = replayClient("cancel", now);
-  const input = { reason: "Changed mind", expectedVersion: 2 };
+  const input = { reasonCode: "CHANGED_MIND" as const, reason: "Changed mind", expectedVersion: 2 };
   await assert.rejects(() => service.cancelOrder(customer, "order", input, key), /response lost after commit/);
   const committed = [...effects];
   assert.deepEqual(committed, ["inventory-release", "reservation-release", "packages-cancelled", "order", "refund", "outbox", "audit", "idempotency"]);

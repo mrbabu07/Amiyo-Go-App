@@ -41,7 +41,7 @@ export function AdminOrderDetailScreen() {
     mutationFn: ({ vendorOrderId, status, version }: { vendorOrderId: string; status: string; version: number }) => transitionVendorOrder(currentActor(), vendorOrderId, { status: status as never, expectedVersion: version, reason: `Status updated to ${status} by marketplace administrator` }, randomUUID()),
     onSuccess: async () => { await Promise.all([cache.invalidateQueries({ queryKey: ["admin", "order", userId, id] }), cache.invalidateQueries({ queryKey: ["admin", "commerce", userId] })]); }
   });
-  const cancelOrder = useMutation({ mutationFn: () => cancelCustomerOrder(currentActor(), id, { expectedVersion: order.data!.version, reason: cancelReason.trim() }, randomUUID()), onSuccess: async () => { setCancelReason(""); await Promise.all([cache.invalidateQueries({ queryKey: ["admin", "order", userId, id] }), cache.invalidateQueries({ queryKey: ["admin", "commerce", userId] }), cache.invalidateQueries({ queryKey: ["notifications", userId] })]); } });
+  const cancelOrder = useMutation({ mutationFn: () => cancelCustomerOrder(currentActor(), id, { expectedVersion: order.data!.version, reasonCode: "ADMIN_OVERRIDE", reason: cancelReason.trim() }, randomUUID()), onSuccess: async () => { setCancelReason(""); await Promise.all([cache.invalidateQueries({ queryKey: ["admin", "order", userId, id] }), cache.invalidateQueries({ queryKey: ["admin", "commerce", userId] }), cache.invalidateQueries({ queryKey: ["notifications", userId] })]); } });
 
   if (order.isLoading) return <Screen title="Order detail"><ActivityIndicator color={colors.primary} /></Screen>;
   if (!order.data) return <Screen title="Order detail"><Text style={styles.error}>{order.error?.message ?? "Order not found"}</Text></Screen>;

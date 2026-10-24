@@ -27,6 +27,8 @@ This policy records the launch scope already enforced by the application. It doe
 - A checkout creates one parent order and one vendor order per participating vendor/shop package.
 - Inventory reservation, payment and customer totals belong to the parent order; fulfillment, delivery, seller documents, commission and settlement remain package-scoped.
 - Backorders are disabled for release one. The configured unpaid reservation window releases abandoned stock atomically.
+- Customer cancellation uses the admin-configured time window and only pre-fulfillment parent/package states. Customers select changed mind, ordered by mistake, wrong address, payment issue, duplicate order or other, and retain a bounded explanation in the durable replay request.
+- Administrative cancellation is a separate privileged reason class and always requires an operational explanation. Customer requests cannot claim the administrative reason. The reason code and detail are retained in status, refund, outbox and audit evidence.
 
 ## Delivery and COD privacy
 

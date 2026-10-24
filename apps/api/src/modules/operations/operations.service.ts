@@ -97,6 +97,7 @@ export class OperationsService {
   async cancelOrder(session: Session, orderId: string, input: CancelOrder, key: string, correlationId?: string) {
     const adminCancellation = session.permissions.includes("admin:manage");
     requirePermission(session, adminCancellation ? "orders:manage" : "orders:read");
+    if (!adminCancellation && input.reasonCode === "ADMIN_OVERRIDE") throw new ApiProblem(400, "CANCELLATION_REASON_INVALID", "Administrative cancellation reason is not available to customers");
     const scope = `order-cancel:${session.principal.userId}:${orderId}`;
     return withSerializableTransaction(this.client, async (transaction) => {
       const prior = await replay(transaction, scope, key, input); if (prior.response) return prior.response;
@@ -109,14 +110,16 @@ export class OperationsService {
       if (!["PENDING_PAYMENT", "CONFIRMED", "PROCESSING"].includes(order.status) || order.vendorOrders.some((item) => !["PLACED", "ACCEPTED", "PROCESSING"].includes(item.status))) throw new ApiProblem(409, "ORDER_CANCELLATION_NOT_ALLOWED", "Order can no longer be cancelled");
       await releaseOrderReservations(transaction, order.id, order.reservations);
       await transaction.vendorOrder.updateMany({ where: { orderId }, data: { status: "CANCELLED", version: { increment: 1 } } });
-      await transaction.order.update({ where: { id: orderId }, data: { status: "CANCELLED", version: { increment: 1 }, statusEvents: { create: { fromStatus: order.status, toStatus: "CANCELLED", actorType: adminCancellation ? "admin" : "customer", actorId: session.principal.userId, reason: input.reason } } } });
+      const reasonCode = adminCancellation ? "ADMIN_OVERRIDE" : input.reasonCode;
+      const recordedReason = `${reasonCode}: ${input.reason}`;
+      await transaction.order.update({ where: { id: orderId }, data: { status: "CANCELLED", version: { increment: 1 }, statusEvents: { create: { fromStatus: order.status, toStatus: "CANCELLED", actorType: adminCancellation ? "admin" : "customer", actorId: session.principal.userId, reason: recordedReason } } } });
       const payment = order.payments[0];
       if (payment && ["CAPTURED", "PARTIALLY_REFUNDED"].includes(payment.status)) {
         const refundable = payment.amountMinor - payment.refundedMinor; assertRefundLimit(payment.amountMinor, payment.refundedMinor, refundable);
-        await transaction.refund.create({ data: { orderId, paymentId: payment.id, amountMinor: refundable, currency: payment.currency, reason: `Cancellation: ${input.reason}` } });
+        await transaction.refund.create({ data: { orderId, paymentId: payment.id, amountMinor: refundable, currency: payment.currency, reason: `Cancellation ${recordedReason}` } });
       } else if (payment && !["FAILED", "CANCELLED", "EXPIRED", "REFUNDED"].includes(payment.status)) await transaction.payment.update({ where: { id: payment.id }, data: { status: "CANCELLED", version: { increment: 1 } } });
-      await this.outbox.enqueue(transaction, { aggregateType: "order", aggregateId: orderId, eventType: "order.cancelled", idempotencyKey: `order-cancelled:${orderId}`, payload: { reason: input.reason } });
-      await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: adminCancellation ? "admin" : "customer", action: adminCancellation ? "order.admin_cancelled" : "order.cancelled", resourceType: "order", resourceId: orderId, ...(correlationId ? { correlationId } : {}), before: json({ status: order.status }), after: json({ status: "CANCELLED", reason: input.reason }) } });
+      await this.outbox.enqueue(transaction, { aggregateType: "order", aggregateId: orderId, eventType: "order.cancelled", idempotencyKey: `order-cancelled:${orderId}`, payload: { reasonCode, reason: input.reason } });
+      await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: adminCancellation ? "admin" : "customer", action: adminCancellation ? "order.admin_cancelled" : "order.cancelled", resourceType: "order", resourceId: orderId, ...(correlationId ? { correlationId } : {}), before: json({ status: order.status }), after: json({ status: "CANCELLED", reasonCode, reason: input.reason }) } });
       const result = { id: orderId, status: "CANCELLED", version: order.version + 1 }; await remember(transaction, scope, key, prior.hash, result); return result;
     });
   }

@@ -27,14 +27,21 @@ function clientFor(order: Record<string, unknown>, calls: string[] = [], cancell
 
 test("customers can cancel their own order with order read access inside 30 minutes", async () => {
   const { client, calls } = clientFor({ id: orderId, userId, status: "CONFIRMED", version: 2, placedAt: new Date(Date.now() - 5 * 60_000), createdAt: new Date(Date.now() - 5 * 60_000), vendorOrders: [{ status: "PLACED" }], payments: [], reservations: [] });
-  const result = await new OperationsService(client).cancelOrder(customer, orderId, { reason: "Changed my mind", expectedVersion: 2 }, key);
+  const result = await new OperationsService(client).cancelOrder(customer, orderId, { reasonCode: "CHANGED_MIND", reason: "Changed my mind", expectedVersion: 2 }, key);
   assert.deepEqual(result, { id: orderId, status: "CANCELLED", version: 3 });
   assert.deepEqual(calls, ["vendor-orders", "order", "outbox", "audit", "idempotency"]);
 });
 
+test("customers cannot claim the administrative cancellation reason", async () => {
+  await assert.rejects(
+    () => new OperationsService({} as PrismaClient).cancelOrder(customer, orderId, { reasonCode: "ADMIN_OVERRIDE", reason: "Trying privileged reason", expectedVersion: 2 }, key),
+    /not available to customers/
+  );
+});
+
 test("customer cancellation expires 30 minutes after placement", async () => {
   const { client, calls } = clientFor({ id: orderId, userId, status: "CONFIRMED", version: 2, placedAt: new Date(Date.now() - 31 * 60_000), createdAt: new Date(Date.now() - 31 * 60_000), vendorOrders: [{ status: "PLACED" }], payments: [], reservations: [] });
-  await assert.rejects(() => new OperationsService(client).cancelOrder(customer, orderId, { reason: "Changed my mind", expectedVersion: 2 }, key), /within 30 minutes/);
+  await assert.rejects(() => new OperationsService(client).cancelOrder(customer, orderId, { reasonCode: "CHANGED_MIND", reason: "Changed my mind", expectedVersion: 2 }, key), /within 30 minutes/);
   assert.deepEqual(calls, []);
 });
 
@@ -42,18 +49,18 @@ test("customer cancellation rejects the exact deadline without writes", async (c
   const now = Date.parse("2026-10-03T12:30:00Z");
   context.mock.method(Date, "now", () => now);
   const { client, calls } = clientFor({ id: orderId, userId, status: "CONFIRMED", version: 2, placedAt: new Date(now - 30 * 60_000), createdAt: new Date(now - 60 * 60_000), vendorOrders: [{ status: "PLACED" }], payments: [], reservations: [] });
-  await assert.rejects(new OperationsService(client).cancelOrder(customer, orderId, { reason: "Changed my mind", expectedVersion: 2 }, key), /within 30 minutes/);
+  await assert.rejects(new OperationsService(client).cancelOrder(customer, orderId, { reasonCode: "CHANGED_MIND", reason: "Changed my mind", expectedVersion: 2 }, key), /within 30 minutes/);
   assert.deepEqual(calls, []);
 });
 
 test("placement time takes priority over an older creation time", async () => {
   const { client } = clientFor({ id: orderId, userId, status: "CONFIRMED", version: 2, placedAt: new Date(Date.now() - 5 * 60_000), createdAt: new Date(Date.now() - 60 * 60_000), vendorOrders: [{ status: "PLACED" }], payments: [], reservations: [] });
-  const result = await new OperationsService(client).cancelOrder(customer, orderId, { reason: "Changed my mind", expectedVersion: 2 }, key);
+  const result = await new OperationsService(client).cancelOrder(customer, orderId, { reasonCode: "CHANGED_MIND", reason: "Changed my mind", expectedVersion: 2 }, key);
   assert.deepEqual(result, { id: orderId, status: "CANCELLED", version: 3 });
 });
 
 test("customer cancellation uses the admin-controlled window", async () => {
   const { client, calls } = clientFor({ id: orderId, userId, status: "CONFIRMED", version: 2, placedAt: new Date(Date.now() - 11 * 60_000), createdAt: new Date(Date.now() - 11 * 60_000), vendorOrders: [{ status: "PLACED" }], payments: [], reservations: [] }, [], 10);
-  await assert.rejects(() => new OperationsService(client).cancelOrder(customer, orderId, { reason: "Changed my mind", expectedVersion: 2 }, key), /within 10 minutes/);
+  await assert.rejects(() => new OperationsService(client).cancelOrder(customer, orderId, { reasonCode: "CHANGED_MIND", reason: "Changed my mind", expectedVersion: 2 }, key), /within 10 minutes/);
   assert.deepEqual(calls, []);
 });

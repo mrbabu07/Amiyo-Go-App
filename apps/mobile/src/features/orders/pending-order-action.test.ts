@@ -4,7 +4,7 @@ import { createPendingOrderActionStore, mayDiscardOrderRejection, orderRecoveryW
 
 const firstKey = "00000000-0000-4000-8000-000000000001";
 const nextKey = "00000000-0000-4000-8000-000000000002";
-const command: OrderCommand = { kind: "cancel", input: { reason: "Changed mind", expectedVersion: 2 } };
+const command: OrderCommand = { kind: "cancel", input: { reasonCode: "CHANGED_MIND", reason: "Changed mind", expectedVersion: 2 } };
 function fixture() {
   const records = new Map<string, string>();
   const storage = { getItem: async (key: string) => records.get(key) ?? null, setItem: async (key: string, value: string) => { records.set(key, value); }, removeItem: async (key: string) => { records.delete(key); } };
@@ -21,7 +21,7 @@ test("reload and ambiguous retries preserve key, payload and original version", 
   assert.equal(retry.fresh, false);
   assert.equal(retry.key, firstKey);
   assert.deepEqual(retry.command, command);
-  await assert.rejects(() => setup.store().prepare("customer", "order", { kind: "cancel", input: { reason: "Different reason", expectedVersion: 3 } }, nextKey), /original saved request/);
+  await assert.rejects(() => setup.store().prepare("customer", "order", { kind: "cancel", input: { reasonCode: "OTHER", reason: "Different reason", expectedVersion: 3 } }, nextKey), /original saved request/);
 });
 
 test("account and order boundaries isolate saved operations and cleanup keys", async () => {

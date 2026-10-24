@@ -1,4 +1,4 @@
-import type { OrderDto } from "@amiyo/contracts";
+import type { CancelOrder, OrderDto } from "@amiyo/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { randomUUID } from "expo-crypto";
 import { useRouter } from "expo-router";
@@ -28,12 +28,12 @@ export function InlineOrderCancellation({ order }: { order: OrderDto }) {
   const current = () => mounted.current && Boolean(ownerUid) && activeUid.current === ownerUid;
   const recovery = useQuery({ queryKey: ["return-order-recovery", user?.uid, order.id], queryFn: () => pendingOrderActions.load(user!.uid, order.id), enabled: Boolean(user), retry: false, staleTime: 0 });
   const blocked = uncertain || Boolean(recovery.data) || recovery.isLoading || Boolean(recovery.error);
-  const mutation = useMutation({ retry: false, mutationFn: async (reason: string) => {
+  const mutation = useMutation({ retry: false, mutationFn: async (input: Omit<CancelOrder, "expectedVersion">) => {
     if (!current() || blocked || lock.current) throw new Error("Check saved requests before cancelling.");
     if (!cancellationState(order, Date.now()).cancellable) throw new Error("The cancellation window has ended or fulfillment has started.");
     lock.current = true;
     try {
-      const saved = await pendingOrderActions.prepare(user!.uid, order.id, { kind: "cancel", input: { reason, expectedVersion: order.version } }, randomUUID());
+      const saved = await pendingOrderActions.prepare(user!.uid, order.id, { kind: "cancel", input: { ...input, expectedVersion: order.version } }, randomUUID());
       if (current()) setUncertain(true);
       if (!current()) throw new Error("Your account changed. Reopen this order.");
       try {
@@ -56,7 +56,7 @@ export function InlineOrderCancellation({ order }: { order: OrderDto }) {
   return <View style={{ gap: spacing.sm }}>
     {blocked && !mutation.isPending ? <Pressable accessibilityRole="button" onPress={() => router.push(`/order/${order.id}` as never)} style={{ minHeight: 44, padding: spacing.sm }}><Text style={{ color: colors.text }}>Check saved order request</Text></Pressable> : null}
     {policy.cancellable && !open ? <Pressable accessibilityRole="button" disabled={blocked || mutation.isPending} onPress={() => setOpen(true)} style={{ minHeight: 44, padding: spacing.sm }}><Text style={{ color: colors.danger }}>Cancel order · {Math.ceil(policy.remainingMs / 60_000)} min remaining</Text></Pressable> : null}
-    {open ? <CancelOrderConfirmation busy={blocked || mutation.isPending} eligible={policy.cancellable} onClose={() => setOpen(false)} onConfirm={(reason) => mutation.mutate(reason)} /> : null}
+    {open ? <CancelOrderConfirmation busy={blocked || mutation.isPending} eligible={policy.cancellable} onClose={() => setOpen(false)} onConfirm={(input) => mutation.mutate(input)} /> : null}
     {mutation.error ? <Text accessibilityRole="alert" style={{ color: colors.danger }}>{mutation.error.message}</Text> : null}
   </View>;
 }

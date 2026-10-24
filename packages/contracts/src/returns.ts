@@ -73,7 +73,8 @@ export const sellerReturnReceiptSchema = z.object({
   notes: z.string().trim().max(1000).nullable().optional()
 });
 
-export const cancelOrderSchema = z.object({ reason: z.string().trim().min(3).max(500), expectedVersion: versionSchema });
+export const cancellationReasonCodeSchema = z.enum(["CHANGED_MIND", "ORDERED_BY_MISTAKE", "WRONG_ADDRESS", "PAYMENT_ISSUE", "DUPLICATE_ORDER", "OTHER", "ADMIN_OVERRIDE"]);
+export const cancelOrderSchema = z.object({ reasonCode: cancellationReasonCodeSchema.default("OTHER"), reason: z.string().trim().min(3).max(500), expectedVersion: versionSchema });
 
 export type ReturnDto = z.infer<typeof returnSchema>;
 export type ReturnReason = z.infer<typeof returnReasonSchema>;
@@ -82,3 +83,4 @@ export type ReturnTransition = z.infer<typeof returnTransitionSchema>;
 export type SellerReturnResponse = z.infer<typeof sellerReturnResponseSchema>;
 export type SellerReturnReceipt = z.infer<typeof sellerReturnReceiptSchema>;
 export type CancelOrder = z.infer<typeof cancelOrderSchema>;
+export type CancellationReasonCode = z.infer<typeof cancellationReasonCodeSchema>;
