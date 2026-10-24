@@ -66,6 +66,11 @@ export const accountPreferencesSchema = z.object({
     reviewHistoryVisibility: z.enum(["private", "followers", "public"]),
     personalization: z.boolean()
   })
+}).superRefine((value, context) => {
+  for (const [event, channels] of Object.entries(value.notificationPreferences)) {
+    if (channels.sms) context.addIssue({ code: z.ZodIssueCode.custom, path: ["notificationPreferences", event, "sms"], message: "SMS notifications are not available in release one" });
+    if (event !== "priceDrops" && channels.email) context.addIssue({ code: z.ZodIssueCode.custom, path: ["notificationPreferences", event, "email"], message: "Email is available only for requested product alerts in release one" });
+  }
 });
 
 export const addressInputSchema = z.object({

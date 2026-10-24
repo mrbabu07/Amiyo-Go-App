@@ -291,7 +291,7 @@ async function seedDemoCatalog() {
 
   const customerPreferences = {
     notificationPreferences: {
-      orderUpdates: { email: true, sms: true, push: true }, promotions: { email: true, sms: false, push: false },
+      orderUpdates: { email: false, sms: false, push: true }, promotions: { email: false, sms: false, push: false },
       priceDrops: { email: true, sms: false, push: true }, vendorNews: { email: false, sms: false, push: false }
     },
     privacy: { wishlistVisibility: "private", reviewHistoryVisibility: "public", personalization: true }

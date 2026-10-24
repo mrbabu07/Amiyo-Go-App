@@ -70,6 +70,14 @@ This policy records the launch scope already enforced by the application. It doe
 - A fixed fee is charged once for each selected rule within a vendor order, while percentage commission uses the corresponding line subtotal. Total commission cannot exceed the vendor-order subtotal.
 - Checkout stores the selected rule and calculation snapshot. Approved proportional refund allocations reduce unsettled seller earnings or create ledger-backed reversals after settlement, as documented in `business-rules-approval.md`.
 
+## Notifications
+
+- Transactional in-app notifications are the durable release-one record for supported customer, seller and operations events.
+- Expo push is an optional convenience channel and follows customer or seller event preferences. The in-app inbox remains available after push opt-out or token revocation.
+- Email is enabled only for customer-requested product alerts and separately subscribed newsletters. Both use explicit opt-in and existing preference or unsubscribe controls.
+- SMS and all other transactional email events are disabled for release one. The API rejects unsupported channel selections instead of storing a preference that cannot be delivered.
+- Promotional campaigns do not use transactional push. Scheduled newsletters with recipient snapshots are the approved marketing path, so release one does not require a separate marketing-push quiet-hours window.
+
 ## Change control
 
 Changing country, currency, role, guest-checkout identity, or order-split policy requires a versioned product/operations decision, contract and migration review, updated tests, and release-owner approval. Admin settings may control operational parameters only within these approved boundaries.

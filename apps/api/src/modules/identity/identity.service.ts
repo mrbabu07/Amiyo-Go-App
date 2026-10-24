@@ -84,7 +84,7 @@ function profileData(input: UpdateProfile) {
 
 const defaultPreferences: AccountPreferences = {
   notificationPreferences: {
-    orderUpdates: { email: true, sms: false, push: true },
+    orderUpdates: { email: false, sms: false, push: true },
     promotions: { email: false, sms: false, push: false },
     priceDrops: { email: true, sms: false, push: true },
     vendorNews: { email: false, sms: false, push: false }
@@ -97,8 +97,8 @@ function accountPreferences(value: Prisma.JsonValue | null | undefined): Account
   const source = value as Record<string, unknown>;
   const notifications = source.notificationPreferences && typeof source.notificationPreferences === "object" && !Array.isArray(source.notificationPreferences) ? source.notificationPreferences as Record<string, unknown> : {};
   const privacy = source.privacy && typeof source.privacy === "object" && !Array.isArray(source.privacy) ? source.privacy as Record<string, unknown> : {};
-  const channel = (key: string, fallback: AccountPreferences["notificationPreferences"]["orderUpdates"]) => ({ ...fallback, ...(notifications[key] && typeof notifications[key] === "object" && !Array.isArray(notifications[key]) ? notifications[key] as object : {}) });
-  return { notificationPreferences: { orderUpdates: channel("orderUpdates", defaultPreferences.notificationPreferences.orderUpdates), promotions: channel("promotions", defaultPreferences.notificationPreferences.promotions), priceDrops: channel("priceDrops", defaultPreferences.notificationPreferences.priceDrops), vendorNews: channel("vendorNews", defaultPreferences.notificationPreferences.vendorNews) }, privacy: { ...defaultPreferences.privacy, ...privacy } } as AccountPreferences;
+  const channel = (key: string, fallback: AccountPreferences["notificationPreferences"]["orderUpdates"]) => ({ ...fallback, ...(notifications[key] && typeof notifications[key] === "object" && !Array.isArray(notifications[key]) ? notifications[key] as object : {}), sms: false });
+  return { notificationPreferences: { orderUpdates: { ...channel("orderUpdates", defaultPreferences.notificationPreferences.orderUpdates), email: false }, promotions: { ...channel("promotions", defaultPreferences.notificationPreferences.promotions), email: false }, priceDrops: channel("priceDrops", defaultPreferences.notificationPreferences.priceDrops), vendorNews: { ...channel("vendorNews", defaultPreferences.notificationPreferences.vendorNews), email: false } }, privacy: { ...defaultPreferences.privacy, ...privacy } } as AccountPreferences;
 }
 
 function addressData(input: AddressInput) {

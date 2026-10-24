@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { addCartItemSchema, addressInputSchema, adminOrderDetailSchema, cancelOrderSchema, catalogQuerySchema, checkoutInputSchema, commissionRuleInputSchema, createOpenApiDocument, createProductSchema, createReturnSchema, deviceInputSchema, minorUnitSchema, moneySchema, productReportInputSchema, publicPlatformSettingsSchema, vendorOrderStatusSchema, vendorRegistrationSchema } from "./index.js";
+import { accountPreferencesSchema, addCartItemSchema, addressInputSchema, adminOrderDetailSchema, cancelOrderSchema, catalogQuerySchema, checkoutInputSchema, commissionRuleInputSchema, createOpenApiDocument, createProductSchema, createReturnSchema, deviceInputSchema, minorUnitSchema, moneySchema, productReportInputSchema, publicPlatformSettingsSchema, vendorOrderStatusSchema, vendorRegistrationSchema } from "./index.js";
 
 test("money contracts preserve bigint-safe minor units", () => {
   assert.deepEqual(moneySchema.parse({ amountMinor: "249000", currency: "bdt" }), { amountMinor: "249000", currency: "BDT" });
@@ -17,6 +17,13 @@ test("cancellation records a bounded actor-aware reason taxonomy", () => {
   assert.equal(cancelOrderSchema.parse({ reasonCode: "WRONG_ADDRESS", reason: "Selected my old address", expectedVersion: 2 }).reasonCode, "WRONG_ADDRESS");
   assert.equal(cancelOrderSchema.parse({ reason: "Legacy saved request", expectedVersion: 2 }).reasonCode, "OTHER");
   assert.equal(cancelOrderSchema.safeParse({ reasonCode: "UNBOUNDED_REASON", reason: "Invalid taxonomy", expectedVersion: 2 }).success, false);
+});
+
+test("release-one notification preferences reject unavailable channels", () => {
+  const preferences = { notificationPreferences: { orderUpdates: { email: false, sms: false, push: true }, promotions: { email: false, sms: false, push: false }, priceDrops: { email: true, sms: false, push: true }, vendorNews: { email: false, sms: false, push: false } }, privacy: { wishlistVisibility: "private", reviewHistoryVisibility: "public", personalization: true } };
+  assert.equal(accountPreferencesSchema.safeParse(preferences).success, true);
+  assert.equal(accountPreferencesSchema.safeParse({ ...preferences, notificationPreferences: { ...preferences.notificationPreferences, orderUpdates: { email: true, sms: false, push: true } } }).success, false);
+  assert.equal(accountPreferencesSchema.safeParse({ ...preferences, notificationPreferences: { ...preferences.notificationPreferences, priceDrops: { email: true, sms: true, push: true } } }).success, false);
 });
 
 test("OpenAPI document exposes typed v2 resources", () => {
