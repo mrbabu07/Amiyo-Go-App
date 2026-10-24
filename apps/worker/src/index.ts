@@ -29,7 +29,7 @@ import { AccountDeletionScheduler } from "./identity/account-deletion.scheduler.
 import { FirebaseIdentityProvider } from "./identity/firebase-identity.provider.js";
 import { EphemeralRetentionScheduler } from "./retention/ephemeral-retention.scheduler.js";
 import { MediaUploadRetentionScheduler } from "./retention/media-upload-retention.scheduler.js";
-import { workerQueueMetrics } from "./queue-metrics.js";
+import { QueueMetricsScheduler, workerQueueMetrics } from "./queue-metrics.js";
 
 const env = parseWorkerEnv(process.env);
 const logger = createLogger("amiyo-worker", env.LOG_LEVEL);
@@ -57,6 +57,14 @@ const mediaRelay = new MediaOutboxRelay(prisma, mediaQueue, (error) => logger.er
 const notificationRelay = new NotificationOutboxRelay(prisma, notificationQueue, (error) => logger.error({ error }, "Notification outbox relay failed"));
 const newsletterRelay = new NewsletterOutboxRelay(prisma, newsletterQueue, (error) => logger.error({ error }, "Newsletter outbox relay failed"));
 const loyaltyRelay = new LoyaltyOutboxRelay(prisma, loyaltyQueue, (error) => logger.error({ error }, "Loyalty outbox relay failed"));
+const metricQueues = [
+  { name: queueName, queue },
+  { name: mediaQueueName, queue: mediaQueue },
+  { name: notificationQueueName, queue: notificationQueue },
+  { name: newsletterQueueName, queue: newsletterQueue },
+  { name: loyaltyQueueName, queue: loyaltyQueue }
+];
+const queueMetricsScheduler = new QueueMetricsScheduler(metricQueues, logger);
 const abandonedCartScheduler = new AbandonedCartScheduler(prisma, (error) => logger.error({ error }, "Abandoned cart scheduler failed"));
 const productAlertScheduler = new ProductAlertScheduler(prisma, (error) => logger.error({ error }, "Product alert scheduler failed"));
 const sellerOperationsAlertScheduler = new SellerOperationsAlertScheduler(prisma, (error) => logger.error({ error }, "Seller operations alert scheduler failed"));
@@ -69,13 +77,7 @@ const queueWorkers = [worker, mediaWorker, notificationWorker, newsletterWorker,
 const healthServer = createWorkerHealthServer({
   logger,
   isShuttingDown: () => shuttingDown,
-  metrics: () => workerQueueMetrics([
-    { name: queueName, queue },
-    { name: mediaQueueName, queue: mediaQueue },
-    { name: notificationQueueName, queue: notificationQueue },
-    { name: newsletterQueueName, queue: newsletterQueue },
-    { name: loyaltyQueueName, queue: loyaltyQueue }
-  ]),
+  metrics: () => workerQueueMetrics(metricQueues),
   readiness: async () => {
     if (queueWorkers.some((queueWorker) => !queueWorker.isRunning())) throw new Error("A queue worker is not running");
     const [redisStatus] = await Promise.all([connection.ping(), prisma.$queryRaw`SELECT 1`]);
@@ -96,6 +98,7 @@ reservationExpiryScheduler.start();
 accountDeletionScheduler.start();
 ephemeralRetentionScheduler.start();
 mediaUploadRetentionScheduler.start();
+queueMetricsScheduler.start();
 const flashAlertScheduler = new FlashAlertScheduler(prisma, (error) => logger.error({ error }, "Flash alert scheduler failed"));
 flashAlertScheduler.start();
 healthServer.listen(env.WORKER_HEALTH_PORT, "0.0.0.0", () => logger.info({ port: env.WORKER_HEALTH_PORT }, "Worker health server listening"));
@@ -105,7 +108,7 @@ async function shutdown(signal: string) {
   if (shuttingDown) return;
   shuttingDown = true;
   logger.info({ signal }, "Worker shutting down");
-  relay.stop(); mediaRelay.stop(); notificationRelay.stop(); newsletterRelay.stop(); loyaltyRelay.stop(); abandonedCartScheduler.stop(); reservationExpiryScheduler.stop(); accountDeletionScheduler.stop(); ephemeralRetentionScheduler.stop(); mediaUploadRetentionScheduler.stop();
+  relay.stop(); mediaRelay.stop(); notificationRelay.stop(); newsletterRelay.stop(); loyaltyRelay.stop(); abandonedCartScheduler.stop(); reservationExpiryScheduler.stop(); accountDeletionScheduler.stop(); ephemeralRetentionScheduler.stop(); mediaUploadRetentionScheduler.stop(); queueMetricsScheduler.stop();
   await withShutdownTimeout((async () => {
     await closeWorkerHealthServer(healthServer);
     await Promise.all([productAlertScheduler.stop(), flashAlertScheduler.stop(), sellerOperationsAlertScheduler.stop()]);
