@@ -28,6 +28,13 @@ This policy records the launch scope already enforced by the application. It doe
 - Inventory reservation, payment and customer totals belong to the parent order; fulfillment, delivery, seller documents, commission and settlement remain package-scoped.
 - Backorders are disabled for release one. The configured unpaid reservation window releases abandoned stock atomically.
 
+## Delivery and COD privacy
+
+- Customer tracking exposes the courier/provider name, tracking reference, package state, public event description/location and timestamps. Release one does not expose rider or pickup-staff names, phone numbers, internal assignments or provider payloads to customers.
+- Operations staff retain assignment details inside the permission-protected logistics workspace and audit trail.
+- COD is authorized and collected once against the parent-order payment after every active package reaches the delivery gate. Package delivery evidence remains separate, but a seller package must not create or collect a second customer COD payment.
+- Courier remittance and seller settlement may allocate the parent collection internally only after reconciliation; they do not represent additional customer collection.
+
 ## Catalog moderation
 
 - Vendors create products as drafts and may submit draft or rejected products for review.

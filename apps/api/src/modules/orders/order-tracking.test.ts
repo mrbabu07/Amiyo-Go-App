@@ -42,7 +42,7 @@ test("tracking starts package and shipment reads concurrently and preserves pack
     shipment: { findMany: async ({ where, include }: { where: unknown; include: { events: { orderBy: unknown } } }) => {
       assert.deepEqual(where, { vendorOrder: { orderId: "order" } });
       assert.deepEqual(include.events.orderBy, { occurredAt: "asc" });
-      return branch([{ id: "shipment", vendorOrderId: "package-2", status: "IN_TRANSIT", provider: "courier", trackingNumber: "TRACK-2", assignment: null, events: [{ id: "event", status: "IN_TRANSIT", description: "Moving", location: "Dhaka", occurredAt }] }]);
+      return branch([{ id: "shipment", vendorOrderId: "package-2", status: "IN_TRANSIT", provider: "courier", trackingNumber: "TRACK-2", assignment: { id: "private-assignment", pickupStaffId: "private-rider", note: "internal dispatch note", version: 3 }, events: [{ id: "event", status: "IN_TRANSIT", description: "Moving", location: "Dhaka", occurredAt, providerPayload: { riderPhone: "01700000000" } }] }]);
     } }
   };
   const result = await new OrderService(client as never).tracking(session, "order");
@@ -50,4 +50,6 @@ test("tracking starts package and shipment reads concurrently and preserves pack
   assert.deepEqual(result.shipments.map((item) => item.vendorOrderId), ["package-1", "package-2"]);
   assert.equal(result.shipments[0]?.shipment, null);
   assert.equal(result.shipments[1]?.shipment?.events[0]?.occurredAt, occurredAt.toISOString());
+  const publicPayload = JSON.stringify(result);
+  assert.doesNotMatch(publicPayload, /private-assignment|private-rider|internal dispatch note|01700000000|providerPayload/);
 });
