@@ -156,8 +156,15 @@ test("runtime contracts use the remediated Zod and OpenAPI toolchain", async () 
 
 test("production gate remains blocked until external evidence exists", async () => {
   const phase = await readFile(new URL("../docs/phase-10-production-hardening.md", import.meta.url), "utf8");
+  const workflow = await readFile(new URL("../.github/workflows/deploy.yml", import.meta.url), "utf8");
+  const readiness = await readFile(new URL("./release-readiness.mjs", import.meta.url), "utf8");
   assert.match(phase, /Gate status: blocked/);
   assert.match(phase, /not production-ready/);
+  assert.match(workflow, /ANDROID_DEVICE_EVIDENCE_JSON: \$\{\{ secrets\.ANDROID_DEVICE_EVIDENCE_JSON \}\}/);
+  assert.match(workflow, /IOS_DEVICE_EVIDENCE_JSON: \$\{\{ secrets\.IOS_DEVICE_EVIDENCE_JSON \}\}/);
+  assert.match(workflow, /FINANCE_PROVIDER_EVIDENCE_JSON: \$\{\{ secrets\.FINANCE_PROVIDER_EVIDENCE_JSON \}\}/);
+  assert.match(readiness, /evidenceRequired/);
+  assert.match(readiness, /releaseEvidence/);
 });
 
 test("restore drill is manual, isolated and retains immutable evidence", async () => {

@@ -30,6 +30,13 @@ jobs:
         shell: bash
         run: test "$GITHUB_REF" = "refs/heads/main"
       - run: npm ci
+      - name: Materialize protected production evidence
+        if: ${{ inputs.environment == 'production' }}
+        run: npm run release:evidence-files
+        env:
+          ANDROID_DEVICE_EVIDENCE_JSON: ${{ secrets.ANDROID_DEVICE_EVIDENCE_JSON }}
+          IOS_DEVICE_EVIDENCE_JSON: ${{ secrets.IOS_DEVICE_EVIDENCE_JSON }}
+          FINANCE_PROVIDER_EVIDENCE_JSON: ${{ secrets.FINANCE_PROVIDER_EVIDENCE_JSON }}
       - name: Verify release readiness
         run: npm run release:check
         env:
@@ -38,6 +45,9 @@ jobs:
           RELEASE_COMMIT_SHA: ${{ github.sha }}
           RELEASE_ENVIRONMENT: ${{ inputs.environment }}
           RELEASE_RUN_ID: ${{ github.run_id }}
+          ANDROID_DEVICE_EVIDENCE_PATH: ${{ inputs.environment == 'production' && 'android-device-evidence.json' || '' }}
+          IOS_DEVICE_EVIDENCE_PATH: ${{ inputs.environment == 'production' && 'ios-device-evidence.json' || '' }}
+          FINANCE_PROVIDER_EVIDENCE_PATH: ${{ inputs.environment == 'production' && 'finance-provider-evidence.json' || '' }}
       - name: Upload release-readiness evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

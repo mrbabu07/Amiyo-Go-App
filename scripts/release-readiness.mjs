@@ -1,6 +1,8 @@
 import { access, readFile, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { parseFinanceProviderEvidence, validateFinanceProviderEvidence } from "./finance-provider-evidence-lib.mjs";
+import { parseMobileDeviceEvidence, validateMobileDeviceEvidence } from "./mobile-device-evidence-lib.mjs";
 
 const requiredFiles = [
   ".github/workflows/ci.yml",
@@ -77,12 +79,35 @@ const runtimeDependencyAudits = {
   api: runAudit("@amiyo/api"),
   worker: runAudit("@amiyo/worker")
 };
-const releaseBlocked = blockers.length > 0 || dependencyAudit.status !== "passed" || Object.values(runtimeDependencyAudits).some((audit) => audit.status !== "passed");
 const provenance = {
   commitSha: boundedMetadata(process.env.RELEASE_COMMIT_SHA, "RELEASE_COMMIT_SHA", /^[0-9a-f]{40}$/i),
   environment: boundedMetadata(process.env.RELEASE_ENVIRONMENT, "RELEASE_ENVIRONMENT", /^(ci|staging|production)$/),
   runId: boundedMetadata(process.env.RELEASE_RUN_ID, "RELEASE_RUN_ID", /^[0-9]+$/)
 };
+const evidencePath = (value, name) => {
+  const normalized = value?.trim();
+  if (!normalized) return null;
+  if (normalized.length > 2_048 || /[\r\n\0]/.test(normalized)) throw new Error(`${name} is invalid`);
+  return normalized;
+};
+const validateEvidence = async (path, parser, validator, expectedPlatform) => {
+  if (!path) return { status: "missing" };
+  try {
+    const validated = validator(parser(await readFile(path, "utf8")), { expectedCommitSha: provenance.commitSha ?? undefined });
+    if (expectedPlatform && validated.app.platform !== expectedPlatform) throw new Error(`Expected ${expectedPlatform} evidence`);
+    return { status: "passed", measuredAt: validated.finishedAt ?? validated.executedAt, ...(expectedPlatform ? { platform: expectedPlatform } : {}) };
+  } catch (error) {
+    return { status: "invalid", reason: error instanceof Error ? error.message : "Evidence validation failed" };
+  }
+};
+const releaseEvidence = {
+  android: await validateEvidence(evidencePath(process.env.ANDROID_DEVICE_EVIDENCE_PATH, "ANDROID_DEVICE_EVIDENCE_PATH"), parseMobileDeviceEvidence, validateMobileDeviceEvidence, "android"),
+  ios: await validateEvidence(evidencePath(process.env.IOS_DEVICE_EVIDENCE_PATH, "IOS_DEVICE_EVIDENCE_PATH"), parseMobileDeviceEvidence, validateMobileDeviceEvidence, "ios"),
+  finance: await validateEvidence(evidencePath(process.env.FINANCE_PROVIDER_EVIDENCE_PATH, "FINANCE_PROVIDER_EVIDENCE_PATH"), parseFinanceProviderEvidence, validateFinanceProviderEvidence)
+};
+const evidenceRequired = provenance.environment === "production" || process.env.REQUIRE_PRODUCTION_READY === "true";
+const evidenceBlocked = evidenceRequired && Object.values(releaseEvidence).some((evidence) => evidence.status !== "passed");
+const releaseBlocked = blockers.length > 0 || dependencyAudit.status !== "passed" || Object.values(runtimeDependencyAudits).some((audit) => audit.status !== "passed") || evidenceBlocked;
 const result = {
   schemaVersion: 1,
   measuredAt: new Date().toISOString(),
@@ -92,7 +117,8 @@ const result = {
   unresolvedDecisionNames: blockers,
   checkedFiles: requiredFiles.length,
   dependencyAudit,
-  runtimeDependencyAudits
+  runtimeDependencyAudits,
+  releaseEvidence: { required: evidenceRequired, ...releaseEvidence }
 };
 console.log(JSON.stringify(result, null, 2));
 if (process.env.RELEASE_REPORT_PATH?.trim()) {

@@ -14,6 +14,7 @@ The complete production Definition of Done must pass with staging/provider/devic
 - Expo SDK 58 dependency alignment and Expo compatibility checks pass, but the 2026-10-24 complete-graph audit still reports five high findings inherited through the Expo CLI/build graph (`expo`, `@expo/cli`, `@expo/code-signing-certificates`, `node-forge`, and the CLI's nested Zod 3). The installed Expo 58 CLI resolves the latest published `node-forge` 1.4.0 and Zod 3.25.76, which remain inside their advisory ranges; npm offers only an incompatible Expo 44 downgrade. The release audit therefore stays blocking until Expo publishes compatible remediation or a named security owner accepts the build-time risk with compensating controls.
 - Incident response, backup/restore drill, release, migration cutover, and rollback procedures.
 - Authenticated delivery queue inspection/retry APIs reset the original transactional outbox event and retry the retained stable BullMQ job without creating another provider identity.
+- Production deploy preflight materializes Android, iOS and finance evidence JSON from protected environment secrets, validates each against the exact release commit and rejects missing, stale, failed or malformed evidence without exposing provider references or credentials in the readiness report.
 
 ## Gate status: blocked
 
