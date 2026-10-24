@@ -1,0 +1,46 @@
+name: Isolated Restore Drill
+
+on:
+  workflow_dispatch:
+    inputs:
+      recovery_point:
+        description: Provider backup/PITR identifier (never a credential)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: isolated-restore-drill
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    environment: recovery-drill
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run prisma:generate
+      - run: npm run build
+      - name: Verify restored PostgreSQL invariants
+        run: npm run restore:verify
+        env:
+          DATABASE_URL: ${{ secrets.ACTIVE_DATABASE_URL }}
+          RESTORE_DATABASE_URL: ${{ secrets.RESTORE_DATABASE_URL }}
+          RESTORE_VERIFICATION_ACK: isolated-non-production
+          RESTORE_REPORT_PATH: restore-verification-${{ github.run_id }}-${{ github.run_attempt }}.json
+      - name: Upload immutable restore evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: restore-drill-${{ github.sha }}-${{ github.run_attempt }}
+          path: restore-verification-${{ github.run_id }}-${{ github.run_attempt }}.json
+          if-no-files-found: error
+          retention-days: 90

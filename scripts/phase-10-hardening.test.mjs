@@ -148,3 +148,16 @@ test("production gate remains blocked until external evidence exists", async () 
   assert.match(phase, /Gate status: blocked/);
   assert.match(phase, /not production-ready/);
 });
+
+test("restore drill is manual, isolated and retains immutable evidence", async () => {
+  const workflow = await readFile(new URL("../.github/workflows/restore-drill.yml", import.meta.url), "utf8");
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /environment: recovery-drill/);
+  assert.match(workflow, /RESTORE_VERIFICATION_ACK: isolated-non-production/);
+  assert.match(workflow, /RESTORE_DATABASE_URL: \$\{\{ secrets\.RESTORE_DATABASE_URL \}\}/);
+  assert.match(workflow, /DATABASE_URL: \$\{\{ secrets\.ACTIVE_DATABASE_URL \}\}/);
+  assert.match(workflow, /npm run restore:verify/);
+  assert.match(workflow, /retention-days: 90/);
+  assert.doesNotMatch(workflow, /prisma:migrate:deploy/);
+  assert.doesNotMatch(workflow, /uses:\s+[^\s]+@v\d+/);
+});

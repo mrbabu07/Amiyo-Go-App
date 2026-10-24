@@ -12,6 +12,7 @@
 2. Configure temporary `DATABASE_URL` and `DIRECT_URL` in the encrypted staging environment.
 3. Run `npm run prisma:migrate:deploy`, then set `RESTORE_DATABASE_URL`, `RESTORE_VERIFICATION_ACK=isolated-non-production`, and a new `RESTORE_REPORT_PATH`.
 4. Run `npm run restore:verify`. It refuses the active `DATABASE_URL`, requires PostgreSQL TLS, executes only a fixed read-only reconciliation query, preserves bigint totals as strings, refuses to overwrite evidence, and fails on financial/inventory/idempotency violations.
+   For repeatable hosted evidence, configure the GitHub `recovery-drill` environment with protected `ACTIVE_DATABASE_URL` and `RESTORE_DATABASE_URL` secrets, then manually dispatch **Isolated Restore Drill** with the provider recovery-point identifier. The workflow never runs migrations against the restored snapshot and retains its JSON evidence for 90 days.
 5. Review its row counts, order/payment/refund totals, derived vendor-ledger balance, inventory/payment/order/ledger invariants, unique provider/outbox identifiers, and pending/failed outbox counts against the source backup evidence.
 6. Start one API instance against the restored database and verify `/health`, `/ready`, authentication, catalog, order lookup, and protected operations access.
 7. Record measured RPO/RTO, checks, approvers, failures, and cleanup evidence.
