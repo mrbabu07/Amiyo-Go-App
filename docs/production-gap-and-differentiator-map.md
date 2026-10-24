@@ -93,6 +93,7 @@ Order-document follow-up: COD collection is now payment-state aware, customer in
 - Production secrets rotation, especially any database/payment/Firebase values shared outside secret storage.
 - Data retention table/file/log policy and account-deletion legal retention sign-off.
 - Load/security test report and dependency audit acceptance.
+- Expo build-tool advisory disposition: upgrade to a compatible fixed release when available, or obtain named security acceptance; do not apply npm's incompatible Expo 44 downgrade merely to produce a green audit.
 - Backup restore evidence and incident-response drill.
 
 ## Daraz / Cartup Public Baseline
