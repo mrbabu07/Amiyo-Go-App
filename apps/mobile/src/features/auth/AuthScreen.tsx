@@ -1,4 +1,4 @@
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, updateProfile, type User } from "@firebase/auth";
+import { createUserWithEmailAndPassword, GoogleAuthProvider, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, updateProfile, type User } from "@firebase/auth";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
@@ -23,6 +23,7 @@ export function AuthScreen() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const setSession = useAuthStore((state) => state.setSession);
   const emulatorEnabled = Boolean(process.env.EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL);
   const demoPassword = "AmiyoDemo123!";
@@ -37,6 +38,7 @@ export function AuthScreen() {
     if (!firebaseAuth || busy || !email.trim() || password.length < 6) return;
     setBusy(true);
     setError(null);
+    setNotice(null);
     try {
       const credential = mode === "register"
         ? await createUserWithEmailAndPassword(firebaseAuth, email.trim(), password)
@@ -48,6 +50,23 @@ export function AuthScreen() {
       await finishSignIn(credential.user);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message.replace("Firebase: ", "") : "Authentication failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resetPassword() {
+    if (!firebaseAuth || busy) return;
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail) { setError("Enter your email address first."); return; }
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      await sendPasswordResetEmail(firebaseAuth, normalizedEmail);
+      setNotice("Password reset instructions were sent if this account exists.");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message.replace("Firebase: ", "") : "Could not send password reset instructions");
     } finally {
       setBusy(false);
     }
@@ -83,8 +102,10 @@ export function AuthScreen() {
           {mode === "register" ? <Field label="Full name" value={name} onChangeText={setName} placeholder="Your name" /> : null}
           <Field autoCapitalize="none" autoComplete="email" keyboardType="email-address" label="Email" value={email} onChangeText={setEmail} placeholder="you@example.com" />
           <Field autoCapitalize="none" autoComplete={mode === "login" ? "current-password" : "new-password"} label="Password" value={password} onChangeText={setPassword} placeholder="Minimum 6 characters" secureTextEntry returnKeyType="go" onSubmitEditing={() => void submit()} />
+          {mode === "login" ? <Pressable accessibilityRole="button" accessibilityLabel="Reset password" disabled={busy} onPress={() => void resetPassword()}><Text style={styles.forgot}>Forgot password?</Text></Pressable> : null}
           {emulatorEnabled && mode === "login" ? <View style={styles.demoPanel}><Text style={styles.demoTitle}>Local demo accounts</Text><View style={styles.demoRow}>{[{ label: "Customer", email: "customer@amiyo.test" }, { label: "Vendor", email: "vendor@amiyo.test" }, { label: "Admin", email: "admin@amiyo.test" }].map((account) => <Pressable accessibilityRole="button" accessibilityLabel={`Use ${account.label.toLowerCase()} demo account`} disabled={busy} key={account.label} onPress={() => { setEmail(account.email); setPassword(demoPassword); }} style={[styles.demoButton, compact && styles.demoButtonCompact]}><Text style={styles.demoButtonText}>{account.label}</Text></Pressable>)}</View><Text style={styles.demoHint}>Password: {demoPassword}</Text></View> : null}
           {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+          {notice ? <Text accessibilityRole="alert" style={styles.notice}>{notice}</Text> : null}
           <Pressable accessibilityRole="button" accessibilityLabel={mode === "login" ? "Sign in" : "Create account"} accessibilityState={{ busy, disabled: busy || !firebaseConfigured || !email.trim() || password.length < 6 }} disabled={busy || !firebaseConfigured || !email.trim() || password.length < 6} onPress={submit} style={({ pressed }) => [styles.primary, (pressed || busy) && styles.pressed]}>
             {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>{mode === "login" ? "Sign in" : "Create account"}</Text>}
           </Pressable>
@@ -125,6 +146,8 @@ const styles = StyleSheet.create({
   label: { color: colors.text, fontSize: 12, fontWeight: "600" },
   input: { backgroundColor: colors.background, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, fontSize: 15, minHeight: 48, paddingHorizontal: 14 },
   error: { color: colors.danger, marginBottom: spacing.md },
+  notice: { backgroundColor: colors.accentSoft, borderRadius: radius.md, color: colors.text, marginBottom: spacing.md, padding: spacing.sm },
+  forgot: { alignSelf: "flex-end", color: colors.primary, fontSize: 12, fontWeight: "600", marginBottom: spacing.md, marginTop: -spacing.sm },
   demoPanel: { backgroundColor: colors.accentSoft, borderRadius: radius.lg, marginBottom: spacing.md, padding: spacing.md }, demoTitle: { color: colors.text, fontSize: 12, fontWeight: "700" }, demoRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: spacing.sm }, demoButton: { alignItems: "center", backgroundColor: colors.surface, borderRadius: radius.sm, justifyContent: "center", minHeight: 44, paddingHorizontal: 12, paddingVertical: 8 }, demoButtonCompact: { flex: 1, minWidth: 84 }, demoButtonText: { color: colors.primary, fontSize: 11, fontWeight: "700" }, demoHint: { color: colors.muted, fontSize: 10, marginTop: spacing.sm },
   primary: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, justifyContent: "center", minHeight: 50 },
   pressed: { opacity: 0.7 },

@@ -174,7 +174,7 @@ test("release-one market boundaries are explicitly approved", async () => {
     readFile(new URL("../docs/decisions-needed.md", import.meta.url), "utf8"),
     readFile(new URL("../docs/release-one-operating-policy.md", import.meta.url), "utf8")
   ]);
-  for (const decision of ["Supported countries", "Languages", "Currency and rounding", "Release-one roles", "Guest checkout", "Order split", "Product approval", "Commission precedence", "Rider contact exposure", "COD split collection", "Vendor pickup address", "Geography", "KYC", "Cancellation", "Returns", "Deployment targets"]) {
+  for (const decision of ["Supported countries", "Languages", "Currency and rounding", "Release-one roles", "Guest checkout", "Authentication", "Order split", "Product approval", "Commission precedence", "Rider contact exposure", "COD split collection", "Vendor pickup address", "Geography", "KYC", "Cancellation", "Returns", "Deployment targets"]) {
     assert.match(decisions, new RegExp(`\\| ${decision.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")} \\| IMPLEMENTED \\|`));
   }
   assert.match(policy, /Bangladesh only/);
@@ -182,6 +182,8 @@ test("release-one market boundaries are explicitly approved", async () => {
   assert.match(policy, /does not claim to translate the complete application/);
   assert.match(policy, /BDT only/);
   assert.match(policy, /Firebase anonymous identity/);
+  assert.match(policy, /Firebase Email\/Password, Google and Anonymous guest identity/);
+  assert.match(policy, /Phone OTP and additional social providers are not advertised/);
   assert.match(policy, /one parent order and one vendor order/);
   assert.match(policy, /product, shop, vendor plus category, vendor, category, global fallback/);
   assert.match(policy, /does not expose rider or pickup-staff names/);

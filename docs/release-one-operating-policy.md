@@ -20,6 +20,7 @@ This policy records the launch scope already enforced by the application. It doe
 
 ## Identities and roles
 
+- Release-one sign-in methods are Firebase Email/Password, Google and Anonymous guest identity. Email users can request Firebase password-reset instructions. Phone OTP and additional social providers are not advertised or enabled by the application.
 - Release-one roles are customer, vendor owner, vendor manager, vendor staff, support agent, finance admin, operations admin and super admin.
 - Vendor memberships remain vendor-scoped. Platform roles do not grant access to another customer's or vendor's owned resources without the corresponding permission.
 - Guest checkout is enabled through a Firebase anonymous identity. The anonymous principal receives the normal customer scope, and its protected cart/order can later be associated through the supported authentication lifecycle. No unauthenticated order-write endpoint is permitted.

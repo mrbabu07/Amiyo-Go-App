@@ -14,6 +14,9 @@ test("auth form exposes field labels, semantic actions and keyboard submit", asy
   assert.match(source, /onSubmitEditing=\{\(\) => void submit\(\)\}/);
   assert.match(source, /if \(!firebaseAuth \|\| busy \|\| !email.trim\(\) \|\| password.length < 6\) return/);
   assert.match(source, /Text accessibilityRole="alert"/);
+  assert.match(source, /accessibilityLabel="Reset password"/);
+  assert.match(source, /sendPasswordResetEmail\(firebaseAuth, normalizedEmail\)/);
+  assert.match(source, /if this account exists/);
   assert.match(source, /useWindowDimensions\(\)\.width < 480/);
   assert.match(source, /compact && styles\.contentCompact/);
   assert.match(source, /compact && styles\.cardCompact/);

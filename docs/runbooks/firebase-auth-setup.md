@@ -3,9 +3,9 @@
 ## Console
 
 1. Register separate web, Android, and iOS apps in the approved Firebase project.
-2. Enable Email/Password, Google, and Anonymous sign-in. Anonymous identities power passwordless guest carts and checkout while the API still verifies every request.
+2. Enable Email/Password, Google, and Anonymous sign-in. Anonymous identities power passwordless guest carts and checkout while the API still verifies every request. Phone OTP and other social providers are outside release-one scope.
 3. Add staging/production web domains to Authorized Domains and restrict public API keys by app/domain where supported.
-4. Configure password/OTP abuse controls, templates, quotas, and monitoring before release.
+4. Configure password-reset templates, email/password and anonymous abuse controls, quotas, and monitoring before release.
 
 ## Mobile
 
