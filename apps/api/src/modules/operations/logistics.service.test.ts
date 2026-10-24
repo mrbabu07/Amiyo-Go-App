@@ -2,11 +2,19 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { PrismaClient } from "@prisma/client";
 import type { Session } from "@amiyo/contracts";
-import { LogisticsService, logisticsShipmentDto } from "./logistics.service.js";
+import { courierProviderReadiness, LogisticsService, logisticsShipmentDto } from "./logistics.service.js";
 
 const shipmentId = "11111111-1111-4111-8111-111111111111";
 const session: Session = { principal: { userId: "22222222-2222-4222-8222-222222222222", roles: ["OPERATIONS_ADMIN"], vendorIds: [] }, status: "ACTIVE", email: null, phone: null, profile: { firstName: null, lastName: null, displayName: "Operator", avatarStorageKey: null, locale: "en", currency: "BDT" }, permissions: ["admin:read", "admin:manage"], vendorMemberships: [] };
 function transactional<T extends object>(client: T) { return Object.assign(client, { $transaction: async (operation: (transaction: T) => Promise<unknown>) => operation(client) }); }
+
+test("courier readiness exposes automatic providers and the operational fallback without secrets", () => {
+  const readiness = courierProviderReadiness({ NODE_ENV: "production", AMIYO_DELIVERY_API_URL: "https://delivery.example.test", AMIYO_DELIVERY_INTEGRATION_TOKEN: "token", AMIYO_DELIVERY_WEBHOOK_SECRET: "secret", PATHAO_API_KEY: "pathao-key" });
+  assert.deepEqual(readiness.find((item) => item.provider === "amiyo_delivery"), { provider: "amiyo_delivery", configured: true, mode: "live", bookingMode: "api" });
+  assert.deepEqual(readiness.find((item) => item.provider === "manual"), { provider: "manual", configured: true, mode: "operations", bookingMode: "manual" });
+  assert.equal(readiness.find((item) => item.provider === "steadfast")?.configured, false);
+  assert.equal(JSON.stringify(readiness).includes("pathao-key"), false);
+});
 
 test("logistics shipment transition records event and audit", async () => {
   const calls: string[] = [];

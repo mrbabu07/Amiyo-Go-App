@@ -21,7 +21,7 @@ These decisions block production implementation. Do not guess them in code.
 | Refunds | IMPLEMENTED | Provider-reference rules, full/partial bounds, role approvals, and ledger timing are defined in `docs/business-rules-approval.md`; live provider evidence remains required before production. |
 | Cancellation | IMPLEMENTED | Admin-controlled 5-1440 minute customer window, bounded fulfillment states, structured customer reasons, privileged admin override, durable replay and audit/refund evidence. |
 | Returns | IMPLEMENTED | All approved categories share evidence-based damaged/defective/wrong-item/other eligibility; changed-mind is excluded and eligible returns have zero restocking fee. |
-| Delivery | TBD | Amiyo Delivery, external courier, self pickup, manual fallback. |
+| Delivery | IMPLEMENTED | Amiyo Delivery is the preferred automatic dispatch integration when configured. Operations may assign active external couriers or pickup staff through the audited manual fallback. Customer self-pickup and public pickup points are disabled for release one. |
 | READY_TO_SHIP trigger | Implemented | Vendor transition emits one transactional outbox event with `delivery-create:<vendorOrderId>`; external credentials still require staging approval. |
 | Vendor pickup address | IMPLEMENTED | Contact, Bangladesh phone, street/landmark, division, district and upazila are mandatory; union is optional unless the assigned route/provider requires it. |
 | Rider contact exposure | IMPLEMENTED | Release-one customer tracking does not expose rider/staff identity or phone; assignment details remain permission-protected for operations. |

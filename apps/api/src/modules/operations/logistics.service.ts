@@ -22,6 +22,15 @@ const reverseTransitions: Record<string, { allowed: ReturnStatus[]; status: Retu
 };
 const codTransitions: Record<string, string[]> = { cod_pending: ["cod_collected", "cod_failed", "cod_disputed"], cod_collected: ["cod_remitted", "cod_disputed"], cod_disputed: ["cod_collected", "cod_failed"], cod_failed: [], cod_remitted: [] };
 
+export function courierProviderReadiness(env: NodeJS.ProcessEnv) {
+  const mode = env.NODE_ENV === "production" ? "live" : "sandbox";
+  return [
+    { provider: "amiyo_delivery", configured: Boolean(env.AMIYO_DELIVERY_API_URL && env.AMIYO_DELIVERY_INTEGRATION_TOKEN && env.AMIYO_DELIVERY_WEBHOOK_SECRET), mode, bookingMode: "api" },
+    ...["pathao", "steadfast", "redx"].map((provider) => ({ provider, configured: Boolean(env[`${provider.toUpperCase()}_API_KEY`]), mode, bookingMode: "api" })),
+    { provider: "manual", configured: true, mode: "operations", bookingMode: "manual" }
+  ];
+}
+
 function requireOperator(session: Session, manage = false) {
   const permission = manage ? "admin:manage" : "admin:read";
   if (session.status !== "ACTIVE" || !session.permissions.includes(permission) || !session.principal.roles.some((role) => operatorRoles.has(role))) {
@@ -79,7 +88,7 @@ export class LogisticsService {
   async shipments(session: Session) { requireOperator(session); return (await this.client.shipment.findMany({ include: shipmentInclude, orderBy: { updatedAt: "desc" }, take: 250 })).map((row) => logisticsShipmentDto(row)); }
   async dashboard(session: Session) { return this.overview(session); }
   async stateMachine(session: Session) { requireOperator(session); return { forward: transitions, reverse: reverseTransitions, cod: codTransitions }; }
-  async courierReadiness(session: Session) { requireOperator(session); return ["pathao", "steadfast", "redx"].map((provider) => ({ provider, configured: Boolean(process.env[`${provider.toUpperCase()}_API_KEY`]), mode: process.env.NODE_ENV === "production" ? "live" : "sandbox" })); }
+  async courierReadiness(session: Session) { requireOperator(session); return courierProviderReadiness(process.env); }
   async auditLog(session: Session) { requireOperator(session); return this.client.auditLog.findMany({ where: { action: { startsWith: "logistics." } }, orderBy: { createdAt: "desc" }, take: 250 }); }
   async zones(session: Session) { requireOperator(session); return this.client.logisticsZone.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }); }
   async couriers(session: Session) { requireOperator(session); return (await this.client.courierPartner.findMany({ orderBy: { name: "asc" } })).map((row) => ({ ...row, baseDeliveryCostMinor: row.baseDeliveryCostMinor.toString(), codCollectionFeeMinor: row.codCollectionFeeMinor.toString() })); }

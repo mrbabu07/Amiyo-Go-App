@@ -32,6 +32,10 @@ This policy records the launch scope already enforced by the application. It doe
 
 ## Delivery and COD privacy
 
+- Amiyo Delivery is the preferred automatic release-one dispatch provider when its API, integration token and webhook secret are configured. Missing credentials must appear as not configured in the operations readiness view and do not authorize a fake successful booking.
+- Operations may use the audited manual fallback to assign an active courier partner or pickup staff member. External partners such as Pathao, Steadfast or RedX are manual assignments until their own provider readiness is configured and accepted in staging.
+- Assignment does not prove pickup. Pickup, transit, delivery, failed-attempt and COD transitions remain separate version-checked operations with shipment events and audit evidence.
+- Customer self-pickup and public pickup points are disabled for release one. Enabling either requires a versioned policy, serviceability, custody, notification and payment review rather than only turning on a client flag.
 - Customer tracking exposes the courier/provider name, tracking reference, package state, public event description/location and timestamps. Release one does not expose rider or pickup-staff names, phone numbers, internal assignments or provider payloads to customers.
 - Operations staff retain assignment details inside the permission-protected logistics workspace and audit trail.
 - COD is authorized and collected once against the parent-order payment after every active package reaches the delivery gate. Package delivery evidence remains separate, but a seller package must not create or collect a second customer COD payment.
