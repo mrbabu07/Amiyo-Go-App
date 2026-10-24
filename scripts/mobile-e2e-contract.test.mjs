@@ -46,3 +46,14 @@ test("signed document smoke requires a fresh external payload and verifies curre
   assert.match(flow, /Current order status:\.\*/);
   assert.doesNotMatch(flow, /AGI1\||AGP2\|/);
 });
+
+test("Android offline smoke restores connectivity after pass or failure", async () => {
+  const flow = await readFile(new URL("../.maestro/offline-reconnect-smoke.yaml", import.meta.url), "utf8");
+  const offlineMessage = /You are offline\. Saved screens remain available; updates will resume after reconnecting\./;
+  assert.match(flow, /appId: com\.amiyo\.go/);
+  assert.match(flow, /onFlowComplete:\s+- setAirplaneMode: disabled/);
+  assert.match(flow, /setAirplaneMode: enabled/);
+  assert.match(flow, offlineMessage);
+  assert.match(flow, /notVisible: You are offline/);
+  assert.equal(flow.match(/setAirplaneMode: disabled/g)?.length, 2);
+});

@@ -1,0 +1,18 @@
+appId: com.amiyo.go
+name: Android offline and reconnect smoke
+onFlowComplete:
+  - setAirplaneMode: disabled
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: Amiyo-Go
+    timeout: 30000
+- setAirplaneMode: enabled
+- extendedWaitUntil:
+    visible: You are offline. Saved screens remain available; updates will resume after reconnecting.
+    timeout: 15000
+- setAirplaneMode: disabled
+- extendedWaitUntil:
+    notVisible: You are offline. Saved screens remain available; updates will resume after reconnecting.
+    timeout: 30000
