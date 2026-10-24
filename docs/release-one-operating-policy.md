@@ -51,6 +51,13 @@ This policy records the launch scope already enforced by the application. It doe
 - Only authorized administrators may open short-lived audited document links and move a submission through submitted, reviewing, approved or rejected states. Rejection requires a recorded reason.
 - Document validity/expiry is manually checked during review for release one. An approved or in-review submission is locked; a rejected seller may create a fresh submission with corrected evidence. Automated expiry reminders are deferred until a legally approved document-age policy exists.
 
+## Returns
+
+- Every approved marketplace category uses the same release-one return eligibility. A delivered item may be requested within the admin-controlled 1-90 day window for damaged, defective, wrong-item or reviewed other issues; changed-mind returns are not accepted.
+- Evidence can be required globally by the admin policy. Requested quantities cannot exceed the delivered quantity after active prior returns, and every request remains package/item scoped.
+- Eligible release-one returns have zero restocking fee. The API rejects any non-zero restocking setting so operators cannot silently deduct a fee from defect or fulfillment-error refunds.
+- Seller response, operations review, reverse logistics, inspection and refund are separate versioned states with reasons, evidence and audit history. Exceptions after the window require operations review rather than bypassing the customer endpoint.
+
 ## Catalog moderation
 
 - Vendors create products as drafts and may submit draft or rejected products for review.
