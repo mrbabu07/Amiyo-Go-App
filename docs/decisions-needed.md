@@ -36,7 +36,7 @@ These decisions block production implementation. Do not guess them in code.
 | Loyalty | IMPLEMENTED | Delayed earning, redemption cap/minimum, expiry, refund reversal, and redemption restoration are versioned admin rules. Finance approval and staging evidence remain required. |
 | Promotion stacking | IMPLEMENTED | Checkout applies flash price, one coupon or voucher, one deterministic automatic promotion, then loyalty credit under a versioned cap. Staging margin evidence remains required. |
 | Data retention | TBD | Per table/file/log retention periods. |
-| Account deletion | TBD | Anonymization, legal retention, recovery window. |
+| Account deletion | PARTIAL | A 30-day recovery window and worker-enforced anonymization now remove direct profile/contact/address data and revoke sessions, devices and alerts while retaining an authentication tombstone plus commerce/audit records. Final legal retention periods and Firebase-provider identity deletion approval remain required. |
 | Migration cutover | TBD | Maintenance window, rollback duration, read-only Mongo window. |
 | Migration exports | BLOCKED | Provide sanitized production-shaped exports for every legacy collection, expected row/money totals, two production-scale staging environments, and named reconciliation approvers. |
 | Object storage | Firebase Storage selected | Authenticated 10-minute V4 signed uploads, private evidence prefixes, public marketplace prefixes, worker content validation, and optional CDN base are implemented. Production service-account IAM and bucket CORS remain operator configuration. |

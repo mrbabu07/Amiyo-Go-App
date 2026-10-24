@@ -236,6 +236,7 @@ export class IdentityService {
   }
 
   private async refreshSessionUser(user: SessionUser, identity: VerifiedIdentity) {
+    if (user.status !== "ACTIVE") return user;
     const loginWriteDue = !user.lastLoginAt || Date.now() - user.lastLoginAt.getTime() >= loginActivityWriteIntervalMs;
     const email = !user.normalizedEmail && identity.email ? normalized(identity.email) : undefined;
     const phone = !user.normalizedPhone && identity.phone ? normalized(identity.phone) : undefined;

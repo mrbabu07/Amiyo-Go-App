@@ -82,6 +82,13 @@ This policy records the launch scope already enforced by the application. It doe
 - SMS and all other transactional email events are disabled for release one. The API rejects unsupported channel selections instead of storing a preference that cannot be delivered.
 - Promotional campaigns do not use transactional push. Scheduled newsletters with recipient snapshots are the approved marketing path, so release one does not require a separate marketing-push quiet-hours window.
 
+## Account deletion execution
+
+- A customer may cancel a deletion request during the fixed 30-day recovery window. After the deadline, the worker locks and completes each due request atomically.
+- Completion clears stored email, phone, profile identity, avatar reference, preferences and delivery-address records; revokes refresh sessions, devices and push tokens; and disables product alerts.
+- The internal user row and Firebase subject remain as an anonymized tombstone so a later token cannot recreate the deleted account or restore contact data. Commerce, finance, dispute, support and audit records remain linked to the opaque internal identifier until the final legal retention schedule is approved.
+- Firebase-provider identity deletion and time-based cleanup of retained legal records remain production approvals. The application must not claim those external/provider steps have completed based only on database anonymization.
+
 ## Change control
 
 Changing country, currency, role, guest-checkout identity, or order-split policy requires a versioned product/operations decision, contract and migration review, updated tests, and release-owner approval. Admin settings may control operational parameters only within these approved boundaries.

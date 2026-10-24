@@ -92,6 +92,17 @@ test("session synchronization avoids repeated writes for active users", async ()
   assert.equal(transactions, 0);
 });
 
+test("anonymized identity tombstones never restore contact data on login", async () => {
+  let updates = 0;
+  const user = { ...sessionUser(null), status: "ANONYMIZED" as const, normalizedEmail: null, normalizedPhone: null };
+  const client = { ...sessionRelations(), user: { findUnique: async () => user, update: async () => { updates++; return user; } } } as unknown as PrismaClient;
+  const session = await new IdentityService(client).synchronizeSession({ subject: "firebase-customer", email: "restored@example.test", phone: "01700000000" });
+  assert.equal(session.status, "ANONYMIZED");
+  assert.equal(session.email, null);
+  assert.equal(session.phone, null);
+  assert.equal(updates, 0);
+});
+
 test("session synchronization refreshes stale login activity without a serializable transaction", async () => {
   let updateData: Record<string, unknown> | undefined;
   let updateIncludedRelations = false;
