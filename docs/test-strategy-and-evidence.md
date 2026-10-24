@@ -15,6 +15,8 @@ CI writes a commit/run-bound `ci-release-readiness.json` before the blocking dep
 
 Release readiness reports the complete production dependency graph and service-scoped API/worker runtime audits separately. On 2026-10-24 both backend workspace audits reported zero findings after the Zod 4.6.7/OpenAPI 9.1.0 upgrade; the complete graph remains blocked by five high findings inherited through the Expo CLI/build toolchain. A clean backend scope does not waive the mobile release gate.
 
+The exact advisory paths, controls, resolution conditions and expiring approval requirements are maintained in `dependency-risk-register.md`. That register is explanatory evidence only; it does not bypass the blocking audit.
+
 Authenticated load checks use the same `npm run smoke:load` command with `LOAD_BEARER_TOKEN` supplied only through the process environment. Reports expose only `authenticated: true`; they never include the token or URL query values. Use a short-lived staging token, never a production user credential or a token committed to a file.
 
 The staging role-boundary workflow also enforces `SMOKE_MAX_P95_MS` across its authenticated customer, seller and admin checks. The checked-in staging budget is 2,500 ms. Its immutable report records p50, p95, maximum, threshold and violations without tokens or response bodies; status correctness alone cannot pass the job when the latency budget is exceeded.
@@ -43,7 +45,14 @@ Docker is unavailable on the current workstation, so container build evidence mu
 - Expo web production export completed successfully. The missing Sentry organization/project warning remains an external production configuration gate.
 - Public catalog load smoke passed against the configured database through the local API: 100 requests, concurrency 10, zero failures, 717.43 requests/second, 11 ms p50, 28 ms p95, 29 ms p99, and 32 ms maximum latency after five warm-up requests.
 - Authenticated local browser verification covered the seller dashboard at 360px and desktop widths plus seller products and notifications. A bounded vendor-workspace load check used a short-lived local Firebase token entirely through process memory: 20 requests, concurrency 2, zero failures, 0.81 requests/second, 1,956 ms p50, 4,184 ms p95, and 4,185 ms maximum latency. The endpoint already runs its independent workspace reads concurrently, so production hosting must be colocated with PostgreSQL and the same authenticated check must pass against staging before release.
-- `npm audit --omit=dev` currently reports 16 high and 3 moderate findings in the Expo/React Native dependency graph. Expo's compatibility checks are green, but npm proposes incompatible major downgrades; do not use `npm audit fix --force`. Production approval remains blocked until a compatible upstream SDK resolution or documented security acceptance is available.
+- This historical audit count is superseded by the fresh 2026-10-24 evidence: the complete graph reports five propagated high package nodes from two Expo CLI/build-tool advisories. Expo's suggested forced fix is an incompatible SDK downgrade; do not use it. Production approval remains blocked until a compatible upstream resolution or explicit expiring security acceptance is available.
+
+## 2026-10-24 Expo patch evidence
+
+- Updated within SDK 58 to `expo@58.0.19`, `@expo/cli@58.1.15`, and `expo-router@58.0.26`.
+- Expo Doctor passed 20/20 checks; strict mobile type-check and all 451 mobile tests passed.
+- Expo web production export and secret scan passed.
+- API and worker runtime audits remained clean. The complete graph still reports the two upstream build-tool advisories described in `dependency-risk-register.md`, so production promotion remains blocked.
 
 ## 2026-10-23 supply-chain hardening regression
 
