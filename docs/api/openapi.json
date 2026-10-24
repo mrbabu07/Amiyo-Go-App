@@ -7701,8 +7701,6 @@
                     "type": "string",
                     "enum": [
                       "COD",
-                      "BKASH",
-                      "NAGAD",
                       "SSLCOMMERZ"
                     ]
                   },
@@ -12190,6 +12188,19 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "reasonCode": {
+                    "type": "string",
+                    "enum": [
+                      "CHANGED_MIND",
+                      "ORDERED_BY_MISTAKE",
+                      "WRONG_ADDRESS",
+                      "PAYMENT_ISSUE",
+                      "DUPLICATE_ORDER",
+                      "OTHER",
+                      "ADMIN_OVERRIDE"
+                    ],
+                    "default": "OTHER"
+                  },
                   "reason": {
                     "type": "string",
                     "minLength": 3,
@@ -37485,8 +37496,9 @@
                         },
                         "restockingFeePercent": {
                           "type": "number",
-                          "minimum": 0,
-                          "maximum": 100
+                          "enum": [
+                            0
+                          ]
                         },
                         "requireEvidence": {
                           "type": "boolean"
@@ -37593,10 +37605,16 @@
                           "type": "boolean"
                         },
                         "smsOrderUpdatesEnabled": {
-                          "type": "boolean"
+                          "type": "boolean",
+                          "enum": [
+                            false
+                          ]
                         },
                         "pickupPointsEnabled": {
-                          "type": "boolean"
+                          "type": "boolean",
+                          "enum": [
+                            false
+                          ]
                         },
                         "supportPhone": {
                           "type": [
@@ -38110,8 +38128,9 @@
                       },
                       "restockingFeePercent": {
                         "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
+                        "enum": [
+                          0
+                        ]
                       },
                       "requireEvidence": {
                         "type": "boolean"
@@ -38218,10 +38237,16 @@
                         "type": "boolean"
                       },
                       "smsOrderUpdatesEnabled": {
-                        "type": "boolean"
+                        "type": "boolean",
+                        "enum": [
+                          false
+                        ]
                       },
                       "pickupPointsEnabled": {
-                        "type": "boolean"
+                        "type": "boolean",
+                        "enum": [
+                          false
+                        ]
                       },
                       "supportPhone": {
                         "type": [
@@ -38602,8 +38627,9 @@
                         },
                         "restockingFeePercent": {
                           "type": "number",
-                          "minimum": 0,
-                          "maximum": 100
+                          "enum": [
+                            0
+                          ]
                         },
                         "requireEvidence": {
                           "type": "boolean"
@@ -38710,10 +38736,16 @@
                           "type": "boolean"
                         },
                         "smsOrderUpdatesEnabled": {
-                          "type": "boolean"
+                          "type": "boolean",
+                          "enum": [
+                            false
+                          ]
                         },
                         "pickupPointsEnabled": {
-                          "type": "boolean"
+                          "type": "boolean",
+                          "enum": [
+                            false
+                          ]
                         },
                         "supportPhone": {
                           "type": [

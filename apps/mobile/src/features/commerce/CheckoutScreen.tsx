@@ -21,8 +21,6 @@ const money = (minor: string) => formatMinor(minor);
 const formatBps = (basisPoints: number) => `${(basisPoints / 100).toLocaleString("en-BD", { maximumFractionDigits: 2 })}%`;
 const methods: Array<{ value: PaymentMethod; label: string; detail: string; icon: string }> = [
   { value: "COD", label: "Cash on delivery", detail: "Pay when your order arrives", icon: "cash-outline" },
-  { value: "BKASH", label: "bKash", detail: "Pay through the secure gateway", icon: "phone-portrait-outline" },
-  { value: "NAGAD", label: "Nagad", detail: "Pay through the secure gateway", icon: "phone-portrait-outline" },
   { value: "SSLCOMMERZ", label: "Card / mobile banking", detail: "Powered by SSLCommerz", icon: "card-outline" }
 ];
 

@@ -17,7 +17,7 @@ These decisions block production implementation. Do not guess them in code.
 | Inventory policy | IMPLEMENTED | Admin controls a 5-120 minute unpaid reservation window; overselling prevention is mandatory, backorders are disabled, and the worker atomically expires unpaid holds with audit/outbox evidence. |
 | Order split | IMPLEMENTED | One parent order and one vendor/shop package per participating vendor, as defined in `release-one-operating-policy.md`. |
 | Commission | IMPLEMENTED | Global, category, vendor, and vendor-category percentage/fixed rules with effective dates and checkout snapshots. |
-| Payments | PARTIAL | COD and validated SSLCommerz hosted sandbox checkout are implemented. Approve live credentials and final bKash, Nagad, card, and manual-proof scope. |
+| Payments | IMPLEMENTED | Cash on Delivery and SSLCommerz hosted checkout are the only release-one customer methods. Card/mobile banking remains inside SSLCommerz; direct/manual bKash, Nagad and payment-proof checkout are disabled. Live credentials and provider evidence remain production promotion gates. |
 | Refunds | IMPLEMENTED | Provider-reference rules, full/partial bounds, role approvals, and ledger timing are defined in `docs/business-rules-approval.md`; live provider evidence remains required before production. |
 | Cancellation | IMPLEMENTED | Admin-controlled 5-1440 minute customer window, bounded fulfillment states, structured customer reasons, privileged admin override, durable replay and audit/refund evidence. |
 | Returns | IMPLEMENTED | All approved categories share evidence-based damaged/defective/wrong-item/other eligibility; changed-mind is excluded and eligible returns have zero restocking fee. |

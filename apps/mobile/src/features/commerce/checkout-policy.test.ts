@@ -22,9 +22,6 @@ test("payment choices follow their admin toggles", () => {
   config.paymentMethods.cod.enabled = false;
   assert.equal(paymentMethodEnabled(config, "COD"), false);
   assert.equal(paymentMethodEnabled(config, "SSLCOMMERZ"), true);
-  config.paymentMethods.bkashManual.enabled = false;
-  assert.equal(paymentMethodEnabled(config, "BKASH"), false);
-  assert.equal(paymentMethodEnabled(config, "NAGAD"), false);
   assert.match(checkoutPolicyError(config, "COD", true, address)!, /available payment/);
 });
 

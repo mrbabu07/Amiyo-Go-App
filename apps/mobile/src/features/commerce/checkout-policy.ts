@@ -4,7 +4,6 @@ export function paymentMethodEnabled(settings: PublicPlatformSettingsDto | undef
   if (!settings) return false;
   if (method === "COD") return settings.paymentMethods.cod.enabled;
   if (method === "SSLCOMMERZ") return settings.paymentMethods.sslcommerz.enabled;
-  if (method === "BKASH" || method === "NAGAD") return settings.paymentMethods.bkashManual.enabled;
   return false;
 }
 

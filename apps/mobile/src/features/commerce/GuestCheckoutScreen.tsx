@@ -19,7 +19,7 @@ import { getPublicPlatformSettings } from "../platform/platform.api";
 import { checkoutPolicyError, paymentMethodEnabled } from "./checkout-policy";
 
 const money = (minor: string) => formatMinor(minor);
-const paymentMethods: Array<{ label: string; value: PaymentMethod }> = [{ label: "Cash on delivery", value: "COD" }, { label: "bKash", value: "BKASH" }, { label: "Nagad", value: "NAGAD" }, { label: "Card / mobile banking", value: "SSLCOMMERZ" }];
+const paymentMethods: Array<{ label: string; value: PaymentMethod }> = [{ label: "Cash on delivery", value: "COD" }, { label: "Card / mobile banking", value: "SSLCOMMERZ" }];
 
 export function GuestCheckoutScreen() {
   const { width } = useWindowDimensions();
