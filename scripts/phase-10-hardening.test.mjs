@@ -174,7 +174,7 @@ test("release-one market boundaries are explicitly approved", async () => {
     readFile(new URL("../docs/decisions-needed.md", import.meta.url), "utf8"),
     readFile(new URL("../docs/release-one-operating-policy.md", import.meta.url), "utf8")
   ]);
-  for (const decision of ["Supported countries", "Languages", "Currency and rounding", "Release-one roles", "Guest checkout", "Authentication", "Payments", "Order split", "Product approval", "Commission precedence", "Rider contact exposure", "COD split collection", "Vendor pickup address", "Geography", "KYC", "Cancellation", "Returns", "Deployment targets"]) {
+  for (const decision of ["Supported countries", "Languages", "Currency and rounding", "Release-one roles", "Guest checkout", "Authentication", "Account deletion", "Payments", "Order split", "Product approval", "Commission precedence", "Rider contact exposure", "COD split collection", "Vendor pickup address", "Geography", "KYC", "Cancellation", "Returns", "Deployment targets"]) {
     assert.match(decisions, new RegExp(`\\| ${decision.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")} \\| IMPLEMENTED \\|`));
   }
   assert.match(policy, /Bangladesh only/);
