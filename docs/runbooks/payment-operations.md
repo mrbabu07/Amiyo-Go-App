@@ -19,3 +19,13 @@ Rotate a suspected webhook secret in the provider and encrypted environment mana
 - A timeout, process exit or database-save failure after dispatch can leave `INITIATING` without a reference. Automatic re-initiation is intentionally blocked, including under a new order version. Finance must obtain the existing reference/outcome from the merchant dashboard and reconcile it; do not delete the reservation to retry blindly.
 - A completed local refund permits a later order-version refund. Reservations do not expire automatically. Access and repair of uncertain records require controlled operator review, provider evidence and an audit record; there is no automatic recovery UI or proof-free reset endpoint.
 - A correct provider status does not itself prove the manually supplied amount. Finance must reconcile the requested amount with provider records, especially on manual-reference completion. Live concurrent requests, provider timeout and database-failure recovery still require staging evidence before release.
+
+## Validate release evidence
+
+Store live staging evidence in a private JSON file and record only SHA-256 hashes of checkout, refund, bank transaction, payout request and payout provider references. Never store merchant credentials, raw provider references, customer data, callback payloads, payment URLs, card data, PINs or OTPs. The operator and independent finance approver must be named separately.
+
+```bash
+FINANCE_PROVIDER_EVIDENCE_PATH=/secure/amiyo-finance-evidence.json RELEASE_COMMIT_SHA=<40-character-app-commit> npm run release:finance-evidence
+```
+
+The validator requires a live SSLCommerz capture, validated replay-safe callback, exact amount/currency and ledger reconciliation, final `refunded` status bound to hashed refund/bank references, a paid and reconciled bank/MFS payout, and the approved coupon + automatic promotion + loyalty 35% cap rehearsal. It rejects sandbox claims, raw/unhashed references, self-approval, stale evidence, incomplete reconciliation and unsupported fields. Keep the input, validated report and supporting screenshots/provider exports in protected release storage; do not commit them.

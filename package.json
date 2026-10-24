@@ -36,6 +36,7 @@
     "release:deploy-env": "node scripts/deployment-env.mjs",
     "release:mobile-env": "node scripts/mobile-release-env.mjs",
     "release:mobile-evidence": "node scripts/mobile-device-evidence.mjs",
+    "release:finance-evidence": "node scripts/finance-provider-evidence.mjs",
     "release:manifest": "node scripts/release-manifest.mjs",
     "restore:verify": "node scripts/restore-verification.mjs",
     "smoke:load": "node scripts/load-smoke.mjs",
