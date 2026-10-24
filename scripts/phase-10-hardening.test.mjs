@@ -205,6 +205,19 @@ test("deployment targets are selected without claiming external provisioning", a
   assert.match(targets, /Redis must use `rediss:\/\/`/);
 });
 
+test("retention policy preserves regulated records until approved", async () => {
+  const [policy, approval] = await Promise.all([
+    readFile(new URL("../docs/data-retention-policy.md", import.meta.url), "utf8"),
+    readFile(new URL("../docs/data-retention-approval-template.md", import.meta.url), "utf8")
+  ]);
+  assert.match(policy, /not legal advice/);
+  assert.match(policy, /Seven years after financial completion/);
+  assert.match(policy, /Two years after thread closure/);
+  assert.match(policy, /holds override every expiry date/);
+  assert.match(policy, /No automated job deletes commerce, finance, KYC, evidence, support, audit or provider-callback records/);
+  for (const approver of ["Privacy/legal approver", "Finance approver", "Operations approver", "Security approver"]) assert.match(approval, new RegExp(approver));
+});
+
 test("restore drill is manual, isolated and retains immutable evidence", async () => {
   const workflow = await readFile(new URL("../.github/workflows/restore-drill.yml", import.meta.url), "utf8");
   assert.match(workflow, /workflow_dispatch:/);
