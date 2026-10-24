@@ -13,7 +13,7 @@
 
 CI writes a commit/run-bound `ci-release-readiness.json` before the blocking dependency audit and uploads it even when a later gate fails. The production web export also runs before the audit, so a known advisory still fails CI without hiding independent build/export evidence.
 
-Release readiness reports the complete production dependency graph and service-scoped API/worker runtime audits separately. On 2026-10-23 both backend workspace audits reported zero findings; the complete graph remains blocked by the Expo/React Native mobile toolchain. A clean backend scope does not waive the mobile release gate.
+Release readiness reports the complete production dependency graph and service-scoped API/worker runtime audits separately. On 2026-10-24 both backend workspace audits reported zero findings after the Zod 4.6.7/OpenAPI 9.1.0 upgrade; the complete graph remains blocked by five high findings inherited through the Expo CLI/build toolchain. A clean backend scope does not waive the mobile release gate.
 
 Authenticated load checks use the same `npm run smoke:load` command with `LOAD_BEARER_TOKEN` supplied only through the process environment. Reports expose only `authenticated: true`; they never include the token or URL query values. Use a short-lived staging token, never a production user credential or a token committed to a file.
 

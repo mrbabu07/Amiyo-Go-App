@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./zod.js";
 
 export const problemSchema = z.object({
   type: z.string().url().default("https://api.amiyo-go.local/problems/internal-error"),

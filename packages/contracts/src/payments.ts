@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./zod.js";
 import { moneySchema, timestampSchema, uuidSchema, versionSchema } from "./common.js";
 
 export const paymentStatusSchema = z.enum([

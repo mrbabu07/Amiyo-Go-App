@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./zod.js";
 import { moneySchema, timestampSchema, uuidSchema, versionSchema } from "./common.js";
 import { paginatedResponseSchema } from "./pagination.js";
 import { documentQrPayloadSchema } from "./document-qr.js";
@@ -19,7 +19,7 @@ export const orderItemSchema = z.object({
   thumbnailUrl: z.string().url().nullable().optional(),
   returnableQuantity: z.number().int().nonnegative().optional(),
   sku: z.string(),
-  attributes: z.record(z.unknown()).nullable(),
+  attributes: z.record(z.string(), z.unknown()).nullable(),
   quantity: z.number().int().positive(),
   unitPrice: moneySchema,
   discount: moneySchema,

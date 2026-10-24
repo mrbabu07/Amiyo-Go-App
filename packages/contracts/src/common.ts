@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./zod.js";
 
 export const uuidSchema = z.string().uuid();
 export const isoCurrencySchema = z.string().length(3).transform((value) => value.toUpperCase());

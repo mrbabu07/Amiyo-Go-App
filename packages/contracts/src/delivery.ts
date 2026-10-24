@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./zod.js";
 import { moneySchema, timestampSchema, uuidSchema, versionSchema } from "./common.js";
 import { orderItemSchema, parentOrderStatusSchema, vendorOrderStatusSchema } from "./orders.js";
 import { documentQrPayloadSchema } from "./document-qr.js";

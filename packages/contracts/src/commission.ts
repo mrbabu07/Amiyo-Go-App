@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./zod.js";
 import { timestampSchema, uuidSchema } from "./common.js";
 
 const minorSchema = z.string().regex(/^\d+$/, "Must be a non-negative integer minor-unit amount");
@@ -24,7 +24,9 @@ function hasValidTarget(value: CommissionTarget) {
   return selected <= 1;
 }
 
-const validCommission = <Schema extends z.ZodTypeAny>(schema: Schema) => schema.refine((value: z.infer<Schema>) => value.rateBps > 0 || BigInt(value.fixedMinor) > 0n, { message: "A percentage or fixed commission is required", path: ["rateBps"] }).refine((value: z.infer<Schema>) => !value.effectiveTo || value.effectiveFrom < value.effectiveTo, { message: "effectiveFrom must precede effectiveTo", path: ["effectiveTo"] }).refine((value: z.infer<Schema>) => hasValidTarget(value), { message: "Choose global, category, vendor, vendor category, shop, or product scope", path: ["vendorId"] });
+type CommissionInputValue = z.infer<typeof commissionRuleInputObject>;
+
+const validCommission = <Schema extends z.ZodType<CommissionInputValue>>(schema: Schema) => schema.refine((value) => value.rateBps > 0 || BigInt(value.fixedMinor) > 0n, { message: "A percentage or fixed commission is required", path: ["rateBps"] }).refine((value) => !value.effectiveTo || value.effectiveFrom < value.effectiveTo, { message: "effectiveFrom must precede effectiveTo", path: ["effectiveTo"] }).refine((value) => hasValidTarget(value), { message: "Choose global, category, vendor, vendor category, shop, or product scope", path: ["vendorId"] });
 
 export const commissionRuleInputSchema = validCommission(commissionRuleInputObject);
 export const updateCommissionRuleSchema = validCommission(commissionRuleInputObject.extend({ expectedVersion: z.number().int().positive() }));

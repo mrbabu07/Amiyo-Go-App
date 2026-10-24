@@ -1625,12 +1625,35 @@
                 "required": [
                   "amountMinor"
                 ]
+              },
+              "policy": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "minimumRedemptionPoints": {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                  },
+                  "maximumRedemptionBps": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10000
+                  }
+                },
+                "required": [
+                  "enabled",
+                  "minimumRedemptionPoints",
+                  "maximumRedemptionBps"
+                ]
               }
             },
             "required": [
               "availablePoints",
               "redeemedPoints",
-              "discount"
+              "discount",
+              "policy"
             ]
           },
           "expiresAt": {
@@ -1810,6 +1833,24 @@
                   "null"
                 ],
                 "format": "date-time"
+              },
+              "cancellation": {
+                "type": "object",
+                "properties": {
+                  "deadline": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "windowMinutes": {
+                    "type": "integer",
+                    "minimum": 5,
+                    "maximum": 1440
+                  }
+                },
+                "required": [
+                  "deadline",
+                  "windowMinutes"
+                ]
               },
               "deliveryAddress": {
                 "type": [
@@ -2900,7 +2941,8 @@
               "DISPATCHED",
               "ACCEPTED",
               "FAILED",
-              "CANCELLED"
+              "CANCELLED",
+              null
             ]
           }
         },
@@ -3658,6 +3700,24 @@
             ],
             "format": "date-time"
           },
+          "cancellation": {
+            "type": "object",
+            "properties": {
+              "deadline": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "windowMinutes": {
+                "type": "integer",
+                "minimum": 5,
+                "maximum": 1440
+              }
+            },
+            "required": [
+              "deadline",
+              "windowMinutes"
+            ]
+          },
           "deliveryAddress": {
             "type": [
               "object",
@@ -4317,6 +4377,24 @@
                   "null"
                 ],
                 "format": "date-time"
+              },
+              "cancellation": {
+                "type": "object",
+                "properties": {
+                  "deadline": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "windowMinutes": {
+                    "type": "integer",
+                    "minimum": 5,
+                    "maximum": 1440
+                  }
+                },
+                "required": [
+                  "deadline",
+                  "windowMinutes"
+                ]
               },
               "deliveryAddress": {
                 "type": [
@@ -12311,7 +12389,8 @@
                                 "INSPECTED",
                                 "REFUND_PENDING",
                                 "REFUNDED",
-                                "CLOSED"
+                                "CLOSED",
+                                null
                               ]
                             },
                             "toStatus": {
@@ -12685,7 +12764,8 @@
                               "INSPECTED",
                               "REFUND_PENDING",
                               "REFUNDED",
-                              "CLOSED"
+                              "CLOSED",
+                              null
                             ]
                           },
                           "toStatus": {
@@ -12992,7 +13072,8 @@
                               "INSPECTED",
                               "REFUND_PENDING",
                               "REFUNDED",
-                              "CLOSED"
+                              "CLOSED",
+                              null
                             ]
                           },
                           "toStatus": {
@@ -13299,7 +13380,8 @@
                               "INSPECTED",
                               "REFUND_PENDING",
                               "REFUNDED",
-                              "CLOSED"
+                              "CLOSED",
+                              null
                             ]
                           },
                           "toStatus": {
@@ -13612,8 +13694,7 @@
                   "type": "object",
                   "properties": {
                     "url": {
-                      "type": "string",
-                      "format": "uri"
+                      "type": "string"
                     },
                     "expiresAt": {
                       "type": "string",
@@ -13820,8 +13901,7 @@
                   "type": "object",
                   "properties": {
                     "url": {
-                      "type": "string",
-                      "format": "uri"
+                      "type": "string"
                     },
                     "expiresAt": {
                       "type": "string",
@@ -13917,6 +13997,44 @@
                       },
                       "required": [
                         "amountMinor"
+                      ]
+                    },
+                    "payoutPolicy": {
+                      "type": "object",
+                      "properties": {
+                        "minimum": {
+                          "type": "object",
+                          "properties": {
+                            "amountMinor": {
+                              "type": "string",
+                              "pattern": "^\\d+$"
+                            },
+                            "currency": {
+                              "type": "string",
+                              "minLength": 3,
+                              "maxLength": 3,
+                              "default": "BDT"
+                            }
+                          },
+                          "required": [
+                            "amountMinor"
+                          ]
+                        },
+                        "holdDays": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 90
+                        },
+                        "cadenceDays": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 31
+                        }
+                      },
+                      "required": [
+                        "minimum",
+                        "holdDays",
+                        "cadenceDays"
                       ]
                     },
                     "entries": {
@@ -14040,6 +14158,7 @@
                   "required": [
                     "vendorId",
                     "balance",
+                    "payoutPolicy",
                     "entries",
                     "payoutRequests"
                   ]
@@ -15234,7 +15353,8 @@
                               "INSPECTED",
                               "REFUND_PENDING",
                               "REFUNDED",
-                              "CLOSED"
+                              "CLOSED",
+                              null
                             ]
                           },
                           "toStatus": {
@@ -28496,8 +28616,7 @@
                   "type": "object",
                   "properties": {
                     "url": {
-                      "type": "string",
-                      "format": "uri"
+                      "type": "string"
                     },
                     "expiresAt": {
                       "type": "string",
@@ -32503,7 +32622,8 @@
                                 "INSPECTED",
                                 "REFUND_PENDING",
                                 "REFUNDED",
-                                "CLOSED"
+                                "CLOSED",
+                                null
                               ]
                             },
                             "toStatus": {
@@ -32872,7 +32992,8 @@
                               "INSPECTED",
                               "REFUND_PENDING",
                               "REFUNDED",
-                              "CLOSED"
+                              "CLOSED",
+                              null
                             ]
                           },
                           "toStatus": {
@@ -33227,7 +33348,8 @@
                               "INSPECTED",
                               "REFUND_PENDING",
                               "REFUNDED",
-                              "CLOSED"
+                              "CLOSED",
+                              null
                             ]
                           },
                           "toStatus": {
@@ -35660,8 +35782,7 @@
                   "type": "object",
                   "properties": {
                     "url": {
-                      "type": "string",
-                      "format": "uri"
+                      "type": "string"
                     },
                     "expiresAt": {
                       "type": "string",
@@ -36946,7 +37067,8 @@
               "type": [
                 "string",
                 "null"
-              ]
+              ],
+              "format": "date-time"
             },
             "required": false,
             "name": "from",
@@ -36957,7 +37079,8 @@
               "type": [
                 "string",
                 "null"
-              ]
+              ],
+              "format": "date-time"
             },
             "required": false,
             "name": "to",
@@ -37603,6 +37726,38 @@
                             "customerCancellationMinutes"
                           ]
                         },
+                        "inventory": {
+                          "type": "object",
+                          "properties": {
+                            "reservationMinutes": {
+                              "type": "integer",
+                              "minimum": 5,
+                              "maximum": 120
+                            },
+                            "allowBackorders": {
+                              "type": "boolean",
+                              "enum": [
+                                false
+                              ]
+                            },
+                            "preventOverselling": {
+                              "type": "boolean",
+                              "enum": [
+                                true
+                              ]
+                            }
+                          },
+                          "default": {
+                            "reservationMinutes": 30,
+                            "allowBackorders": false,
+                            "preventOverselling": true
+                          },
+                          "required": [
+                            "reservationMinutes",
+                            "allowBackorders",
+                            "preventOverselling"
+                          ]
+                        },
                         "settlement": {
                           "type": "object",
                           "properties": {
@@ -37664,6 +37819,11 @@
                         },
                         "orders": {
                           "customerCancellationMinutes": 30
+                        },
+                        "inventory": {
+                          "reservationMinutes": 30,
+                          "allowBackorders": false,
+                          "preventOverselling": true
                         },
                         "settlement": {
                           "minimumPayoutMinor": "50000",
@@ -38191,6 +38351,38 @@
                           "customerCancellationMinutes"
                         ]
                       },
+                      "inventory": {
+                        "type": "object",
+                        "properties": {
+                          "reservationMinutes": {
+                            "type": "integer",
+                            "minimum": 5,
+                            "maximum": 120
+                          },
+                          "allowBackorders": {
+                            "type": "boolean",
+                            "enum": [
+                              false
+                            ]
+                          },
+                          "preventOverselling": {
+                            "type": "boolean",
+                            "enum": [
+                              true
+                            ]
+                          }
+                        },
+                        "default": {
+                          "reservationMinutes": 30,
+                          "allowBackorders": false,
+                          "preventOverselling": true
+                        },
+                        "required": [
+                          "reservationMinutes",
+                          "allowBackorders",
+                          "preventOverselling"
+                        ]
+                      },
                       "settlement": {
                         "type": "object",
                         "properties": {
@@ -38252,6 +38444,11 @@
                       },
                       "orders": {
                         "customerCancellationMinutes": 30
+                      },
+                      "inventory": {
+                        "reservationMinutes": 30,
+                        "allowBackorders": false,
+                        "preventOverselling": true
                       },
                       "settlement": {
                         "minimumPayoutMinor": "50000",
@@ -38646,6 +38843,38 @@
                             "customerCancellationMinutes"
                           ]
                         },
+                        "inventory": {
+                          "type": "object",
+                          "properties": {
+                            "reservationMinutes": {
+                              "type": "integer",
+                              "minimum": 5,
+                              "maximum": 120
+                            },
+                            "allowBackorders": {
+                              "type": "boolean",
+                              "enum": [
+                                false
+                              ]
+                            },
+                            "preventOverselling": {
+                              "type": "boolean",
+                              "enum": [
+                                true
+                              ]
+                            }
+                          },
+                          "default": {
+                            "reservationMinutes": 30,
+                            "allowBackorders": false,
+                            "preventOverselling": true
+                          },
+                          "required": [
+                            "reservationMinutes",
+                            "allowBackorders",
+                            "preventOverselling"
+                          ]
+                        },
                         "settlement": {
                           "type": "object",
                           "properties": {
@@ -38707,6 +38936,11 @@
                         },
                         "orders": {
                           "customerCancellationMinutes": 30
+                        },
+                        "inventory": {
+                          "reservationMinutes": 30,
+                          "allowBackorders": false,
+                          "preventOverselling": true
                         },
                         "settlement": {
                           "minimumPayoutMinor": "50000",
@@ -46263,7 +46497,8 @@
               "type": [
                 "string",
                 "null"
-              ]
+              ],
+              "format": "date-time"
             },
             "required": false,
             "name": "startsAt",
@@ -46274,7 +46509,8 @@
               "type": [
                 "string",
                 "null"
-              ]
+              ],
+              "format": "date-time"
             },
             "required": false,
             "name": "endsAt",
@@ -49104,8 +49340,7 @@
                   "type": "object",
                   "properties": {
                     "url": {
-                      "type": "string",
-                      "format": "uri"
+                      "type": "string"
                     },
                     "expiresAt": {
                       "type": "string",
@@ -50386,7 +50621,8 @@
                     ],
                     "enum": [
                       "route",
-                      "url"
+                      "url",
+                      null
                     ]
                   },
                   "targetValue": {
@@ -51011,7 +51247,8 @@
                     ],
                     "enum": [
                       "route",
-                      "url"
+                      "url",
+                      null
                     ]
                   },
                   "targetValue": {
@@ -52735,7 +52972,7 @@
                       "string",
                       "null"
                     ],
-                    "pattern": "^[a-f0-9]{64}$"
+                    "pattern": "^[a-f0-9]{64}$/i"
                   }
                 },
                 "required": [

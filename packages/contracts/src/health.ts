@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./zod.js";
 
 export const healthResponseSchema = z.object({
   service: z.string(),

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./zod.js";
 import { timestampSchema, uuidSchema } from "./common.js";
 import { ledgerEntrySchema } from "./finance.js";
 

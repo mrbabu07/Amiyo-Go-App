@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./zod.js";
 import { moneySchema, timestampSchema, uuidSchema, versionSchema } from "./common.js";
 
 export const payoutStatusSchema = z.enum(["REQUESTED", "REVIEWING", "APPROVED", "PROCESSING", "PAID", "REJECTED", "FAILED", "CANCELLED"]);

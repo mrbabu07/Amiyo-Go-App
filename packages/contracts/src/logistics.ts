@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./zod.js";
 import { timestampSchema, uuidSchema } from "./common.js";
 import { shipmentStatusSchema } from "./delivery.js";
 
@@ -25,7 +25,7 @@ export const courierPartnerInputSchema = z.object({
 export const pickupStaffInputSchema = z.object({
   name: z.string().trim().min(2).max(120), phone: z.string().trim().max(30).nullable().default(null), email: z.string().email().nullable().default(null),
   userId: uuidSchema.nullable().default(null), status: statusSchema, routeName: z.string().trim().max(120).nullable().default(null), assignedZones: stringList,
-  assignedLocations: z.array(z.record(z.string())).max(100), assignedVendorIds: z.array(uuidSchema).max(100), vehicleType: z.string().trim().min(2).max(40),
+  assignedLocations: z.array(z.record(z.string(), z.string())).max(100), assignedVendorIds: z.array(uuidSchema).max(100), vehicleType: z.string().trim().min(2).max(40),
   capacityOrders: z.number().int().min(1).max(1000), shiftStart: z.string().regex(/^\d{2}:\d{2}$/), shiftEnd: z.string().regex(/^\d{2}:\d{2}$/), notes: z.string().trim().max(1000).nullable().default(null)
 });
 
@@ -91,7 +91,7 @@ export const logisticsTrackingEventSchema = z.object({
 export const logisticsManifestPickupSchema = z.object({ shipmentIds: z.array(uuidSchema).min(1).max(250), note: z.string().trim().min(2).max(1000) });
 export const logisticsReturnActionSchema = z.object({
   note: z.string().trim().min(2).max(1000), trackingNumber: z.string().trim().max(160).nullable().default(null),
-  pickupAt: timestampSchema.nullable().default(null), inspection: z.record(z.unknown()).nullable().default(null),
+  pickupAt: timestampSchema.nullable().default(null), inspection: z.record(z.string(), z.unknown()).nullable().default(null),
   expectedVersion: z.number().int().positive()
 });
 export const logisticsCodStateInputSchema = z.object({

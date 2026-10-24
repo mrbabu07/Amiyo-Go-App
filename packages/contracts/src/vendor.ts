@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./zod.js";
 import { timestampSchema, uuidSchema, versionSchema } from "./common.js";
 
 export const vendorShopSchema = z.object({
@@ -10,7 +10,7 @@ export const vendorShopSchema = z.object({
   description: z.string().nullable(),
   logoUrl: z.string().url().nullable(),
   bannerUrl: z.string().url().nullable(),
-  settings: z.record(z.unknown()).nullable(),
+  settings: z.record(z.string(), z.unknown()).nullable(),
   version: versionSchema
 });
 
@@ -79,7 +79,7 @@ export const updateVendorShopSchema = z.object({
   description: z.string().trim().max(3000).nullable().optional(),
   logoUploadId: uuidSchema.nullable().optional(),
   bannerUploadId: uuidSchema.nullable().optional(),
-  settings: z.record(z.unknown()).nullable().optional()
+  settings: z.record(z.string(), z.unknown()).nullable().optional()
 }).superRefine((input, context) => {
   if (Object.keys(input).length <= 1) context.addIssue({ code: z.ZodIssueCode.custom, message: "At least one shop field is required" });
   if (input.settings && Object.prototype.hasOwnProperty.call(input.settings, "pickupAddress")) {
@@ -124,9 +124,9 @@ export const inviteVendorStaffSchema = z.object({
   permissions: vendorStaffPermissionsSchema
 });
 export const updateVendorStaffSchema = z.object({ status: z.enum(["active", "suspended"]), permissions: vendorStaffPermissionsSchema });
-export const vendorVoucherSchema = z.object({ id: uuidSchema, code: z.string(), active: z.boolean(), startsAt: timestampSchema, endsAt: timestampSchema, version: versionSchema, rules: z.record(z.unknown()) });
+export const vendorVoucherSchema = z.object({ id: uuidSchema, code: z.string(), active: z.boolean(), startsAt: timestampSchema, endsAt: timestampSchema, version: versionSchema, rules: z.record(z.string(), z.unknown()) });
 export const createVendorVoucherSchema = z.object({ code: z.string().trim().min(3).max(40).transform((value) => value.toUpperCase()), discountType: z.enum(["PERCENT", "FIXED"]), value: z.number().int().positive(), startsAt: z.string().datetime(), endsAt: z.string().datetime() }).refine((value) => value.startsAt < value.endsAt, "startsAt must precede endsAt");
-export const vendorReportSchema = z.object({ periodDays: z.number().int().positive(), orderCount: z.number().int().nonnegative(), deliveredCount: z.number().int().nonnegative(), cancelledCount: z.number().int().nonnegative(), returnCount: z.number().int().nonnegative(), grossSalesMinor: z.string(), averageOrderMinor: z.string(), fulfilmentRate: z.number().nonnegative(), productCount: z.number().int().nonnegative(), lowStockCount: z.number().int().nonnegative(), statusCounts: z.record(z.number().int().nonnegative()), recentOrders: z.array(z.object({ id: uuidSchema, orderNumber: z.string(), shopName: z.string(), itemCount: z.number().int().nonnegative(), status: z.string(), totalMinor: z.string(), createdAt: timestampSchema })) });
+export const vendorReportSchema = z.object({ periodDays: z.number().int().positive(), orderCount: z.number().int().nonnegative(), deliveredCount: z.number().int().nonnegative(), cancelledCount: z.number().int().nonnegative(), returnCount: z.number().int().nonnegative(), grossSalesMinor: z.string(), averageOrderMinor: z.string(), fulfilmentRate: z.number().nonnegative(), productCount: z.number().int().nonnegative(), lowStockCount: z.number().int().nonnegative(), statusCounts: z.record(z.string(), z.number().int().nonnegative()), recentOrders: z.array(z.object({ id: uuidSchema, orderNumber: z.string(), shopName: z.string(), itemCount: z.number().int().nonnegative(), status: z.string(), totalMinor: z.string(), createdAt: timestampSchema })) });
 export const vendorCategoryRequestSchema = z.object({ id: uuidSchema, vendorId: uuidSchema, vendorName: z.string(), categoryId: uuidSchema, categoryName: z.string(), categoryPath: z.string(), status: z.enum(["pending", "approved", "rejected"]), reason: z.string(), description: z.string().nullable(), reviewReason: z.string().nullable(), reviewedAt: timestampSchema.nullable(), createdAt: timestampSchema });
 export const createVendorCategoryRequestSchema = z.object({ categoryId: uuidSchema, reason: z.string().trim().min(5).max(500), description: z.string().trim().max(1000).nullable().optional() });
 

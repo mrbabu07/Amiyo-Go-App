@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./zod.js";
 import { moneySchema, timestampSchema, uuidSchema, versionSchema } from "./common.js";
 import { paginatedResponseSchema } from "./pagination.js";
 
@@ -30,7 +30,7 @@ export const productVariantSchema = z.object({
   id: uuidSchema,
   sku: z.string().min(1),
   title: z.string().min(1),
-  attributes: z.record(z.unknown()).nullable(),
+  attributes: z.record(z.string(), z.unknown()).nullable(),
   price: moneySchema,
   compareAtPrice: moneySchema.nullable(),
   availableQuantity: z.number().int().nonnegative(),
@@ -59,7 +59,7 @@ export const productSummarySchema = z.object({
 
 export const productDetailSchema = productSummarySchema.extend({
   description: z.string().nullable(),
-  dynamicAttributes: z.record(z.unknown()).nullable(),
+  dynamicAttributes: z.record(z.string(), z.unknown()).nullable(),
   variants: z.array(productVariantSchema),
   media: z.array(z.object({
     id: uuidSchema,
@@ -106,7 +106,7 @@ export const shopListResponseSchema = paginatedResponseSchema(shopSummarySchema)
 export const productVariantInputSchema = z.object({
   sku: z.string().trim().min(3).max(80),
   title: z.string().trim().min(1).max(120),
-  attributes: z.record(z.unknown()).nullable().optional(),
+  attributes: z.record(z.string(), z.unknown()).nullable().optional(),
   priceMinor: z.string().regex(/^\d+$/),
   compareAtMinor: z.string().regex(/^\d+$/).nullable().optional(),
   currency: z.string().length(3).transform((value) => value.toUpperCase()).default("BDT"),
@@ -120,7 +120,7 @@ export const createProductSchema = z.object({
   slug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(200),
   description: z.string().trim().max(10_000).nullable().optional(),
   brand: z.string().trim().max(120).nullable().optional(),
-  dynamicAttributes: z.record(z.unknown()).nullable().optional(),
+  dynamicAttributes: z.record(z.string(), z.unknown()).nullable().optional(),
   variants: z.array(productVariantInputSchema).min(1).max(100)
 });
 
@@ -133,7 +133,7 @@ export const updateProductSchema = z.object({
   description: z.string().trim().max(10_000).nullable().optional(),
   brand: z.string().trim().max(120).nullable().optional(),
   categoryId: uuidSchema.optional(),
-  dynamicAttributes: z.record(z.unknown()).nullable().optional()
+  dynamicAttributes: z.record(z.string(), z.unknown()).nullable().optional()
 }).refine((value) => Object.keys(value).length > 1, "At least one product field is required");
 
 export const replaceProductVariantsSchema = z.object({

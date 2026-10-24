@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./zod.js";
 import { roleSchema } from "./identity.js";
 
 export const navigationDestinationSchema = z.enum([

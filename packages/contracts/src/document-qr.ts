@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./zod.js";
 import { moneySchema, timestampSchema } from "./common.js";
 
 export const documentQrPayloadSchema = z.string().min(40).max(2_000).refine((value) => value.startsWith("AGP2|") || value.startsWith("AGI1|"), "Unsupported Amiyo document QR payload");

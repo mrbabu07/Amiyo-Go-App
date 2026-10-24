@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./zod.js";
 import { moneySchema, timestampSchema, uuidSchema, versionSchema } from "./common.js";
 
 export const returnEvidenceFileSchema = z.object({ id: uuidSchema, name: z.string(), mimeType: z.string() });
@@ -14,11 +14,11 @@ export const returnItemSchema = z.object({
   orderItemId: uuidSchema,
   productName: z.string().optional(),
   sku: z.string().optional(),
-  attributes: z.record(z.unknown()).nullable().optional(),
+  attributes: z.record(z.string(), z.unknown()).nullable().optional(),
   thumbnailUrl: z.string().url().nullable().optional(),
   quantity: z.number().int().positive(),
   requestedAmount: moneySchema,
-  inspection: z.record(z.unknown()).nullable()
+  inspection: z.record(z.string(), z.unknown()).nullable()
 });
 
 export const returnSchema = z.object({

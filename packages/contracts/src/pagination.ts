@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./zod.js";
 
 export const cursorPaginationQuerySchema = z.object({
   cursor: z.string().min(1).optional(),

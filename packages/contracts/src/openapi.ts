@@ -1,5 +1,5 @@
-import { OpenAPIRegistry, OpenApiGeneratorV31, extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
-import { z } from "zod";
+import { OpenAPIRegistry, OpenApiGeneratorV31 } from "@asteasolutions/zod-to-openapi";
+import { z } from "./zod.js";
 import { adminKycDocumentAccessSchema, paymentVerificationEvidenceAccessSchema } from "./admin.js";
 import { adminNotificationBroadcastInputSchema, adminNotificationWorkspaceSchema, flashAlertSchema } from "./engagement.js";
 import { returnEvidenceFileSchema, returnEvidenceAccessSchema } from "./returns.js";
@@ -21,8 +21,6 @@ import { mediaUploadInputSchema, mediaUploadResultSchema, mediaUploadTicketSchem
 import { commissionRuleInputSchema, commissionRuleSchema, endCommissionRuleSchema, updateCommissionRuleSchema } from "./commission.js";
 import { codRemittanceInputSchema, courierPartnerInputSchema, deliveryFeeRuleInputSchema, failedDeliveryReattemptSchema, failedDeliveryReturnSchema, logisticsAssignmentInputSchema, logisticsCodStateInputSchema, logisticsDeliveryAttemptSchema, logisticsManifestPickupSchema, logisticsNoteSchema, logisticsReturnActionSchema, logisticsShipmentTransitionSchema, logisticsTrackingEventSchema, logisticsZoneInputSchema, pickupStaffInputSchema } from "./logistics.js";
 import { documentQrVerificationInputSchema, documentQrVerificationSchema } from "./document-qr.js";
-
-extendZodWithOpenApi(z);
 
 const registry = new OpenAPIRegistry();
 const problem = registry.register("Problem", problemSchema);

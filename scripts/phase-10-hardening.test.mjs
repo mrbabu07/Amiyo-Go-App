@@ -143,6 +143,17 @@ test("mobile release uses the hardened Expo SDK and explicit build profiles", as
   assert.ok(eas.build.production);
 });
 
+test("runtime contracts use the remediated Zod and OpenAPI toolchain", async () => {
+  const apiPackage = JSON.parse(await readFile(new URL("../apps/api/package.json", import.meta.url), "utf8"));
+  const mobilePackage = JSON.parse(await readFile(new URL("../apps/mobile/package.json", import.meta.url), "utf8"));
+  const configPackage = JSON.parse(await readFile(new URL("../packages/config/package.json", import.meta.url), "utf8"));
+  const contractsPackage = JSON.parse(await readFile(new URL("../packages/contracts/package.json", import.meta.url), "utf8"));
+  const zodBootstrap = await readFile(new URL("../packages/contracts/src/zod.ts", import.meta.url), "utf8");
+  for (const version of [apiPackage.dependencies.zod, mobilePackage.dependencies.zod, configPackage.dependencies.zod, contractsPackage.dependencies.zod]) assert.match(version, /4\.6\.7/);
+  assert.match(contractsPackage.dependencies["@asteasolutions/zod-to-openapi"], /9\.1\.0/);
+  assert.match(zodBootstrap, /extendZodWithOpenApi\(z\)/);
+});
+
 test("production gate remains blocked until external evidence exists", async () => {
   const phase = await readFile(new URL("../docs/phase-10-production-hardening.md", import.meta.url), "utf8");
   assert.match(phase, /Gate status: blocked/);

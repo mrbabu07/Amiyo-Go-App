@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./zod.js";
 import { timestampSchema, uuidSchema } from "./common.js";
 
 export const roleSchema = z.enum([
@@ -123,7 +123,7 @@ export const deviceSchema = z.object({
 
 export const accountDeletionInputSchema = z.object({ reason: z.string().trim().min(3).max(1000).nullable().optional() });
 export const accountDeletionSchema = z.object({ id: uuidSchema, status: z.string(), reason: z.string().nullable(), requestedAt: timestampSchema, executeAfter: timestampSchema, completedAt: timestampSchema.nullable() });
-export const accountDataExportSchema = z.object({ generatedAt: timestampSchema, profile: z.record(z.unknown()), addresses: z.array(z.record(z.unknown())), orders: z.array(z.record(z.unknown())), returns: z.array(z.record(z.unknown())), reviews: z.array(z.record(z.unknown())), supportTickets: z.array(z.record(z.unknown())) });
+export const accountDataExportSchema = z.object({ generatedAt: timestampSchema, profile: z.record(z.string(), z.unknown()), addresses: z.array(z.record(z.string(), z.unknown())), orders: z.array(z.record(z.string(), z.unknown())), returns: z.array(z.record(z.string(), z.unknown())), reviews: z.array(z.record(z.string(), z.unknown())), supportTickets: z.array(z.record(z.string(), z.unknown())) });
 
 export type Role = z.infer<typeof roleSchema>;
 export type Principal = z.infer<typeof principalSchema>;
