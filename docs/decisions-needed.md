@@ -28,7 +28,7 @@ These decisions block production implementation. Do not guess them in code.
 | Vendor payout | IMPLEMENTED | Verified bank/MFS, BDT 500 minimum, approved/processing-only settlement, provider reference, and reserve/release rules are defined in `docs/business-rules-approval.md`; payout schedule and live bank/MFS ops evidence remain required. |
 | COD split collection | IMPLEMENTED | Customer COD is collected once against the parent payment after package delivery gates; package evidence and internal reconciliation remain separate. |
 | Commission precedence | IMPLEMENTED | Product, shop, vendor-category, vendor, category, then global precedence; fixed fees apply once per selected vendor-order rule and approved proportional refunds reverse settlement consistently. |
-| KYC | TBD | Required documents, expiry, rejection/resubmission workflow. |
+| KYC | IMPLEMENTED | Private validated evidence, supported document types, audited admin review, mandatory rejection reason and fresh resubmission after rejection; expiry is manually reviewed for release one. |
 | Geography | IMPLEMENTED | Bangladesh division/district/upazila/union taxonomy with server-authoritative admin base location, zone fees and serviceability estimates. |
 | Notifications | PARTIAL | In-app and Expo Push are implemented through transactional outbox/BullMQ delivery. Approve any release-one SMS/email events, quiet hours, and opt-out policy. |
 | Push provider | Expo Push selected | Native token registration, durable retries, delivery status and revoked-device filtering are implemented. EAS/FCM/APNs project credentials remain operator configuration. |

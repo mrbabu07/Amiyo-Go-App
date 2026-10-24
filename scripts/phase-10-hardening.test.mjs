@@ -174,7 +174,7 @@ test("release-one market boundaries are explicitly approved", async () => {
     readFile(new URL("../docs/decisions-needed.md", import.meta.url), "utf8"),
     readFile(new URL("../docs/release-one-operating-policy.md", import.meta.url), "utf8")
   ]);
-  for (const decision of ["Supported countries", "Currency and rounding", "Release-one roles", "Guest checkout", "Order split", "Product approval", "Commission precedence", "Rider contact exposure", "COD split collection", "Vendor pickup address", "Geography"]) {
+  for (const decision of ["Supported countries", "Currency and rounding", "Release-one roles", "Guest checkout", "Order split", "Product approval", "Commission precedence", "Rider contact exposure", "COD split collection", "Vendor pickup address", "Geography", "KYC"]) {
     assert.match(decisions, new RegExp(`\\| ${decision.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")} \\| IMPLEMENTED \\|`));
   }
   assert.match(policy, /Bangladesh only/);
@@ -186,6 +186,7 @@ test("release-one market boundaries are explicitly approved", async () => {
   assert.match(policy, /collected once against the parent-order payment/);
   assert.match(policy, /Bangladesh hierarchy: division, district, upazila, then union/);
   assert.match(policy, /Union remains optional/);
+  assert.match(policy, /Document validity\/expiry is manually checked/);
 });
 
 test("restore drill is manual, isolated and retains immutable evidence", async () => {

@@ -42,6 +42,13 @@ This policy records the launch scope already enforced by the application. It doe
 - Every seller pickup address requires contact name, Bangladesh mobile number, street/landmark address, division, district and upazila. Union remains optional because some courier pickup coverage is defined at upazila level; operations may require it before assigning a route where the selected provider needs it.
 - Serviceability and pricing are server-calculated from the stored admin delivery settings. Client labels or free-text location claims are not authoritative delivery approval.
 
+## Seller KYC
+
+- A seller must submit at least one unique supported business/identity document through the private KYC upload purpose. Every submitted file must belong to the seller account, complete content validation and retain its checksum before it can enter review.
+- Release-one accepted document types are trade license, owner NID front/back, bank proof and a bounded `OTHER` supporting-document category. Operations may request additional evidence from this list according to seller form and risk; the application does not pretend one document is legally sufficient for every business type.
+- Only authorized administrators may open short-lived audited document links and move a submission through submitted, reviewing, approved or rejected states. Rejection requires a recorded reason.
+- Document validity/expiry is manually checked during review for release one. An approved or in-review submission is locked; a rejected seller may create a fresh submission with corrected evidence. Automated expiry reminders are deferred until a legally approved document-age policy exists.
+
 ## Catalog moderation
 
 - Vendors create products as drafts and may submit draft or rejected products for review.
