@@ -23,3 +23,13 @@ maestro test .maestro/offline-reconnect-smoke.yaml
 The role flows clear application state, sign in through the real staging Firebase project, then verify protected customer account/orders, seller dashboard/orders, and admin dashboard/order-operations routes. The camera-denial flow uses Maestro's native permission control to prove the QR screen keeps manual verification available when camera access is rejected. For the signed-document flow, obtain a newly issued invoice or parcel payload from the same staging customer immediately before the run; never commit it because signed codes expire and contain operational identifiers. The flow accepts either a matching current record or an explicit signed-record mismatch, while still requiring the live reference and current status.
 
 The offline/reconnect flow is Android-only. It enables airplane mode, requires the global offline notice, restores connectivity, and waits for the notice to disappear. Its `onFlowComplete` cleanup disables airplane mode after either a pass or failure so the next device test starts online. Record device model, OS version, app commit/build, API release, duration, screenshots, failures, and tester. These source flows do not replace recorded physical-device evidence for camera-based QR decoding, checkout, push, PDF sharing, refund, return, or payout acceptance.
+
+## Validate Evidence
+
+Store the run metadata in a private JSON file with `schemaVersion`, `environment`, `commitSha`, `apiRelease`, `tester`, `startedAt`, `finishedAt`, `app`, `device`, and one result for every flow named in `.maestro`. Do not include credentials, tokens, customer data, URLs, QR payloads, or screenshot contents. Every result requires `name`, `status: "passed"`, `durationSeconds`, and `screenshotCount`.
+
+```bash
+MOBILE_DEVICE_EVIDENCE_PATH=/secure/amiyo-device-run.json RELEASE_COMMIT_SHA=<40-character-app-commit> npm run release:mobile-evidence
+```
+
+The validator currently accepts Android evidence because the required offline flow depends on Android airplane-mode control. It rejects the wrong package or commit, missing/failed/duplicate flows, runs older than fourteen days, future or four-hour runs, invalid device metadata, and results without screenshot evidence. Keep the JSON and screenshots in the protected release evidence store; do not commit them. iOS acceptance remains a separate external release gate.
