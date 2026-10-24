@@ -13,8 +13,8 @@ Real values belong in local ignored files or encrypted environment managers. `EX
 | `DIRECT_URL` | Direct PostgreSQL migration connection | CI migration only; secret; TLS mode required in staging/production |
 | `REDIS_URL` | TLS Redis connection | Required for API shared rate limits and worker queues; secret |
 | `LOG_LEVEL` | Structured log threshold | Default `info` |
-| `SENTRY_DSN` | Server error reporting destination | Required before release |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | Trace/metric exporter | Required before release |
+| `SENTRY_DSN` | Reserved server error-reporting destination | Optional; mobile Sentry uses `EXPO_PUBLIC_SENTRY_DSN` |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Reserved trace/metric exporter | Optional post-release enhancement; not consumed by the release-one runtime |
 
 ## API
 

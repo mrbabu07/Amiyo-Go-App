@@ -5,7 +5,7 @@
 ## Before Blueprint Creation
 
 1. Rotate every value previously copied into chat, local notes, shell history, or unencrypted files.
-2. Provision production PostgreSQL and Redis close to Singapore. Both URLs must use TLS; PostgreSQL requires `sslmode=require`, `verify-ca`, or `verify-full`, and Redis requires `rediss://`.
+2. Provision Neon PostgreSQL and Render Key Value close to Singapore. Both URLs must use TLS; PostgreSQL requires `sslmode=require`, `verify-ca`, or `verify-full`, and Redis requires `rediss://`.
 3. Create Firebase Admin credentials, production Storage rules/bucket, approved web domains, and native app registrations.
 4. Confirm SSLCommerz live access, callback domains, refund access and finance ownership.
 5. Accept Render billing. Render does not offer a free background-worker instance; the Blueprint uses the smallest paid service plan.
@@ -30,4 +30,4 @@
 4. Retain immutable smoke reports, deploy ID, commit SHA, migration IDs, service logs and approver names.
 5. Do not promote production until payment callbacks/refunds, queues, email/push delivery, backup restore and real-device customer/vendor/admin journeys pass.
 
-The Blueprint does not create PostgreSQL, Redis, Firebase, object storage, payment accounts, delivery accounts, monitoring projects or mobile-store credentials. Those external resources remain explicit release gates.
+The Blueprint does not create Neon PostgreSQL, Render Key Value, Firebase, payment accounts, delivery accounts, Sentry projects or mobile-store credentials. Those external resources remain explicit release gates.

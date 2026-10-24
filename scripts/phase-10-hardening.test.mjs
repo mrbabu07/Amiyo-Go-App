@@ -174,7 +174,7 @@ test("release-one market boundaries are explicitly approved", async () => {
     readFile(new URL("../docs/decisions-needed.md", import.meta.url), "utf8"),
     readFile(new URL("../docs/release-one-operating-policy.md", import.meta.url), "utf8")
   ]);
-  for (const decision of ["Supported countries", "Languages", "Currency and rounding", "Release-one roles", "Guest checkout", "Order split", "Product approval", "Commission precedence", "Rider contact exposure", "COD split collection", "Vendor pickup address", "Geography", "KYC", "Cancellation", "Returns"]) {
+  for (const decision of ["Supported countries", "Languages", "Currency and rounding", "Release-one roles", "Guest checkout", "Order split", "Product approval", "Commission precedence", "Rider contact exposure", "COD split collection", "Vendor pickup address", "Geography", "KYC", "Cancellation", "Returns", "Deployment targets"]) {
     assert.match(decisions, new RegExp(`\\| ${decision.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")} \\| IMPLEMENTED \\|`));
   }
   assert.match(policy, /Bangladesh only/);
@@ -191,6 +191,14 @@ test("release-one market boundaries are explicitly approved", async () => {
   assert.match(policy, /Document validity\/expiry is manually checked/);
   assert.match(policy, /Customer requests cannot claim the administrative reason/);
   assert.match(policy, /Eligible release-one returns have zero restocking fee/);
+});
+
+test("deployment targets are selected without claiming external provisioning", async () => {
+  const targets = await readFile(new URL("../docs/deployment-targets.md", import.meta.url), "utf8");
+  for (const provider of ["Render Web Service", "Render Background Worker", "Neon PostgreSQL", "Render Key Value", "Expo EAS", "Firebase Auth", "Sentry", "GitHub Container Registry"]) assert.match(targets, new RegExp(provider));
+  assert.match(targets, /does not prove that an external account/);
+  assert.match(targets, /staging smoke reports/);
+  assert.match(targets, /Redis must use `rediss:\/\/`/);
 });
 
 test("restore drill is manual, isolated and retains immutable evidence", async () => {
