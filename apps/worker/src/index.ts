@@ -29,6 +29,7 @@ import { AccountDeletionScheduler } from "./identity/account-deletion.scheduler.
 import { FirebaseIdentityProvider } from "./identity/firebase-identity.provider.js";
 import { EphemeralRetentionScheduler } from "./retention/ephemeral-retention.scheduler.js";
 import { MediaUploadRetentionScheduler } from "./retention/media-upload-retention.scheduler.js";
+import { workerQueueMetrics } from "./queue-metrics.js";
 
 const env = parseWorkerEnv(process.env);
 const logger = createLogger("amiyo-worker", env.LOG_LEVEL);
@@ -68,6 +69,13 @@ const queueWorkers = [worker, mediaWorker, notificationWorker, newsletterWorker,
 const healthServer = createWorkerHealthServer({
   logger,
   isShuttingDown: () => shuttingDown,
+  metrics: () => workerQueueMetrics([
+    { name: queueName, queue },
+    { name: mediaQueueName, queue: mediaQueue },
+    { name: notificationQueueName, queue: notificationQueue },
+    { name: newsletterQueueName, queue: newsletterQueue },
+    { name: loyaltyQueueName, queue: loyaltyQueue }
+  ]),
   readiness: async () => {
     if (queueWorkers.some((queueWorker) => !queueWorker.isRunning())) throw new Error("A queue worker is not running");
     const [redisStatus] = await Promise.all([connection.ping(), prisma.$queryRaw`SELECT 1`]);
