@@ -1,0 +1,25 @@
+appId: com.amiyo.go
+name: Seller dashboard and orders smoke
+---
+- launchApp:
+    clearState: true
+- openLink: amiyogo://auth
+- extendedWaitUntil:
+    visible: Welcome back
+    timeout: 20000
+- tapOn: Email
+- inputText: ${VENDOR_EMAIL}
+- tapOn: Password
+- inputText: ${VENDOR_PASSWORD}
+- tapOn: Sign in
+- extendedWaitUntil:
+    visible: Amiyo-Go
+    timeout: 30000
+- openLink: amiyogo://vendor/dashboard
+- extendedWaitUntil:
+    visible: SELLER WORKSPACE
+    timeout: 30000
+- tapOn: Orders
+- extendedWaitUntil:
+    visible: Vendor orders
+    timeout: 30000

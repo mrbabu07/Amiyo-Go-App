@@ -1,0 +1,25 @@
+appId: com.amiyo.go
+name: Customer account and orders smoke
+---
+- launchApp:
+    clearState: true
+- openLink: amiyogo://auth
+- extendedWaitUntil:
+    visible: Welcome back
+    timeout: 20000
+- tapOn: Email
+- inputText: ${CUSTOMER_EMAIL}
+- tapOn: Password
+- inputText: ${CUSTOMER_PASSWORD}
+- tapOn: Sign in
+- extendedWaitUntil:
+    visible: Amiyo-Go
+    timeout: 30000
+- openLink: amiyogo://account
+- extendedWaitUntil:
+    visible: Personal information
+    timeout: 30000
+- openLink: amiyogo://orders
+- extendedWaitUntil:
+    visible: My Orders
+    timeout: 30000

@@ -1,0 +1,25 @@
+appId: com.amiyo.go
+name: Admin dashboard and order operations smoke
+---
+- launchApp:
+    clearState: true
+- openLink: amiyogo://auth
+- extendedWaitUntil:
+    visible: Welcome back
+    timeout: 20000
+- tapOn: Email
+- inputText: ${ADMIN_EMAIL}
+- tapOn: Password
+- inputText: ${ADMIN_PASSWORD}
+- tapOn: Sign in
+- extendedWaitUntil:
+    visible: Amiyo-Go
+    timeout: 30000
+- openLink: amiyogo://admin
+- extendedWaitUntil:
+    visible: Amiyo-Go Control Center
+    timeout: 30000
+- openLink: amiyogo://admin/orders
+- extendedWaitUntil:
+    visible: Marketplace orders
+    timeout: 30000

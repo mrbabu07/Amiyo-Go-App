@@ -49,6 +49,7 @@ Docker is unavailable on the current workstation, so container build evidence mu
 - The run passed 1,007 tests: 285 API, 450 mobile, 41 worker, 10 config, 75 contracts, 28 domain, 2 migration, 2 observability and 114 repository acceptance/integration checks.
 - PostgreSQL-backed migration, constraint, concurrency, inventory reservation, checkout idempotency, payment replay, delivery restart, finance, chat, notifications, loyalty, restore reconciliation and wishlist migration checks all executed successfully.
 - This local result verifies repository regression only. It does not replace remote GitHub Actions, container-build, staging provider/load, restore-drill or real-device evidence, and it does not clear the current dependency or decision gates.
+- `.maestro/*.yaml` provides credential-safe Android staging smokes for customer, seller, and admin protected navigation. A passing source contract proves the flows exist; only a recorded run on the staged binary counts as device evidence.
 
 ## 2026-09-01 business-rule evidence
 
