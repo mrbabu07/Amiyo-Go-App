@@ -3,7 +3,8 @@ import { writeFile } from "node:fs/promises";
 const evidence = [
   ["ANDROID_DEVICE_EVIDENCE_JSON", "android-device-evidence.json"],
   ["IOS_DEVICE_EVIDENCE_JSON", "ios-device-evidence.json"],
-  ["FINANCE_PROVIDER_EVIDENCE_JSON", "finance-provider-evidence.json"]
+  ["FINANCE_PROVIDER_EVIDENCE_JSON", "finance-provider-evidence.json"],
+  ["RESTORE_RELEASE_EVIDENCE_JSON", "restore-release-evidence.json"]
 ];
 
 await Promise.all(evidence.map(async ([name, path]) => {

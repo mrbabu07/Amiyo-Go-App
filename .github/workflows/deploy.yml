@@ -37,6 +37,7 @@ jobs:
           ANDROID_DEVICE_EVIDENCE_JSON: ${{ secrets.ANDROID_DEVICE_EVIDENCE_JSON }}
           IOS_DEVICE_EVIDENCE_JSON: ${{ secrets.IOS_DEVICE_EVIDENCE_JSON }}
           FINANCE_PROVIDER_EVIDENCE_JSON: ${{ secrets.FINANCE_PROVIDER_EVIDENCE_JSON }}
+          RESTORE_RELEASE_EVIDENCE_JSON: ${{ secrets.RESTORE_RELEASE_EVIDENCE_JSON }}
       - name: Verify release readiness
         run: npm run release:check
         env:
@@ -48,6 +49,7 @@ jobs:
           ANDROID_DEVICE_EVIDENCE_PATH: ${{ inputs.environment == 'production' && 'android-device-evidence.json' || '' }}
           IOS_DEVICE_EVIDENCE_PATH: ${{ inputs.environment == 'production' && 'ios-device-evidence.json' || '' }}
           FINANCE_PROVIDER_EVIDENCE_PATH: ${{ inputs.environment == 'production' && 'finance-provider-evidence.json' || '' }}
+          RESTORE_RELEASE_EVIDENCE_PATH: ${{ inputs.environment == 'production' && 'restore-release-evidence.json' || '' }}
       - name: Upload release-readiness evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

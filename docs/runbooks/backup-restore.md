@@ -19,3 +19,5 @@
 8. Destroy the isolated target only after approval and according to provider retention policy.
 
 The production gate requires provider evidence for a successful restore within RPO 15 minutes and RTO 60 minutes. This repository cannot manufacture that evidence locally.
+
+For production promotion, combine the immutable verification report with commit/run provenance, a SHA-256 recovery-point hash, requested/restored-through/start timestamps, API smoke result, cleanup confirmation, and separate operator/approver names. Store that strict JSON as the protected `RESTORE_RELEASE_EVIDENCE_JSON` production environment secret. The release validator derives RPO/RTO from timestamps, requires zero invariant violations and failed outbox events, binds evidence to the release commit, and rejects stale or extra fields without accepting database URLs or credentials.

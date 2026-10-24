@@ -163,6 +163,7 @@ test("production gate remains blocked until external evidence exists", async () 
   assert.match(workflow, /ANDROID_DEVICE_EVIDENCE_JSON: \$\{\{ secrets\.ANDROID_DEVICE_EVIDENCE_JSON \}\}/);
   assert.match(workflow, /IOS_DEVICE_EVIDENCE_JSON: \$\{\{ secrets\.IOS_DEVICE_EVIDENCE_JSON \}\}/);
   assert.match(workflow, /FINANCE_PROVIDER_EVIDENCE_JSON: \$\{\{ secrets\.FINANCE_PROVIDER_EVIDENCE_JSON \}\}/);
+  assert.match(workflow, /RESTORE_RELEASE_EVIDENCE_JSON: \$\{\{ secrets\.RESTORE_RELEASE_EVIDENCE_JSON \}\}/);
   assert.match(readiness, /evidenceRequired/);
   assert.match(readiness, /releaseEvidence/);
 });
