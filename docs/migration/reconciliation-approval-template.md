@@ -1,6 +1,11 @@
 # Migration Reconciliation Approval
 
 - Rehearsal ID:
+- Scheduled two-hour maintenance window (Asia/Dhaka):
+- Write freeze started / ended (45-minute maximum):
+- Traffic switch timestamp:
+- 30-minute rollback decision deadline:
+- Legacy read-only expiry (seven days after switch):
 - Source export timestamp:
 - Source manifest SHA-256:
 - Importer commit:
@@ -18,3 +23,4 @@
 - Finance approver, date, signature:
 - Operations approver, date, signature:
 - Go/no-go decision:
+- Rollback authority acknowledges decision window:
