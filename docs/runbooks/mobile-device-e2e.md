@@ -15,6 +15,7 @@ Use a staging Android build of `com.amiyo.go` connected to the staging API and p
 maestro test -e CUSTOMER_EMAIL="$CUSTOMER_EMAIL" -e CUSTOMER_PASSWORD="$CUSTOMER_PASSWORD" .maestro/customer-smoke.yaml
 maestro test -e VENDOR_EMAIL="$VENDOR_EMAIL" -e VENDOR_PASSWORD="$VENDOR_PASSWORD" .maestro/vendor-smoke.yaml
 maestro test -e ADMIN_EMAIL="$ADMIN_EMAIL" -e ADMIN_PASSWORD="$ADMIN_PASSWORD" .maestro/admin-smoke.yaml
+maestro test .maestro/camera-denial-smoke.yaml
 ```
 
-The flows clear application state, sign in through the real staging Firebase project, then verify protected customer account/orders, seller dashboard/orders, and admin dashboard/order-operations routes. Record device model, OS version, app commit/build, API release, duration, screenshots, failures, and tester. These navigation smokes do not replace checkout, camera denial, QR scan, push, offline recovery, PDF sharing, refund, return, or payout acceptance.
+The role flows clear application state, sign in through the real staging Firebase project, then verify protected customer account/orders, seller dashboard/orders, and admin dashboard/order-operations routes. The camera-denial flow uses Maestro's native permission control to prove the QR screen keeps manual verification available when camera access is rejected. Record device model, OS version, app commit/build, API release, duration, screenshots, failures, and tester. These smokes do not replace successful QR scanning, checkout, push, offline recovery, PDF sharing, refund, return, or payout acceptance.

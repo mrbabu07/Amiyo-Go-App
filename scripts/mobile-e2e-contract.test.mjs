@@ -27,3 +27,12 @@ test("native smoke flows cover customer, seller and admin protected workspaces",
   assert.match(admin, /amiyogo:\/\/admin\/orders/);
   assert.match(admin, /visible: Marketplace orders/);
 });
+
+test("native QR smoke proves a denied camera keeps manual verification available", async () => {
+  const flow = await readFile(new URL("../.maestro/camera-denial-smoke.yaml", import.meta.url), "utf8");
+  assert.match(flow, /permissions:\s+camera: deny/);
+  assert.match(flow, /amiyogo:\/\/verify-document/);
+  assert.match(flow, /tapOn: Scan QR with camera/);
+  assert.match(flow, /Camera permission is required to scan/);
+  assert.match(flow, /assertVisible: Document QR code/);
+});

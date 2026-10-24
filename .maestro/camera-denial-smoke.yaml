@@ -1,0 +1,15 @@
+appId: com.amiyo.go
+name: QR scanner camera denial fallback
+---
+- launchApp:
+    clearState: true
+    permissions:
+      camera: deny
+- openLink: amiyogo://verify-document
+- extendedWaitUntil:
+    visible: Verify invoice or parcel
+    timeout: 20000
+- tapOn: Scan QR with camera
+- assertVisible: Camera permission is required to scan. You can still paste a QR code below.
+- assertVisible: Document QR code
+- assertVisible: Verify document
