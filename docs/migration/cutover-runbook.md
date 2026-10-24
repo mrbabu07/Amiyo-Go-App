@@ -1,5 +1,7 @@
 # Data Migration Cutover Runbook
 
+This is a contingency runbook for a separately approved future legacy-data import. The greenfield release-one launch does not execute this cutover; see `../greenfield-data-launch-policy.md`.
+
 ## Approved release-one boundaries
 
 - Schedule a two-hour maintenance window during the lowest observed Bangladesh traffic period. Engineering owns execution; finance and operations are independent approvers.

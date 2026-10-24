@@ -21,3 +21,16 @@ test("cutover policy has bounded freeze, rollback and legacy-read windows", asyn
   for (const field of ["Scheduled two-hour maintenance window", "Write freeze started / ended", "30-minute rollback decision deadline", "Legacy read-only expiry"]) assert.match(approval, new RegExp(field));
   assert.match(decisions, /\| Migration cutover \| IMPLEMENTED \|/);
 });
+test("release one is greenfield and cannot silently import reference data", async () => {
+  const [policy, decisions, runbook] = await Promise.all([
+    readFile(new URL("../docs/greenfield-data-launch-policy.md", import.meta.url), "utf8"),
+    readFile(new URL("../docs/decisions-needed.md", import.meta.url), "utf8"),
+    readFile(new URL("../docs/migration/cutover-runbook.md", import.meta.url), "utf8")
+  ]);
+  assert.match(policy, /separate greenfield marketplace/);
+  assert.match(policy, /behavioral and visual references only/);
+  assert.match(policy, /Do not connect Amiyo-App production services to the legacy MongoDB database/);
+  assert.match(policy, /Local demo users, demo orders, sandbox payments and synthetic migration rehearsals are forbidden in production/);
+  assert.match(decisions, /\| Migration exports \| IMPLEMENTED \| Not applicable to the greenfield release/);
+  assert.match(runbook, /contingency runbook/);
+});
