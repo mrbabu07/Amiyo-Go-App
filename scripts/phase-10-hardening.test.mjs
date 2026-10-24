@@ -169,6 +169,21 @@ test("production gate remains blocked until external evidence exists", async () 
   assert.match(readiness, /releaseEvidence/);
 });
 
+test("release-one market boundaries are explicitly approved", async () => {
+  const [decisions, policy] = await Promise.all([
+    readFile(new URL("../docs/decisions-needed.md", import.meta.url), "utf8"),
+    readFile(new URL("../docs/release-one-operating-policy.md", import.meta.url), "utf8")
+  ]);
+  for (const decision of ["Supported countries", "Currency and rounding", "Release-one roles", "Guest checkout", "Order split", "Product approval", "Commission precedence"]) {
+    assert.match(decisions, new RegExp(`\\| ${decision.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")} \\| IMPLEMENTED \\|`));
+  }
+  assert.match(policy, /Bangladesh only/);
+  assert.match(policy, /BDT only/);
+  assert.match(policy, /Firebase anonymous identity/);
+  assert.match(policy, /one parent order and one vendor order/);
+  assert.match(policy, /product, shop, vendor plus category, vendor, category, global fallback/);
+});
+
 test("restore drill is manual, isolated and retains immutable evidence", async () => {
   const workflow = await readFile(new URL("../.github/workflows/restore-drill.yml", import.meta.url), "utf8");
   assert.match(workflow, /workflow_dispatch:/);

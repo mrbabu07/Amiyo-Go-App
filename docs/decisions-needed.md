@@ -7,15 +7,15 @@ These decisions block production implementation. Do not guess them in code.
 | App name | IMPLEMENTED | Expo and release configuration use `Amiyo-Go`. |
 | Android package ID | IMPLEMENTED | Expo release configuration uses `com.amiyo.go`. |
 | iOS bundle ID | IMPLEMENTED | Expo release configuration uses `com.amiyo.go`. |
-| Supported countries | TBD | Bangladesh only or additional countries. |
+| Supported countries | IMPLEMENTED | Bangladesh only for release one; address/serviceability uses the admin-controlled village operation model in `release-one-operating-policy.md`. |
 | Languages | TBD | Bangla, English, or both in release one. |
-| Currency and rounding | TBD | Confirm BDT-only and minor-unit rounding policy. |
-| Release-one roles | TBD | Confirm customer, vendor owner/manager/staff, support, finance, operations, super admin. |
-| Guest checkout | TBD | Enabled/disabled and account-linking behavior. |
+| Currency and rounding | IMPLEMENTED | BDT only; financial writes and calculations use integer minor units, with formatting at the presentation edge. |
+| Release-one roles | IMPLEMENTED | Customer, vendor owner/manager/staff, support agent, finance admin, operations admin, and super admin are the approved bounded roles. |
+| Guest checkout | IMPLEMENTED | Enabled through Firebase anonymous identity with normal protected customer scope; no unauthenticated order-write endpoint. |
 | Authentication | PARTIAL | Firebase web project is configured locally. Confirm enabled email/password, phone OTP, social providers, test identities, and server Admin credentials. |
-| Product approval | TBD | Draft/submitted/approved/rejected transitions and owner actions. |
+| Product approval | IMPLEMENTED | Vendor draft/rejected products can be submitted; admin-only review approves or rejects with versioned moderation and audit evidence. |
 | Inventory policy | IMPLEMENTED | Admin controls a 5-120 minute unpaid reservation window; overselling prevention is mandatory, backorders are disabled, and the worker atomically expires unpaid holds with audit/outbox evidence. |
-| Order split | Proposed | One parent order and one vendor order per vendor. Needs approval. |
+| Order split | IMPLEMENTED | One parent order and one vendor/shop package per participating vendor, as defined in `release-one-operating-policy.md`. |
 | Commission | IMPLEMENTED | Global, category, vendor, and vendor-category percentage/fixed rules with effective dates and checkout snapshots. |
 | Payments | PARTIAL | COD and validated SSLCommerz hosted sandbox checkout are implemented. Approve live credentials and final bKash, Nagad, card, and manual-proof scope. |
 | Refunds | IMPLEMENTED | Provider-reference rules, full/partial bounds, role approvals, and ledger timing are defined in `docs/business-rules-approval.md`; live provider evidence remains required before production. |
@@ -27,7 +27,7 @@ These decisions block production implementation. Do not guess them in code.
 | Rider contact exposure | TBD | Confirm whether customer tracking may display rider name and masked phone. |
 | Vendor payout | IMPLEMENTED | Verified bank/MFS, BDT 500 minimum, approved/processing-only settlement, provider reference, and reserve/release rules are defined in `docs/business-rules-approval.md`; payout schedule and live bank/MFS ops evidence remain required. |
 | COD split collection | TBD | Confirm whether one parent payment is collected once or each vendor shipment records a separate COD collection. Automatic delivery settlement remains disabled until approved. |
-| Commission precedence | PARTIAL | Checkout uses vendor-category, vendor, category, then global precedence; fixed fees apply once per matched vendor order. Refund reversal remains a settlement decision. |
+| Commission precedence | IMPLEMENTED | Product, shop, vendor-category, vendor, category, then global precedence; fixed fees apply once per selected vendor-order rule and approved proportional refunds reverse settlement consistently. |
 | KYC | TBD | Required documents, expiry, rejection/resubmission workflow. |
 | Geography | TBD | Division/district/upazila/union and serviceability source. |
 | Notifications | PARTIAL | In-app and Expo Push are implemented through transactional outbox/BullMQ delivery. Approve any release-one SMS/email events, quiet hours, and opt-out policy. |

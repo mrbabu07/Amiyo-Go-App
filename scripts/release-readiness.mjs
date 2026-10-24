@@ -31,7 +31,8 @@ const requiredFiles = [
   "docs/environment-reference.md",
   "docs/test-strategy-and-evidence.md",
   "docs/store-release-guide.md",
-  "docs/known-limitations.md"
+  "docs/known-limitations.md",
+  "docs/release-one-operating-policy.md"
 ];
 
 const boundedMetadata = (value, name, pattern) => {
