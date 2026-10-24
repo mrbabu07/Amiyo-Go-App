@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { parseFinanceProviderEvidence, validateFinanceProviderEvidence } from "./finance-provider-evidence-lib.mjs";
 import { parseMobileDeviceEvidence, validateMobileDeviceEvidence } from "./mobile-device-evidence-lib.mjs";
 import { parseRestoreReleaseEvidence, validateRestoreReleaseEvidence } from "./restore-release-evidence-lib.mjs";
+import { parseStagingSmokeEvidence, validateStagingSmokeEvidence } from "./staging-smoke-evidence-lib.mjs";
 
 const requiredFiles = [
   ".github/workflows/ci.yml",
@@ -105,7 +106,8 @@ const releaseEvidence = {
   android: await validateEvidence(evidencePath(process.env.ANDROID_DEVICE_EVIDENCE_PATH, "ANDROID_DEVICE_EVIDENCE_PATH"), parseMobileDeviceEvidence, validateMobileDeviceEvidence, "android"),
   ios: await validateEvidence(evidencePath(process.env.IOS_DEVICE_EVIDENCE_PATH, "IOS_DEVICE_EVIDENCE_PATH"), parseMobileDeviceEvidence, validateMobileDeviceEvidence, "ios"),
   finance: await validateEvidence(evidencePath(process.env.FINANCE_PROVIDER_EVIDENCE_PATH, "FINANCE_PROVIDER_EVIDENCE_PATH"), parseFinanceProviderEvidence, validateFinanceProviderEvidence),
-  restore: await validateEvidence(evidencePath(process.env.RESTORE_RELEASE_EVIDENCE_PATH, "RESTORE_RELEASE_EVIDENCE_PATH"), parseRestoreReleaseEvidence, validateRestoreReleaseEvidence)
+  restore: await validateEvidence(evidencePath(process.env.RESTORE_RELEASE_EVIDENCE_PATH, "RESTORE_RELEASE_EVIDENCE_PATH"), parseRestoreReleaseEvidence, validateRestoreReleaseEvidence),
+  staging: await validateEvidence(evidencePath(process.env.STAGING_SMOKE_EVIDENCE_PATH, "STAGING_SMOKE_EVIDENCE_PATH"), parseStagingSmokeEvidence, validateStagingSmokeEvidence)
 };
 const evidenceRequired = provenance.environment === "production" || process.env.REQUIRE_PRODUCTION_READY === "true";
 const evidenceBlocked = evidenceRequired && Object.values(releaseEvidence).some((evidence) => evidence.status !== "passed");

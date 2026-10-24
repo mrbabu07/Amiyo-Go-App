@@ -19,6 +19,8 @@ Authenticated load checks use the same `npm run smoke:load` command with `LOAD_B
 
 The staging role-boundary workflow also enforces `SMOKE_MAX_P95_MS` across its authenticated customer, seller and admin checks. The checked-in staging budget is 2,500 ms. Its immutable report records p50, p95, maximum, threshold and violations without tokens or response bodies; status correctness alone cannot pass the job when the latency budget is exceeded.
 
+Production promotion additionally requires a protected `STAGING_SMOKE_EVIDENCE_JSON` bundle for the exact release commit. It combines the four immutable staging artifacts and rejects stale/cross-origin reports, missing public or role-boundary checks, any failed request, public load below 250 requests at concurrency 10 or p95 above 1,500 ms, and authenticated load below 40 requests at concurrency 4 or p95 above 2,500 ms. Reports contain no bearer tokens or response bodies.
+
 Authenticated verification is mandatory for every manually dispatched staging smoke; the workflow has no public-only bypass. A preflight gate rejects missing, non-HTTPS, credential-bearing, root, or cross-origin public load targets before any staging identity is used. The workflow signs in dedicated customer, vendor, and admin staging identities through Firebase at run time instead of depending on manually copied expiring ID tokens. It also sends 40 bounded seller-list requests at concurrency 4 to `/api/v2/vendor/orders?limit=1`, deriving the origin from the existing `API_PUBLIC_URL` staging variable and reusing the masked fresh vendor token. The load report records `authenticated: true` but never the token or URL query, and requires zero failures plus p95 at or below 2,500 ms.
 
 ## Latest local evidence
