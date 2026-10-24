@@ -26,6 +26,7 @@ import { closeWorkerHealthServer, createWorkerHealthServer } from "./health-serv
 import { SellerOperationsAlertScheduler } from "./vendor/seller-operations-alert.scheduler.js";
 import { ReservationExpiryScheduler } from "./inventory/reservation-expiry.scheduler.js";
 import { AccountDeletionScheduler } from "./identity/account-deletion.scheduler.js";
+import { FirebaseIdentityProvider } from "./identity/firebase-identity.provider.js";
 import { EphemeralRetentionScheduler } from "./retention/ephemeral-retention.scheduler.js";
 
 const env = parseWorkerEnv(process.env);
@@ -57,7 +58,7 @@ const abandonedCartScheduler = new AbandonedCartScheduler(prisma, (error) => log
 const productAlertScheduler = new ProductAlertScheduler(prisma, (error) => logger.error({ error }, "Product alert scheduler failed"));
 const sellerOperationsAlertScheduler = new SellerOperationsAlertScheduler(prisma, (error) => logger.error({ error }, "Seller operations alert scheduler failed"));
 const reservationExpiryScheduler = new ReservationExpiryScheduler(prisma, (error) => logger.error({ error }, "Inventory reservation expiry scheduler failed"));
-const accountDeletionScheduler = new AccountDeletionScheduler(prisma, (error) => logger.error({ error }, "Account deletion scheduler failed"));
+const accountDeletionScheduler = new AccountDeletionScheduler(prisma, new FirebaseIdentityProvider(), (error) => logger.error({ error }, "Account deletion scheduler failed"));
 const ephemeralRetentionScheduler = new EphemeralRetentionScheduler(prisma, (error) => logger.error({ error }, "Ephemeral retention scheduler failed"));
 let shuttingDown = false;
 const queueWorkers = [worker, mediaWorker, notificationWorker, newsletterWorker, loyaltyWorker];
