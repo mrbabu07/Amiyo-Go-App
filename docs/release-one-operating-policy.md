@@ -35,6 +35,13 @@ This policy records the launch scope already enforced by the application. It doe
 - COD is authorized and collected once against the parent-order payment after every active package reaches the delivery gate. Package delivery evidence remains separate, but a seller package must not create or collect a second customer COD payment.
 - Courier remittance and seller settlement may allocate the parent collection internally only after reconciliation; they do not represent additional customer collection.
 
+## Geography and pickup addresses
+
+- Release-one geography follows the Bangladesh hierarchy: division, district, upazila, then union. The checked-in taxonomy supplies selectable names; admin delivery settings define the operational base location, zone charges and estimates.
+- Customer delivery requires division and district. When the admin enables village union enforcement, checkout additionally requires upazila and union before submission.
+- Every seller pickup address requires contact name, Bangladesh mobile number, street/landmark address, division, district and upazila. Union remains optional because some courier pickup coverage is defined at upazila level; operations may require it before assigning a route where the selected provider needs it.
+- Serviceability and pricing are server-calculated from the stored admin delivery settings. Client labels or free-text location claims are not authoritative delivery approval.
+
 ## Catalog moderation
 
 - Vendors create products as drafts and may submit draft or rejected products for review.

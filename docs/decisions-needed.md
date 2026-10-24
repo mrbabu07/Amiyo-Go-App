@@ -23,13 +23,13 @@ These decisions block production implementation. Do not guess them in code.
 | Returns | PARTIAL | Admin-controlled window/evidence rules, delivered-order eligibility, bounded reason taxonomy, item quantities, reverse logistics and refund sequencing are implemented. Final category eligibility and restocking-fee reason policy require approval. |
 | Delivery | TBD | Amiyo Delivery, external courier, self pickup, manual fallback. |
 | READY_TO_SHIP trigger | Implemented | Vendor transition emits one transactional outbox event with `delivery-create:<vendorOrderId>`; external credentials still require staging approval. |
-| Vendor pickup address | PARTIAL | Registration and shop settings now persist and validate dispatch-ready contact name, Bangladesh mobile, address, division, district and upazila; confirm whether union/area must be mandatory before production dispatch. |
+| Vendor pickup address | IMPLEMENTED | Contact, Bangladesh phone, street/landmark, division, district and upazila are mandatory; union is optional unless the assigned route/provider requires it. |
 | Rider contact exposure | IMPLEMENTED | Release-one customer tracking does not expose rider/staff identity or phone; assignment details remain permission-protected for operations. |
 | Vendor payout | IMPLEMENTED | Verified bank/MFS, BDT 500 minimum, approved/processing-only settlement, provider reference, and reserve/release rules are defined in `docs/business-rules-approval.md`; payout schedule and live bank/MFS ops evidence remain required. |
 | COD split collection | IMPLEMENTED | Customer COD is collected once against the parent payment after package delivery gates; package evidence and internal reconciliation remain separate. |
 | Commission precedence | IMPLEMENTED | Product, shop, vendor-category, vendor, category, then global precedence; fixed fees apply once per selected vendor-order rule and approved proportional refunds reverse settlement consistently. |
 | KYC | TBD | Required documents, expiry, rejection/resubmission workflow. |
-| Geography | TBD | Division/district/upazila/union and serviceability source. |
+| Geography | IMPLEMENTED | Bangladesh division/district/upazila/union taxonomy with server-authoritative admin base location, zone fees and serviceability estimates. |
 | Notifications | PARTIAL | In-app and Expo Push are implemented through transactional outbox/BullMQ delivery. Approve any release-one SMS/email events, quiet hours, and opt-out policy. |
 | Push provider | Expo Push selected | Native token registration, durable retries, delivery status and revoked-device filtering are implemented. EAS/FCM/APNs project credentials remain operator configuration. |
 | Newsletter email | Resend selected | Drafts, schedules, recipient snapshots, unsubscribe links, durable retries, and delivery counters are implemented. `EMAIL_PROVIDER_TOKEN` and `EMAIL_FROM` remain operator configuration. |
