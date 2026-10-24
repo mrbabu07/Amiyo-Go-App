@@ -13,6 +13,8 @@ This schedule is a technical operating baseline, not legal advice. A named priva
 | Processed outbox events | 30 days after processing | Worker deletes only `processed`; pending/failed work is preserved |
 | Expired refresh sessions | 30 days after expiry | Worker deletes expired sessions; account deletion revokes active sessions immediately |
 | Terminal notification deliveries | 90 days | Worker deletes delivered, failed and read delivery attempts |
+| Expired incomplete media tickets | 24 hours after ticket expiry | Worker removes storage objects and then conditionally deletes only `pending` rows |
+| Rejected media uploads | 7 days after rejection record creation | Worker removes any residual object and then conditionally deletes only `rejected` rows |
 | Account deletion recovery request | 30 days | User may cancel during recovery; worker executes after the deadline |
 
 ## Proposed regulated schedule
@@ -33,6 +35,7 @@ This schedule is a technical operating baseline, not legal advice. A named priva
 - Fraud, dispute, chargeback, tax, court, regulator, security-incident or migration-reconciliation holds override every expiry date.
 - A hold must identify scope, reason, owner, creation date, review date and release approver. It must never contain provider credentials or unnecessary customer data.
 - No automated job deletes commerce, finance, KYC, evidence, support, audit or provider-callback records until the legal schedule and hold mechanism are approved and tested.
+- Media cleanup never deletes `uploaded`, `processing`, or `ready` rows. Attached product, review, KYC, payment, return, and support files therefore remain governed by their parent record and hold schedule.
 - Account deletion removes Firebase identity and direct profile/contact/address data after the recovery period. Retained regulated records remain linked only to the opaque internal user identifier.
 - Provider-side retention for Firebase, SSLCommerz, Render, Neon, Redis, Sentry, Resend and delivery providers must be configured and evidenced separately.
 

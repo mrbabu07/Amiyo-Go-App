@@ -28,6 +28,7 @@ import { ReservationExpiryScheduler } from "./inventory/reservation-expiry.sched
 import { AccountDeletionScheduler } from "./identity/account-deletion.scheduler.js";
 import { FirebaseIdentityProvider } from "./identity/firebase-identity.provider.js";
 import { EphemeralRetentionScheduler } from "./retention/ephemeral-retention.scheduler.js";
+import { MediaUploadRetentionScheduler } from "./retention/media-upload-retention.scheduler.js";
 
 const env = parseWorkerEnv(process.env);
 const logger = createLogger("amiyo-worker", env.LOG_LEVEL);
@@ -45,7 +46,8 @@ const loyaltyQueueName = "loyalty";
 const loyaltyQueue = new Queue(loyaltyQueueName, { connection });
 const deliveryClient = new AmiyoDeliveryClient({ apiUrl: env.AMIYO_DELIVERY_API_URL || "", integrationToken: env.AMIYO_DELIVERY_INTEGRATION_TOKEN || "", signingSecret: env.AMIYO_DELIVERY_WEBHOOK_SECRET || env.AMIYO_DELIVERY_INTEGRATION_TOKEN || "", timeoutMs: env.AMIYO_DELIVERY_TIMEOUT_MS });
 const worker = new Worker(queueName, createDeliveryProcessor(prisma, deliveryClient), { connection, concurrency: env.WORKER_CONCURRENCY });
-const mediaWorker = new Worker(mediaQueueName, createMediaProcessor(prisma, new FirebaseWorkerMediaStorage()), { connection, concurrency: Math.max(1, Math.floor(env.WORKER_CONCURRENCY / 2)) });
+const mediaStorage = new FirebaseWorkerMediaStorage();
+const mediaWorker = new Worker(mediaQueueName, createMediaProcessor(prisma, mediaStorage), { connection, concurrency: Math.max(1, Math.floor(env.WORKER_CONCURRENCY / 2)) });
 const notificationWorker = new Worker(notificationQueueName, createNotificationProcessor(prisma, new ExpoPushProvider(), { provider: new ResendEmailProvider({ apiUrl: env.EMAIL_PROVIDER_API_URL || "https://api.resend.com/emails", token: env.EMAIL_PROVIDER_TOKEN, from: env.EMAIL_FROM }), appPublicUrl: env.APP_PUBLIC_URL }), { connection, concurrency: env.WORKER_CONCURRENCY });
 const newsletterWorker = new Worker(newsletterQueueName, createNewsletterProcessor(prisma, new ResendEmailProvider({ apiUrl: env.EMAIL_PROVIDER_API_URL || "https://api.resend.com/emails", token: env.EMAIL_PROVIDER_TOKEN, from: env.EMAIL_FROM }), env.API_PUBLIC_URL), { connection, concurrency: env.WORKER_CONCURRENCY });
 const loyaltyWorker = new Worker(loyaltyQueueName, createLoyaltyProcessor(prisma), { connection, concurrency: Math.max(1, Math.floor(env.WORKER_CONCURRENCY / 2)) });
@@ -60,6 +62,7 @@ const sellerOperationsAlertScheduler = new SellerOperationsAlertScheduler(prisma
 const reservationExpiryScheduler = new ReservationExpiryScheduler(prisma, (error) => logger.error({ error }, "Inventory reservation expiry scheduler failed"));
 const accountDeletionScheduler = new AccountDeletionScheduler(prisma, new FirebaseIdentityProvider(), (error) => logger.error({ error }, "Account deletion scheduler failed"));
 const ephemeralRetentionScheduler = new EphemeralRetentionScheduler(prisma, (error) => logger.error({ error }, "Ephemeral retention scheduler failed"));
+const mediaUploadRetentionScheduler = new MediaUploadRetentionScheduler(prisma, mediaStorage, (error) => logger.error({ error }, "Media upload retention scheduler failed"));
 let shuttingDown = false;
 const queueWorkers = [worker, mediaWorker, notificationWorker, newsletterWorker, loyaltyWorker];
 const healthServer = createWorkerHealthServer({
@@ -84,6 +87,7 @@ sellerOperationsAlertScheduler.start();
 reservationExpiryScheduler.start();
 accountDeletionScheduler.start();
 ephemeralRetentionScheduler.start();
+mediaUploadRetentionScheduler.start();
 const flashAlertScheduler = new FlashAlertScheduler(prisma, (error) => logger.error({ error }, "Flash alert scheduler failed"));
 flashAlertScheduler.start();
 healthServer.listen(env.WORKER_HEALTH_PORT, "0.0.0.0", () => logger.info({ port: env.WORKER_HEALTH_PORT }, "Worker health server listening"));
@@ -93,7 +97,7 @@ async function shutdown(signal: string) {
   if (shuttingDown) return;
   shuttingDown = true;
   logger.info({ signal }, "Worker shutting down");
-  relay.stop(); mediaRelay.stop(); notificationRelay.stop(); newsletterRelay.stop(); loyaltyRelay.stop(); abandonedCartScheduler.stop(); reservationExpiryScheduler.stop(); accountDeletionScheduler.stop(); ephemeralRetentionScheduler.stop();
+  relay.stop(); mediaRelay.stop(); notificationRelay.stop(); newsletterRelay.stop(); loyaltyRelay.stop(); abandonedCartScheduler.stop(); reservationExpiryScheduler.stop(); accountDeletionScheduler.stop(); ephemeralRetentionScheduler.stop(); mediaUploadRetentionScheduler.stop();
   await withShutdownTimeout((async () => {
     await closeWorkerHealthServer(healthServer);
     await Promise.all([productAlertScheduler.stop(), flashAlertScheduler.stop(), sellerOperationsAlertScheduler.stop()]);
