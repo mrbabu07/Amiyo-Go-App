@@ -1,0 +1,30 @@
+appId: com.amiyo.go
+name: Signed invoice or parcel verification smoke
+---
+- launchApp:
+    clearState: true
+- openLink: amiyogo://auth
+- extendedWaitUntil:
+    visible: Welcome back
+    timeout: 20000
+- tapOn: Email
+- inputText: ${CUSTOMER_EMAIL}
+- tapOn: Password
+- inputText: ${CUSTOMER_PASSWORD}
+- tapOn: Sign in
+- extendedWaitUntil:
+    visible: Amiyo-Go
+    timeout: 30000
+- openLink: amiyogo://verify-document
+- extendedWaitUntil:
+    visible: Verify invoice or parcel
+    timeout: 20000
+- tapOn: Document QR code
+- inputText: ${DOCUMENT_QR_PAYLOAD}
+- tapOn: Verify document
+- extendedWaitUntil:
+    visible: "Signature and record verified|Signed document: record mismatch"
+    timeout: 30000
+- assertVisible: Reference:.*
+- assertVisible: Current order status:.*
+- assertVisible: Document verification does not confirm payment collection or delivery.

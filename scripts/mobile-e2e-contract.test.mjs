@@ -36,3 +36,13 @@ test("native QR smoke proves a denied camera keeps manual verification available
   assert.match(flow, /Camera permission is required to scan/);
   assert.match(flow, /assertVisible: Document QR code/);
 });
+
+test("signed document smoke requires a fresh external payload and verifies current record state", async () => {
+  const flow = await readFile(new URL("../.maestro/signed-document-smoke.yaml", import.meta.url), "utf8");
+  assert.match(flow, /\$\{CUSTOMER_EMAIL\}/);
+  assert.match(flow, /\$\{CUSTOMER_PASSWORD\}/);
+  assert.match(flow, /\$\{DOCUMENT_QR_PAYLOAD\}/);
+  assert.match(flow, /Signature and record verified\|Signed document: record mismatch/);
+  assert.match(flow, /Current order status:\.\*/);
+  assert.doesNotMatch(flow, /AGI1\||AGP2\|/);
+});
