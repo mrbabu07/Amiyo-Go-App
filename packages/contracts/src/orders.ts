@@ -89,6 +89,7 @@ export const orderSchema = z.object({
     windowMinutes: z.number().int().min(5).max(1440)
   }).optional(),
   deliveryAddress: orderAddressSchema.nullable().optional(),
+  deliveryInspection: z.object({ openBoxAllowed: z.boolean(), inspectionMinutes: z.number().int().min(0).max(30) }).optional(),
   payment: orderPaymentSchema.nullable().optional(),
   vendorOrders: z.array(vendorOrderSchema)
 });

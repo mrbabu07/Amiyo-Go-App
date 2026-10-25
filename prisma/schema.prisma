@@ -907,6 +907,8 @@ model Order {
   deliveryMinor     BigInt                 @default(0) @map("delivery_minor")
   taxMinor          BigInt                 @default(0) @map("tax_minor")
   totalMinor        BigInt                 @map("total_minor")
+  openBoxAllowed    Boolean                @default(false) @map("open_box_allowed")
+  inspectionMinutes Int                    @default(0) @map("inspection_minutes")
   version           Int                    @default(1)
   placedAt          DateTime?              @map("placed_at") @db.Timestamptz(3)
   returnWindowUntil DateTime?              @map("return_window_until") @db.Timestamptz(3)
@@ -2138,6 +2140,8 @@ model DeliverySetting {
   outsideDistrictEnabled     Boolean  @default(true) @map("outside_district_enabled")
   estimatedMinDays           Int      @default(2) @map("estimated_min_days")
   estimatedMaxDays           Int      @default(5) @map("estimated_max_days")
+  openBoxEnabled             Boolean  @default(false) @map("open_box_enabled")
+  inspectionMinutes          Int      @default(5) @map("inspection_minutes")
   version                    Int      @default(1)
   updatedAt                  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 

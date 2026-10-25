@@ -12,13 +12,14 @@ type Form = {
   division: string; district: string; upazila: string; union: string;
   sameUnion: string; sameUpazila: string; sameDistrict: string; outside: string;
   sameUnionEnabled: boolean; sameUpazilaEnabled: boolean; sameDistrictEnabled: boolean; outsideEnabled: boolean;
+  openBoxAllowed: boolean; inspectionMinutes: string;
   minDays: string; maxDays: string;
 };
 
 const empty: Form = {
   standard: "", threshold: "", free: true, division: "", district: "", upazila: "", union: "",
   sameUnion: "", sameUpazila: "", sameDistrict: "", outside: "",
-  sameUnionEnabled: true, sameUpazilaEnabled: true, sameDistrictEnabled: true, outsideEnabled: true,
+  sameUnionEnabled: true, sameUpazilaEnabled: true, sameDistrictEnabled: true, outsideEnabled: true, openBoxAllowed: false, inspectionMinutes: "5",
   minDays: "2", maxDays: "5"
 };
 
@@ -38,6 +39,7 @@ export function AdminDeliverySettingsScreen() {
       sameUnion: data.zoneFees.sameUnionMinor, sameUpazila: data.zoneFees.sameUpazilaMinor, sameDistrict: data.zoneFees.sameDistrictMinor, outside: data.zoneFees.outsideDistrictMinor,
       sameUnionEnabled: data.serviceableZones.sameUnion, sameUpazilaEnabled: data.serviceableZones.sameUpazila,
       sameDistrictEnabled: data.serviceableZones.sameDistrict, outsideEnabled: data.serviceableZones.outsideDistrict,
+      openBoxAllowed: data.inspectionPolicy.openBoxAllowed, inspectionMinutes: String(data.inspectionPolicy.inspectionMinutes || 5),
       minDays: String(data.estimatedDays.min), maxDays: String(data.estimatedDays.max)
     });
   }, [query.data]);
@@ -52,6 +54,7 @@ export function AdminDeliverySettingsScreen() {
       baseLocation: { division: form.division, district: form.district, upazila: form.upazila, union: form.union },
       zoneFees: { sameUnionMinor: form.sameUnion, sameUpazilaMinor: form.sameUpazila, sameDistrictMinor: form.sameDistrict, outsideDistrictMinor: form.outside },
       serviceableZones: { sameUnion: form.sameUnionEnabled, sameUpazila: form.sameUpazilaEnabled, sameDistrict: form.sameDistrictEnabled, outsideDistrict: form.outsideEnabled },
+      inspectionPolicy: { openBoxAllowed: form.openBoxAllowed, inspectionMinutes: form.openBoxAllowed ? Number(form.inspectionMinutes) : 0 },
       estimatedDays: { min: Number(form.minDays), max: Number(form.maxDays) }, expectedVersion: query.data!.version
     }),
     onSuccess: () => cache.invalidateQueries({ queryKey: ["admin", "delivery-settings", userId] })
@@ -78,6 +81,10 @@ export function AdminDeliverySettingsScreen() {
       <Fields form={form} setForm={setForm} names={[["sameUnion", "Same union"], ["sameUpazila", "Same upazila"], ["sameDistrict", "Same district"], ["outside", "Outside district"]]} />
       <View style={styles.row}><Field label="Minimum days" value={form.minDays} onChangeText={(minDays) => setForm({ ...form, minDays })} /><Field label="Maximum days" value={form.maxDays} onChangeText={(maxDays) => setForm({ ...form, maxDays })} /></View>
     </ModuleCard>
+    <ModuleCard title="Delivery inspection" meta="Choose whether customers may inspect products before accepting a manually delivered parcel.">
+      <Toggle label="Allow open-box delivery" onChange={(openBoxAllowed) => setForm({ ...form, openBoxAllowed })} value={form.openBoxAllowed} />
+      {form.openBoxAllowed ? <Field label="Inspection window (minutes)" value={form.inspectionMinutes} onChangeText={(inspectionMinutes) => setForm({ ...form, inspectionMinutes })} /> : <Text style={styles.hint}>Closed-box delivery: customers should accept the sealed parcel and use the return workflow for eligible issues.</Text>}
+    </ModuleCard>
     <Pressable accessibilityRole="button" disabled={save.isPending || !query.data} onPress={() => save.mutate()} style={[styles.button, (save.isPending || !query.data) && styles.disabled]}><Text style={styles.buttonText}>{save.isPending ? "Saving…" : "Save delivery settings"}</Text></Pressable>
   </Screen>;
 }
@@ -97,5 +104,5 @@ const styles = StyleSheet.create({
   grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }, row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }, field: { flex: 1, minWidth: 180 },
   label: { color: colors.text, flex: 1, fontSize: 12, fontWeight: "600", marginBottom: spacing.xs }, input: { borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, padding: spacing.md },
   switchRow: { alignItems: "center", borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: "row", justifyContent: "space-between", minHeight: 50 },
-  button: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, padding: 15 }, disabled: { opacity: 0.55 }, buttonText: { color: colors.surface, fontWeight: "700" }, error: { color: colors.danger }
+  button: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, padding: 15 }, disabled: { opacity: 0.55 }, buttonText: { color: colors.onPrimary, fontWeight: "700" }, hint: { color: colors.muted, lineHeight: 20 }, error: { color: colors.danger }
 });

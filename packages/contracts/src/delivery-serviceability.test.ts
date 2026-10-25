@@ -8,7 +8,7 @@ const settings = {
   key: "default", standardChargeMinor: "10000", freeDeliveryEnabled: true, freeDeliveryThresholdMinor: "1100000",
   baseLocation: { division: "Chattogram", district: "Cox's Bazar", upazila: "Teknaf", union: "Hnila" },
   zoneFees: { sameUnionMinor: "6000", sameUpazilaMinor: "8000", sameDistrictMinor: "12000", outsideDistrictMinor: "15000" },
-  serviceableZones: zones, estimatedDays: { min: 2, max: 5 }, version: 1
+  serviceableZones: zones, inspectionPolicy: { openBoxAllowed: true, inspectionMinutes: 5 }, estimatedDays: { min: 2, max: 5 }, version: 1
 };
 
 test("delivery settings expose independently controlled manual service zones", () => {
@@ -19,6 +19,13 @@ test("admin delivery updates require an explicit decision for every zone", () =>
   const { key: _key, version, ...input } = settings;
   assert.equal(deliverySettingsInputSchema.safeParse({ ...input, expectedVersion: version }).success, true);
   assert.equal(deliverySettingsInputSchema.safeParse({ ...input, serviceableZones: { sameUnion: true }, expectedVersion: version }).success, false);
+});
+
+test("delivery inspection policy is bounded and closed-box safe", () => {
+  const { key: _key, version, ...input } = settings;
+  assert.equal(deliverySettingsInputSchema.safeParse({ ...input, expectedVersion: version }).success, true);
+  assert.equal(deliverySettingsInputSchema.safeParse({ ...input, inspectionPolicy: { openBoxAllowed: false, inspectionMinutes: 5 }, expectedVersion: version }).success, false);
+  assert.equal(deliverySettingsInputSchema.safeParse({ ...input, inspectionPolicy: { openBoxAllowed: true, inspectionMinutes: 31 }, expectedVersion: version }).success, false);
 });
 
 test("guest quotes accept a complete unsaved delivery location", () => {
