@@ -1935,6 +1935,63 @@
                   "postalCode"
                 ]
               },
+              "fulfillmentMethod": {
+                "type": "string",
+                "enum": [
+                  "DELIVERY",
+                  "PICKUP"
+                ]
+              },
+              "pickupPoint": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "address": {
+                    "type": "string"
+                  },
+                  "division": {
+                    "type": "string"
+                  },
+                  "district": {
+                    "type": "string"
+                  },
+                  "upazila": {
+                    "type": "string"
+                  },
+                  "unionName": {
+                    "type": "string"
+                  },
+                  "instructions": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "phone",
+                  "address",
+                  "division",
+                  "district",
+                  "upazila",
+                  "unionName",
+                  "instructions"
+                ]
+              },
               "deliveryInspection": {
                 "type": "object",
                 "properties": {
@@ -2591,6 +2648,63 @@
               "postalCode"
             ]
           },
+          "fulfillmentMethod": {
+            "type": "string",
+            "enum": [
+              "DELIVERY",
+              "PICKUP"
+            ]
+          },
+          "pickupPoint": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "phone": {
+                "type": "string"
+              },
+              "address": {
+                "type": "string"
+              },
+              "division": {
+                "type": "string"
+              },
+              "district": {
+                "type": "string"
+              },
+              "upazila": {
+                "type": "string"
+              },
+              "unionName": {
+                "type": "string"
+              },
+              "instructions": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "phone",
+              "address",
+              "division",
+              "district",
+              "upazila",
+              "unionName",
+              "instructions"
+            ]
+          },
           "deliveryInspection": {
             "type": "object",
             "properties": {
@@ -3014,6 +3128,8 @@
           "shopName",
           "customer",
           "deliveryAddress",
+          "fulfillmentMethod",
+          "pickupPoint",
           "deliveryInspection",
           "payment",
           "status",
@@ -3836,6 +3952,63 @@
               "postalCode"
             ]
           },
+          "fulfillmentMethod": {
+            "type": "string",
+            "enum": [
+              "DELIVERY",
+              "PICKUP"
+            ]
+          },
+          "pickupPoint": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "phone": {
+                "type": "string"
+              },
+              "address": {
+                "type": "string"
+              },
+              "division": {
+                "type": "string"
+              },
+              "district": {
+                "type": "string"
+              },
+              "upazila": {
+                "type": "string"
+              },
+              "unionName": {
+                "type": "string"
+              },
+              "instructions": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "phone",
+              "address",
+              "division",
+              "district",
+              "upazila",
+              "unionName",
+              "instructions"
+            ]
+          },
           "deliveryInspection": {
             "type": "object",
             "properties": {
@@ -4529,6 +4702,63 @@
                   "upazila",
                   "unionName",
                   "postalCode"
+                ]
+              },
+              "fulfillmentMethod": {
+                "type": "string",
+                "enum": [
+                  "DELIVERY",
+                  "PICKUP"
+                ]
+              },
+              "pickupPoint": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "address": {
+                    "type": "string"
+                  },
+                  "division": {
+                    "type": "string"
+                  },
+                  "district": {
+                    "type": "string"
+                  },
+                  "upazila": {
+                    "type": "string"
+                  },
+                  "unionName": {
+                    "type": "string"
+                  },
+                  "instructions": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "phone",
+                  "address",
+                  "division",
+                  "district",
+                  "upazila",
+                  "unionName",
+                  "instructions"
                 ]
               },
               "deliveryInspection": {
@@ -6183,6 +6413,63 @@
               "postalCode"
             ]
           },
+          "fulfillmentMethod": {
+            "type": "string",
+            "enum": [
+              "DELIVERY",
+              "PICKUP"
+            ]
+          },
+          "pickupPoint": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "phone": {
+                "type": "string"
+              },
+              "address": {
+                "type": "string"
+              },
+              "division": {
+                "type": "string"
+              },
+              "district": {
+                "type": "string"
+              },
+              "upazila": {
+                "type": "string"
+              },
+              "unionName": {
+                "type": "string"
+              },
+              "instructions": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "phone",
+              "address",
+              "division",
+              "district",
+              "upazila",
+              "unionName",
+              "instructions"
+            ]
+          },
           "payment": {
             "type": [
               "object",
@@ -6681,6 +6968,8 @@
           "placedAt",
           "customer",
           "deliveryAddress",
+          "fulfillmentMethod",
+          "pickupPoint",
           "payment",
           "invoice",
           "subtotal",
@@ -7693,6 +7982,13 @@
                     "type": "string",
                     "format": "uuid"
                   },
+                  "pickupPointId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid"
+                  },
                   "deliveryLocation": {
                     "type": "object",
                     "properties": {
@@ -7824,6 +8120,13 @@
                 "properties": {
                   "addressId": {
                     "type": "string",
+                    "format": "uuid"
+                  },
+                  "pickupPointId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "format": "uuid"
                   },
                   "paymentMethod": {
@@ -39037,10 +39340,7 @@
                           ]
                         },
                         "pickupPointsEnabled": {
-                          "type": "boolean",
-                          "enum": [
-                            false
-                          ]
+                          "type": "boolean"
                         },
                         "supportPhone": {
                           "type": [
@@ -39669,10 +39969,7 @@
                         ]
                       },
                       "pickupPointsEnabled": {
-                        "type": "boolean",
-                        "enum": [
-                          false
-                        ]
+                        "type": "boolean"
                       },
                       "supportPhone": {
                         "type": [
@@ -40168,10 +40465,7 @@
                           ]
                         },
                         "pickupPointsEnabled": {
-                          "type": "boolean",
-                          "enum": [
-                            false
-                          ]
+                          "type": "boolean"
                         },
                         "supportPhone": {
                           "type": [

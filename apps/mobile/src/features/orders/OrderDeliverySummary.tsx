@@ -9,12 +9,12 @@ export function OrderDeliverySummary({ order }: { order: OrderDto }) {
   const address = order.deliveryAddress;
   const payment = order.payment;
   return <View style={styles.stack}>
-    <ModuleCard title="Delivery address" meta="Address saved when this order was placed">
-      {address ? <View style={styles.stack}>
+    <ModuleCard title={order.fulfillmentMethod === "PICKUP" ? "Pickup point" : "Delivery address"} meta="Saved when this order was placed">
+      {order.fulfillmentMethod === "PICKUP" && order.pickupPoint ? <View style={styles.stack}><Text style={styles.name}>{order.pickupPoint.name}</Text><Text selectable style={styles.text}>{order.pickupPoint.phone}</Text><Text selectable style={styles.text}>{[order.pickupPoint.address, order.pickupPoint.unionName, order.pickupPoint.upazila, order.pickupPoint.district, order.pickupPoint.division].join(", ")}</Text>{order.pickupPoint.instructions ? <Text style={styles.text}>{order.pickupPoint.instructions}</Text> : null}</View> : address ? <View style={styles.stack}>
         <Text style={styles.name}>{address.recipientName}</Text>
         <Text selectable style={styles.text}>{address.phone}</Text>
         <Text selectable style={styles.text}>{[address.line1, address.line2, address.unionName, address.upazila, address.district, address.division, address.postalCode].filter(Boolean).join(", ")}</Text>
-      </View> : <Text style={styles.text}>Delivery address is unavailable for this order.</Text>}
+      </View> : <Text style={styles.text}>Delivery information is unavailable for this order.</Text>}
     </ModuleCard>
     <ModuleCard title="Payment details" meta="Payment status is separate from delivery status">
       {payment ? <View style={styles.stack}>

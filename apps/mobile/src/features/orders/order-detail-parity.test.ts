@@ -11,7 +11,9 @@ test("order detail displays saved delivery and payment data without assuming pai
   for (const field of ["method", "status", "provider", "transactionId", "refunded"]) {
     assert.ok(source.includes(`payment.${field}`));
   }
-  assert.ok(source.includes("Delivery address is unavailable"));
+  assert.ok(source.includes("Delivery information is unavailable"));
+  assert.ok(source.includes('order.fulfillmentMethod === "PICKUP"'));
+  assert.ok(source.includes("order.pickupPoint.instructions"));
   assert.ok(source.includes("No payment record is available yet"));
   assert.doesNotMatch(source, /payment\.status\s*=/);
 });

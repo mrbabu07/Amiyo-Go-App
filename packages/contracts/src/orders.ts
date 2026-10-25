@@ -60,6 +60,8 @@ export const orderAddressSchema = z.object({
   postalCode: z.string().nullable()
 });
 
+export const orderPickupPointSchema = z.object({ id: uuidSchema, name: z.string(), phone: z.string(), address: z.string(), division: z.string(), district: z.string(), upazila: z.string(), unionName: z.string(), instructions: z.string().nullable() });
+
 export const orderPaymentSchema = z.object({
   provider: z.string(),
   method: z.string(),
@@ -89,6 +91,8 @@ export const orderSchema = z.object({
     windowMinutes: z.number().int().min(5).max(1440)
   }).optional(),
   deliveryAddress: orderAddressSchema.nullable().optional(),
+  fulfillmentMethod: z.enum(["DELIVERY", "PICKUP"]).optional(),
+  pickupPoint: orderPickupPointSchema.nullable().optional(),
   deliveryInspection: z.object({ openBoxAllowed: z.boolean(), inspectionMinutes: z.number().int().min(0).max(30) }).optional(),
   payment: orderPaymentSchema.nullable().optional(),
   vendorOrders: z.array(vendorOrderSchema)

@@ -58,6 +58,8 @@ export const vendorOrderDetailSchema = z.object({
   shopName: z.string(),
   customer: z.object({ displayName: z.string(), email: z.string().nullable(), phone: z.string().nullable() }),
   deliveryAddress: z.object({ recipientName: z.string(), phone: z.string(), line1: z.string(), line2: z.string().nullable(), division: z.string(), district: z.string(), upazila: z.string().nullable(), unionName: z.string().nullable(), postalCode: z.string().nullable() }).nullable(),
+  fulfillmentMethod: z.enum(["DELIVERY", "PICKUP"]),
+  pickupPoint: pickupPointSchema.omit({ active: true, version: true }).nullable(),
   deliveryInspection: deliveryInspectionPolicySchema,
   payment: z.object({ provider: z.string(), method: z.string(), status: z.string(), amount: moneySchema, transactionId: z.string().nullable(), createdAt: timestampSchema }).nullable(),
   status: vendorOrderStatusSchema,

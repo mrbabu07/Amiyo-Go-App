@@ -22,6 +22,11 @@ test("checkout requires active-phone confirmation when village COD policy is ena
   await assert.rejects(() => new CommerceService(client).checkout(session, { addressId: checkout.addressId, paymentMethod: "COD" }, "checkout-key"), /Confirm that the delivery phone number is active/);
 });
 
+test("checkout rejects pickup selection while the admin feature is disabled", async () => {
+  const client = { platformConfiguration: { findUnique: async () => ({ maintenanceMode: { enabled: false }, paymentMethods: { cod: { enabled: true } }, villageOperations: { enabled: true, pickupPointsEnabled: false } }) } } as unknown as PrismaClient;
+  await assert.rejects(() => new CommerceService(client).checkout(session, { addressId: checkout.addressId, pickupPointId: "33333333-3333-4333-8333-333333333333", paymentMethod: "COD", codPhoneConfirmed: true }, "checkout-key"), /pickup is currently unavailable/i);
+});
+
 test("shop vacation blocks only its active scheduled window", () => {
   const settings = { vacationMode: { enabled: true, startsAt: "2026-10-20T00:00:00.000Z", endsAt: "2026-10-22T00:00:00.000Z" } };
   assert.equal(shopVacationActive(settings, Date.parse("2026-10-21T12:00:00.000Z")), true);

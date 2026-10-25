@@ -110,7 +110,7 @@ test("public settings validate admin-controlled village operations", () => {
   assert.equal(settings.villageOperations.defaultLocale, "bn");
   assert.equal(settings.villageOperations.requireCodPhoneConfirmation, true);
   assert.equal(publicPlatformSettingsSchema.safeParse({ ...settings, villageOperations: { ...settings.villageOperations, smsOrderUpdatesEnabled: true } }).success, false);
-  assert.equal(publicPlatformSettingsSchema.safeParse({ ...settings, villageOperations: { ...settings.villageOperations, pickupPointsEnabled: true } }).success, false);
+  assert.equal(publicPlatformSettingsSchema.safeParse({ ...settings, villageOperations: { ...settings.villageOperations, pickupPointsEnabled: true } }).success, true);
 });
 
 test("identity mutation contracts reject incomplete data", () => {
@@ -128,7 +128,7 @@ test("commission rules require bounded non-zero fees and valid dates", () => {
 
 test("admin order detail keeps printable commerce records structured", () => {
   const base = { amountMinor: "10000", currency: "BDT" };
-  const parsed = adminOrderDetailSchema.safeParse({ id: "11111111-1111-4111-8111-111111111111", orderNumber: "AGO-100", status: "CONFIRMED", version: 1, createdAt: "2026-08-14T00:00:00.000Z", placedAt: "2026-08-14T00:00:00.000Z", customer: { id: "22222222-2222-4222-8222-222222222222", displayName: "Customer", email: "customer@example.com", phone: null }, deliveryAddress: null, payment: null, invoice: null, subtotal: base, discount: { amountMinor: "0", currency: "BDT" }, delivery: { amountMinor: "0", currency: "BDT" }, tax: { amountMinor: "0", currency: "BDT" }, total: base, events: [], vendorOrders: [] });
+  const parsed = adminOrderDetailSchema.safeParse({ id: "11111111-1111-4111-8111-111111111111", orderNumber: "AGO-100", status: "CONFIRMED", version: 1, createdAt: "2026-08-14T00:00:00.000Z", placedAt: "2026-08-14T00:00:00.000Z", customer: { id: "22222222-2222-4222-8222-222222222222", displayName: "Customer", email: "customer@example.com", phone: null }, deliveryAddress: null, fulfillmentMethod: "DELIVERY", pickupPoint: null, payment: null, invoice: null, subtotal: base, discount: { amountMinor: "0", currency: "BDT" }, delivery: { amountMinor: "0", currency: "BDT" }, tax: { amountMinor: "0", currency: "BDT" }, total: base, events: [], vendorOrders: [] });
   assert.equal(parsed.success, true);
 });
 
