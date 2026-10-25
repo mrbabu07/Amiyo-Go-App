@@ -1,4 +1,4 @@
-import { bulkProductImportResultSchema, categorySchema, productDetailSchema, productListResponseSchema, shopDetailSchema, shopListResponseSchema, vendorInventorySchema, type ArchiveProduct, type BulkProductCsvInput, type CatalogQuery, type CreateProductInput, type InventoryAdjustmentInput, type ModerationInput, type ReplaceProductMedia, type ReplaceProductVariants, type UpdateProductInput } from "@amiyo/contracts";
+import { bulkProductImportResultSchema, categorySchema, productDetailSchema, productListResponseSchema, shopDetailSchema, shopFollowStatusSchema, shopListResponseSchema, shopSummarySchema, vendorInventorySchema, type ArchiveProduct, type BulkProductCsvInput, type CatalogQuery, type CreateProductInput, type InventoryAdjustmentInput, type ModerationInput, type ReplaceProductMedia, type ReplaceProductVariants, type UpdateProductInput } from "@amiyo/contracts";
 import type { User } from "@firebase/auth";
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
@@ -50,6 +50,9 @@ export async function getShop(identifier: string) {
 export async function getShops() {
   return shopListResponseSchema.parse(await publicRequest("/api/v2/shops?limit=30"));
 }
+export async function getShopFollowStatus(user: User, identifier: string) { return shopFollowStatusSchema.parse(await authenticatedRequest(user, `/api/v2/shops/${encodeURIComponent(identifier)}/follow`)); }
+export async function setShopFollowing(user: User, identifier: string, following: boolean) { return shopFollowStatusSchema.parse(await authenticatedRequest(user, `/api/v2/shops/${encodeURIComponent(identifier)}/follow`, { method: following ? "PUT" : "DELETE" })); }
+export async function getFollowedShops(user: User) { return shopSummarySchema.array().parse(await authenticatedRequest(user, "/api/v2/me/followed-shops")); }
 
 export async function getVendorProducts(user: User) { return productDetailSchema.array().parse(await authenticatedRequest(user, "/api/v2/vendor/products")); }
 export async function createVendorProduct(user: User, input: CreateProductInput) { return productDetailSchema.parse(await authenticatedRequest(user, "/api/v2/vendor/products", { method: "POST", body: JSON.stringify(input) })); }

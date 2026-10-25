@@ -274,7 +274,7 @@ export class CatalogService {
   async shops(cursor: string | undefined, limit: number) {
     return this.publicCache.getOrCreate(`shops:${cursor ?? "first"}:${limit}`, 60_000, async () => {
       const result = await this.repository.listShops(cursor, limit);
-      return { data: result.data.map((shop) => ({ id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, version: shop.version })), pageInfo: result.pageInfo };
+      return { data: result.data.map((shop) => ({ id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, followerCount: shop._count.followers, version: shop.version })), pageInfo: result.pageInfo };
     }, 5 * 60_000);
   }
 
@@ -288,7 +288,34 @@ export class CatalogService {
     const shop = await this.repository.getShop(identifier);
     if (!shop) throw new ApiProblem(404, "SHOP_NOT_FOUND", "Shop not found");
     const products = await this.products({ ...query, shop: shop.id });
-    return { id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, version: shop.version, products };
+    return { id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, followerCount: shop._count.followers, version: shop.version, products };
+  }
+
+  async shopFollowStatus(session: Session, identifier: string) {
+    const shop = await this.client.vendorShop.findFirst({ where: { OR: [{ id: identifier }, { slug: identifier }], status: "ACTIVE" }, select: { id: true, _count: { select: { followers: true } }, followers: { where: { userId: session.principal.userId }, select: { userId: true }, take: 1 } } });
+    if (!shop) throw new ApiProblem(404, "SHOP_NOT_FOUND", "Shop not found");
+    return { shopId: shop.id, following: shop.followers.length > 0, followerCount: shop._count.followers };
+  }
+
+  async followShop(session: Session, identifier: string) {
+    const shop = await this.client.vendorShop.findFirst({ where: { OR: [{ id: identifier }, { slug: identifier }], status: "ACTIVE" }, select: { id: true } });
+    if (!shop) throw new ApiProblem(404, "SHOP_NOT_FOUND", "Shop not found");
+    await this.client.shopFollow.upsert({ where: { userId_shopId: { userId: session.principal.userId, shopId: shop.id } }, create: { userId: session.principal.userId, shopId: shop.id }, update: {} });
+    const followerCount = await this.client.shopFollow.count({ where: { shopId: shop.id } });
+    return { shopId: shop.id, following: true, followerCount };
+  }
+
+  async unfollowShop(session: Session, identifier: string) {
+    const shop = await this.client.vendorShop.findFirst({ where: { OR: [{ id: identifier }, { slug: identifier }], status: "ACTIVE" }, select: { id: true } });
+    if (!shop) throw new ApiProblem(404, "SHOP_NOT_FOUND", "Shop not found");
+    await this.client.shopFollow.deleteMany({ where: { userId: session.principal.userId, shopId: shop.id } });
+    const followerCount = await this.client.shopFollow.count({ where: { shopId: shop.id } });
+    return { shopId: shop.id, following: false, followerCount };
+  }
+
+  async followedShops(session: Session) {
+    const rows = await this.client.shopFollow.findMany({ where: { userId: session.principal.userId, shop: { status: "ACTIVE" } }, include: { shop: { include: { _count: { select: { products: { where: { status: "APPROVED" } }, followers: true } } } } }, orderBy: { createdAt: "desc" }, take: 100 });
+    return rows.map(({ shop }) => ({ id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, followerCount: shop._count.followers, version: shop.version }));
   }
 
   async createProduct(session: Session, input: CreateProductInput, correlationId?: string) {

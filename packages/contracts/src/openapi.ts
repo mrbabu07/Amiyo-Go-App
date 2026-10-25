@@ -4,7 +4,7 @@ import { adminKycDocumentAccessSchema, paymentVerificationEvidenceAccessSchema }
 import { adminCategoryControlSchema } from "./admin.js";
 import { adminNotificationBroadcastInputSchema, adminNotificationWorkspaceSchema, flashAlertSchema } from "./engagement.js";
 import { returnEvidenceFileSchema, returnEvidenceAccessSchema } from "./returns.js";
-import { archiveProductSchema, bulkProductCsvInputSchema, bulkProductImportResultSchema, catalogQuerySchema, categorySchema, createProductSchema, discoveryEventInputSchema, inventoryAdjustmentSchema, moderationInputSchema, productDetailSchema, productListResponseSchema, replaceProductMediaSchema, replaceProductVariantsSchema, shopDetailSchema, shopListResponseSchema, trendingSearchSchema, updateProductSchema, vendorInventorySchema } from "./catalog.js";
+import { archiveProductSchema, bulkProductCsvInputSchema, bulkProductImportResultSchema, catalogQuerySchema, categorySchema, createProductSchema, discoveryEventInputSchema, inventoryAdjustmentSchema, moderationInputSchema, productDetailSchema, productListResponseSchema, replaceProductMediaSchema, replaceProductVariantsSchema, shopDetailSchema, shopFollowStatusSchema, shopListResponseSchema, trendingSearchSchema, updateProductSchema, vendorInventorySchema } from "./catalog.js";
 import { addCartItemSchema, cartSchema, checkoutInputSchema, checkoutQuoteInputSchema, checkoutQuoteSchema, checkoutResultSchema, updateCartItemSchema } from "./commerce.js";
 import { customerOrderSummarySchema, deliveryQueueItemSchema, deliveryRetryInputSchema, deliveryRetryResultSchema, deliverySettingsInputSchema, deliverySettingsSchema, fulfillmentDocumentSchema, orderTrackingSchema, pickupPointInputSchema, pickupPointSchema, pickupPointUpdateSchema, serviceabilityInputSchema, serviceabilitySchema, vendorDeliveryExceptionInputSchema, vendorDeliveryExceptionSchema, vendorOrderDetailSchema, vendorOrderListResponseSchema, vendorOrderTransitionSchema, vendorPickupRequestInputSchema, vendorPickupRequestSchema } from "./delivery.js";
 import { healthResponseSchema } from "./health.js";
@@ -260,6 +260,23 @@ registry.registerPath({
   tags: ["Shops"],
   request: { params: z.object({ id: z.string().min(1) }) },
   responses: { 200: { description: "Shop and products", content: { "application/json": { schema: shop } } }, ...errorResponses }
+});
+
+for (const method of ["get", "put", "delete"] as const) registry.registerPath({
+  method,
+  path: "/api/v2/shops/{id}/follow",
+  tags: ["Shops"],
+  security: firebaseSecurity,
+  request: { params: z.object({ id: z.string().min(1) }) },
+  responses: { 200: { description: method === "get" ? "Current account follow state" : "Updated shop follow state", content: { "application/json": { schema: shopFollowStatusSchema } } }, ...errorResponses }
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/v2/me/followed-shops",
+  tags: ["Shops"],
+  security: firebaseSecurity,
+  responses: { 200: { description: "Current account followed shops", content: { "application/json": { schema: z.array(shopDetailSchema.omit({ products: true })) } } }, ...errorResponses }
 });
 
 registry.registerPath({

@@ -209,6 +209,7 @@ model User {
   referralsMade      CustomerReferral[]       @relation("ReferralReferrer")
   referralReceived   CustomerReferral?        @relation("ReferralReferred")
   mediaUploads       MediaUpload[]
+  shopFollows        ShopFollow[]
 
   @@map("users")
 }
@@ -425,9 +426,22 @@ model VendorShop {
   shopProducts     ShopProduct[]
   vendorOrders     VendorOrder[]
   commissionRules  CommissionRule[]
+  followers        ShopFollow[]
 
   @@index([vendorId, status])
   @@map("vendor_shops")
+}
+
+model ShopFollow {
+  userId    String     @map("user_id") @db.Uuid
+  shopId    String     @map("shop_id") @db.Uuid
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shop      VendorShop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@id([userId, shopId])
+  @@index([shopId, createdAt])
+  @@map("shop_follows")
 }
 
 model VendorKycSubmission {

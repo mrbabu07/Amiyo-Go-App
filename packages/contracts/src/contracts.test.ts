@@ -31,6 +31,8 @@ test("OpenAPI document exposes typed v2 resources", () => {
   const document = createOpenApiDocument();
   assert.equal(document.openapi, "3.1.0");
   assert.ok(document.paths?.["/api/v2/catalog/products"]);
+  assert.ok(document.paths?.["/api/v2/shops/{id}/follow"]?.put?.security);
+  assert.ok(document.paths?.["/api/v2/me/followed-shops"]?.get?.security);
   assert.ok(document.paths?.["/api/v2/orders/{id}"]);
   assert.ok(document.paths?.["/api/v2/auth/session"]);
   assert.ok(document.paths?.["/api/v2/me/addresses"]);

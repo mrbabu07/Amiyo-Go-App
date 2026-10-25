@@ -807,6 +807,10 @@
             "type": "integer",
             "minimum": 0
           },
+          "followerCount": {
+            "type": "integer",
+            "minimum": 0
+          },
           "version": {
             "type": "integer",
             "exclusiveMinimum": 0
@@ -966,6 +970,7 @@
           "bannerUrl",
           "storefront",
           "productCount",
+          "followerCount",
           "version",
           "products"
         ]
@@ -1071,6 +1076,10 @@
                   "type": "integer",
                   "minimum": 0
                 },
+                "followerCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
                 "version": {
                   "type": "integer",
                   "exclusiveMinimum": 0
@@ -1086,6 +1095,7 @@
                 "bannerUrl",
                 "storefront",
                 "productCount",
+                "followerCount",
                 "version"
               ]
             }
@@ -10158,6 +10168,464 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Shop"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/shops/{id}/follow": {
+      "get": {
+        "tags": [
+          "Shops"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current account follow state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "shopId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "following": {
+                      "type": "boolean"
+                    },
+                    "followerCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "shopId",
+                    "following",
+                    "followerCount"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Shops"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated shop follow state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "shopId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "following": {
+                      "type": "boolean"
+                    },
+                    "followerCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "shopId",
+                    "following",
+                    "followerCount"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Shops"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated shop follow state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "shopId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "following": {
+                      "type": "boolean"
+                    },
+                    "followerCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "shopId",
+                    "following",
+                    "followerCount"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/me/followed-shops": {
+      "get": {
+        "tags": [
+          "Shops"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current account followed shops",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "vendorId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "slug": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "logoUrl": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "uri"
+                      },
+                      "bannerUrl": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "uri"
+                      },
+                      "storefront": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "tagline": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "announcement": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "trustMessage": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "vacation": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "properties": {
+                              "active": {
+                                "type": "boolean"
+                              },
+                              "endsAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "buyerMessage": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "active",
+                              "endsAt",
+                              "buyerMessage"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "tagline",
+                          "announcement",
+                          "trustMessage",
+                          "vacation"
+                        ]
+                      },
+                      "productCount": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "followerCount": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "version": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "vendorId",
+                      "name",
+                      "slug",
+                      "description",
+                      "logoUrl",
+                      "bannerUrl",
+                      "storefront",
+                      "productCount",
+                      "followerCount",
+                      "version"
+                    ]
+                  }
                 }
               }
             }

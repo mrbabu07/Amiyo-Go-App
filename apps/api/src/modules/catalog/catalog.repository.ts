@@ -76,7 +76,7 @@ export class CatalogRepository {
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       take: limit + 1,
-      include: { _count: { select: { products: { where: { status: "APPROVED" } } } } }
+      include: { _count: { select: { products: { where: { status: "APPROVED" } }, followers: true } } }
     });
     const hasNextPage = rows.length > limit;
     const data = hasNextPage ? rows.slice(0, limit) : rows;
@@ -86,7 +86,7 @@ export class CatalogRepository {
   getShop(identifier: string) {
     return this.client.vendorShop.findFirst({
       where: { ...shopIdentifierWhere(identifier), status: "ACTIVE", vendor: { status: "APPROVED" } },
-      include: { _count: { select: { products: { where: { status: "APPROVED" } } } } }
+      include: { _count: { select: { products: { where: { status: "APPROVED" } }, followers: true } } }
     });
   }
 }

@@ -96,6 +96,7 @@ export const shopSummarySchema = z.object({
   bannerUrl: z.string().url().nullable(),
   storefront: z.object({ tagline: z.string().nullable(), announcement: z.string().nullable(), trustMessage: z.string().nullable(), vacation: z.object({ active: z.boolean(), endsAt: timestampSchema, buyerMessage: z.string() }).nullable() }).nullable(),
   productCount: z.number().int().nonnegative(),
+  followerCount: z.number().int().nonnegative(),
   version: versionSchema
 });
 
@@ -103,6 +104,7 @@ export const shopDetailSchema = shopSummarySchema.extend({
   products: productListResponseSchema
 });
 export const shopListResponseSchema = paginatedResponseSchema(shopSummarySchema);
+export const shopFollowStatusSchema = z.object({ shopId: uuidSchema, following: z.boolean(), followerCount: z.number().int().nonnegative() });
 
 export const productVariantInputSchema = z.object({
   sku: z.string().trim().min(3).max(80),

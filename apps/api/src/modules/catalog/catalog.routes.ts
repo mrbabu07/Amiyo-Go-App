@@ -22,6 +22,7 @@ export function createCatalogRouter() {
   const service = new CatalogService(prisma);
   const authenticate = createAuthenticationMiddleware(new FirebaseTokenVerifier(), new IdentityService(prisma));
   const discoveryWrites = marketplaceRateLimit("catalog-discovery", { windowMs: 60_000, limit: 60, standardHeaders: "draft-7", legacyHeaders: false });
+  const shopFollowWrites = marketplaceRateLimit("shop-follow", { windowMs: 60_000, limit: 30, standardHeaders: "draft-7", legacyHeaders: false });
 
   router.get("/api/v2/catalog/categories", async (_req, res, next) => {
     try { res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300").json(await service.categories()); } catch (error) { next(error); }
@@ -57,6 +58,11 @@ export function createCatalogRouter() {
   router.get("/api/v2/shops/:id", async (req, res, next) => {
     try { res.json(await service.shop(identifierSchema.parse(req.params).id, catalogQuerySchema.parse(req.query))); } catch (error) { next(error); }
   });
+
+  router.get("/api/v2/shops/:id/follow", authenticate, async (req, res, next) => { try { res.set("Cache-Control", "private, no-store").json(await service.shopFollowStatus(requireSession(req), identifierSchema.parse(req.params).id)); } catch (error) { next(error); } });
+  router.put("/api/v2/shops/:id/follow", authenticate, shopFollowWrites, async (req, res, next) => { try { res.json(await service.followShop(requireSession(req), identifierSchema.parse(req.params).id)); } catch (error) { next(error); } });
+  router.delete("/api/v2/shops/:id/follow", authenticate, shopFollowWrites, async (req, res, next) => { try { res.json(await service.unfollowShop(requireSession(req), identifierSchema.parse(req.params).id)); } catch (error) { next(error); } });
+  router.get("/api/v2/me/followed-shops", authenticate, async (req, res, next) => { try { res.set("Cache-Control", "private, no-store").json(await service.followedShops(requireSession(req))); } catch (error) { next(error); } });
 
   router.use(["/api/v2/vendor/products", "/api/v2/vendor/inventory", "/api/v2/admin/catalog"], authenticate);
 

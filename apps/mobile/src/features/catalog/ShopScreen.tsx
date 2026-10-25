@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { ProductSummaryDto } from "@amiyo/contracts";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
@@ -10,7 +10,7 @@ import { useCurrentUser } from "../auth/use-current-user";
 import { createThread } from "../engagement/engagement.api";
 import { ProductCard } from "../home/components/ProductCard";
 import { StoreHeader } from "../home/components/StoreHeader";
-import { getCategories, getShop } from "./catalog.api";
+import { getCategories, getShop, getShopFollowStatus, setShopFollowing } from "./catalog.api";
 import { toHomeProduct } from "./catalog.view-model";
 import { ShopFilters, type ShopSortMode } from "./components/ShopFilters";
 
@@ -27,6 +27,7 @@ function sortProducts(products: ProductSummaryDto[], sort: ShopSortMode) {
 export function ShopScreen({ identifier }: { identifier: string }) {
   const router = useRouter();
   const user = useCurrentUser();
+  const queryClient = useQueryClient();
   const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const { width } = useWindowDimensions();
   const desktop = width >= 900;
@@ -36,6 +37,7 @@ export function ShopScreen({ identifier }: { identifier: string }) {
   const [sort, setSort] = useState<ShopSortMode>("newest");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const result = useQuery({ queryKey: ["catalog", "shop", identifier], queryFn: () => getShop(identifier) });
+  const follow = useQuery({ queryKey: ["catalog", "shop-follow", identifier, user?.uid], queryFn: () => getShopFollowStatus(user!, identifier), enabled: Boolean(user) });
   const categories = useQuery({ queryKey: ["catalog", "categories"], queryFn: getCategories });
   const products = result.data?.products.data || [];
   const categoryOptions = useMemo(() => {
@@ -45,7 +47,9 @@ export function ShopScreen({ identifier }: { identifier: string }) {
   }, [categories.data, products]);
   const filteredProducts = useMemo(() => sortProducts(selectedCategory === "all" ? products : products.filter((product) => product.categoryId === selectedCategory), sort), [products, selectedCategory, sort]);
   const chat = useMutation({ mutationFn: async () => { if (!user || activeUid.current !== user.uid || !result.data) throw new Error("Sign in to message this seller"); return { thread: await createThread(user, result.data.vendorId, `Question about ${result.data.name}`), uid: user.uid }; }, onSuccess: ({ thread, uid }) => { if (activeUid.current === uid) router.push(`/messages/${thread.id}` as never); } });
+  const followMutation = useMutation({ mutationFn: async () => { if (!user || activeUid.current !== user.uid) throw new Error("Sign in to follow this shop"); return { status: await setShopFollowing(user, identifier, !follow.data?.following), uid: user.uid }; }, onSuccess: async ({ status, uid }) => { if (activeUid.current !== uid) return; queryClient.setQueryData(["catalog", "shop-follow", identifier, uid], status); queryClient.setQueryData(["catalog", "shop", identifier], (current: typeof result.data) => current ? { ...current, followerCount: status.followerCount } : current); await queryClient.invalidateQueries({ queryKey: ["catalog", "followed-shops", uid] }); } });
   function startChat() { if (!user) { router.push("/auth"); return; } chat.mutate(); }
+  function toggleFollow() { if (!user) { router.push("/auth"); return; } followMutation.mutate(); }
   function resetFilters() { setSelectedCategory("all"); setSort("newest"); }
   const filters = <ShopFilters categories={categoryOptions} onCategory={setSelectedCategory} onReset={resetFilters} onSort={setSort} productCount={products.length} selectedCategory={selectedCategory} sort={sort} />;
 
@@ -53,8 +57,8 @@ export function ShopScreen({ identifier }: { identifier: string }) {
     <Pressable onPress={() => router.back()} style={styles.back}><Ionicons color={colors.primary} name="chevron-back" size={17} /><Text style={styles.link}>Back</Text></Pressable>
     {result.isLoading ? <ActivityIndicator color={colors.primary} size="large" /> : null}
     {result.data ? <>
-      <View style={[styles.hero, compact && responsive.heroCompact]}>{result.data.bannerUrl ? <Image accessibilityLabel={`${result.data.name} cover`} resizeMode="cover" source={{ uri: result.data.bannerUrl }} style={styles.bannerImage} /> : null}<View style={styles.heroOverlay} />{result.data.logoUrl ? <Image accessibilityLabel={`${result.data.name} logo`} source={{ uri: result.data.logoUrl }} style={styles.logoImage} /> : <View style={styles.logo}><Text style={styles.logoText}>{result.data.name.slice(0, 1)}</Text></View>}<View style={[styles.shopCopy, compact && responsive.shopCopyCompact]}><Text accessibilityRole="header" style={[styles.title, compact && responsive.titleCompact]}>{result.data.name}</Text><Text style={styles.description}>{result.data.description || "Verified Amiyo-Go shop"}</Text><Text style={styles.count}>{result.data.productCount} products</Text></View><Pressable disabled={chat.isPending} onPress={startChat} style={[styles.messageButton, compact && responsive.messageButtonCompact]}><Ionicons color={colors.navy} name="chatbubble-ellipses-outline" size={17} /><Text style={styles.messageText}>{chat.isPending ? "Opening…" : "Message seller"}</Text></Pressable></View>
-      {chat.error ? <Text style={styles.error}>{chat.error.message}</Text> : null}
+      <View style={[styles.hero, compact && responsive.heroCompact]}>{result.data.bannerUrl ? <Image accessibilityLabel={`${result.data.name} cover`} resizeMode="cover" source={{ uri: result.data.bannerUrl }} style={styles.bannerImage} /> : null}<View style={styles.heroOverlay} />{result.data.logoUrl ? <Image accessibilityLabel={`${result.data.name} logo`} source={{ uri: result.data.logoUrl }} style={styles.logoImage} /> : <View style={styles.logo}><Text style={styles.logoText}>{result.data.name.slice(0, 1)}</Text></View>}<View style={[styles.shopCopy, compact && responsive.shopCopyCompact]}><Text accessibilityRole="header" style={[styles.title, compact && responsive.titleCompact]}>{result.data.name}</Text><Text style={styles.description}>{result.data.description || "Verified Amiyo-Go shop"}</Text><Text style={styles.count}>{result.data.productCount} products · {(follow.data?.followerCount ?? result.data.followerCount).toLocaleString("en-BD")} followers</Text></View><View style={[styles.heroActions, compact && responsive.messageButtonCompact]}><Pressable accessibilityRole="button" accessibilityState={{ selected: Boolean(follow.data?.following), busy: followMutation.isPending }} disabled={followMutation.isPending} onPress={toggleFollow} style={[styles.followButton, follow.data?.following && styles.followingButton]}><Ionicons color={follow.data?.following ? colors.surface : colors.navy} name={follow.data?.following ? "checkmark" : "add"} size={17} /><Text style={[styles.messageText, follow.data?.following && styles.followingText]}>{followMutation.isPending ? "Saving…" : follow.data?.following ? "Following" : "Follow shop"}</Text></Pressable><Pressable disabled={chat.isPending} onPress={startChat} style={styles.messageButton}><Ionicons color={colors.navy} name="chatbubble-ellipses-outline" size={17} /><Text style={styles.messageText}>{chat.isPending ? "Opening…" : "Message seller"}</Text></Pressable></View></View>
+      {chat.error ? <Text style={styles.error}>{chat.error.message}</Text> : null}{followMutation.error ? <Text style={styles.error}>{followMutation.error.message}</Text> : null}
       {result.data.storefront?.tagline ? <Text style={styles.tagline}>{result.data.storefront.tagline}</Text> : null}
       {result.data.storefront?.announcement ? <View style={styles.announcement}><Ionicons color={colors.primary} name="megaphone-outline" size={18} /><Text style={styles.announcementText}>{result.data.storefront.announcement}</Text></View> : null}
       {result.data.storefront?.vacation?.active ? <View accessibilityRole="alert" style={vacationStyles.banner}><Ionicons color={colors.warning} name="calendar-outline" size={20} /><View style={vacationStyles.copy}><Text style={vacationStyles.title}>This shop is on vacation</Text><Text style={vacationStyles.message}>{result.data.storefront.vacation.buyerMessage}</Text><Text style={vacationStyles.back}>Accepting new orders after {new Date(result.data.storefront.vacation.endsAt).toLocaleString("en-BD")}</Text></View></View> : null}
@@ -81,7 +85,7 @@ const styles = StyleSheet.create({
   logo: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.pill, height: 72, justifyContent: "center", width: 72 }, logoText: { color: "#fff", fontSize: 30, fontWeight: "700" },
   logoImage: { backgroundColor: colors.surface, borderColor: colors.surface, borderRadius: radius.pill, borderWidth: 3, height: 72, width: 72 },
   shopCopy: { flex: 1, minWidth: 180 }, title: { color: colors.surface, fontSize: 28, fontWeight: "700" }, description: { color: colors.border, marginTop: 5 }, count: { color: colors.accent, fontSize: 11, fontWeight: "700", marginTop: 8, textTransform: "uppercase" },
-  messageButton: { alignItems: "center", backgroundColor: colors.surface, borderRadius: radius.md, flexDirection: "row", gap: 7, minHeight: 44, paddingHorizontal: spacing.lg, paddingVertical: spacing.md }, messageText: { color: colors.navy, fontWeight: "700" },
+  heroActions: { alignItems: "stretch", gap: spacing.sm }, followButton: { alignItems: "center", backgroundColor: colors.accentSoft, borderRadius: radius.md, flexDirection: "row", gap: 7, justifyContent: "center", minHeight: 44, paddingHorizontal: spacing.lg }, followingButton: { backgroundColor: colors.primary }, followingText: { color: colors.surface }, messageButton: { alignItems: "center", backgroundColor: colors.surface, borderRadius: radius.md, flexDirection: "row", gap: 7, justifyContent: "center", minHeight: 44, paddingHorizontal: spacing.lg, paddingVertical: spacing.md }, messageText: { color: colors.navy, fontWeight: "700" },
   announcement: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.md, flexDirection: "row", gap: spacing.sm, marginBottom: spacing.sm, padding: spacing.md }, announcementText: { color: colors.text, flex: 1, fontWeight: "600" }, trustBar: { alignItems: "center", backgroundColor: colors.accentSoft, borderRadius: radius.md, flexDirection: "row", gap: spacing.sm, marginBottom: spacing.lg, padding: spacing.md }, trustText: { color: colors.text, flex: 1, fontSize: 12 },
   tagline: { color: colors.text, fontSize: 17, fontWeight: "600", marginBottom: spacing.md },
   mobileFilterButton: { alignItems: "center", backgroundColor: colors.surface, borderRadius: radius.lg, boxShadow: "0 7px 22px rgba(11,31,58,.06)", flexDirection: "row", justifyContent: "space-between", marginBottom: spacing.md, minHeight: 48, padding: spacing.md }, mobileFilterCopy: { alignItems: "center", flexDirection: "row", gap: 7 }, mobileFilterText: { color: colors.text, fontWeight: "700" }, mobileFilterMeta: { color: colors.muted, fontSize: 12 }, mobileFilters: { marginBottom: spacing.md },

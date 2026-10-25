@@ -18,6 +18,7 @@ const quickLinks = [
   { label: "Address book", copy: "Delivery points", href: "/addresses", icon: "location-outline", tone: colors.accentSoft, color: colors.success },
   { label: "Returns", copy: "Refund status", href: "/returns", icon: "return-down-back-outline", tone: colors.primarySoft, color: colors.warning },
   { label: "Wishlist", copy: "Saved products", href: "/wishlist", icon: "heart-outline", tone: colors.primarySoft, color: colors.primary },
+  { label: "Followed shops", copy: "Favourite sellers", href: "/followed-shops", icon: "storefront-outline", tone: colors.accentSoft, color: colors.accent },
   { label: "Coins", copy: "Balance & history", href: "/loyalty", icon: "wallet-outline", tone: colors.accentSoft, color: colors.accent },
   { label: "Notifications", copy: "Unread updates", href: "/notifications", icon: "notifications-outline", tone: colors.accentSoft, color: colors.navy },
   { label: "Product alerts", copy: "Price & stock", href: "/alerts", icon: "pricetag-outline", tone: colors.primarySoft, color: colors.primary },
