@@ -16,6 +16,7 @@ import { CheckoutRecovery } from "./CheckoutRecovery";
 import { CouponInput } from "./components/CouponInput";
 import { getPublicPlatformSettings } from "../platform/platform.api";
 import { checkoutPolicyError, paymentMethodEnabled } from "./checkout-policy";
+import { getDeliverySettings } from "../operations/delivery-settings.api";
 
 const money = (minor: string) => formatMinor(minor);
 const formatBps = (basisPoints: number) => `${(basisPoints / 100).toLocaleString("en-BD", { maximumFractionDigits: 2 })}%`;
@@ -46,6 +47,7 @@ export function CheckoutScreen() {
   const addresses = useQuery({ queryKey: ["me", "addresses", user?.uid], queryFn: () => getMyAddresses(user!), enabled: Boolean(user) });
   const quote = useQuery({ queryKey: ["checkout", user?.uid, "quote", couponCode, loyaltyPoints, addressId], queryFn: () => getCheckoutQuote(user!, couponCode, loyaltyPoints, addressId), enabled: Boolean(user) });
   const platform = useQuery({ queryKey: ["platform", "public-settings"], queryFn: getPublicPlatformSettings, staleTime: 5 * 60_000 });
+  const deliverySettings = useQuery({ queryKey: ["delivery", "settings"], queryFn: getDeliverySettings, staleTime: 5 * 60_000 });
   const village = platform.data?.villageOperations;
   const availableMethods = methods.filter((method) => paymentMethodEnabled(platform.data, method.value));
   const selectedAddress = addresses.data?.find((address) => address.id === addressId);
@@ -90,6 +92,7 @@ export function CheckoutScreen() {
   return <Screen eyebrow="SECURE CHECKOUT" title="Delivery and payment" description="Confirm your delivery address and preferred payment method.">
     {error || policyError ? <Text accessibilityRole="alert" style={styles.error}>{error || policyError}</Text> : null}
     {platform.error ? <Pressable accessibilityRole="button" onPress={() => void platform.refetch()} style={styles.primary}><Text style={styles.primaryText}>Retry marketplace settings</Text></Pressable> : null}
+    {deliverySettings.data ? <View style={styles.secure}><Ionicons color={colors.accent} name={deliverySettings.data.inspectionPolicy.openBoxAllowed ? "cube-outline" : "lock-closed-outline"} size={21} /><Text style={styles.muted}>{deliverySettings.data.inspectionPolicy.openBoxAllowed ? `Open-box delivery: inspect for up to ${deliverySettings.data.inspectionPolicy.inspectionMinutes} minutes before accepting.` : "Closed-box delivery: keep the seal intact and use the eligible return workflow for issues."}</Text></View> : null}
     <View style={styles.steps}><Step complete icon="cart-outline" label="Cart" /><View style={styles.stepLineActive} /><Step active icon="location-outline" label="Delivery" /><View style={styles.stepLine} /><Step icon="card-outline" label="Payment" /></View>
     <View style={styles.columns}><View style={[styles.main, compact && { flex: 0, width: "100%", minWidth: 0 }]}>
       <Section index="1" title="Delivery address">{addresses.data?.length ? addresses.data.map((address) => <Pressable accessibilityRole="radio" accessibilityState={{ checked: addressId === address.id }} key={address.id} onPress={() => setAddressId(address.id)} style={[styles.option, premiumStyles.option, addressId === address.id && styles.selected]}><Ionicons name={addressId === address.id ? "radio-button-on" : "radio-button-off"} size={22} color={colors.primary} /><View style={styles.optionCopy}><Text style={styles.optionTitle}>{address.label} · {address.recipientName}</Text><Text style={styles.muted}>{[address.line1, address.line2, address.unionName, address.upazila, address.district, address.division].filter(Boolean).join(", ")}</Text><Text style={styles.muted}>{address.phone}</Text></View>{address.isDefault ? <Text style={styles.defaultBadge}>DEFAULT</Text> : null}</Pressable>) : <View style={styles.empty}><Text style={styles.muted}>Add a delivery address before checkout.</Text><Pressable onPress={() => router.push("/addresses")}><Text style={styles.link}>Add address</Text></Pressable></View>}</Section>

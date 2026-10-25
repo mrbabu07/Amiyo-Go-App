@@ -110,6 +110,7 @@ function ScopedOrderDetailScreen({ id }: { id: string }) {
     {confirmCancel ? <CancelOrderConfirmation key={`${id}:${user.uid}`} busy={cancel.isPending || actionsBlocked} eligible={cancellable} onClose={() => setConfirmCancel(false)} onConfirm={(input) => cancel.mutate(input)} /> : null}
     {cancel.error || createReturn.error ? <Text style={styles.error}>{(cancel.error || createReturn.error)?.message}</Text> : null}
     <ModuleCard title="Order progress" meta={cancellationCopy}><Progress steps={orderSteps} activeIndex={stageIndex} finalStatus={data.status} /></ModuleCard>
+    {data.deliveryInspection ? <ModuleCard title="Delivery inspection" meta="This promise was saved when you placed the order."><View style={styles.inspection}><Ionicons color={colors.accent} name={data.deliveryInspection.openBoxAllowed ? "cube-outline" : "lock-closed-outline"} size={23} /><View style={styles.inspectionCopy}><Text style={styles.inspectionTitle}>{data.deliveryInspection.openBoxAllowed ? "Open-box delivery" : "Closed-box delivery"}</Text><Text style={styles.muted}>{data.deliveryInspection.openBoxAllowed ? `Inspect the parcel for up to ${data.deliveryInspection.inspectionMinutes} minutes before accepting it. Report visible issues immediately.` : "Keep the parcel sealed during handoff. If an eligible issue is found after opening, use the return workflow with evidence."}</Text></View></View></ModuleCard> : null}
     <View style={styles.metrics}><Metric icon="storefront-outline" label="Seller packages" value={String(data.vendorOrders.length)} /><Metric icon="cube-outline" label="Units" value={String(itemCount)} /><Metric icon="shield-checkmark-outline" label="Buyer protection" value="Active" /></View>
     <View style={styles.layout}>
       <View style={[styles.mainColumn, compact && styles.columnCompact]}>{data.vendorOrders.map((vendorOrder, index) => <SellerPackage compact={compact} index={index + 1} key={`${user.uid}:${vendorOrder.id}`} returnBusy={createReturn.isPending || actionsBlocked} onReturn={(input) => createReturn.mutateAsync(input)} vendorOrder={vendorOrder} />)}</View>
@@ -167,6 +168,9 @@ const styles = StyleSheet.create({
   terminal: { alignItems: "center", backgroundColor: "#fef2f2", borderRadius: radius.md, flexDirection: "row", gap: spacing.sm, padding: spacing.md },
   terminalText: { color: colors.danger, fontWeight: "700" },
   metrics: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  inspection: { alignItems: "center", backgroundColor: colors.accentSoft, borderRadius: radius.md, flexDirection: "row", gap: spacing.md, padding: spacing.md },
+  inspectionCopy: { flex: 1, minWidth: 0 },
+  inspectionTitle: { color: colors.text, fontWeight: "700" },
   metric: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flex: 1, flexDirection: "row", gap: spacing.sm, minWidth: 155, padding: spacing.md },
   metricIcon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.md, height: 40, justifyContent: "center", width: 40 },
   metricValue: { color: colors.text, fontSize: 18, fontWeight: "700" },

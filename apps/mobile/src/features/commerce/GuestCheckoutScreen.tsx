@@ -17,6 +17,7 @@ import { CheckoutRecovery } from "./CheckoutRecovery";
 import { CouponInput } from "./components/CouponInput";
 import { getPublicPlatformSettings } from "../platform/platform.api";
 import { checkoutPolicyError, paymentMethodEnabled } from "./checkout-policy";
+import { getDeliverySettings } from "../operations/delivery-settings.api";
 
 const money = (minor: string) => formatMinor(minor);
 const paymentMethods: Array<{ label: string; value: PaymentMethod }> = [{ label: "Cash on delivery", value: "COD" }, { label: "Card / mobile banking", value: "SSLCOMMERZ" }];
@@ -31,6 +32,7 @@ export function GuestCheckoutScreen() {
   const activeUid = useRef(user?.uid);
   activeUid.current = user?.uid;
   const recovery = useQuery({ queryKey: ["checkout-recovery", user?.uid], queryFn: () => getPendingCheckout(user!), enabled: Boolean(user), staleTime: 0, retry: false });
+  const deliverySettings = useQuery({ queryKey: ["delivery", "settings"], queryFn: getDeliverySettings, staleTime: 5 * 60_000 });
   const submitLock = useRef(false);
   const attempt = useRef(createCheckoutAttempt<Awaited<ReturnType<typeof placeOrder>>>(() => Crypto.randomUUID()));
   const deliveryAddresses = useRef(new Map<string, string>());
@@ -98,6 +100,7 @@ export function GuestCheckoutScreen() {
   return <Screen eyebrow="GUEST CHECKOUT" title="Delivery and payment" description="Complete your order without creating a password. This browser keeps access to your order.">
     {error || policyError || quote.error ? <Text accessibilityRole="alert" style={styles.error}>{error || policyError || (quote.error instanceof Error ? quote.error.message : "Delivery quote could not be refreshed")}</Text> : null}
     {platform.error ? <Pressable accessibilityRole="button" onPress={() => void platform.refetch()} style={styles.primary}><Text style={styles.primaryText}>Retry marketplace settings</Text></Pressable> : null}
+    {deliverySettings.data ? <View style={styles.secure}><Ionicons color={colors.accent} name={deliverySettings.data.inspectionPolicy.openBoxAllowed ? "cube-outline" : "lock-closed-outline"} size={21} /><Text style={styles.muted}>{deliverySettings.data.inspectionPolicy.openBoxAllowed ? `Open-box delivery: inspect for up to ${deliverySettings.data.inspectionPolicy.inspectionMinutes} minutes before accepting.` : "Closed-box delivery: keep the seal intact and use the eligible return workflow for issues."}</Text></View> : null}
     <View style={styles.columns}><View style={[styles.main, compact && { flex: 0, width: "100%", minWidth: 0 }]}>
       <Section title="Contact information"><View style={styles.grid}><Field label="Full name *" value={form.name} onChangeText={(value) => update("name", value)} /><Field keyboardType="email-address" label="Email address *" value={form.email} onChangeText={(value) => update("email", value)} /><Field keyboardType="phone-pad" label="Phone number *" value={form.phone} onChangeText={(value) => update("phone", value)} /></View><Pressable onPress={() => router.push("/login")}><Text style={styles.link}>Already have an account? Sign in</Text></Pressable></Section>
       <Section title="Shipping address"><View style={styles.grid}><Field full label="Address *" value={form.line1} onChangeText={(value) => update("line1", value)} /><Field full label="Apartment / area" value={form.line2} onChangeText={(value) => update("line2", value)} /><Field label="Division *" value={form.division} onChangeText={(value) => update("division", value)} /><Field label="District *" value={form.district} onChangeText={(value) => update("district", value)} /><Field label={village?.enabled && village.requireUnionForDelivery ? "Upazila *" : "Upazila"} value={form.upazila} onChangeText={(value) => update("upazila", value)} /><Field label={village?.enabled && village.requireUnionForDelivery ? "Union *" : "Union"} value={form.unionName} onChangeText={(value) => update("unionName", value)} /><Field label="Postal code" value={form.postalCode} onChangeText={(value) => update("postalCode", value)} /></View></Section>
