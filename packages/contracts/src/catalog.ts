@@ -101,6 +101,7 @@ export const shopSummarySchema = z.object({
 });
 
 export const shopDetailSchema = shopSummarySchema.extend({
+  servicePromise: z.object({ questionCount: z.number().int().nonnegative(), qnaResponseRate: z.number().int().min(0).max(100).nullable() }),
   products: productListResponseSchema
 });
 export const shopListResponseSchema = paginatedResponseSchema(shopSummarySchema);

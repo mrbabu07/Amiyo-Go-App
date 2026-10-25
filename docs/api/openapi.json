@@ -815,6 +815,27 @@
             "type": "integer",
             "exclusiveMinimum": 0
           },
+          "servicePromise": {
+            "type": "object",
+            "properties": {
+              "questionCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "qnaResponseRate": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "questionCount",
+              "qnaResponseRate"
+            ]
+          },
           "products": {
             "type": "object",
             "properties": {
@@ -972,6 +993,7 @@
           "productCount",
           "followerCount",
           "version",
+          "servicePromise",
           "products"
         ]
       },
@@ -10610,6 +10632,27 @@
                       "version": {
                         "type": "integer",
                         "exclusiveMinimum": 0
+                      },
+                      "servicePromise": {
+                        "type": "object",
+                        "properties": {
+                          "questionCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "qnaResponseRate": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ],
+                            "minimum": 0,
+                            "maximum": 100
+                          }
+                        },
+                        "required": [
+                          "questionCount",
+                          "qnaResponseRate"
+                        ]
                       }
                     },
                     "required": [
@@ -10623,7 +10666,8 @@
                       "storefront",
                       "productCount",
                       "followerCount",
-                      "version"
+                      "version",
+                      "servicePromise"
                     ]
                   }
                 }

@@ -16,4 +16,6 @@ test("shop follow is persistent, account scoped and independent from seller chat
   assert.match(api, /method: following \? "PUT" : "DELETE"/);
   assert.match(library, /\["catalog", "followed-shops", user\?\.uid\]/);
   assert.match(library, /Browse shops/);
+  assert.match(screen, /Shop service policies/);
+  assert.match(screen, /servicePromise\.qnaResponseRate/);
 });

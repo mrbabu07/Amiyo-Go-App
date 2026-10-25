@@ -38,6 +38,10 @@ function publicStorefront(settings: Prisma.JsonValue | null) {
   return Object.values(storefront).some(Boolean) ? storefront : null;
 }
 
+export function shopServicePromise(questionCount: number, answeredQuestionCount: number) {
+  return { questionCount, qnaResponseRate: questionCount ? Math.round((answeredQuestionCount / questionCount) * 100) : null };
+}
+
 function productSummary(product: PublicProduct | PublicProductSummary) {
   const variant = product.variants[0];
   return {
@@ -287,8 +291,13 @@ export class CatalogService {
   async shop(identifier: string, query: CatalogQuery) {
     const shop = await this.repository.getShop(identifier);
     if (!shop) throw new ApiProblem(404, "SHOP_NOT_FOUND", "Shop not found");
-    const products = await this.products({ ...query, shop: shop.id });
-    return { id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, followerCount: shop._count.followers, version: shop.version, products };
+    const [products, questionCount, answeredQuestionCount] = await Promise.all([
+      this.products({ ...query, shop: shop.id }),
+      this.client.question.count({ where: { product: { shopId: shop.id }, status: { not: "hidden" } } }),
+      this.client.question.count({ where: { product: { shopId: shop.id }, status: "answered" } })
+    ]);
+    const servicePromise = shopServicePromise(questionCount, answeredQuestionCount);
+    return { id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, followerCount: shop._count.followers, version: shop.version, servicePromise, products };
   }
 
   async shopFollowStatus(session: Session, identifier: string) {

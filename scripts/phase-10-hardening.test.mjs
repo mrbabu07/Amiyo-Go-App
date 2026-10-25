@@ -150,14 +150,14 @@ test("dependency register matches the current pinned tooling and gate snapshot",
   const gapMap = await readFile(new URL("../docs/production-gap-and-differentiator-map.md", import.meta.url), "utf8");
   assert.equal(rootPackage.devDependencies["firebase-tools"], "15.34.1");
   assert.equal(lock.packages["node_modules/fast-uri"].version, "3.1.9");
-  assert.match(register, /Last reviewed: 2026-10-25/);
+  assert.match(register, /Last reviewed: 2026-10-26/);
   assert.match(register, /firebase-tools@15\.34\.1/);
   assert.match(register, /fast-uri@3\.1\.9/);
   assert.match(register, /five high and five moderate package nodes/);
-  assert.match(register, /1,101-test run pass/);
+  assert.match(register, /1,105-test run pass/);
   assert.match(gapMap, /Current gate snapshot \(2026-10-25\)/);
   assert.match(gapMap, /one unresolved business decision/);
-  assert.match(gapMap, /passed 1,101 tests/);
+  assert.match(gapMap, /passed 1,105 tests/);
 });
 
 test("runtime contracts use the remediated Zod and OpenAPI toolchain", async () => {
