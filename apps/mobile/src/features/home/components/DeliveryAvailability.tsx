@@ -33,7 +33,7 @@ export function DeliveryAvailability({ subtotalMinor = "0" }: { subtotalMinor?: 
       {check.data ? (
         <View style={styles.result}>
           <Text style={styles.resultTitle}>{check.data.serviceable ? "Delivery available" : "Not serviceable"}</Text>
-          <Text style={styles.resultText}>{formatMinor(check.data.charge.amountMinor)} · {check.data.estimatedDays.min}–{check.data.estimatedDays.max} days · {check.data.zone.replaceAll("_", " ")}</Text>
+          <Text style={styles.resultText}>{check.data.serviceable ? `${formatMinor(check.data.charge.amountMinor)} · ${check.data.estimatedDays.min}–${check.data.estimatedDays.max} days · ${check.data.zone.replaceAll("_", " ")}` : "This area is currently disabled by the marketplace. Contact support for manual delivery options."}</Text>
           {check.data.freeDelivery ? <Text style={styles.free}>Free delivery applies to this selection.</Text> : null}
         </View>
       ) : null}

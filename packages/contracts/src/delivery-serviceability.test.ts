@@ -1,0 +1,21 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { deliverySettingsInputSchema, deliverySettingsSchema } from "./delivery.js";
+
+const zones = { sameUnion: true, sameUpazila: true, sameDistrict: false, outsideDistrict: false };
+const settings = {
+  key: "default", standardChargeMinor: "10000", freeDeliveryEnabled: true, freeDeliveryThresholdMinor: "1100000",
+  baseLocation: { division: "Chattogram", district: "Cox's Bazar", upazila: "Teknaf", union: "Hnila" },
+  zoneFees: { sameUnionMinor: "6000", sameUpazilaMinor: "8000", sameDistrictMinor: "12000", outsideDistrictMinor: "15000" },
+  serviceableZones: zones, estimatedDays: { min: 2, max: 5 }, version: 1
+};
+
+test("delivery settings expose independently controlled manual service zones", () => {
+  assert.deepEqual(deliverySettingsSchema.parse(settings).serviceableZones, zones);
+});
+
+test("admin delivery updates require an explicit decision for every zone", () => {
+  const { key: _key, version, ...input } = settings;
+  assert.equal(deliverySettingsInputSchema.safeParse({ ...input, expectedVersion: version }).success, true);
+  assert.equal(deliverySettingsInputSchema.safeParse({ ...input, serviceableZones: { sameUnion: true }, expectedVersion: version }).success, false);
+});

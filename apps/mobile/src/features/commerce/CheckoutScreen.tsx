@@ -44,7 +44,7 @@ export function CheckoutScreen() {
   const [codPhoneConfirmed, setCodPhoneConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const addresses = useQuery({ queryKey: ["me", "addresses", user?.uid], queryFn: () => getMyAddresses(user!), enabled: Boolean(user) });
-  const quote = useQuery({ queryKey: ["checkout", user?.uid, "quote", couponCode, loyaltyPoints], queryFn: () => getCheckoutQuote(user!, couponCode, loyaltyPoints), enabled: Boolean(user) });
+  const quote = useQuery({ queryKey: ["checkout", user?.uid, "quote", couponCode, loyaltyPoints, addressId], queryFn: () => getCheckoutQuote(user!, couponCode, loyaltyPoints, addressId), enabled: Boolean(user) });
   const platform = useQuery({ queryKey: ["platform", "public-settings"], queryFn: getPublicPlatformSettings, staleTime: 5 * 60_000 });
   const village = platform.data?.villageOperations;
   const availableMethods = methods.filter((method) => paymentMethodEnabled(platform.data, method.value));
@@ -55,7 +55,7 @@ export function CheckoutScreen() {
   useEffect(() => { setAddressId(null); setPaymentMethod("COD"); setCouponCode(params.couponCode?.toUpperCase() || null); setLoyaltyPoints("0"); setCodPhoneConfirmed(false); setError(null); submitLock.current = false; }, [user?.uid]);
   useEffect(() => { if (!addressId && addresses.data?.length) setAddressId((addresses.data.find((item) => item.isDefault) || addresses.data[0]!).id); }, [addressId, addresses.data]);
   useEffect(() => { setCodPhoneConfirmed(false); }, [addressId, user?.uid]);
-  async function applyCoupon(code: string) { if (!user) return; const ownerUid = user.uid; const next = await getCheckoutQuote(user, code, loyaltyPoints); if (activeUid.current !== ownerUid) return; queryClient.setQueryData(["checkout", ownerUid, "quote", code, loyaltyPoints], next); setCouponCode(code); }
+  async function applyCoupon(code: string) { if (!user) return; const ownerUid = user.uid; const next = await getCheckoutQuote(user, code, loyaltyPoints, addressId); if (activeUid.current !== ownerUid) return; queryClient.setQueryData(["checkout", ownerUid, "quote", code, loyaltyPoints, addressId], next); setCouponCode(code); }
   async function toggleRewards() {
     const loyalty = quote.data?.loyalty;
     if (!loyalty) return;
