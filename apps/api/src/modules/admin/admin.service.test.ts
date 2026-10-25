@@ -1,6 +1,25 @@
 import assert from "node:assert/strict"; import test from "node:test"; import type { PrismaClient } from "@prisma/client"; import type { Session } from "@amiyo/contracts"; import { AdminService } from "./admin.service.js";
 const userId = "11111111-1111-4111-8111-111111111111"; const customer: Session = { principal: { userId, roles: ["CUSTOMER"], vendorIds: [] }, status: "ACTIVE", email: null, phone: null, profile: { firstName: null, lastName: null, displayName: "Customer", avatarStorageKey: null, locale: "en", currency: "BDT" }, permissions: ["catalog:read"], vendorMemberships: [] }; const admin: Session = { ...customer, principal: { ...customer.principal, roles: ["SUPER_ADMIN"] }, permissions: ["admin:read", "admin:manage"] };
 test("customer cannot read admin trust queues", async () => { await assert.rejects(() => new AdminService({} as PrismaClient).workspace(customer), /admin:read access is required/); });
+test("assisted cart prepares an active customer cart without creating an order", async () => {
+  const variantId = "22222222-2222-4222-8222-222222222222"; let notification = false; let audit = false; let itemQuantity = 0;
+  const transaction = {
+    platformConfiguration: { findUnique: async () => ({ villageOperations: { enabled: true, assistedOrderingEnabled: true } }) },
+    user: { findFirst: async () => ({ id: "customer-1" }) },
+    productVariant: { findFirst: async () => ({ id: variantId, productId: "product-1", title: "1 kg", priceMinor: 25000n, currency: "BDT", product: { id: "product-1", name: "Village rice" }, inventory: { onHand: 10, reserved: 2 } }) },
+    cart: { findFirst: async () => ({ id: "cart-1" }), create: async () => { throw new Error("must reuse active cart"); } },
+    cartItem: { findUnique: async () => ({ quantity: 1 }), upsert: async ({ update }: any) => { itemQuantity = update.quantity; }, aggregate: async () => ({ _sum: { quantity: 3 } }) },
+    notification: { create: async () => { notification = true; } }, auditLog: { create: async () => { audit = true; } }
+  };
+  const client = { $transaction: async (operation: (tx: typeof transaction) => unknown) => operation(transaction) } as unknown as PrismaClient;
+  const result = await new AdminService(client).addToAssistedCart(admin, "customer-1", { variantId, quantity: 2, reason: "Customer called village support" });
+  assert.equal(itemQuantity, 3); assert.equal(result.itemCount, 3); assert.equal(notification, true); assert.equal(audit, true);
+});
+test("assisted cart respects the platform kill switch", async () => {
+  const transaction = { platformConfiguration: { findUnique: async () => ({ villageOperations: { enabled: true, assistedOrderingEnabled: false } }) } };
+  const client = { $transaction: async (operation: (tx: typeof transaction) => unknown) => operation(transaction) } as unknown as PrismaClient;
+  await assert.rejects(() => new AdminService(client).addToAssistedCart(admin, "customer-1", { variantId: "22222222-2222-4222-8222-222222222222", quantity: 1, reason: "Customer called support" }), /Assisted ordering is disabled/);
+});
 test("admin cannot suspend their own account", async () => { await assert.rejects(() => new AdminService({} as PrismaClient).updateUser(admin, userId, { status: "SUSPENDED", reason: "Security review" }), /cannot change your own account status/); });
 test("admin cannot change their own platform roles", async () => { await assert.rejects(() => new AdminService({} as PrismaClient).updateUserRoles(admin, userId, { roles: [], reason: "Access review" }), /cannot change your own platform roles/); });
 test("customer cannot read marketplace analytics", async () => { await assert.rejects(() => new AdminService({} as PrismaClient).analytics(customer, { range: "30d" }), /admin:read access is required/); });

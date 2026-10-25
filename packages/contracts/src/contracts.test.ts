@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { accountPreferencesSchema, addCartItemSchema, addressInputSchema, adminOrderDetailSchema, cancelOrderSchema, catalogQuerySchema, checkoutInputSchema, commissionRuleInputSchema, createOpenApiDocument, createProductSchema, createReturnSchema, deviceInputSchema, minorUnitSchema, moneySchema, productReportInputSchema, publicPlatformSettingsSchema, vendorOrderStatusSchema, vendorRegistrationSchema } from "./index.js";
+import { adminAssistedCartInputSchema } from "./admin.js";
 
 test("money contracts preserve bigint-safe minor units", () => {
   assert.deepEqual(moneySchema.parse({ amountMinor: "249000", currency: "bdt" }), { amountMinor: "249000", currency: "BDT" });
@@ -95,6 +96,13 @@ test("commerce contracts enforce quantities and supported payments", () => {
   assert.equal(addCartItemSchema.safeParse({ variantId: crypto.randomUUID(), quantity: 0 }).success, false);
   assert.equal(checkoutInputSchema.safeParse({ addressId: crypto.randomUUID(), paymentMethod: "BKASH" }).success, false);
   assert.equal(checkoutInputSchema.safeParse({ addressId: crypto.randomUUID(), paymentMethod: "BITCOIN" }).success, false);
+});
+
+test("assisted cart contracts require bounded quantities and an audit reason", () => {
+  const variantId = crypto.randomUUID();
+  assert.equal(adminAssistedCartInputSchema.safeParse({ variantId, quantity: 2, reason: "Customer called support" }).success, true);
+  assert.equal(adminAssistedCartInputSchema.safeParse({ variantId, quantity: 0, reason: "Customer called support" }).success, false);
+  assert.equal(adminAssistedCartInputSchema.safeParse({ variantId, quantity: 2, reason: "call" }).success, false);
 });
 
 test("public settings validate admin-controlled village operations", () => {

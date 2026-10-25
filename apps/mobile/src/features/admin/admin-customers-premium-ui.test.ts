@@ -15,4 +15,8 @@ test("customer 360 uses responsive premium override surfaces", () => {
   assert.match(source, /pointValue <= BigInt\(data\.loyalty\.pointsBalance\)/);
   assert.match(source, /Deduction cannot exceed the current loyalty balance/);
   assert.match(source, /No matching customers/);
+  assert.match(source, /Assisted phone order/);
+  assert.match(source, /Prepare the customer cart only/);
+  assert.match(source, /getAdminAssistedCartOptions/);
+  assert.match(source, /Add to customer cart/);
 });

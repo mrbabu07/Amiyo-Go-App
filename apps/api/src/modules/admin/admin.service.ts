@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import type { AdminAnalyticsQuery, AdminAuditQuery, AdminBannerInput, AdminCampaignInput, AdminCategoryAttributesInput, AdminCategoryControl, AdminCategoryInput, AdminCategoryRequestReview, AdminCouponInput, AdminFlashSaleInput, AdminInventoryBulkUpdate, AdminInventoryUpdate, AdminKycReviewInput, AdminLoyaltyAdjustment, AdminOrderAddressInput, AdminOrderCourierInput, AdminOrderReturnWindowInput, AdminOrderStatusOverride, AdminUserRolesInput, AdminUserStatusInput, AdminVendorStatusInput, AdminVoucherInput, PaymentVerificationReview, PlatformSettingsInput, Session, TrustCaseActionInput, UpdateAdminCampaign, UpdateAdminCoupon } from "@amiyo/contracts";
+import type { AdminAssistedCartInput } from "@amiyo/contracts";
 import { withSerializableTransaction } from "../../infrastructure/database/transaction.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
 import { businessRulesCreateData, defaultBusinessRules, parseBusinessRules, serializeBusinessRules } from "./business-rules-config.js";
@@ -80,6 +81,38 @@ export class AdminService {
     const rows = await this.client.referralCode.findMany({ include: { user: { include: { profile: true } }, referrals: { orderBy: { createdAt: "desc" } } }, orderBy: { createdAt: "desc" }, take: 250 });
     const referrals = rows.flatMap((row) => row.referrals);
     return { summary: { codes: rows.length, conversions: referrals.length, rewardPoints: referrals.reduce((sum, item) => sum + item.rewardPoints * 2n, 0n).toString(), fraudFlags: referrals.filter((item) => item.fraudFlag).length }, rows: rows.map((row) => ({ userId: row.userId, customer: row.user.profile?.displayName ?? row.user.normalizedEmail ?? "Customer", email: row.user.normalizedEmail, code: row.code, active: row.active, conversions: row.referrals.length, rewardPoints: row.referrals.reduce((sum, item) => sum + item.rewardPoints, 0n).toString(), createdAt: row.createdAt.toISOString() })) };
+  }
+  async assistedCartOptions(session: Session, query: string) {
+    requireAdmin(session);
+    const search = query.trim();
+    const rows = await this.client.productVariant.findMany({
+      where: { active: true, product: { status: "APPROVED", vendor: { status: "APPROVED" }, shop: { status: "ACTIVE" } }, ...(search ? { OR: [{ title: { contains: search, mode: "insensitive" } }, { sku: { contains: search, mode: "insensitive" } }, { product: { name: { contains: search, mode: "insensitive" } } }] } : {}) },
+      include: { product: { select: { id: true, name: true } }, inventory: true }, orderBy: { updatedAt: "desc" }, take: 30
+    });
+    return rows.map((row) => ({ variantId: row.id, productId: row.productId, productName: row.product.name, variantTitle: row.title, sku: row.sku, priceMinor: row.priceMinor.toString(), currency: row.currency, availableQuantity: Math.max(0, (row.inventory?.onHand ?? 0) - (row.inventory?.reserved ?? 0)) })).filter((row) => row.availableQuantity > 0);
+  }
+  async addToAssistedCart(session: Session, userId: string, input: AdminAssistedCartInput) {
+    requireAdmin(session, true);
+    return withSerializableTransaction(this.client, async (transaction) => {
+      const configuration = await transaction.platformConfiguration.findUnique({ where: { key: "default" }, select: { villageOperations: true } });
+      const village = (configuration?.villageOperations ?? defaultVillageOperations) as Partial<typeof defaultVillageOperations>;
+      if (village.enabled === false || village.assistedOrderingEnabled === false) throw new ApiProblem(409, "ASSISTED_ORDERING_DISABLED", "Assisted ordering is disabled in platform settings");
+      const customer = await transaction.user.findFirst({ where: { id: userId, status: "ACTIVE", roles: { some: { role: { name: "CUSTOMER" } } } }, select: { id: true } });
+      if (!customer) throw new ApiProblem(404, "ACTIVE_CUSTOMER_NOT_FOUND", "An active customer account is required");
+      const variant = await transaction.productVariant.findFirst({ where: { id: input.variantId, active: true, product: { status: "APPROVED", vendor: { status: "APPROVED" }, shop: { status: "ACTIVE" } } }, include: { product: { select: { id: true, name: true } }, inventory: true } });
+      if (!variant?.inventory) throw new ApiProblem(404, "VARIANT_NOT_AVAILABLE", "This product variant is not available");
+      let cart = await transaction.cart.findFirst({ where: { userId, status: "ACTIVE" }, select: { id: true } });
+      cart ??= await transaction.cart.create({ data: { userId }, select: { id: true } });
+      const current = await transaction.cartItem.findUnique({ where: { cartId_variantId: { cartId: cart.id, variantId: variant.id } }, select: { quantity: true } });
+      const requested = (current?.quantity ?? 0) + input.quantity;
+      const available = variant.inventory.onHand - variant.inventory.reserved;
+      if (requested > available) throw new ApiProblem(409, "INSUFFICIENT_STOCK", `Only ${available} unit(s) are currently available`);
+      await transaction.cartItem.upsert({ where: { cartId_variantId: { cartId: cart.id, variantId: variant.id } }, create: { cartId: cart.id, productId: variant.productId, variantId: variant.id, quantity: input.quantity, displayPriceMinor: variant.priceMinor, currency: variant.currency }, update: { quantity: requested, displayPriceMinor: variant.priceMinor, currency: variant.currency } });
+      await transaction.notification.create({ data: { userId, type: "assisted_cart", title: "Your assisted cart is ready", body: `${variant.product.name} was added after your support request. Review your cart before checkout.`, data: json({ route: "/cart", variantId: variant.id, quantity: input.quantity }) } });
+      await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "admin", action: "customer.assisted_cart_item_added", resourceType: "cart", resourceId: cart.id, after: json({ customerId: userId, variantId: variant.id, quantity: input.quantity, reason: input.reason }) } });
+      const aggregate = await transaction.cartItem.aggregate({ where: { cartId: cart.id }, _sum: { quantity: true } });
+      return { cartId: cart.id, itemCount: aggregate._sum.quantity ?? 0, addedQuantity: input.quantity, productName: variant.product.name, variantTitle: variant.title };
+    });
   }
   async adjustCustomerLoyalty(session: Session, userId: string, input: AdminLoyaltyAdjustment) {
     requireAdmin(session, true);

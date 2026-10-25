@@ -1,4 +1,5 @@
 import { adminAnalyticsQuerySchema, adminAuditQuerySchema, adminBannerInputSchema, adminCampaignInputSchema, adminCategoryAttributesInputSchema, adminCategoryControlSchema, adminCategoryInputSchema, adminCategoryRequestReviewSchema, adminCouponInputSchema, adminFlashSaleInputSchema, adminInventoryBulkUpdateSchema, adminInventoryUpdateSchema, adminKycReviewInputSchema, adminLoyaltyAdjustmentSchema, adminOrderAddressInputSchema, adminOrderCourierInputSchema, adminOrderReturnWindowInputSchema, adminOrderStatusOverrideSchema, adminToggleInputSchema, adminUserRolesInputSchema, adminUserStatusInputSchema, adminVendorStatusInputSchema, adminVoucherInputSchema, commissionRuleInputSchema, endCommissionRuleSchema, paymentVerificationReviewSchema, platformSettingsInputSchema, trustCaseActionInputSchema, updateAdminCampaignSchema, updateAdminCouponSchema, updateCommissionRuleSchema } from "@amiyo/contracts";
+import { adminAssistedCartInputSchema } from "@amiyo/contracts";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../../infrastructure/database/prisma.js";
@@ -43,6 +44,8 @@ export function createAdminRouter() {
   } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace", async (req, res, next) => { try { res.json(await service.workspace(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/customers/:id", async (req, res, next) => { try { res.json(await service.customerDetail(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
+  router.get("/api/v2/admin/workspace/assisted-cart/options", async (req, res, next) => { try { res.json(await service.assistedCartOptions(requireSession(req), z.string().trim().max(120).catch("").parse(req.query.q))); } catch (error) { next(error); } });
+  router.post("/api/v2/admin/workspace/customers/:id/assisted-cart", writes, async (req, res, next) => { try { res.status(201).json(await service.addToAssistedCart(requireSession(req), idSchema.parse(req.params).id, adminAssistedCartInputSchema.parse(req.body))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/customer-referrals", async (req, res, next) => { try { res.json(await service.referralDashboard(requireSession(req))); } catch (error) { next(error); } });
   router.post("/api/v2/admin/workspace/customers/:id/loyalty/adjust", writes, async (req, res, next) => { try { res.json(await service.adjustCustomerLoyalty(requireSession(req), idSchema.parse(req.params).id, adminLoyaltyAdjustmentSchema.parse(req.body))); } catch (error) { next(error); } });
   router.get("/api/v2/admin/workspace/payment-verifications", async (req, res, next) => { try { res.json(await service.paymentVerifications(requireSession(req))); } catch (error) { next(error); } });
