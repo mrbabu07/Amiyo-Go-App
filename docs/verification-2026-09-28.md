@@ -1,5 +1,7 @@
 # Verification follow-up — 2026-09-28
 
+Historical note: counts in this document are the results recorded on 2026-09-28. As of 2026-10-25, the current release checker reports one unresolved business decision, five propagated high Expo build-tool package nodes, clean API/worker runtime audits, and six missing external evidence artifacts.
+
 ## Implemented
 
 - Authenticated retries retain the originating Firebase identity. Switching accounts before or during refresh prevents replay; a late failure cannot sign out another account.

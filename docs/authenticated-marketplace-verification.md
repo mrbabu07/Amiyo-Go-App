@@ -1,5 +1,7 @@
 # Authenticated marketplace API verification
 
+Current release-gate note (2026-10-25): the historical runs below retain the counts measured at their execution time. The current checker reports one unresolved business decision, five propagated high Expo build-tool package nodes, clean API/worker runtime audits, and six missing external evidence artifacts. See `dependency-risk-register.md` and `runbooks/release.md` for the active gate.
+
 ## Repeatable local check
 
 Run `npm run smoke:authenticated` with the existing local API and Firebase Auth Emulator running. Existing demo customer, vendor and admin accounts must already be present. The script does not seed accounts, change roles, create orders, refund payments or issue payouts. Normal authentication may update login bookkeeping.

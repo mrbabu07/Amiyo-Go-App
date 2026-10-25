@@ -143,6 +143,21 @@ test("mobile release uses the hardened Expo SDK and explicit build profiles", as
   assert.ok(eas.build.production);
 });
 
+test("dependency register matches the current pinned tooling and gate snapshot", async () => {
+  const rootPackage = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  const lock = JSON.parse(await readFile(new URL("../package-lock.json", import.meta.url), "utf8"));
+  const register = await readFile(new URL("../docs/dependency-risk-register.md", import.meta.url), "utf8");
+  const gapMap = await readFile(new URL("../docs/production-gap-and-differentiator-map.md", import.meta.url), "utf8");
+  assert.equal(rootPackage.devDependencies["firebase-tools"], "15.34.1");
+  assert.equal(lock.packages["node_modules/fast-uri"].version, "3.1.9");
+  assert.match(register, /Last reviewed: 2026-10-25/);
+  assert.match(register, /firebase-tools@15\.34\.1/);
+  assert.match(register, /fast-uri@3\.1\.9/);
+  assert.match(register, /five high and five moderate package nodes/);
+  assert.match(gapMap, /Current gate snapshot \(2026-10-25\)/);
+  assert.match(gapMap, /one unresolved business decision/);
+});
+
 test("runtime contracts use the remediated Zod and OpenAPI toolchain", async () => {
   const apiPackage = JSON.parse(await readFile(new URL("../apps/api/package.json", import.meta.url), "utf8"));
   const mobilePackage = JSON.parse(await readFile(new URL("../apps/mobile/package.json", import.meta.url), "utf8"));

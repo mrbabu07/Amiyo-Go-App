@@ -1,6 +1,6 @@
 # Dependency Risk Register
 
-Last reviewed: 2026-10-24
+Last reviewed: 2026-10-25
 
 ## Release rule
 
@@ -20,11 +20,12 @@ NPM reports five high package nodes because the two advisories propagate through
 ## Current compatibility evidence
 
 - `expo@58.0.19`, `@expo/cli@58.1.15`, and `expo-router@58.0.26` are installed.
+- `firebase-tools@15.34.1` is exact-pinned and the compatible `fast-uri@3.1.9` patch is installed; this removed the URI-parser advisory from the complete graph.
 - Expo Doctor passes all 20 checks.
 - Mobile strict type-check and all 451 mobile tests pass.
 - Expo web production export completes.
 - API and worker runtime audits report zero findings.
-- The complete dependency audit remains blocked; this document records risk but does not approve it.
+- The complete dependency audit currently reports five high and five moderate package nodes. The five high nodes remain the production blocker described above; this document records risk but does not approve it.
 
 ## Review procedure
 

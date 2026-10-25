@@ -1,5 +1,7 @@
 # Production Gap and Marketplace Differentiator Map
 
+Current gate snapshot (2026-10-25): `npm run release:check` reports one unresolved business decision (`Data retention`) and five propagated high package nodes from two Expo build-tool advisories. API and worker runtime audits are clean. Android, iOS, finance-provider, restore, staging-smoke and retention-approval evidence remain missing. Older counts below are retained only as dated verification history.
+
 Checkout policy follow-up (2026-10-02): guest/customer payment choices and submission now share admin-controlled payment, maintenance, COD confirmation and rural-address checks. Guest forms and checkout columns stack on small viewports. See `checkout-policy-verification.md`; visual/device and provider acceptance remain open.
 
 Checkout follow-up (2026-10-02): customer/guest submit guards, account-scoped durable recovery records and an original-checkout retry screen are implemented. Persisted requests preserve the original key across reloads, reject changed inputs while uncertain, and stop retrying before server idempotency expiry. See `checkout-retry-verification.md` for evidence and remaining provider/device/multi-tab limitations. This does not certify full reference parity.
@@ -34,7 +36,7 @@ Order-document follow-up: COD collection is now payment-state aware, customer in
 - Seller orders now support batches of up to 20 parcel labels or packing slips, with ownership-checked fetches and no partial export on fetch failure. Native PDF/physical printing and authenticated web acceptance remain unverified.
 - A document verification route supports native camera scanning and pasted QR payloads. Web uses paste input. It distinguishes signed documents from matching current records and does not claim payment collection.
 - QR verification rejects expired codes at the exact expiry boundary, oversized input and duplicate fields.
-- Release readiness still reports 27 unresolved decisions. This is a documentary gate, not a live service health check.
+- At the time of this 2026-09-16 snapshot, release readiness reported 27 unresolved decisions. The current count is recorded at the top of this document; neither count is a live service health check.
 
 ### Remaining Work and Acceptance Evidence
 
