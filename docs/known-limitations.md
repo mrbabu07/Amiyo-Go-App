@@ -2,8 +2,8 @@
 
 ## Production blockers
 
-- Business, provider, privacy, retention, package identity, deployment, and migration decisions remain unresolved in `docs/decisions-needed.md`.
-- Phase 9 lacks two production-scale rehearsals and signed reconciliation approval.
+- `docs/decisions-needed.md` has one unresolved release decision: named legal/privacy, finance, operations, and security approval of the data-retention baseline plus provider/purge evidence.
+- Release one is an approved greenfield launch. Legacy MongoDB production-scale migration rehearsals are not a launch requirement; the retained migration tooling is contingency-only and must not be represented as executed production evidence.
 - Sentry mobile crash capture, source-map-aware Metro output, and global offline state are implemented; no managed staging/production deployment, alert dashboard, backup restore evidence, load/security report, or real-device E2E evidence is available.
 - EAS/store projects, final brand assets, signing ownership, metadata, and privacy disclosures are not configured.
 - Firebase web configuration is available locally, but server Admin credentials, approved sign-in methods, native app registrations, authorized domains, Analytics consent, and test identities are not complete.

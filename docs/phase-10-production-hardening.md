@@ -18,7 +18,7 @@ The complete production Definition of Done must pass with staging/provider/devic
 
 ## Gate status: blocked
 
-Amiyo-Go is **not production-ready**. Deployment providers, final app identity/branding, store accounts and metadata, privacy disclosures, retention rules, monitoring projects, production secrets, production-scale migration approvals, managed backup restore evidence, staging load/security results, and real Android/iOS accessibility/offline/E2E evidence were not supplied.
+Amiyo-Go is **not production-ready**. Deployment targets, release-one market boundaries, package identity, authentication, payment methods, greenfield launch policy, and the technical retention baseline are selected. Promotion still requires the unresolved named data-retention approval, compatible resolution or expiring approval of the current Expo build-tool advisories, production secrets/provider provisioning, store metadata, managed backup restore evidence, staging finance/load/security evidence, and real Android/iOS accessibility/offline/E2E evidence.
 
 The local automation validates the release foundation only. It does not claim external systems, store binaries, backups, alerts, or production migration rehearsals were verified.
 

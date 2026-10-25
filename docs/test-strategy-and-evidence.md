@@ -69,4 +69,4 @@ Docker is unavailable on the current workstation, so container build evidence mu
 - Firebase Auth emulator token verification passed; seeded customer/vendor/admin database role smoke passed.
 - Live local API `/health` and `/ready` checks passed; category/product catalog returned seeded data.
 - Concurrent load smoke passed with 100 requests at concurrency 10, zero failures, and 38 ms local p95.
-- Release readiness remains truthfully blocked on 27 external/business decisions; no code gate overrides this production block.
+- At that 2026-09-01 baseline, release readiness was blocked on 27 external/business decisions. Subsequent approvals reduced the current decision gate to data retention; fresh status must always come from `npm run release:check`.
