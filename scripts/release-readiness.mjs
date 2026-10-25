@@ -1,10 +1,12 @@
 import { access, readFile, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { parseFinanceProviderEvidence, validateFinanceProviderEvidence } from "./finance-provider-evidence-lib.mjs";
 import { parseMobileDeviceEvidence, validateMobileDeviceEvidence } from "./mobile-device-evidence-lib.mjs";
 import { parseRestoreReleaseEvidence, validateRestoreReleaseEvidence } from "./restore-release-evidence-lib.mjs";
 import { parseStagingSmokeEvidence, validateStagingSmokeEvidence } from "./staging-smoke-evidence-lib.mjs";
+import { parseRetentionApprovalEvidence, validateRetentionApprovalEvidence } from "./retention-approval-evidence-lib.mjs";
 
 const requiredFiles = [
   ".github/workflows/ci.yml",
@@ -44,7 +46,7 @@ const boundedMetadata = (value, name, pattern) => {
 
 await Promise.all(requiredFiles.map((file) => access(new URL(`../${file}`, import.meta.url))));
 const decisions = await readFile(new URL("../docs/decisions-needed.md", import.meta.url), "utf8");
-const blockers = decisions.split("\n").flatMap((line) => {
+const decisionBlockers = decisions.split("\n").flatMap((line) => {
   if (!/^\|.*\| (TBD|PARTIAL|BLOCKED) \|/.test(line)) return [];
   const [decision, status] = line.split("|").slice(1, 3).map((value) => value.trim());
   return [{ decision, status }];
@@ -93,23 +95,27 @@ const evidencePath = (value, name) => {
   if (normalized.length > 2_048 || /[\r\n\0]/.test(normalized)) throw new Error(`${name} is invalid`);
   return normalized;
 };
-const validateEvidence = async (path, parser, validator, expectedPlatform) => {
+const validateEvidence = async (path, parser, validator, expectedPlatform, validatorOptions = {}) => {
   if (!path) return { status: "missing" };
   try {
-    const validated = validator(parser(await readFile(path, "utf8")), { expectedCommitSha: provenance.commitSha ?? undefined });
+    const validated = validator(parser(await readFile(path, "utf8")), { expectedCommitSha: provenance.commitSha ?? undefined, ...validatorOptions });
     if (expectedPlatform && validated.app.platform !== expectedPlatform) throw new Error(`Expected ${expectedPlatform} evidence`);
     return { status: "passed", measuredAt: validated.finishedAt ?? validated.executedAt, ...(expectedPlatform ? { platform: expectedPlatform } : {}) };
   } catch (error) {
     return { status: "invalid", reason: error instanceof Error ? error.message : "Evidence validation failed" };
   }
 };
+const retentionPolicy = await readFile(new URL("../docs/data-retention-policy.md", import.meta.url));
+const retentionPolicyHash = createHash("sha256").update(retentionPolicy).digest("hex");
 const releaseEvidence = {
   android: await validateEvidence(evidencePath(process.env.ANDROID_DEVICE_EVIDENCE_PATH, "ANDROID_DEVICE_EVIDENCE_PATH"), parseMobileDeviceEvidence, validateMobileDeviceEvidence, "android"),
   ios: await validateEvidence(evidencePath(process.env.IOS_DEVICE_EVIDENCE_PATH, "IOS_DEVICE_EVIDENCE_PATH"), parseMobileDeviceEvidence, validateMobileDeviceEvidence, "ios"),
   finance: await validateEvidence(evidencePath(process.env.FINANCE_PROVIDER_EVIDENCE_PATH, "FINANCE_PROVIDER_EVIDENCE_PATH"), parseFinanceProviderEvidence, validateFinanceProviderEvidence),
   restore: await validateEvidence(evidencePath(process.env.RESTORE_RELEASE_EVIDENCE_PATH, "RESTORE_RELEASE_EVIDENCE_PATH"), parseRestoreReleaseEvidence, validateRestoreReleaseEvidence),
-  staging: await validateEvidence(evidencePath(process.env.STAGING_SMOKE_EVIDENCE_PATH, "STAGING_SMOKE_EVIDENCE_PATH"), parseStagingSmokeEvidence, validateStagingSmokeEvidence)
+  staging: await validateEvidence(evidencePath(process.env.STAGING_SMOKE_EVIDENCE_PATH, "STAGING_SMOKE_EVIDENCE_PATH"), parseStagingSmokeEvidence, validateStagingSmokeEvidence),
+  retention: await validateEvidence(evidencePath(process.env.RETENTION_APPROVAL_EVIDENCE_PATH, "RETENTION_APPROVAL_EVIDENCE_PATH"), parseRetentionApprovalEvidence, validateRetentionApprovalEvidence, undefined, { expectedPolicyHash: retentionPolicyHash })
 };
+const blockers = decisionBlockers.filter((blocker) => blocker.decision !== "Data retention" || releaseEvidence.retention.status !== "passed");
 const evidenceRequired = provenance.environment === "production" || process.env.REQUIRE_PRODUCTION_READY === "true";
 const evidenceBlocked = evidenceRequired && Object.values(releaseEvidence).some((evidence) => evidence.status !== "passed");
 const releaseBlocked = blockers.length > 0 || dependencyAudit.status !== "passed" || Object.values(runtimeDependencyAudits).some((audit) => audit.status !== "passed") || evidenceBlocked;

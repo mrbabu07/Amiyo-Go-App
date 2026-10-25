@@ -165,8 +165,11 @@ test("production gate remains blocked until external evidence exists", async () 
   assert.match(workflow, /FINANCE_PROVIDER_EVIDENCE_JSON: \$\{\{ secrets\.FINANCE_PROVIDER_EVIDENCE_JSON \}\}/);
   assert.match(workflow, /RESTORE_RELEASE_EVIDENCE_JSON: \$\{\{ secrets\.RESTORE_RELEASE_EVIDENCE_JSON \}\}/);
   assert.match(workflow, /STAGING_SMOKE_EVIDENCE_JSON: \$\{\{ secrets\.STAGING_SMOKE_EVIDENCE_JSON \}\}/);
+  assert.match(workflow, /RETENTION_APPROVAL_EVIDENCE_JSON: \$\{\{ secrets\.RETENTION_APPROVAL_EVIDENCE_JSON \}\}/);
+  assert.match(workflow, /RETENTION_APPROVAL_EVIDENCE_PATH:/);
   assert.match(readiness, /evidenceRequired/);
   assert.match(readiness, /releaseEvidence/);
+  assert.match(readiness, /retentionPolicyHash/);
 });
 
 test("release-one market boundaries are explicitly approved", async () => {

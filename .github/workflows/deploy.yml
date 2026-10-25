@@ -39,6 +39,7 @@ jobs:
           FINANCE_PROVIDER_EVIDENCE_JSON: ${{ secrets.FINANCE_PROVIDER_EVIDENCE_JSON }}
           RESTORE_RELEASE_EVIDENCE_JSON: ${{ secrets.RESTORE_RELEASE_EVIDENCE_JSON }}
           STAGING_SMOKE_EVIDENCE_JSON: ${{ secrets.STAGING_SMOKE_EVIDENCE_JSON }}
+          RETENTION_APPROVAL_EVIDENCE_JSON: ${{ secrets.RETENTION_APPROVAL_EVIDENCE_JSON }}
       - name: Verify release readiness
         run: npm run release:check
         env:
@@ -52,6 +53,7 @@ jobs:
           FINANCE_PROVIDER_EVIDENCE_PATH: ${{ inputs.environment == 'production' && 'finance-provider-evidence.json' || '' }}
           RESTORE_RELEASE_EVIDENCE_PATH: ${{ inputs.environment == 'production' && 'restore-release-evidence.json' || '' }}
           STAGING_SMOKE_EVIDENCE_PATH: ${{ inputs.environment == 'production' && 'staging-smoke-evidence.json' || '' }}
+          RETENTION_APPROVAL_EVIDENCE_PATH: ${{ inputs.environment == 'production' && 'retention-approval-evidence.json' || '' }}
       - name: Upload release-readiness evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

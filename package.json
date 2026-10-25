@@ -37,6 +37,7 @@
     "release:mobile-env": "node scripts/mobile-release-env.mjs",
     "release:mobile-evidence": "node scripts/mobile-device-evidence.mjs",
     "release:finance-evidence": "node scripts/finance-provider-evidence.mjs",
+    "release:retention-evidence": "node scripts/retention-approval-evidence.mjs",
     "release:evidence-files": "node scripts/release-evidence-files.mjs",
     "release:manifest": "node scripts/release-manifest.mjs",
     "restore:verify": "node scripts/restore-verification.mjs",

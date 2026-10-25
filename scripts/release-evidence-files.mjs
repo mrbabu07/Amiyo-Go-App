@@ -5,7 +5,8 @@ const evidence = [
   ["IOS_DEVICE_EVIDENCE_JSON", "ios-device-evidence.json"],
   ["FINANCE_PROVIDER_EVIDENCE_JSON", "finance-provider-evidence.json"],
   ["RESTORE_RELEASE_EVIDENCE_JSON", "restore-release-evidence.json"],
-  ["STAGING_SMOKE_EVIDENCE_JSON", "staging-smoke-evidence.json"]
+  ["STAGING_SMOKE_EVIDENCE_JSON", "staging-smoke-evidence.json"],
+  ["RETENTION_APPROVAL_EVIDENCE_JSON", "retention-approval-evidence.json"]
 ];
 
 await Promise.all(evidence.map(async ([name, path]) => {

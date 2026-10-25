@@ -28,3 +28,5 @@ Store submission remains blocked until final branding, privacy URLs/disclosures,
 ## Automated release gate
 
 Run `npm run release:check` to verify required release artifacts, unresolved product/operations decisions, and runtime dependency advisories. High or critical dependency findings keep the release blocked. Set `REQUIRE_PRODUCTION_READY=true` in CI so unresolved decisions, an unavailable audit, or blocking advisories fail the job. Never use `npm audit fix --force` to downgrade the Expo/React Native stack; resolve findings with a compatible SDK upgrade and rerun Expo Doctor and the full regression suite.
+
+Data retention is cleared only by protected `RETENTION_APPROVAL_EVIDENCE_JSON` matching the SHA-256 of the current `docs/data-retention-policy.md`. The validator requires four independent named approvers, approved periods, tested legal holds, hashed configuration evidence for every named provider, and an independently reviewed purge drill no older than 90 days. Policy changes invalidate prior approval automatically.
