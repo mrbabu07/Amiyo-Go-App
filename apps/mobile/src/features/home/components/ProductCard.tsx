@@ -16,6 +16,7 @@ import { addWishlistItem, getWishlist, removeWishlistItem } from "../../engageme
 import { getDiscoverySessionId, safelyRecordDiscoveryEvent } from "../../catalog/discovery.api";
 import type { HomeProduct } from "../home.data";
 import { useMarketplaceLocale } from "../../platform/marketplace-locale";
+import { useLowDataMode } from "../../platform/use-low-data-mode";
 
 const money = (value: string) => formatMinor(value);
 const fallbackImage = "https://images.unsplash.com/photo-1560343090-f0409e92791a?w=700&h=700&fit=crop";
@@ -23,6 +24,8 @@ const fallbackImage = "https://images.unsplash.com/photo-1560343090-f0409e92791a
 export function ProductCard({ lowData = false, product }: { lowData?: boolean; product: HomeProduct }) {
   const router = useRouter();
   const { t } = useMarketplaceLocale();
+  const { enabled: policyLowData } = useLowDataMode();
+  const dataSaver = lowData || policyLowData;
   const queryClient = useQueryClient();
   const user = useCurrentUser();
   const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
@@ -70,7 +73,7 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
     <View style={styles.card}>
       <Pressable accessibilityRole="link" onPress={() => router.push(`/product/${product.slug || product.id}` as never)} style={({ pressed }) => [styles.openArea, pressed && styles.pressed]}>
         <View style={styles.imageWrap}>
-          {lowData ? <View accessibilityLabel={`${product.title} image hidden to save data`} accessibilityRole="image" style={[styles.image, styles.lowDataImage]}><Ionicons color={colors.accent} name="leaf-outline" size={26} /><Text style={styles.lowDataLabel}>DATA SAVER</Text></View> : <Image accessibilityLabel={product.title} resizeMode="cover" source={{ uri: product.image || fallbackImage }} style={styles.image} />}
+          {dataSaver ? <View accessibilityLabel={`${product.title} image hidden to save data`} accessibilityRole="image" style={[styles.image, styles.lowDataImage]}><Ionicons color={colors.accent} name="leaf-outline" size={26} /><Text style={styles.lowDataLabel}>DATA SAVER</Text></View> : <Image accessibilityLabel={product.title} resizeMode="cover" source={{ uri: product.image || fallbackImage }} style={styles.image} />}
           <View style={styles.topBadge}>{discount ? <Text style={styles.discountText}>-{discount}%</Text> : <Text style={styles.verifiedText}>VERIFIED</Text>}</View>
         </View>
         <View style={styles.body}>

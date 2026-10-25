@@ -21,7 +21,8 @@ test("shop cards expose link semantics and pressed feedback", () => {
 });
 
 test("village data saver avoids marketplace image requests", () => {
-  assert.match(productSource, /lowData \? <View/);
+  assert.match(productSource, /dataSaver \? <View/);
+  assert.match(productSource, /const dataSaver = lowData \|\| policyLowData/);
   assert.match(productSource, /image hidden to save data/);
   assert.match(productSource, /DATA SAVER/);
   assert.match(shopSource, /shop\.logoUrl && !lowData/);
