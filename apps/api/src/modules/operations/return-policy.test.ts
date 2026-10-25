@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Session } from "@amiyo/contracts";
-import { assertReturnPolicy, effectiveReturnPolicy, loadReturnPolicy } from "./return-policy.js";
+import { assertReturnPolicy, effectiveReturnPolicy, inheritedCategoryPolicies, loadReturnPolicy } from "./return-policy.js";
 import { OperationsService } from "./operations.service.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
 
@@ -30,6 +30,17 @@ test("category return policies use the strictest selected product rule", () => {
   assert.deepEqual(effectiveReturnPolicy(globalPolicy, [{ returnable: true, windowDays: 7, requireEvidence: true }]), { returnable: true, windowDays: 7, requireEvidence: true });
   assert.equal(effectiveReturnPolicy(globalPolicy, [{ returnable: false, windowDays: 1, requireEvidence: true }]).returnable, false);
   assert.throws(() => assertReturnPolicy({ deadline: null, deliveredAt: new Date(), evidenceCount: 1, policy: { returnable: false, windowDays: 1, requireEvidence: true }, now: Date.now() }), /not returnable/);
+});
+
+test("subcategory products inherit the nearest valid category return policy", () => {
+  const parentPolicy = { returnable: true, windowDays: 14, requireEvidence: true };
+  const childPolicy = { returnable: false, windowDays: 1, requireEvidence: true };
+  const rows = [{ id: "root", parentId: null, returnPolicy: parentPolicy }, { id: "child", parentId: "root", returnPolicy: null }, { id: "leaf", parentId: "child", returnPolicy: childPolicy }, { id: "cycle-a", parentId: "cycle-b", returnPolicy: null }, { id: "cycle-b", parentId: "cycle-a", returnPolicy: null }];
+  const policies = inheritedCategoryPolicies(rows, ["child", "leaf", "cycle-a", "missing"]);
+  assert.deepEqual(policies.get("child"), parentPolicy);
+  assert.deepEqual(policies.get("leaf"), childPolicy);
+  assert.equal(policies.has("cycle-a"), false);
+  assert.equal(policies.has("missing"), false);
 });
 test("creation enforces expiry before evidence lookup or return writes", async () => {
   const service = new OperationsService({ $transaction: async (operation: (transaction: unknown) => Promise<unknown>) => operation({

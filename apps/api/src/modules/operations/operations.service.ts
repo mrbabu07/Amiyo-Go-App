@@ -1,6 +1,6 @@
 import { returnProductDetails, returnProductSelect } from "./return-product.js";
 import { createHash, randomUUID } from "node:crypto";
-import { assertReturnPolicy, effectiveReturnPolicy, loadReturnPolicy } from "./return-policy.js";
+import { assertReturnPolicy, effectiveReturnPolicy, loadInheritedCategoryPolicies, loadReturnPolicy } from "./return-policy.js";
 import { Prisma, type DeliverySetting, type PrismaClient, type ReturnStatus } from "@prisma/client";
 import type { AdminCodConfirmationInput, AdminCodDeliveryInput, AdminOrderRefundInput, CancelOrder, CodReconciliationInput, CompletePayout, CompleteRefund, CreatePayoutRequest, CreateReturn, CreateSettlementProposal, DeliveryRetryInput, DeliverySettingsInput, ProviderOrderRefundInput, ReturnTransition, ReviewPayout, SellerReturnReceipt, SellerReturnResponse, ServiceabilityInput, Session } from "@amiyo/contracts";
 import { assertAvailableBalance, assertRefundLimit, calculateLedgerBalance, canTransitionReturn, providerReferenceValid, refundProviderRule, settlementDecision, settlementProposalDecision } from "@amiyo/domain";
@@ -129,9 +129,10 @@ export class OperationsService {
     const scope = `return-create:${session.principal.userId}:${input.vendorOrderId}`;
     return withSerializableTransaction(this.client, async (transaction) => {
       const prior = await replay(transaction, scope, key, input); if (prior.response) return prior.response;
-      const vendorOrder = await transaction.vendorOrder.findFirst({ where: { id: input.vendorOrderId, status: "DELIVERED", order: { userId: session.principal.userId } }, include: { order: true, shipments: { select: { deliveredAt: true }, take: 1 }, items: { include: { product: { select: { category: { select: { returnPolicy: true } } } }, returnItems: { where: { returnRequest: { status: { notIn: ["REJECTED", "CLOSED"] } } } } } } } });
+      const vendorOrder = await transaction.vendorOrder.findFirst({ where: { id: input.vendorOrderId, status: "DELIVERED", order: { userId: session.principal.userId } }, include: { order: true, shipments: { select: { deliveredAt: true }, take: 1 }, items: { include: { product: { select: { categoryId: true } }, returnItems: { where: { returnRequest: { status: { notIn: ["REJECTED", "CLOSED"] } } } } } } } });
       if (!vendorOrder) throw new ApiProblem(409, "RETURN_NOT_ELIGIBLE", "Only your delivered order can be returned");
-      const selectedCategoryPolicies = input.items.map((requested) => vendorOrder.items.find((candidate) => candidate.id === requested.orderItemId)?.product?.category?.returnPolicy);
+      const inheritedPolicies = await loadInheritedCategoryPolicies(transaction, vendorOrder.items.flatMap((item) => item.product?.categoryId ? [item.product.categoryId] : []));
+      const selectedCategoryPolicies = input.items.map((requested) => { const categoryId = vendorOrder.items.find((candidate) => candidate.id === requested.orderItemId)?.product?.categoryId; return categoryId ? inheritedPolicies.get(categoryId) : undefined; });
       const policy = effectiveReturnPolicy(await loadReturnPolicy(transaction), selectedCategoryPolicies);
       assertReturnPolicy({ deadline: vendorOrder.order.returnWindowUntil, deliveredAt: vendorOrder.shipments[0]?.deliveredAt ?? null, evidenceCount: input.evidenceStorageKeys?.length ?? 0, policy, now: Date.now() });
       const evidenceStorageKeys = await validateCustomerReturnEvidence(transaction, session.principal.userId, input.evidenceStorageKeys);

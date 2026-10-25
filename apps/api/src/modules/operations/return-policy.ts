@@ -18,6 +18,28 @@ export function effectiveReturnPolicy(globalPolicy: z.infer<typeof policySchema>
   return { returnable: true, windowDays: Math.min(globalPolicy.windowDays, ...overrides.map((policy) => policy.windowDays)), requireEvidence: globalPolicy.requireEvidence || overrides.some((policy) => policy.requireEvidence) };
 }
 
+export function inheritedCategoryPolicies(rows: Array<{ id: string; parentId: string | null; returnPolicy: unknown }>, categoryIds: string[]) {
+  const categories = new Map(rows.map((row) => [row.id, row]));
+  const resolved = new Map<string, unknown>();
+  for (const categoryId of new Set(categoryIds)) {
+    const visited = new Set<string>();
+    let current = categories.get(categoryId);
+    while (current && !visited.has(current.id)) {
+      visited.add(current.id);
+      if (categoryPolicySchema.safeParse(current.returnPolicy).success) { resolved.set(categoryId, current.returnPolicy); break; }
+      current = current.parentId ? categories.get(current.parentId) : undefined;
+    }
+  }
+  return resolved;
+}
+
+export async function loadInheritedCategoryPolicies(client: Pick<Prisma.TransactionClient, "category">, categoryIds: string[]) {
+  const unique = [...new Set(categoryIds.filter(Boolean))];
+  if (!unique.length) return new Map<string, unknown>();
+  const rows = await client.category.findMany({ select: { id: true, parentId: true, returnPolicy: true }, take: 1000 });
+  return inheritedCategoryPolicies(rows, unique);
+}
+
 export function returnWindow(input: { deadline: Date | null; deliveredAt: Date | null; policy: z.infer<typeof policySchema>; now: number }) {
   const deliveryTime = input.deliveredAt?.getTime();
   const deadline = input.deadline?.getTime() ?? (deliveryTime === undefined ? NaN : deliveryTime + input.policy.windowDays * 86400000);

@@ -7,6 +7,7 @@ import { ApiProblem } from "../../middleware/api-problem.js";
 import { CatalogRepository, publicProductInclude, publicProductSummaryInclude, type PublicProduct, type PublicProductSummary } from "./catalog.repository.js";
 import { fuzzySearchScore, fuzzySearchThreshold, normalizeSearchValue } from "./catalog-ranking.js";
 import { parseProductCsv, serializeProductCsv } from "./product-csv.js";
+import { loadInheritedCategoryPolicies } from "../operations/return-policy.js";
 
 const catalogPublicCache = new TtlCache();
 
@@ -59,9 +60,10 @@ function productSummary(product: PublicProduct | PublicProductSummary) {
   };
 }
 
-function productDetail(product: PublicProduct) {
-  const rawPolicy = product.category.returnPolicy;
-  const returnPolicy = rawPolicy && typeof rawPolicy === "object" && !Array.isArray(rawPolicy) && typeof rawPolicy.returnable === "boolean" && Number.isInteger(rawPolicy.windowDays) && Number(rawPolicy.windowDays) >= 1 && Number(rawPolicy.windowDays) <= 90 && typeof rawPolicy.requireEvidence === "boolean" ? { returnable: rawPolicy.returnable, windowDays: Number(rawPolicy.windowDays), requireEvidence: rawPolicy.requireEvidence } : null;
+function productDetail(product: PublicProduct, inheritedPolicy?: unknown) {
+  const rawPolicy = inheritedPolicy ?? product.category.returnPolicy;
+  const policyRecord = rawPolicy && typeof rawPolicy === "object" && !Array.isArray(rawPolicy) ? rawPolicy as Record<string, unknown> : null;
+  const returnPolicy = policyRecord && typeof policyRecord.returnable === "boolean" && Number.isInteger(policyRecord.windowDays) && Number(policyRecord.windowDays) >= 1 && Number(policyRecord.windowDays) <= 90 && typeof policyRecord.requireEvidence === "boolean" ? { returnable: policyRecord.returnable, windowDays: Number(policyRecord.windowDays), requireEvidence: policyRecord.requireEvidence } : null;
   return {
     ...productSummary(product),
     description: product.description,
@@ -265,7 +267,8 @@ export class CatalogService {
   async product(identifier: string) {
     const row = await this.repository.getPublishedProduct(identifier);
     if (!row) throw new ApiProblem(404, "PRODUCT_NOT_FOUND", "Product not found");
-    return productDetail(row);
+    const policies = await loadInheritedCategoryPolicies(this.client, [row.categoryId]);
+    return productDetail(row, policies.get(row.categoryId));
   }
 
   async shops(cursor: string | undefined, limit: number) {
