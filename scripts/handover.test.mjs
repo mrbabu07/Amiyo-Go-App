@@ -23,8 +23,12 @@ test("handover package contains every required maintainer artifact", async () =>
 test("handover does not overstate the production gate", async () => {
   const handover = await readFile(new URL("../docs/handover.md", import.meta.url), "utf8");
   const limitations = await readFile(new URL("../docs/known-limitations.md", import.meta.url), "utf8");
+  const greenfield = await readFile(new URL("../docs/greenfield-data-launch-policy.md", import.meta.url), "utf8");
   assert.match(handover, /production approval remains blocked/);
-  assert.match(limitations, /production-scale rehearsals/);
+  assert.match(limitations, /approved greenfield launch/);
+  assert.match(limitations, /contingency-only/);
+  assert.match(greenfield, /two production-scale rehearsals/);
+  assert.match(greenfield, /Local demo users, demo orders, sandbox payments and synthetic migration rehearsals are forbidden in production/);
   assert.match(limitations, /real-device E2E evidence/);
 });
 
