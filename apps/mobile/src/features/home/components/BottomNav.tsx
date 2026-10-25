@@ -2,19 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { usePathname, useRouter } from "expo-router";
 import { colors } from "../../../ui/tokens";
-
-const items = [
-  { label: "Home", icon: "home", href: "/" },
-  { label: "Categories", icon: "grid-outline", href: "/categories" },
-  { label: "Wishlist", icon: "heart-outline", href: "/wishlist" },
-  { label: "Cart", icon: "cart-outline", href: "/cart" },
-  { label: "Orders", icon: "bag-handle-outline", href: "/orders" },
-  { label: "Account", icon: "person-outline", href: "/account" }
-];
+import { useMarketplaceLocale } from "../../platform/marketplace-locale";
 
 export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useMarketplaceLocale();
+  const items = [{ label: t.home, icon: "home", href: "/" }, { label: t.categories, icon: "grid-outline", href: "/categories" }, { label: t.wishlist, icon: "heart-outline", href: "/wishlist" }, { label: t.cart, icon: "cart-outline", href: "/cart" }, { label: t.orders, icon: "bag-handle-outline", href: "/orders" }, { label: t.account, icon: "person-outline", href: "/account" }];
   return (
     <View style={styles.nav}>
       {items.map((item) => {

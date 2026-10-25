@@ -15,12 +15,14 @@ import { addCartItem } from "../../commerce/commerce.api";
 import { addWishlistItem, getWishlist, removeWishlistItem } from "../../engagement/engagement.api";
 import { getDiscoverySessionId, safelyRecordDiscoveryEvent } from "../../catalog/discovery.api";
 import type { HomeProduct } from "../home.data";
+import { useMarketplaceLocale } from "../../platform/marketplace-locale";
 
 const money = (value: string) => formatMinor(value);
 const fallbackImage = "https://images.unsplash.com/photo-1560343090-f0409e92791a?w=700&h=700&fit=crop";
 
 export function ProductCard({ lowData = false, product }: { lowData?: boolean; product: HomeProduct }) {
   const router = useRouter();
+  const { t } = useMarketplaceLocale();
   const queryClient = useQueryClient();
   const user = useCurrentUser();
   const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
@@ -81,7 +83,7 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
       </Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={`Add ${product.title} to cart`} accessibilityState={{ busy: addToCart.isPending }} disabled={addToCart.isPending} onPress={() => addToCart.mutate()} style={({ pressed }) => [styles.cart, (pressed || addToCart.isPending) && styles.heartBusy]}>
         <Ionicons color="#fff" name="cart-outline" size={17} />
-        <Text style={styles.cartLabel}>{addToCart.isPending ? "Adding…" : "Add to cart"}</Text>
+        <Text style={styles.cartLabel}>{addToCart.isPending ? t.adding : t.addCart}</Text>
       </Pressable>
       {addToCart.isError ? <Text accessibilityRole="alert" style={styles.cartError}>{addToCart.error instanceof Error ? addToCart.error.message : "Could not add item. Try again."}</Text> : null}
       {addToCart.isSuccess && addToCart.data ? <Text accessibilityLiveRegion="polite" style={styles.cartFeedback}>Added to cart</Text> : null}
