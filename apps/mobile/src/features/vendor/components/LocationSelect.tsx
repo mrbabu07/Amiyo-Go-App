@@ -43,8 +43,9 @@ export function LocationSelect({ disabled, label, onChange, options, placeholder
         <Ionicons color={colors.muted} name="chevron-down" size={18} />
       </Pressable>
       <Modal animationType="fade" onRequestClose={close} transparent visible={open}>
-        <Pressable onPress={close} style={styles.backdrop}>
-          <Pressable onPress={() => undefined} style={styles.modal}>
+        <View style={styles.backdrop}>
+          <Pressable accessibilityLabel={`Close ${label.toLowerCase()} selector`} onPress={close} style={StyleSheet.absoluteFill} />
+          <View accessibilityViewIsModal style={styles.modal}>
             <View style={styles.modalHeader}>
               <View>
                 <Text style={styles.modalEyebrow}>SHOP ADDRESS</Text>
@@ -57,6 +58,7 @@ export function LocationSelect({ disabled, label, onChange, options, placeholder
             <View style={styles.search}>
               <Ionicons color={colors.muted} name="search-outline" size={18} />
               <TextInput
+                accessibilityLabel={`Search ${label.toLowerCase()}`}
                 autoFocus
                 onChangeText={setSearch}
                 placeholder={`Search ${label.toLowerCase()}`}
@@ -70,6 +72,8 @@ export function LocationSelect({ disabled, label, onChange, options, placeholder
                 const active = option.id === value;
                 return (
                   <Pressable
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: active }}
                     key={option.id}
                     onPress={() => {
                       onChange(option.id);
@@ -84,8 +88,8 @@ export function LocationSelect({ disabled, label, onChange, options, placeholder
               })}
               {!visibleOptions.length ? <Text style={styles.empty}>No location found.</Text> : null}
             </ScrollView>
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
     </View>
   );
