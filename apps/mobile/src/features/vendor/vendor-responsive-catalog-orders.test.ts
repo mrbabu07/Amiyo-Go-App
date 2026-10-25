@@ -182,6 +182,16 @@ test("seller category selector replaces fixed panes on mobile", () => {
   assert.match(categorySelector, /categorySelected: \{ backgroundColor: colors\.accentSoft, borderColor: colors\.accent \}/);
 });
 
+test("product category modal avoids nested web buttons and exposes radio state", () => {
+  assert.match(productCategorySelect, /<View style=\{styles\.backdrop\}>/);
+  assert.match(productCategorySelect, /style=\{StyleSheet\.absoluteFill\}/);
+  assert.match(productCategorySelect, /accessibilityViewIsModal/);
+  assert.match(productCategorySelect, /accessibilityRole="radio"/);
+  assert.match(productCategorySelect, /accessibilityState=\{\{ checked: active \}\}/);
+  assert.doesNotMatch(productCategorySelect, /<Pressable onPress=\{close\} style=\{styles\.backdrop\}>/);
+  assert.doesNotMatch(productCategorySelect, /<Pressable onPress=\{\(\) => undefined\} style=\{styles\.modal\}>/);
+});
+
 test("seller shop media stacks controls and guards late writes", () => {
   assert.match(shopMedia, /useWindowDimensions\(\)\.width < 620/);
   assert.match(shopMedia, /activeUid\.current !== variables\.owner\.uid/);
