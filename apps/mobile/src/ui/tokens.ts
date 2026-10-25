@@ -1,7 +1,7 @@
 import { DynamicColorIOS, Platform } from "react-native";
 
-export const lightPalette = { background: "#FAF7F0", surface: "#FFFDF8", primary: "#7A1F2B", primaryDark: "#0B1F3A", primarySoft: "#F3E4E7", accent: "#6B7A3A", accentSoft: "#EEF1E4", navy: "#0B1F3A", text: "#0B1F3A", muted: "#62675B", border: "#E6D9C8", danger: "#B42318", warning: "#A76F16", success: "#4F6F32" } as const;
-export const darkPalette = { background: "#050B14", surface: "#0B1F3A", primary: "#B44B5A", primaryDark: "#FAF7F0", primarySoft: "#351924", accent: "#9AAA5B", accentSoft: "#273319", navy: "#07111F", text: "#FAF7F0", muted: "#C9C2B6", border: "#263B55", danger: "#FF8A80", warning: "#D6A44E", success: "#9AAA5B" } as const;
+export const lightPalette = { background: "#FAF7F0", surface: "#FFFDF8", primary: "#7A1F2B", primaryDark: "#0B1F3A", primarySoft: "#F3E4E7", accent: "#6B7A3A", accentSoft: "#EEF1E4", navy: "#0B1F3A", text: "#0B1F3A", muted: "#62675B", border: "#E6D9C8", danger: "#B42318", warning: "#A76F16", success: "#4F6F32", onPrimary: "#FAF7F0", shellMuted: "#C9C2B6", shellAccent: "#9AAA5B", shellDanger: "#FFB4AB" } as const;
+export const darkPalette = { background: "#050B14", surface: "#0B1F3A", primary: "#B44B5A", primaryDark: "#FAF7F0", primarySoft: "#351924", accent: "#9AAA5B", accentSoft: "#273319", navy: "#07111F", text: "#FAF7F0", muted: "#C9C2B6", border: "#263B55", danger: "#FF8A80", warning: "#D6A44E", success: "#9AAA5B", onPrimary: "#FAF7F0", shellMuted: "#C9C2B6", shellAccent: "#9AAA5B", shellDanger: "#FFB4AB" } as const;
 
 type PaletteKey = keyof typeof lightPalette;
 
