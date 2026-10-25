@@ -1935,6 +1935,23 @@
                   "postalCode"
                 ]
               },
+              "deliveryInspection": {
+                "type": "object",
+                "properties": {
+                  "openBoxAllowed": {
+                    "type": "boolean"
+                  },
+                  "inspectionMinutes": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 30
+                  }
+                },
+                "required": [
+                  "openBoxAllowed",
+                  "inspectionMinutes"
+                ]
+              },
               "payment": {
                 "type": [
                   "object",
@@ -2574,6 +2591,23 @@
               "postalCode"
             ]
           },
+          "deliveryInspection": {
+            "type": "object",
+            "properties": {
+              "openBoxAllowed": {
+                "type": "boolean"
+              },
+              "inspectionMinutes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 30
+              }
+            },
+            "required": [
+              "openBoxAllowed",
+              "inspectionMinutes"
+            ]
+          },
           "payment": {
             "type": [
               "object",
@@ -2980,6 +3014,7 @@
           "shopName",
           "customer",
           "deliveryAddress",
+          "deliveryInspection",
           "payment",
           "status",
           "subtotal",
@@ -3801,6 +3836,23 @@
               "postalCode"
             ]
           },
+          "deliveryInspection": {
+            "type": "object",
+            "properties": {
+              "openBoxAllowed": {
+                "type": "boolean"
+              },
+              "inspectionMinutes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 30
+              }
+            },
+            "required": [
+              "openBoxAllowed",
+              "inspectionMinutes"
+            ]
+          },
           "payment": {
             "type": [
               "object",
@@ -4477,6 +4529,23 @@
                   "upazila",
                   "unionName",
                   "postalCode"
+                ]
+              },
+              "deliveryInspection": {
+                "type": "object",
+                "properties": {
+                  "openBoxAllowed": {
+                    "type": "boolean"
+                  },
+                  "inspectionMinutes": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 30
+                  }
+                },
+                "required": [
+                  "openBoxAllowed",
+                  "inspectionMinutes"
                 ]
               },
               "payment": {
@@ -7620,6 +7689,41 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "addressId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "deliveryLocation": {
+                    "type": "object",
+                    "properties": {
+                      "division": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 100
+                      },
+                      "district": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 100
+                      },
+                      "upazila": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 100
+                      },
+                      "union": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 100
+                      }
+                    },
+                    "required": [
+                      "division",
+                      "district",
+                      "upazila",
+                      "union"
+                    ]
+                  },
                   "couponCode": {
                     "type": [
                       "string",
@@ -16707,6 +16811,46 @@
                         "outsideDistrictMinor"
                       ]
                     },
+                    "serviceableZones": {
+                      "type": "object",
+                      "properties": {
+                        "sameUnion": {
+                          "type": "boolean"
+                        },
+                        "sameUpazila": {
+                          "type": "boolean"
+                        },
+                        "sameDistrict": {
+                          "type": "boolean"
+                        },
+                        "outsideDistrict": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "sameUnion",
+                        "sameUpazila",
+                        "sameDistrict",
+                        "outsideDistrict"
+                      ]
+                    },
+                    "inspectionPolicy": {
+                      "type": "object",
+                      "properties": {
+                        "openBoxAllowed": {
+                          "type": "boolean"
+                        },
+                        "inspectionMinutes": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 30
+                        }
+                      },
+                      "required": [
+                        "openBoxAllowed",
+                        "inspectionMinutes"
+                      ]
+                    },
                     "estimatedDays": {
                       "type": "object",
                       "properties": {
@@ -16736,9 +16880,126 @@
                     "freeDeliveryThresholdMinor",
                     "baseLocation",
                     "zoneFees",
+                    "serviceableZones",
+                    "inspectionPolicy",
                     "estimatedDays",
                     "version"
                   ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/delivery/pickup-points": {
+      "get": {
+        "tags": [
+          "Delivery"
+        ],
+        "responses": {
+          "200": {
+            "description": "Active customer pickup points",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "phone": {
+                        "type": "string"
+                      },
+                      "address": {
+                        "type": "string"
+                      },
+                      "division": {
+                        "type": "string"
+                      },
+                      "district": {
+                        "type": "string"
+                      },
+                      "upazila": {
+                        "type": "string"
+                      },
+                      "unionName": {
+                        "type": "string"
+                      },
+                      "instructions": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "active": {
+                        "type": "boolean"
+                      },
+                      "version": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "phone",
+                      "address",
+                      "division",
+                      "district",
+                      "upazila",
+                      "unionName",
+                      "instructions",
+                      "active",
+                      "version"
+                    ]
+                  }
                 }
               }
             }
@@ -17048,6 +17309,46 @@
                         "outsideDistrictMinor"
                       ]
                     },
+                    "serviceableZones": {
+                      "type": "object",
+                      "properties": {
+                        "sameUnion": {
+                          "type": "boolean"
+                        },
+                        "sameUpazila": {
+                          "type": "boolean"
+                        },
+                        "sameDistrict": {
+                          "type": "boolean"
+                        },
+                        "outsideDistrict": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "sameUnion",
+                        "sameUpazila",
+                        "sameDistrict",
+                        "outsideDistrict"
+                      ]
+                    },
+                    "inspectionPolicy": {
+                      "type": "object",
+                      "properties": {
+                        "openBoxAllowed": {
+                          "type": "boolean"
+                        },
+                        "inspectionMinutes": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 30
+                        }
+                      },
+                      "required": [
+                        "openBoxAllowed",
+                        "inspectionMinutes"
+                      ]
+                    },
                     "estimatedDays": {
                       "type": "object",
                       "properties": {
@@ -17077,6 +17378,8 @@
                     "freeDeliveryThresholdMinor",
                     "baseLocation",
                     "zoneFees",
+                    "serviceableZones",
+                    "inspectionPolicy",
                     "estimatedDays",
                     "version"
                   ]
@@ -17210,6 +17513,46 @@
                       "outsideDistrictMinor"
                     ]
                   },
+                  "serviceableZones": {
+                    "type": "object",
+                    "properties": {
+                      "sameUnion": {
+                        "type": "boolean"
+                      },
+                      "sameUpazila": {
+                        "type": "boolean"
+                      },
+                      "sameDistrict": {
+                        "type": "boolean"
+                      },
+                      "outsideDistrict": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "sameUnion",
+                      "sameUpazila",
+                      "sameDistrict",
+                      "outsideDistrict"
+                    ]
+                  },
+                  "inspectionPolicy": {
+                    "type": "object",
+                    "properties": {
+                      "openBoxAllowed": {
+                        "type": "boolean"
+                      },
+                      "inspectionMinutes": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 30
+                      }
+                    },
+                    "required": [
+                      "openBoxAllowed",
+                      "inspectionMinutes"
+                    ]
+                  },
                   "estimatedDays": {
                     "type": "object",
                     "properties": {
@@ -17240,6 +17583,8 @@
                   "freeDeliveryThresholdMinor",
                   "baseLocation",
                   "zoneFees",
+                  "serviceableZones",
+                  "inspectionPolicy",
                   "estimatedDays",
                   "expectedVersion"
                 ]
@@ -17322,6 +17667,46 @@
                         "outsideDistrictMinor"
                       ]
                     },
+                    "serviceableZones": {
+                      "type": "object",
+                      "properties": {
+                        "sameUnion": {
+                          "type": "boolean"
+                        },
+                        "sameUpazila": {
+                          "type": "boolean"
+                        },
+                        "sameDistrict": {
+                          "type": "boolean"
+                        },
+                        "outsideDistrict": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "sameUnion",
+                        "sameUpazila",
+                        "sameDistrict",
+                        "outsideDistrict"
+                      ]
+                    },
+                    "inspectionPolicy": {
+                      "type": "object",
+                      "properties": {
+                        "openBoxAllowed": {
+                          "type": "boolean"
+                        },
+                        "inspectionMinutes": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 30
+                        }
+                      },
+                      "required": [
+                        "openBoxAllowed",
+                        "inspectionMinutes"
+                      ]
+                    },
                     "estimatedDays": {
                       "type": "object",
                       "properties": {
@@ -17351,7 +17736,513 @@
                     "freeDeliveryThresholdMinor",
                     "baseLocation",
                     "zoneFees",
+                    "serviceableZones",
+                    "inspectionPolicy",
                     "estimatedDays",
+                    "version"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/pickup-points": {
+      "get": {
+        "tags": [
+          "Operations"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All configured pickup points",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "phone": {
+                        "type": "string"
+                      },
+                      "address": {
+                        "type": "string"
+                      },
+                      "division": {
+                        "type": "string"
+                      },
+                      "district": {
+                        "type": "string"
+                      },
+                      "upazila": {
+                        "type": "string"
+                      },
+                      "unionName": {
+                        "type": "string"
+                      },
+                      "instructions": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "active": {
+                        "type": "boolean"
+                      },
+                      "version": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "phone",
+                      "address",
+                      "division",
+                      "district",
+                      "upazila",
+                      "unionName",
+                      "instructions",
+                      "active",
+                      "version"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Operations"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 120
+                  },
+                  "phone": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 20
+                  },
+                  "address": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 500
+                  },
+                  "division": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "district": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "upazila": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "unionName": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "instructions": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 500,
+                    "default": null
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "name",
+                  "phone",
+                  "address",
+                  "division",
+                  "district",
+                  "upazila",
+                  "unionName",
+                  "active"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Pickup point created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "phone": {
+                      "type": "string"
+                    },
+                    "address": {
+                      "type": "string"
+                    },
+                    "division": {
+                      "type": "string"
+                    },
+                    "district": {
+                      "type": "string"
+                    },
+                    "upazila": {
+                      "type": "string"
+                    },
+                    "unionName": {
+                      "type": "string"
+                    },
+                    "instructions": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "active": {
+                      "type": "boolean"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "phone",
+                    "address",
+                    "division",
+                    "district",
+                    "upazila",
+                    "unionName",
+                    "instructions",
+                    "active",
+                    "version"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/pickup-points/{id}": {
+      "put": {
+        "tags": [
+          "Operations"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 120
+                  },
+                  "phone": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 20
+                  },
+                  "address": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 500
+                  },
+                  "division": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "district": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "upazila": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "unionName": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "instructions": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 500,
+                    "default": null
+                  },
+                  "active": {
+                    "type": "boolean"
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "name",
+                  "phone",
+                  "address",
+                  "division",
+                  "district",
+                  "upazila",
+                  "unionName",
+                  "active",
+                  "expectedVersion"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Pickup point updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "phone": {
+                      "type": "string"
+                    },
+                    "address": {
+                      "type": "string"
+                    },
+                    "division": {
+                      "type": "string"
+                    },
+                    "district": {
+                      "type": "string"
+                    },
+                    "upazila": {
+                      "type": "string"
+                    },
+                    "unionName": {
+                      "type": "string"
+                    },
+                    "instructions": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "active": {
+                      "type": "boolean"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "phone",
+                    "address",
+                    "division",
+                    "district",
+                    "upazila",
+                    "unionName",
+                    "instructions",
+                    "active",
                     "version"
                   ]
                 }

@@ -7,6 +7,9 @@ import { paginatedResponseSchema } from "./pagination.js";
 export const shipmentStatusSchema = z.enum(["PENDING", "READY_TO_SHIP", "PICKED_UP", "IN_TRANSIT", "DELIVERED", "FAILED", "CANCELLED"]);
 export const dispatchStatusSchema = z.enum(["PENDING", "DISPATCHED", "ACCEPTED", "FAILED", "CANCELLED"]);
 export const deliveryInspectionPolicySchema = z.object({ openBoxAllowed: z.boolean(), inspectionMinutes: z.number().int().min(0).max(30) });
+export const pickupPointSchema = z.object({ id: uuidSchema, name: z.string(), phone: z.string(), address: z.string(), division: z.string(), district: z.string(), upazila: z.string(), unionName: z.string(), instructions: z.string().nullable(), active: z.boolean(), version: versionSchema });
+export const pickupPointInputSchema = z.object({ name: z.string().trim().min(2).max(120), phone: z.string().trim().min(8).max(20), address: z.string().trim().min(5).max(500), division: z.string().trim().min(2).max(100), district: z.string().trim().min(2).max(100), upazila: z.string().trim().min(2).max(100), unionName: z.string().trim().min(2).max(100), instructions: z.string().trim().max(500).nullable().default(null), active: z.boolean() });
+export const pickupPointUpdateSchema = pickupPointInputSchema.extend({ expectedVersion: versionSchema });
 
 export const vendorOrderTransitionSchema = z.object({
   status: vendorOrderStatusSchema,
@@ -160,5 +163,7 @@ export type DeliveryRetryInput = z.infer<typeof deliveryRetryInputSchema>;
 export type DeliveryQueueItem = z.infer<typeof deliveryQueueItemSchema>;
 export type DeliveryRetryResult = z.infer<typeof deliveryRetryResultSchema>;
 export type DeliverySettingsInput = z.infer<typeof deliverySettingsInputSchema>;
+export type PickupPointInput = z.infer<typeof pickupPointInputSchema>;
+export type PickupPointUpdate = z.infer<typeof pickupPointUpdateSchema>;
 export type ServiceabilityInput = z.infer<typeof serviceabilityInputSchema>;
 export type AmiyoDeliveryCallback = z.infer<typeof amiyoDeliveryCallbackSchema>;

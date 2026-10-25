@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { checkoutQuoteInputSchema } from "./commerce.js";
-import { deliverySettingsInputSchema, deliverySettingsSchema } from "./delivery.js";
+import { deliverySettingsInputSchema, deliverySettingsSchema, pickupPointInputSchema } from "./delivery.js";
 
 const zones = { sameUnion: true, sameUpazila: true, sameDistrict: false, outsideDistrict: false };
 const settings = {
@@ -31,4 +31,11 @@ test("delivery inspection policy is bounded and closed-box safe", () => {
 test("guest quotes accept a complete unsaved delivery location", () => {
   assert.equal(checkoutQuoteInputSchema.safeParse({ deliveryLocation: { division: "Dhaka", district: "Dhaka", upazila: "Savar", union: "Birulia" } }).success, true);
   assert.equal(checkoutQuoteInputSchema.safeParse({ deliveryLocation: { division: "Dhaka", district: "", upazila: "Savar", union: "Birulia" } }).success, false);
+});
+
+test("pickup points require a dispatch-ready local contact", () => {
+  const point = { name: "Hnila Bazaar", phone: "01700000000", address: "Main road counter", division: "Chattogram", district: "Cox's Bazar", upazila: "Teknaf", unionName: "Hnila", instructions: "Bring order number", active: true };
+  assert.equal(pickupPointInputSchema.safeParse(point).success, true);
+  assert.equal(pickupPointInputSchema.safeParse({ ...point, phone: "123" }).success, false);
+  assert.equal(pickupPointInputSchema.safeParse({ ...point, unionName: "" }).success, false);
 });

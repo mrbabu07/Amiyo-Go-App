@@ -12,6 +12,9 @@ test("admin controls and sellers see the delivery inspection policy", () => {
   assert.match(admin, /Allow open-box delivery/);
   assert.match(admin, /inspectionPolicy:/);
   assert.match(admin, /Closed-box delivery/);
+  assert.match(admin, /Customer pickup points/);
+  assert.match(admin, /createAdminPickupPoint/);
+  assert.match(admin, /updateAdminPickupPoint/);
   assert.match(seller, /Parcel inspection/);
   assert.match(seller, /deliveryInspection\.openBoxAllowed/);
   assert.match(customer, /This promise was saved when you placed the order/);
