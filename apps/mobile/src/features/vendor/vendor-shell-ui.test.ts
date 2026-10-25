@@ -73,6 +73,12 @@ test("seller dashboard exposes live operational hierarchy", () => {
   assert.match(dashboard, /useWindowDimensions\(\)\.width < 980/);
   assert.match(dashboard, /getVendorWorkspace/);
   assert.match(dashboard, /getVendorReport/);
+  assert.match(dashboard, /filterVendorTargets\(actions, session\.permissions\)/);
+  assert.match(dashboard, /filterVendorTargets\(quickActions, session\.permissions\)/);
+  assert.match(dashboard, /canAccessVendorPath\("\/vendor\/products\/add", session\.permissions\)/);
+  assert.match(dashboard, /canAccessVendorPath\("\/vendor\/orders", session\.permissions\)/);
+  assert.match(dashboard, /canAddProduct \? <Pressable/);
+  assert.match(dashboard, /canManageOrders \? <>/);
   assert.doesNotMatch(dashboard, /getVendorOrders/);
   assert.match(dashboard, /report\.data\?\.recentOrders/);
   assert.match(dashboard, /formatMinor\(order\.totalMinor\)/);
