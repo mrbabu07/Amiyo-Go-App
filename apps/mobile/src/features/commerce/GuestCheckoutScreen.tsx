@@ -39,14 +39,15 @@ export function GuestCheckoutScreen() {
   const [codPhoneConfirmed, setCodPhoneConfirmed] = useState(false);
   const platform = useQuery({ queryKey: ["platform", "public-settings"], queryFn: getPublicPlatformSettings, staleTime: 5 * 60_000 });
   const [form, setForm] = useState({ name: "", email: "", phone: "", line1: "", line2: "", division: "Dhaka", district: "", upazila: "", unionName: "", postalCode: "" });
+  const [quoteLocation, setQuoteLocation] = useState<{ division: string; district: string; upazila: string; union: string } | null>(null);
   const [starting, setStarting] = useState(!user);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const availableMethods = paymentMethods.filter((method) => paymentMethodEnabled(platform.data, method.value));
   const village = platform.data?.villageOperations;
   const policyError = checkoutPolicyError(platform.error ? undefined : platform.data, paymentMethod, codPhoneConfirmed, form);
-  const submitDisabled = busy || Boolean(policyError);
-  const quote = useQuery({ queryKey: ["checkout", "guest-quote", couponCode, user?.uid], queryFn: () => getCheckoutQuote(user!, couponCode), enabled: Boolean(user) });
+  const quote = useQuery({ queryKey: ["checkout", "guest-quote", couponCode, user?.uid, quoteLocation], queryFn: () => getCheckoutQuote(user!, couponCode, "0", null, quoteLocation), enabled: Boolean(user), placeholderData: (previous) => previous });
+  const submitDisabled = busy || Boolean(policyError) || quote.isError || quote.isFetching;
 
   useEffect(() => {
     if (user) { setStarting(false); return; }
@@ -54,9 +55,14 @@ export function GuestCheckoutScreen() {
     void ensureGuestUser().catch((caught: unknown) => { if (!activeUid.current) setError(caught instanceof Error ? caught.message : "Guest checkout is unavailable"); }).finally(() => { if (!activeUid.current) setStarting(false); });
   }, [user]);
   useEffect(() => { setCodPhoneConfirmed(false); setCouponCode(params.couponCode?.toUpperCase() || null); setError(null); submitLock.current = false; deliveryAddresses.current.clear(); }, [user?.uid]);
+  useEffect(() => {
+    const complete = [form.division, form.district, form.upazila, form.unionName].every((value) => value.trim().length >= 2);
+    const timer = setTimeout(() => setQuoteLocation(complete ? { division: form.division.trim(), district: form.district.trim(), upazila: form.upazila.trim(), union: form.unionName.trim() } : null), 350);
+    return () => clearTimeout(timer);
+  }, [form.district, form.division, form.unionName, form.upazila]);
 
   function update(key: keyof typeof form, value: string) { if (key === "phone") setCodPhoneConfirmed(false); setForm((current) => ({ ...current, [key]: value })); }
-  async function applyCoupon(code: string) { if (!user) return; const ownerUid = user.uid; const next = await getCheckoutQuote(user, code); if (activeUid.current !== ownerUid) return; queryClient.setQueryData(["checkout", "guest-quote", code, ownerUid], next); setCouponCode(code); }
+  async function applyCoupon(code: string) { if (!user) return; const ownerUid = user.uid; const next = await getCheckoutQuote(user, code, "0", null, quoteLocation); if (activeUid.current !== ownerUid) return; queryClient.setQueryData(["checkout", "guest-quote", code, ownerUid, quoteLocation], next); setCouponCode(code); }
   async function submit() {
     if (submitLock.current) return;
     if (policyError) { setError(policyError); return; }
@@ -87,10 +93,10 @@ export function GuestCheckoutScreen() {
   if (user && recovery.error) return <Screen eyebrow="CHECKOUT RECOVERY" title="Check your orders first" description={recovery.error.message}><Pressable onPress={() => router.push("/orders")} style={styles.primary}><Text style={styles.primaryText}>View my orders</Text></Pressable></Screen>;
   if (user && recovery.data) return <CheckoutRecovery user={user} pending={recovery.data} />;
   if (starting || quote.isLoading || (user && recovery.isPending)) return <Screen eyebrow="GUEST CHECKOUT" title="Preparing secure checkout" description="Creating a protected guest session and confirming current prices."><View style={styles.center}><ActivityIndicator color={colors.primary} size="large" /></View></Screen>;
-  if (!user || quote.error || !quote.data) return <Screen eyebrow="GUEST CHECKOUT" title="Checkout unavailable" description={error || (quote.error instanceof Error ? quote.error.message : "Please return to your cart.")}><View style={styles.center}><Pressable onPress={() => router.replace("/cart")} style={styles.primary}><Text style={styles.primaryText}>Back to cart</Text></Pressable></View></Screen>;
+  if (!user || !quote.data) return <Screen eyebrow="GUEST CHECKOUT" title="Checkout unavailable" description={error || (quote.error instanceof Error ? quote.error.message : "Please return to your cart.")}><View style={styles.center}><Pressable onPress={() => router.replace("/cart")} style={styles.primary}><Text style={styles.primaryText}>Back to cart</Text></Pressable></View></Screen>;
 
   return <Screen eyebrow="GUEST CHECKOUT" title="Delivery and payment" description="Complete your order without creating a password. This browser keeps access to your order.">
-    {error || policyError ? <Text accessibilityRole="alert" style={styles.error}>{error || policyError}</Text> : null}
+    {error || policyError || quote.error ? <Text accessibilityRole="alert" style={styles.error}>{error || policyError || (quote.error instanceof Error ? quote.error.message : "Delivery quote could not be refreshed")}</Text> : null}
     {platform.error ? <Pressable accessibilityRole="button" onPress={() => void platform.refetch()} style={styles.primary}><Text style={styles.primaryText}>Retry marketplace settings</Text></Pressable> : null}
     <View style={styles.columns}><View style={[styles.main, compact && { flex: 0, width: "100%", minWidth: 0 }]}>
       <Section title="Contact information"><View style={styles.grid}><Field label="Full name *" value={form.name} onChangeText={(value) => update("name", value)} /><Field keyboardType="email-address" label="Email address *" value={form.email} onChangeText={(value) => update("email", value)} /><Field keyboardType="phone-pad" label="Phone number *" value={form.phone} onChangeText={(value) => update("phone", value)} /></View><Pressable onPress={() => router.push("/login")}><Text style={styles.link}>Already have an account? Sign in</Text></Pressable></Section>

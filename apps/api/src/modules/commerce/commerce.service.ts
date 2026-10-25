@@ -182,9 +182,10 @@ export class CommerceService {
     for (const item of cart.items) if (!item.variant.inventory || item.quantity > item.variant.inventory.onHand - item.variant.inventory.reserved) throw new ApiProblem(409, "INSUFFICIENT_STOCK", `${item.product.name} is no longer available in that quantity`);
     const flashPrices = await activeFlashPrices(this.client, cart); const dto = cartDto(cart, flashPrices); const subtotal = BigInt(dto.subtotal.amountMinor); const vendors = new Set(cart.items.map((item) => item.product.vendorId)).size;
     let perVendorDelivery = BigInt(process.env.CHECKOUT_DELIVERY_FEE_MINOR || "6000");
-    if (input.addressId) {
-      const address = await this.client.address.findFirst({ where: { id: input.addressId, userId } });
-      if (!address) throw new ApiProblem(404, "ADDRESS_NOT_FOUND", "Delivery address not found");
+    if (input.addressId || input.deliveryLocation) {
+      const savedAddress = input.addressId ? await this.client.address.findFirst({ where: { id: input.addressId, userId } }) : null;
+      if (input.addressId && !savedAddress) throw new ApiProblem(404, "ADDRESS_NOT_FOUND", "Delivery address not found");
+      const address = savedAddress ? { division: savedAddress.division, district: savedAddress.district, upazila: savedAddress.upazila, unionName: savedAddress.unionName } : { division: input.deliveryLocation!.division, district: input.deliveryLocation!.district, upazila: input.deliveryLocation!.upazila, unionName: input.deliveryLocation!.union };
       const settings = await this.client.deliverySetting.upsert({ where: { key: "default" }, create: {}, update: {} });
       const same = (left: string | null, right: string) => (left ?? "").trim().localeCompare(right.trim(), undefined, { sensitivity: "accent" }) === 0;
       const zone = same(address.unionName, settings.baseUnion) && same(address.upazila, settings.baseUpazila) && same(address.district, settings.baseDistrict) ? "same_union" : same(address.upazila, settings.baseUpazila) && same(address.district, settings.baseDistrict) ? "same_upazila" : same(address.district, settings.baseDistrict) ? "same_district" : "outside_district";

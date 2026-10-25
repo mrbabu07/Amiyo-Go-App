@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { checkoutQuoteInputSchema } from "./commerce.js";
 import { deliverySettingsInputSchema, deliverySettingsSchema } from "./delivery.js";
 
 const zones = { sameUnion: true, sameUpazila: true, sameDistrict: false, outsideDistrict: false };
@@ -18,4 +19,9 @@ test("admin delivery updates require an explicit decision for every zone", () =>
   const { key: _key, version, ...input } = settings;
   assert.equal(deliverySettingsInputSchema.safeParse({ ...input, expectedVersion: version }).success, true);
   assert.equal(deliverySettingsInputSchema.safeParse({ ...input, serviceableZones: { sameUnion: true }, expectedVersion: version }).success, false);
+});
+
+test("guest quotes accept a complete unsaved delivery location", () => {
+  assert.equal(checkoutQuoteInputSchema.safeParse({ deliveryLocation: { division: "Dhaka", district: "Dhaka", upazila: "Savar", union: "Birulia" } }).success, true);
+  assert.equal(checkoutQuoteInputSchema.safeParse({ deliveryLocation: { division: "Dhaka", district: "", upazila: "Savar", union: "Birulia" } }).success, false);
 });

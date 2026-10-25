@@ -4,6 +4,7 @@ import test from "node:test";
 
 const admin = readFileSync(new URL("./AdminDeliverySettingsScreen.tsx", import.meta.url), "utf8");
 const checkout = readFileSync(new URL("../commerce/CheckoutScreen.tsx", import.meta.url), "utf8");
+const guestCheckout = readFileSync(new URL("../commerce/GuestCheckoutScreen.tsx", import.meta.url), "utf8");
 const api = readFileSync(new URL("../../../../api/src/modules/commerce/commerce.service.ts", import.meta.url), "utf8");
 
 test("admin can manually enable every geographic delivery zone", () => {
@@ -15,4 +16,11 @@ test("selected checkout address refreshes the quote and disabled zones are rejec
   assert.match(checkout, /loyaltyPoints, addressId/);
   assert.match(api, /DELIVERY_AREA_UNAVAILABLE/);
   assert.match(api, /deliverySettings\.outsideDistrictEnabled/);
+});
+
+test("guest checkout debounces unsaved location quotes without trapping address correction", () => {
+  assert.match(guestCheckout, /setTimeout\(\(\) => setQuoteLocation/);
+  assert.match(guestCheckout, /placeholderData: \(previous\) => previous/);
+  assert.match(guestCheckout, /getCheckoutQuote\(user!, couponCode, "0", null, quoteLocation\)/);
+  assert.doesNotMatch(guestCheckout, /if \(!user \|\| quote\.error \|\| !quote\.data\)/);
 });
