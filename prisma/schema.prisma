@@ -556,6 +556,7 @@ model Category {
   status            String                  @default("active")
   displayOrder      Int                     @default(0) @map("display_order")
   commissionRateBps Int                     @default(0) @map("commission_rate_bps")
+  returnPolicy      Json?                   @map("return_policy")
   version           Int                     @default(1)
   createdAt         DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime                @updatedAt @map("updated_at") @db.Timestamptz(3)

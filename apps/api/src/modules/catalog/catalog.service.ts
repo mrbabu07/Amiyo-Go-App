@@ -60,10 +60,13 @@ function productSummary(product: PublicProduct | PublicProductSummary) {
 }
 
 function productDetail(product: PublicProduct) {
+  const rawPolicy = product.category.returnPolicy;
+  const returnPolicy = rawPolicy && typeof rawPolicy === "object" && !Array.isArray(rawPolicy) && typeof rawPolicy.returnable === "boolean" && Number.isInteger(rawPolicy.windowDays) && Number(rawPolicy.windowDays) >= 1 && Number(rawPolicy.windowDays) <= 90 && typeof rawPolicy.requireEvidence === "boolean" ? { returnable: rawPolicy.returnable, windowDays: Number(rawPolicy.windowDays), requireEvidence: rawPolicy.requireEvidence } : null;
   return {
     ...productSummary(product),
     description: product.description,
     dynamicAttributes: product.dynamicAttributes as Record<string, unknown> | null,
+    returnPolicy,
     variants: product.variants.map((variant) => ({
       id: variant.id,
       sku: variant.sku,

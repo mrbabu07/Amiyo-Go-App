@@ -3,6 +3,7 @@ import type { CatalogQuery } from "@amiyo/contracts";
 
 export const publicProductInclude = {
   shop: true,
+  category: { select: { returnPolicy: true } },
   media: { orderBy: { displayOrder: "asc" as const } },
   variants: { where: { active: true }, orderBy: { priceMinor: "asc" as const }, include: { inventory: true } },
   _count: { select: { reviews: true } }

@@ -60,6 +60,7 @@ export const productSummarySchema = z.object({
 export const productDetailSchema = productSummarySchema.extend({
   description: z.string().nullable(),
   dynamicAttributes: z.record(z.string(), z.unknown()).nullable(),
+  returnPolicy: z.object({ returnable: z.boolean(), windowDays: z.number().int().min(1).max(90), requireEvidence: z.boolean() }).nullable(),
   variants: z.array(productVariantSchema),
   media: z.array(z.object({
     id: uuidSchema,
