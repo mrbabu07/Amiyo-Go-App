@@ -5,6 +5,13 @@ test("admin cannot suspend their own account", async () => { await assert.reject
 test("admin cannot change their own platform roles", async () => { await assert.rejects(() => new AdminService({} as PrismaClient).updateUserRoles(admin, userId, { roles: [], reason: "Access review" }), /cannot change your own platform roles/); });
 test("customer cannot read marketplace analytics", async () => { await assert.rejects(() => new AdminService({} as PrismaClient).analytics(customer, { range: "30d" }), /admin:read access is required/); });
 test("customer cannot read admin commerce workspaces", async () => { await assert.rejects(() => new AdminService({} as PrismaClient).commerce(customer), /admin:read access is required/); });
+test("admin vendor performance is vendor-scoped and evidence based", async () => {
+  const vendorId = "33333333-3333-4333-8333-333333333333"; const createdAt = new Date("2026-10-20T00:00:00.000Z");
+  const client = { vendor: { findUnique: async ({ where }: any) => where.id === vendorId ? { id: vendorId } : null }, vendorOrder: { groupBy: async () => [{ status: "DELIVERED", _count: { _all: 9 } }, { status: "CANCELLED", _count: { _all: 1 } }], findMany: async () => [{ createdAt, shipments: [{ shippedAt: new Date("2026-10-21T00:00:00.000Z") }] }] }, return: { count: async () => 0 }, review: { aggregate: async () => ({ _avg: { rating: 4.8 }, _count: { _all: 12 } }) } } as unknown as PrismaClient;
+  const result = await new AdminService(client).vendorPerformance(admin, vendorId, 30);
+  assert.equal(result.fulfilment.value, 90); assert.equal(result.onTimeDispatch.value, 100); assert.equal(result.rating.value, 4.8); assert.equal(result.tier, "good");
+  await assert.rejects(() => new AdminService(client).vendorPerformance(customer, vendorId), /admin:read access is required/);
+});
 test("admin analytics derives bigint-safe metrics and customer segments", async () => {
   let userCountCall = 0;
   const client = {

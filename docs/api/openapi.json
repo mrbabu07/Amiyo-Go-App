@@ -32396,6 +32396,207 @@
                         "minimum": 0
                       }
                     },
+                    "performance": {
+                      "type": "object",
+                      "properties": {
+                        "score": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 100
+                        },
+                        "tier": {
+                          "type": "string",
+                          "enum": [
+                            "excellent",
+                            "good",
+                            "needs_attention",
+                            "new_seller"
+                          ]
+                        },
+                        "dispatchSlaHours": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0
+                        },
+                        "fulfilment": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "target": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "sampleSize": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "healthy",
+                                "watch",
+                                "action_required",
+                                "not_enough_data"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "value",
+                            "target",
+                            "sampleSize",
+                            "state"
+                          ]
+                        },
+                        "cancellation": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "target": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "sampleSize": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "healthy",
+                                "watch",
+                                "action_required",
+                                "not_enough_data"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "value",
+                            "target",
+                            "sampleSize",
+                            "state"
+                          ]
+                        },
+                        "returns": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "target": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "sampleSize": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "healthy",
+                                "watch",
+                                "action_required",
+                                "not_enough_data"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "value",
+                            "target",
+                            "sampleSize",
+                            "state"
+                          ]
+                        },
+                        "onTimeDispatch": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "target": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "sampleSize": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "healthy",
+                                "watch",
+                                "action_required",
+                                "not_enough_data"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "value",
+                            "target",
+                            "sampleSize",
+                            "state"
+                          ]
+                        },
+                        "rating": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "target": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "sampleSize": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "healthy",
+                                "watch",
+                                "action_required",
+                                "not_enough_data"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "value",
+                            "target",
+                            "sampleSize",
+                            "state"
+                          ]
+                        },
+                        "recommendations": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "maxItems": 5
+                        }
+                      },
+                      "required": [
+                        "score",
+                        "tier",
+                        "dispatchSlaHours",
+                        "fulfilment",
+                        "cancellation",
+                        "returns",
+                        "onTimeDispatch",
+                        "rating",
+                        "recommendations"
+                      ]
+                    },
                     "recentOrders": {
                       "type": "array",
                       "items": {
@@ -32450,6 +32651,7 @@
                     "productCount",
                     "lowStockCount",
                     "statusCounts",
+                    "performance",
                     "recentOrders"
                   ]
                 }
@@ -35303,6 +35505,289 @@
                     "vendors",
                     "kyc",
                     "trustCases"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/workspace/vendors/{id}/performance": {
+      "get": {
+        "tags": [
+          "Admin Trust"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 7,
+              "maximum": 365
+            },
+            "required": false,
+            "name": "days",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Evidence-backed seller performance scorecard",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "score": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "tier": {
+                      "type": "string",
+                      "enum": [
+                        "excellent",
+                        "good",
+                        "needs_attention",
+                        "new_seller"
+                      ]
+                    },
+                    "dispatchSlaHours": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "fulfilment": {
+                      "type": "object",
+                      "properties": {
+                        "value": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "target": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "sampleSize": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "healthy",
+                            "watch",
+                            "action_required",
+                            "not_enough_data"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "value",
+                        "target",
+                        "sampleSize",
+                        "state"
+                      ]
+                    },
+                    "cancellation": {
+                      "type": "object",
+                      "properties": {
+                        "value": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "target": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "sampleSize": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "healthy",
+                            "watch",
+                            "action_required",
+                            "not_enough_data"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "value",
+                        "target",
+                        "sampleSize",
+                        "state"
+                      ]
+                    },
+                    "returns": {
+                      "type": "object",
+                      "properties": {
+                        "value": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "target": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "sampleSize": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "healthy",
+                            "watch",
+                            "action_required",
+                            "not_enough_data"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "value",
+                        "target",
+                        "sampleSize",
+                        "state"
+                      ]
+                    },
+                    "onTimeDispatch": {
+                      "type": "object",
+                      "properties": {
+                        "value": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "target": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "sampleSize": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "healthy",
+                            "watch",
+                            "action_required",
+                            "not_enough_data"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "value",
+                        "target",
+                        "sampleSize",
+                        "state"
+                      ]
+                    },
+                    "rating": {
+                      "type": "object",
+                      "properties": {
+                        "value": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "target": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "sampleSize": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "healthy",
+                            "watch",
+                            "action_required",
+                            "not_enough_data"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "value",
+                        "target",
+                        "sampleSize",
+                        "state"
+                      ]
+                    },
+                    "recommendations": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "maxItems": 5
+                    }
+                  },
+                  "required": [
+                    "score",
+                    "tier",
+                    "dispatchSlaHours",
+                    "fulfilment",
+                    "cancellation",
+                    "returns",
+                    "onTimeDispatch",
+                    "rating",
+                    "recommendations"
                   ]
                 }
               }

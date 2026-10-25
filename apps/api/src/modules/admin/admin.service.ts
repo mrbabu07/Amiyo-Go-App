@@ -6,6 +6,7 @@ import { ApiProblem } from "../../middleware/api-problem.js";
 import { businessRulesCreateData, defaultBusinessRules, parseBusinessRules, serializeBusinessRules } from "./business-rules-config.js";
 import { consumeOrderReservations } from "../commerce/inventory-reservation.js";
 import { buildInvoiceQrPayload, verifyDocumentQrPayload } from "../orders/document-qr.js";
+import { buildVendorPerformance } from "../vendor/vendor-performance.js";
 
 function requireAdmin(session: Session, write = false) {
   const permission = write ? "admin:manage" : "admin:read";
@@ -48,6 +49,25 @@ export class AdminService {
       kyc: kyc.map((submission) => ({ id: submission.id, vendorId: submission.vendorId, vendorName: submission.vendor.displayName, status: submission.status, submittedAt: submission.submittedAt?.toISOString() ?? null, rejectionReason: submission.rejectionReason, documents: submission.documents.map((document) => ({ id: document.id, documentType: document.documentType, mimeType: document.mimeType })) })),
       trustCases: trustCases.map((trustCase) => ({ id: trustCase.id, subjectType: trustCase.subjectType, subjectId: trustCase.subjectId, caseType: trustCase.caseType, severity: trustCase.severity, status: trustCase.status, assignedTo: trustCase.assignedTo, summary: trustCase.summary, createdAt: trustCase.createdAt.toISOString(), actions: trustCase.actions.map((action) => ({ id: action.id, actionType: action.actionType, actorUserId: action.actorUserId, reason: action.reason, createdAt: action.createdAt.toISOString() })) }))
     };
+  }
+  async vendorPerformance(session: Session, vendorId: string, days = 30) {
+    requireAdmin(session);
+    const vendor = await this.client.vendor.findUnique({ where: { id: vendorId }, select: { id: true } });
+    if (!vendor) throw new ApiProblem(404, "VENDOR_NOT_FOUND", "Vendor not found");
+    const since = new Date(Date.now() - days * 24 * 60 * 60_000);
+    const where = { vendorId, createdAt: { gte: since } };
+    const dispatchSlaHours = 48;
+    const [statusRows, returnCount, dispatchRows, ratingAggregate] = await Promise.all([
+      this.client.vendorOrder.groupBy({ by: ["status"], where, _count: { _all: true } }),
+      this.client.return.count({ where: { vendorOrder: { vendorId }, createdAt: { gte: since } } }),
+      this.client.vendorOrder.findMany({ where: { ...where, shipments: { some: { shippedAt: { not: null } } } }, select: { createdAt: true, shipments: { select: { shippedAt: true }, take: 1 } } }),
+      this.client.review.aggregate({ where: { product: { vendorId }, status: "published", createdAt: { gte: since } }, _avg: { rating: true }, _count: { _all: true } })
+    ]);
+    const statusCounts = Object.fromEntries(statusRows.map((row) => [row.status, row._count._all]));
+    return buildVendorPerformance({
+      orderCount: statusRows.reduce((sum, row) => sum + row._count._all, 0), deliveredCount: statusCounts.DELIVERED ?? 0, cancelledCount: statusCounts.CANCELLED ?? 0, rejectedCount: statusCounts.REJECTED ?? 0, returnCount, dispatchSlaHours,
+      dispatchRows: dispatchRows.map((row) => ({ createdAt: row.createdAt, shippedAt: row.shipments[0]?.shippedAt ?? null })), rating: ratingAggregate._avg.rating ?? 0, ratingCount: ratingAggregate._count._all
+    });
   }
   async customerDetail(session: Session, userId: string) {
     requireAdmin(session);

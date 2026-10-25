@@ -7,6 +7,10 @@ const source = readFileSync(new URL("./AdminVendorDetailScreen.tsx", import.meta
 test("admin vendor 360 stays readable and account safe on mobile", () => {
   assert.match(source, /useWindowDimensions\(\)\.width < 620/);
   assert.match(source, /\["admin", "workspace", userId\]/);
+  assert.match(source, /\["admin", "vendor-performance", userId, id\]/);
+  assert.match(source, /Seller performance/);
+  assert.match(source, /MARKETPLACE SCORE/);
+  assert.match(source, /compact && styles\.scoreGridCompact/);
   assert.match(source, /user\?\.uid !== userId/);
   assert.match(source, /compact && styles\.heroCompact/);
   assert.match(source, /compact && styles\.metricCompact/);
