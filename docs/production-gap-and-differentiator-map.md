@@ -2,7 +2,7 @@
 
 Current gate snapshot (2026-10-25): `npm run release:check` reports one unresolved business decision (`Data retention`) and five propagated high package nodes from two Expo build-tool advisories. API and worker runtime audits are clean. Android, iOS, finance-provider, restore, staging-smoke and retention-approval evidence remain missing. Older counts below are retained only as dated verification history.
 
-Current automated evidence (2026-10-26): the complete workspace and repository regression rebuilt the TypeScript workspaces and passed 1,105 tests: API 308, mobile 463, worker 55, config 10, contracts 85, domain 28, migration 2, observability 2, and repository hardening/integration 152. This proves the automated scope only; it does not replace the external evidence listed above.
+Current automated evidence (2026-10-26): the complete workspace and repository regression rebuilt the TypeScript workspaces and passed 1,106 tests: API 309, mobile 463, worker 55, config 10, contracts 85, domain 28, migration 2, observability 2, and repository hardening/integration 152. This proves the automated scope only; it does not replace the external evidence listed above.
 
 Village assisted-commerce follow-up (2026-10-25): authorized admins can search sellable in-stock variants from Customer 360 and prepare a customer's cart after a phone request. The customer still reviews address, delivery, discounts and payment, so the admin workflow never places an order or charges the customer. The operation is controlled by `villageOperations.assistedOrderingEnabled`, validates active customer and stock state, creates an in-app notification, and records the admin's reason in the audit trail.
 
@@ -23,6 +23,8 @@ Village pickup-point follow-up (2026-10-25): operations admins can create, edit 
 Shop follow follow-up (2026-10-26): signed-in customers can persistently follow or unfollow an active shop from its storefront without opening seller chat. Public storefronts expose the current follower count, follow state is account-scoped and idempotent, and signed-out customers are sent through authentication before any write.
 
 Shop service-policy follow-up (2026-10-26): every storefront now explains that manual delivery coverage and fees are confirmed at checkout, that returns use the product category's configured eligibility and window, and shows an evidence-backed public product-Q&A answer rate with its sample size. New shops show an explicit no-questions state instead of an invented response score.
+
+Multi-store cart follow-up (2026-10-26): cart responses now include the owning shop identity for every line and the customer cart groups products into seller packages with direct shop navigation and clear package-level delivery language. Checkout still submits the complete cart; the UI does not pretend to support partial seller selection without matching server-side order semantics.
 
 Category return-policy follow-up (2026-10-25): admins can now keep the global return policy or apply audited category-specific 7-day, 14-day, evidence-required, or non-returnable rules. Subcategories inherit the nearest valid parent rule while retaining their own override. Product details no longer make a hardcoded return promise, customer order items expose zero returnable quantity for excluded categories, and return creation revalidates every selected product on the server. Growth, live payment-provider work, and automated third-party logistics remain outside this change.
 

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { PrismaClient } from "@prisma/client";
 import type { Session } from "@amiyo/contracts";
-import { CommerceService, shopVacationActive } from "./commerce.service.js";
+import { cartDto, CommerceService, shopVacationActive } from "./commerce.service.js";
 
 const session = { principal: { userId: "11111111-1111-4111-8111-111111111111", roles: ["CUSTOMER"], vendorIds: [] }, status: "ACTIVE", email: null, phone: null, profile: { firstName: null, lastName: null, displayName: "Customer", avatarStorageKey: null, locale: "en", currency: "BDT" }, permissions: ["checkout:manage"], vendorMemberships: [] } as Session;
 const checkout = { addressId: "22222222-2222-4222-8222-222222222222", paymentMethod: "SSLCOMMERZ" as const };
@@ -32,4 +32,28 @@ test("shop vacation blocks only its active scheduled window", () => {
   assert.equal(shopVacationActive(settings, Date.parse("2026-10-21T12:00:00.000Z")), true);
   assert.equal(shopVacationActive(settings, Date.parse("2026-10-22T00:00:00.000Z")), false);
   assert.equal(shopVacationActive({ vacationMode: { ...settings.vacationMode, enabled: false } }, Date.parse("2026-10-21T12:00:00.000Z")), false);
+});
+
+test("cart response includes seller shop identity for package grouping", () => {
+  const updatedAt = new Date("2026-10-26T08:00:00.000Z");
+  const cart = cartDto({
+    id: "cart-1",
+    currency: "BDT",
+    updatedAt,
+    items: [{
+      id: "item-1",
+      productId: "product-1",
+      variantId: "variant-1",
+      quantity: 2,
+      product: { name: "Village Rice", shop: { id: "shop-1", name: "Amiyo Village Store", slug: "amiyo-village-store" } },
+      variant: { title: "5 kg", sku: "RICE-5KG", priceMinor: 85000n, currency: "BDT", inventory: { onHand: 12, reserved: 2 }, media: [] }
+    }]
+  } as unknown as Parameters<typeof cartDto>[0]);
+
+  assert.deepEqual(cart.items[0] && {
+    shopId: cart.items[0].shopId,
+    shopName: cart.items[0].shopName,
+    shopSlug: cart.items[0].shopSlug
+  }, { shopId: "shop-1", shopName: "Amiyo Village Store", shopSlug: "amiyo-village-store" });
+  assert.equal(cart.items[0]?.availableQuantity, 10);
 });

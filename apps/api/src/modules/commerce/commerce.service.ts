@@ -119,8 +119,8 @@ function allocateDiscount(subtotals: bigint[], discount: bigint) {
   return subtotals.map((subtotal, index) => { const value = index === subtotals.length - 1 ? discount - assigned : discount * subtotal / total; assigned += value; return value; });
 }
 
-function cartDto(cart: LoadedCart, flashPrices = new Map<string, FlashPrice>()) {
-  const items = cart.items.map((item) => { const priceMinor = itemPrice(item, flashPrices); return { id: item.id, productId: item.productId, variantId: item.variantId, productName: item.product.name, variantTitle: item.variant.title, sku: item.variant.sku, thumbnailUrl: mediaUrl(item.variant.media[0]?.storageKey), quantity: item.quantity, unitPrice: money(priceMinor, item.variant.currency), lineTotal: money(priceMinor * BigInt(item.quantity), item.variant.currency), availableQuantity: Math.max(0, (item.variant.inventory?.onHand ?? 0) - (item.variant.inventory?.reserved ?? 0)) }; });
+export function cartDto(cart: LoadedCart, flashPrices = new Map<string, FlashPrice>()) {
+  const items = cart.items.map((item) => { const priceMinor = itemPrice(item, flashPrices); return { id: item.id, productId: item.productId, variantId: item.variantId, shopId: item.product.shop.id, shopName: item.product.shop.name, shopSlug: item.product.shop.slug, productName: item.product.name, variantTitle: item.variant.title, sku: item.variant.sku, thumbnailUrl: mediaUrl(item.variant.media[0]?.storageKey), quantity: item.quantity, unitPrice: money(priceMinor, item.variant.currency), lineTotal: money(priceMinor * BigInt(item.quantity), item.variant.currency), availableQuantity: Math.max(0, (item.variant.inventory?.onHand ?? 0) - (item.variant.inventory?.reserved ?? 0)) }; });
   const subtotal = items.reduce((sum, item) => sum + BigInt(item.lineTotal.amountMinor), 0n);
   return { id: cart.id, currency: cart.currency, items, subtotal: money(subtotal, cart.currency), itemCount: items.reduce((sum, item) => sum + item.quantity, 0), updatedAt: cart.updatedAt.toISOString() };
 }

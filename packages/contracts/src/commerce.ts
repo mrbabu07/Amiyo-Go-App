@@ -4,7 +4,7 @@ import { orderSchema } from "./orders.js";
 import { paymentSchema } from "./payments.js";
 
 export const cartItemSchema = z.object({
-  id: uuidSchema, productId: uuidSchema, variantId: uuidSchema, productName: z.string(), variantTitle: z.string(), sku: z.string(), thumbnailUrl: z.string().url().nullable(), quantity: z.number().int().positive(), unitPrice: moneySchema, lineTotal: moneySchema, availableQuantity: z.number().int().nonnegative()
+  id: uuidSchema, productId: uuidSchema, variantId: uuidSchema, shopId: uuidSchema, shopName: z.string(), shopSlug: z.string(), productName: z.string(), variantTitle: z.string(), sku: z.string(), thumbnailUrl: z.string().url().nullable(), quantity: z.number().int().positive(), unitPrice: moneySchema, lineTotal: moneySchema, availableQuantity: z.number().int().nonnegative()
 });
 export const cartSchema = z.object({ id: uuidSchema, currency: z.string().length(3), items: z.array(cartItemSchema), subtotal: moneySchema, itemCount: z.number().int().nonnegative(), updatedAt: timestampSchema });
 export const addCartItemSchema = z.object({ variantId: uuidSchema, quantity: z.number().int().min(1).max(99).default(1) });

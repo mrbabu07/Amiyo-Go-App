@@ -1235,6 +1235,16 @@
                   "type": "string",
                   "format": "uuid"
                 },
+                "shopId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "shopName": {
+                  "type": "string"
+                },
+                "shopSlug": {
+                  "type": "string"
+                },
                 "productName": {
                   "type": "string"
                 },
@@ -1300,6 +1310,9 @@
                 "id",
                 "productId",
                 "variantId",
+                "shopId",
+                "shopName",
+                "shopSlug",
                 "productName",
                 "variantTitle",
                 "sku",
@@ -1379,6 +1392,16 @@
                       "type": "string",
                       "format": "uuid"
                     },
+                    "shopId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "shopName": {
+                      "type": "string"
+                    },
+                    "shopSlug": {
+                      "type": "string"
+                    },
                     "productName": {
                       "type": "string"
                     },
@@ -1444,6 +1467,9 @@
                     "id",
                     "productId",
                     "variantId",
+                    "shopId",
+                    "shopName",
+                    "shopSlug",
                     "productName",
                     "variantTitle",
                     "sku",
