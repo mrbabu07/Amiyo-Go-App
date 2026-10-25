@@ -17,6 +17,9 @@ test("seller reports and bulk catalog data are account scoped", () => {
 });
 
 test("seller reports use exact money and open operational order detail", () => {
+  assert.match(reports, /SELLER PERFORMANCE/);
+  assert.match(reports, /onTimeDispatch/);
+  assert.match(reports, /Improve your score/);
   assert.match(reports, /formatMinor\(report\.data\.grossSalesMinor\)/);
   assert.match(reports, /order\.orderNumber/);
   assert.match(reports, /order\.shopName/);

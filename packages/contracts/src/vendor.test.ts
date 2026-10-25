@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createVendorCategoryRequestSchema, createVendorVoucherSchema, saveVendorBankAccountSchema, sellerNotificationPreferencesSchema, submitVendorKycSchema, updateVendorBankAccountSchema, updateVendorShopSchema, updateVendorStaffSchema, vendorVacationSchema } from "./vendor.js";
+import { createVendorCategoryRequestSchema, createVendorVoucherSchema, saveVendorBankAccountSchema, sellerNotificationPreferencesSchema, submitVendorKycSchema, updateVendorBankAccountSchema, updateVendorShopSchema, updateVendorStaffSchema, vendorPerformanceSchema, vendorVacationSchema } from "./vendor.js";
 
 test("vendor bank account requires a supported payout provider", () => {
   assert.equal(saveVendorBankAccountSchema.parse({ provider: "BKASH", accountName: "Demo Seller", accountNumber: "01700000000" }).isDefault, true);
@@ -32,3 +32,9 @@ test("vendor staff invite normalizes registered account email and bounds roles",
   assert.throws(() => inviteVendorStaffSchema.parse({ email: "team@example.com", role: "VENDOR_STAFF", permissions: ["orders:read", "orders:read"] }));
 });
 test("category access requests require an operational reason", () => { assert.equal(createVendorCategoryRequestSchema.safeParse({ categoryId: crypto.randomUUID(), reason: "We stock verified electronics" }).success, true); assert.equal(createVendorCategoryRequestSchema.safeParse({ categoryId: crypto.randomUUID(), reason: "no" }).success, false); });
+test("seller performance keeps targets, sample evidence and bounded scores", () => {
+  const metric = { value: 96.5, target: 90, sampleSize: 24, state: "healthy" } as const;
+  const parsed = vendorPerformanceSchema.parse({ score: 92, tier: "excellent", dispatchSlaHours: 48, fulfilment: metric, cancellation: { ...metric, value: 2, target: 5 }, returns: { ...metric, value: 1.5, target: 5 }, onTimeDispatch: metric, rating: { ...metric, value: 4.7, target: 4.2 }, recommendations: [] });
+  assert.equal(parsed.score, 92);
+  assert.throws(() => vendorPerformanceSchema.parse({ ...parsed, score: 101 }));
+});

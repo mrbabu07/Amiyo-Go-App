@@ -23,6 +23,14 @@ function mediaUrl(storageKey: string | null) {
 }
 function slug(value: string, userId: string) { const base = value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "shop"; return `${base.slice(0, 100)}-${userId.replaceAll("-", "")}`; }
 function mask(value: string) { return `${"•".repeat(Math.max(4, value.length - 4))}${value.slice(-4)}`; }
+const roundOne = (value: number) => Number(value.toFixed(1));
+function metricState(value: number, target: number, higherIsBetter: boolean, sampleSize: number) {
+  if (!sampleSize) return "not_enough_data" as const;
+  const distance = higherIsBetter ? value - target : target - value;
+  if (distance >= 0) return "healthy" as const;
+  if (distance >= (higherIsBetter ? -10 : -3)) return "watch" as const;
+  return "action_required" as const;
+}
 function encrypt(value: string) {
   const encoded = process.env.VENDOR_DATA_ENCRYPTION_KEY;
   const key = encoded ? Buffer.from(encoded, "base64") : Buffer.alloc(0);
@@ -195,12 +203,15 @@ export class VendorService {
     const id = vendorId(session); requirePermission(session, "vendor:read");
     const since = new Date(Date.now() - days * 24 * 60 * 60_000);
     const where = { vendorId: id, createdAt: { gte: since } };
-    const [statusRows, recentOrders, productCount, lowStockCount, returnCount] = await Promise.all([
+    const dispatchSlaHours = 48;
+    const [statusRows, recentOrders, productCount, lowStockCount, returnCount, dispatchRows, ratingAggregate] = await Promise.all([
       this.client.vendorOrder.groupBy({ by: ["status"], where, _count: { _all: true }, _sum: { totalMinor: true } }),
       this.client.vendorOrder.findMany({ where, select: { id: true, status: true, totalMinor: true, createdAt: true, order: { select: { orderNumber: true } }, shop: { select: { name: true } }, _count: { select: { items: true } } }, orderBy: { createdAt: "desc" }, take: 12 }),
       this.client.product.count({ where: { vendorId: id } }),
       this.client.inventoryItem.count({ where: { variant: { product: { vendorId: id } }, onHand: { lte: 5 } } }),
-      this.client.return.count({ where: { vendorOrder: { vendorId: id }, createdAt: { gte: since } } })
+      this.client.return.count({ where: { vendorOrder: { vendorId: id }, createdAt: { gte: since } } }),
+      this.client.vendorOrder.findMany({ where: { ...where, shipments: { some: { shippedAt: { not: null } } } }, select: { createdAt: true, shipments: { select: { shippedAt: true }, take: 1 } } }),
+      this.client.review.aggregate({ where: { product: { vendorId: id }, status: "published", createdAt: { gte: since } }, _avg: { rating: true }, _count: { _all: true } })
     ]);
     const statusCounts = Object.fromEntries(statusRows.map((row) => [row.status, row._count._all]));
     const orderCount = statusRows.reduce((sum, row) => sum + row._count._all, 0);
@@ -208,7 +219,30 @@ export class VendorService {
     const deliveredCount = delivered?._count._all ?? 0;
     const grossSales = delivered?._sum.totalMinor ?? 0n;
     const cancelledCount = statusCounts.CANCELLED ?? 0;
-    return { periodDays: days, orderCount, deliveredCount, cancelledCount, returnCount, grossSalesMinor: grossSales.toString(), averageOrderMinor: deliveredCount ? (grossSales / BigInt(deliveredCount)).toString() : "0", fulfilmentRate: orderCount ? Number(((deliveredCount / orderCount) * 100).toFixed(1)) : 0, productCount, lowStockCount, statusCounts, recentOrders: recentOrders.map((order) => ({ id: order.id, orderNumber: order.order.orderNumber, shopName: order.shop.name, itemCount: order._count.items, status: order.status, totalMinor: order.totalMinor.toString(), createdAt: order.createdAt.toISOString() })) };
+    const rejectedCount = statusCounts.REJECTED ?? 0;
+    const fulfilmentRate = orderCount ? roundOne((deliveredCount / orderCount) * 100) : 0;
+    const cancellationRate = orderCount ? roundOne(((cancelledCount + rejectedCount) / orderCount) * 100) : 0;
+    const returnRate = deliveredCount ? roundOne((returnCount / deliveredCount) * 100) : 0;
+    const onTimeDispatchCount = dispatchRows.filter((row) => { const shippedAt = row.shipments[0]?.shippedAt; return shippedAt && shippedAt.getTime() <= row.createdAt.getTime() + dispatchSlaHours * 60 * 60_000; }).length;
+    const onTimeDispatchRate = dispatchRows.length ? roundOne((onTimeDispatchCount / dispatchRows.length) * 100) : 0;
+    const rating = roundOne(ratingAggregate._avg.rating ?? 0);
+    const score = orderCount < 5 ? 0 : Math.round(Math.max(0, Math.min(100, fulfilmentRate * .35 + Math.max(0, 100 - cancellationRate * 5) * .2 + Math.max(0, 100 - returnRate * 5) * .2 + onTimeDispatchRate * .15 + (rating / 5) * 10)));
+    const recommendations = [
+      ...(fulfilmentRate < 90 && orderCount ? ["Complete accepted orders consistently to keep fulfilment above 90%."] : []),
+      ...(cancellationRate > 5 ? ["Keep inventory current and accept only orders you can fulfil."] : []),
+      ...(returnRate > 5 ? ["Review return reasons and improve listing accuracy or packaging."] : []),
+      ...(onTimeDispatchRate < 90 && dispatchRows.length ? [`Hand parcels over within ${dispatchSlaHours} hours of order creation.`] : []),
+      ...(rating < 4.2 && ratingAggregate._count._all ? ["Reply to reviews and resolve recurring product-quality concerns."] : [])
+    ].slice(0, 5);
+    const performance = {
+      score, tier: orderCount < 5 ? "new_seller" as const : score >= 90 ? "excellent" as const : score >= 75 ? "good" as const : "needs_attention" as const, dispatchSlaHours,
+      fulfilment: { value: fulfilmentRate, target: 90, sampleSize: orderCount, state: metricState(fulfilmentRate, 90, true, orderCount) },
+      cancellation: { value: cancellationRate, target: 5, sampleSize: orderCount, state: metricState(cancellationRate, 5, false, orderCount) },
+      returns: { value: returnRate, target: 5, sampleSize: deliveredCount, state: metricState(returnRate, 5, false, deliveredCount) },
+      onTimeDispatch: { value: onTimeDispatchRate, target: 90, sampleSize: dispatchRows.length, state: metricState(onTimeDispatchRate, 90, true, dispatchRows.length) },
+      rating: { value: rating, target: 4.2, sampleSize: ratingAggregate._count._all, state: metricState(rating, 4.2, true, ratingAggregate._count._all) }, recommendations
+    };
+    return { periodDays: days, orderCount, deliveredCount, cancelledCount, returnCount, grossSalesMinor: grossSales.toString(), averageOrderMinor: deliveredCount ? (grossSales / BigInt(deliveredCount)).toString() : "0", fulfilmentRate, productCount, lowStockCount, statusCounts, performance, recentOrders: recentOrders.map((order) => ({ id: order.id, orderNumber: order.order.orderNumber, shopName: order.shop.name, itemCount: order._count.items, status: order.status, totalMinor: order.totalMinor.toString(), createdAt: order.createdAt.toISOString() })) };
   }
   async returns(session: Session) { const id = vendorId(session); requirePermission(session, "orders:read"); const rows = await this.client.return.findMany({ where: { vendorOrder: { vendorId: id } }, include: { items: { include: { orderItem: { select: returnProductSelect } } } }, orderBy: { createdAt: "desc" }, take: 100 }); return rows.map((row) => ({ id: row.id, orderId: row.orderId, vendorOrderId: row.vendorOrderId, status: row.status, reasonCode: row.reasonCode, reasonDetail: row.reasonDetail, requestedAmount: { amountMinor: row.requestedMinor.toString(), currency: row.currency }, approvedAmount: row.approvedMinor === null ? null : { amountMinor: row.approvedMinor.toString(), currency: row.currency }, version: row.version, createdAt: row.createdAt.toISOString(), items: row.items.map((item) => ({ ...returnProductDetails(item.orderItem), id: item.id, orderItemId: item.orderItemId, quantity: item.quantity, requestedAmount: { amountMinor: item.requestedMinor.toString(), currency: row.currency }, inspection: item.inspection })) })); }
   async categoryRequests(session: Session) { const id = vendorId(session); requirePermission(session, "products:manage"); const rows = await this.client.vendorCategoryRequest.findMany({ where: { vendorId: id }, include: { vendor: true, category: { include: { parent: true } } }, orderBy: { createdAt: "desc" } }); return rows.map(categoryRequestDto); }
