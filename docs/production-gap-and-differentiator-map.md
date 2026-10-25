@@ -2,7 +2,7 @@
 
 Current gate snapshot (2026-10-25): `npm run release:check` reports one unresolved business decision (`Data retention`) and five propagated high package nodes from two Expo build-tool advisories. API and worker runtime audits are clean. Android, iOS, finance-provider, restore, staging-smoke and retention-approval evidence remain missing. Older counts below are retained only as dated verification history.
 
-Current automated evidence (2026-10-25): the complete workspace and repository regression rebuilt the TypeScript workspaces and passed 1,095 tests: API 301, mobile 462, worker 55, config 10, contracts 83, domain 28, migration 2, observability 2, and repository hardening/integration 152. This proves the automated scope only; it does not replace the external evidence listed above.
+Current automated evidence (2026-10-25): the complete workspace and repository regression rebuilt the TypeScript workspaces and passed 1,096 tests: API 301, mobile 463, worker 55, config 10, contracts 83, domain 28, migration 2, observability 2, and repository hardening/integration 152. This proves the automated scope only; it does not replace the external evidence listed above.
 
 Village assisted-commerce follow-up (2026-10-25): authorized admins can search sellable in-stock variants from Customer 360 and prepare a customer's cart after a phone request. The customer still reviews address, delivery, discounts and payment, so the admin workflow never places an order or charges the customer. The operation is controlled by `villageOperations.assistedOrderingEnabled`, validates active customer and stock state, creates an in-app notification, and records the admin's reason in the audit trail.
 

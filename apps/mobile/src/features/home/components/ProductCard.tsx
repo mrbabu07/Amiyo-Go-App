@@ -85,13 +85,13 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
         </View>
       </Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={`Add ${product.title} to cart`} accessibilityState={{ busy: addToCart.isPending }} disabled={addToCart.isPending} onPress={() => addToCart.mutate()} style={({ pressed }) => [styles.cart, (pressed || addToCart.isPending) && styles.heartBusy]}>
-        <Ionicons color="#fff" name="cart-outline" size={17} />
+        <Ionicons color={colors.onPrimary} name="cart-outline" size={17} />
         <Text style={styles.cartLabel}>{addToCart.isPending ? t.adding : t.addCart}</Text>
       </Pressable>
       {addToCart.isError ? <Text accessibilityRole="alert" style={styles.cartError}>{addToCart.error instanceof Error ? addToCart.error.message : "Could not add item. Try again."}</Text> : null}
       {addToCart.isSuccess && addToCart.data ? <Text accessibilityLiveRegion="polite" style={styles.cartFeedback}>Added to cart</Text> : null}
       <Pressable accessibilityLabel={`${saved ? "Remove" : "Save"} ${product.title} ${saved ? "from" : "to"} wishlist`} accessibilityRole="button" disabled={toggleWishlist.isPending} onPress={onWishlist} style={[styles.heart, saved && styles.heartActive, toggleWishlist.isPending && styles.heartBusy]}>
-        <Ionicons color={saved ? colors.surface : colors.accent} name={saved ? "heart" : "heart-outline"} size={18} />
+        <Ionicons color={saved ? colors.onPrimary : colors.accent} name={saved ? "heart" : "heart-outline"} size={18} />
       </Pressable>
     </View>
   );
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   rating: { color: colors.text, fontSize: 10, fontWeight: "600", marginLeft: 3 },
   sold: { color: colors.muted, fontSize: 9, marginLeft: 6 },
   cart: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.sm, minHeight: 44, justifyContent: "center", flexDirection: "row", gap: 6, marginHorizontal: spacing.sm, marginBottom: spacing.sm, paddingHorizontal: 6, paddingVertical: 10 },
-  cartLabel: { color: "#fff", fontSize: 12, fontWeight: "600", flexShrink: 1 },
+  cartLabel: { color: colors.onPrimary, fontSize: 12, fontWeight: "600", flexShrink: 1 },
   cartError: { color: colors.danger, fontSize: 11, paddingHorizontal: spacing.sm, paddingBottom: spacing.sm },
   cartFeedback: { color: colors.success, fontSize: 11, paddingHorizontal: spacing.sm, paddingBottom: spacing.sm }
 });
