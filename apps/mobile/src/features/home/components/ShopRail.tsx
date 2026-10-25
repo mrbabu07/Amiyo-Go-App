@@ -3,9 +3,9 @@ import { useRouter } from "expo-router";
 import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { colors, radius } from "../../../ui/tokens";
 
-export function ShopRail({ shops }: { shops: ShopSummaryDto[] }) {
+export function ShopRail({ lowData = false, shops }: { lowData?: boolean; shops: ShopSummaryDto[] }) {
   const router = useRouter();
-  return <ScrollView contentContainerStyle={styles.content} horizontal showsHorizontalScrollIndicator={false}>{shops.map((shop) => <Pressable accessibilityLabel={`Open ${shop.name} shop`} accessibilityRole="link" key={shop.id} onPress={() => router.push(`/shop/${shop.slug}` as never)} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>{shop.logoUrl ? <Image source={{ uri: shop.logoUrl }} style={styles.logo} /> : <View style={styles.fallback}><Text style={styles.initial}>{shop.name.slice(0, 1).toUpperCase()}</Text></View>}<View style={styles.copy}><Text numberOfLines={1} style={styles.name}>{shop.name}</Text><Text numberOfLines={2} style={styles.description}>{shop.description || "Verified Amiyo-Go seller"}</Text><Text style={styles.count}>{shop.productCount} products</Text></View></Pressable>)}</ScrollView>;
+  return <ScrollView contentContainerStyle={styles.content} horizontal showsHorizontalScrollIndicator={false}>{shops.map((shop) => <Pressable accessibilityLabel={`Open ${shop.name} shop`} accessibilityRole="link" key={shop.id} onPress={() => router.push(`/shop/${shop.slug}` as never)} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>{shop.logoUrl && !lowData ? <Image source={{ uri: shop.logoUrl }} style={styles.logo} /> : <View style={styles.fallback}><Text style={styles.initial}>{shop.name.slice(0, 1).toUpperCase()}</Text></View>}<View style={styles.copy}><Text numberOfLines={1} style={styles.name}>{shop.name}</Text><Text numberOfLines={2} style={styles.description}>{shop.description || "Verified Amiyo-Go seller"}</Text><Text style={styles.count}>{shop.productCount} products</Text></View></Pressable>)}</ScrollView>;
 }
 
 const shadow = Platform.select({ web: { boxShadow: "0 9px 24px rgba(11,31,58,.08)" }, default: { elevation: 3, shadowColor: colors.navy, shadowOffset: { height: 7, width: 0 }, shadowOpacity: 0.08, shadowRadius: 14 } });

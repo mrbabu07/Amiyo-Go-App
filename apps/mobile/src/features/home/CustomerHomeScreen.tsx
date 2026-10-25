@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -23,7 +22,7 @@ import { getCategoryVisual } from "../catalog/category-visuals";
 import { toHomeProduct } from "../catalog/catalog.view-model";
 import { getDiscoverySessionId, getRecommendations } from "../catalog/discovery.api";
 import { getGrowthFeed } from "../engagement/engagement.api";
-import { getPublicPlatformSettings } from "../platform/platform.api";
+import { useLowDataMode } from "../platform/use-low-data-mode";
 
 function ProductGrid({ columns, lowData, products }: { columns: number; lowData: boolean; products: HomeProduct[] }) {
   const cardWidth = `${100 / columns}%` as `${number}%`;
@@ -54,14 +53,9 @@ export function CustomerHomeScreen() {
   const compact = width < 620;
   const columns = width >= 1180 ? 5 : width >= 820 ? 4 : width < 360 ? 1 : 2;
   const contentWidth = Math.min(width, 1208);
-  const platformQuery = useQuery({ queryKey: ["platform", "public-settings"], queryFn: getPublicPlatformSettings, staleTime: 5 * 60_000 });
-  const village = platformQuery.data?.villageOperations;
-  const [lowDataOverride, setLowDataOverride] = useState<boolean | null>(null);
+  const { enabled: lowData, toggle: toggleLowData, village } = useLowDataMode();
   const [discoverySessionId, setDiscoverySessionId] = useState("");
-  useEffect(() => { void AsyncStorage.getItem("amiyo:low-data-mode").then((value) => { if (value !== null) setLowDataOverride(value === "true"); }); }, []);
   useEffect(() => { void getDiscoverySessionId().then(setDiscoverySessionId); }, []);
-  const lowData = village?.enabled ? lowDataOverride ?? village.lowDataModeDefault : false;
-  async function toggleLowData() { if (!village?.allowCustomerLowDataOverride) return; const next = !lowData; setLowDataOverride(next); await AsyncStorage.setItem("amiyo:low-data-mode", String(next)); }
   const categoryQuery = useQuery({ queryKey: ["catalog", "category-navigation"], queryFn: getCategoryNavigation, staleTime: 5 * 60_000 });
   const productQuery = useQuery({ queryKey: ["catalog", "home-products", lowData], queryFn: () => getProducts({ limit: lowData ? 12 : 20 }) });
   const shopQuery = useQuery({ queryKey: ["catalog", "home-shops"], queryFn: getShops });
@@ -102,7 +96,7 @@ export function CustomerHomeScreen() {
 
             <View style={styles.section}><HomeSectionTitle eyebrow="MARKETPLACE FEED" href="/search" title="Trending now" />{productQuery.error ? <RetryState label="Could not load live products" onRetry={() => productQuery.refetch()} /> : <ProductGrid columns={columns} lowData={lowData} products={liveProducts.slice(0, 10)} />}{!productQuery.isLoading && !productQuery.error && liveProducts.length === 0 ? <Text style={styles.empty}>No approved products yet. Run the catalog seed or publish a vendor product.</Text> : null}</View>
 
-            {shopQuery.data?.data.length ? <View style={styles.section}><HomeSectionTitle eyebrow="FEATURED BRANDS" href="/shops" title="Shop trusted sellers" /><ShopRail shops={shopQuery.data.data} /></View> : null}
+            {shopQuery.data?.data.length ? <View style={styles.section}><HomeSectionTitle eyebrow="FEATURED BRANDS" href="/shops" title="Shop trusted sellers" /><ShopRail lowData={lowData} shops={shopQuery.data.data} /></View> : null}
 
             {!lowData && (recommendedProducts.length || liveProducts.length > 5) ? <View style={styles.section}><HomeSectionTitle eyebrow="CURATED FOR YOU" href="/search" title="Recommended for you" />{recommendationQuery.isFetching && !recommendedProducts.length ? <ActivityIndicator color={colors.primary} /> : <ProductGrid columns={columns} lowData={lowData} products={recommendedProducts.length ? recommendedProducts : liveProducts.slice(5)} />}</View> : null}
 

@@ -19,8 +19,6 @@ import type { HomeProduct } from "../home.data";
 const money = (value: string) => formatMinor(value);
 const fallbackImage = "https://images.unsplash.com/photo-1560343090-f0409e92791a?w=700&h=700&fit=crop";
 
-function lowDataImage(url: string) { if (!url.includes("images.unsplash.com")) return url; const separator = url.includes("?") ? "&" : "?"; return `${url}${separator}w=360&q=55&auto=format`; }
-
 export function ProductCard({ lowData = false, product }: { lowData?: boolean; product: HomeProduct }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -70,7 +68,7 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
     <View style={styles.card}>
       <Pressable accessibilityRole="link" onPress={() => router.push(`/product/${product.slug || product.id}` as never)} style={({ pressed }) => [styles.openArea, pressed && styles.pressed]}>
         <View style={styles.imageWrap}>
-          <Image accessibilityLabel={product.title} resizeMode="cover" source={{ uri: lowData ? lowDataImage(product.image || fallbackImage) : product.image || fallbackImage }} style={styles.image} />
+          {lowData ? <View accessibilityLabel={`${product.title} image hidden to save data`} accessibilityRole="image" style={[styles.image, styles.lowDataImage]}><Ionicons color={colors.accent} name="leaf-outline" size={26} /><Text style={styles.lowDataLabel}>DATA SAVER</Text></View> : <Image accessibilityLabel={product.title} resizeMode="cover" source={{ uri: product.image || fallbackImage }} style={styles.image} />}
           <View style={styles.topBadge}>{discount ? <Text style={styles.discountText}>-{discount}%</Text> : <Text style={styles.verifiedText}>VERIFIED</Text>}</View>
         </View>
         <View style={styles.body}>
@@ -100,7 +98,7 @@ const styles = StyleSheet.create({
   openArea: { flex: 1 },
   pressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
   imageWrap: { aspectRatio: 1, backgroundColor: colors.primarySoft, position: "relative", width: "100%" },
-  image: { height: "100%", width: "100%" },
+  image: { height: "100%", width: "100%" }, lowDataImage: { alignItems: "center", backgroundColor: colors.accentSoft, justifyContent: "center" }, lowDataLabel: { color: colors.accent, fontSize: 9, fontWeight: "700", marginTop: 5 },
   topBadge: { backgroundColor: colors.accent, borderRadius: 4, left: 7, paddingHorizontal: 7, paddingVertical: 5, position: "absolute", top: 7 },
   discountText: { color: colors.surface, fontSize: 9, fontWeight: "700" },
   verifiedText: { color: colors.surface, fontSize: 8, fontWeight: "700" },

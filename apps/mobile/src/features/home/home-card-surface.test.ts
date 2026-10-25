@@ -19,3 +19,10 @@ test("shop cards expose link semantics and pressed feedback", () => {
   assert.match(shopSource, /pressed && styles\.pressed/);
   assert.match(shopSource, /const shadow = Platform\.select/);
 });
+
+test("village data saver avoids marketplace image requests", () => {
+  assert.match(productSource, /lowData \? <View/);
+  assert.match(productSource, /image hidden to save data/);
+  assert.match(productSource, /DATA SAVER/);
+  assert.match(shopSource, /shop\.logoUrl && !lowData/);
+});
