@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   action: { minHeight: 44, paddingHorizontal: spacing.md, paddingVertical: 12, alignItems: "center", justifyContent: "center", borderRadius: radius.md, backgroundColor: colors.accentSoft },
   primary: { backgroundColor: colors.primary },
   actionText: { color: colors.text, fontWeight: "600", fontSize: 13, textAlign: "center" },
-  primaryText: { color: "#fff" },
+  primaryText: { color: colors.onPrimary },
   pressed: { opacity: 0.8 },
   stacked: { flexDirection: "column", alignItems: "stretch" },
   fullWidth: { flexGrow: 0, flexShrink: 0, flexBasis: "auto", width: "100%" },
