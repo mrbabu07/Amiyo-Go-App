@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
   bannerImage: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 }, overlay: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, backgroundColor: "rgba(5,11,20,.66)" },
   logoImage: { backgroundColor: colors.surface, borderColor: colors.surface, borderRadius: radius.pill, borderWidth: 3, height: 76, width: 76 },
   logoFallback: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.pill, height: 76, justifyContent: "center", width: 76 },
-  previewCopy: { flex: 1, minWidth: 0 }, previewLabel: { color: "#d9e6a7", fontSize: 9, fontWeight: "700", letterSpacing: 1 }, previewTitle: { color: "#fff", fontSize: 25, fontWeight: "700", marginTop: 5 }, previewMeta: { color: "#e2e8f0", fontSize: 11, marginTop: 5 },
+  previewCopy: { flex: 1, minWidth: 0 }, previewLabel: { color: colors.shellAccent, fontSize: 9, fontWeight: "700", letterSpacing: 1 }, previewTitle: { color: colors.onPrimary, fontSize: 25, fontWeight: "700", marginTop: 5 }, previewMeta: { color: colors.shellMuted, fontSize: 11, marginTop: 5 },
   mediaRow: { alignItems: "center", flexDirection: "row", flexWrap: "wrap", gap: spacing.md }, mediaRowCompact: { alignItems: "stretch", flexDirection: "column" },
   thumb: { alignItems: "center", backgroundColor: colors.accentSoft, borderRadius: radius.lg, height: 92, justifyContent: "center", overflow: "hidden", width: 92 }, bannerThumb: { width: 150 }, thumbCompact: { width: "100%" }, fill: { height: "100%", width: "100%" },
   mediaCopy: { flex: 1, minWidth: 190 }, mediaCopyCompact: { minWidth: 0, width: "100%" }, mediaTitle: { color: colors.text, fontSize: 15, fontWeight: "700" }, mediaMeta: { color: colors.muted, fontSize: 11, marginTop: 4 },

@@ -66,7 +66,7 @@ function Field(props: React.ComponentProps<typeof TextInput> & { compact: boolea
 
 const styles = StyleSheet.create({
   flex: { flex: 1 }, hero: { alignItems: "center", backgroundColor: colors.navy, borderRadius: radius.xl, flexDirection: "row", gap: spacing.md, padding: spacing.xl }, heroCompact: { alignItems: "flex-start", padding: spacing.lg },
-  icon: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.lg, height: 56, justifyContent: "center", width: 56 }, heroLabel: { color: "#d9e6a7", fontSize: 9, fontWeight: "700", letterSpacing: 1 }, heroTitle: { color: colors.surface, fontSize: 21, fontWeight: "700", marginTop: 4 }, heroMeta: { color: "#cbd5e1", fontSize: 11, marginTop: 4 },
+  icon: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.lg, height: 56, justifyContent: "center", width: 56 }, heroLabel: { color: colors.shellAccent, fontSize: 9, fontWeight: "700", letterSpacing: 1 }, heroTitle: { color: colors.onPrimary, fontSize: 21, fontWeight: "700", marginTop: 4 }, heroMeta: { color: colors.shellMuted, fontSize: 11, marginTop: 4 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }, gridCompact: { flexDirection: "column" },
   field: { flex: 1, gap: 6, minWidth: 210 }, fieldCompact: { flex: 0, minWidth: 0, width: "100%" }, label: { color: colors.text, fontSize: 12, fontWeight: "600" },
   input: { backgroundColor: colors.background, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, minHeight: 48, paddingHorizontal: 13 }, multiline: { minHeight: 90, paddingVertical: 12, textAlignVertical: "top" },

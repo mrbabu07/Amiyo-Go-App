@@ -61,8 +61,8 @@ function Counter({ value, max }: { value: string; max: number }) { return <Text 
 
 const styles = StyleSheet.create({
   preview: { backgroundColor: colors.navy, borderRadius: radius.xl, gap: spacing.sm, padding: spacing.xl }, previewCompact: { padding: spacing.lg },
-  previewLabel: { alignSelf: "flex-start", backgroundColor: colors.primary, borderRadius: radius.pill, color: colors.surface, fontSize: 10, fontWeight: "700", overflow: "hidden", paddingHorizontal: 12, paddingVertical: 7 }, previewTitle: { color: colors.surface, fontSize: 28, fontWeight: "700", marginTop: spacing.sm }, previewTagline: { color: "#e2e8f0", fontSize: 14, lineHeight: 21 },
-  trust: { alignItems: "center", flexDirection: "row", gap: 7, marginTop: spacing.sm }, trustText: { color: "#d9e6a7", flex: 1, fontSize: 11, fontWeight: "600" },
+  previewLabel: { alignSelf: "flex-start", backgroundColor: colors.primary, borderRadius: radius.pill, color: colors.onPrimary, fontSize: 10, fontWeight: "700", overflow: "hidden", paddingHorizontal: 12, paddingVertical: 7 }, previewTitle: { color: colors.onPrimary, fontSize: 28, fontWeight: "700", marginTop: spacing.sm }, previewTagline: { color: colors.shellMuted, fontSize: 14, lineHeight: 21 },
+  trust: { alignItems: "center", flexDirection: "row", gap: 7, marginTop: spacing.sm }, trustText: { color: colors.shellAccent, flex: 1, fontSize: 11, fontWeight: "600" },
   field: { gap: 6 }, label: { color: colors.text, fontSize: 12, fontWeight: "600" }, input: { backgroundColor: colors.background, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, minHeight: 48, paddingHorizontal: 13 }, multiline: { minHeight: 84, paddingVertical: 12, textAlignVertical: "top" }, counter: { color: colors.muted, fontSize: 10, textAlign: "right" },
   button: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, justifyContent: "center", minHeight: 48 }, buttonText: { color: colors.surface, fontWeight: "700" }, disabled: { opacity: .45 }, success: { color: colors.success, fontWeight: "600" }, error: { color: colors.danger }
 });
