@@ -39,7 +39,7 @@ export function AdminOrderInvoiceScreen() {
 
   const order = query.data;
   return <Screen eyebrow="FINANCE DOCUMENT" title={order.invoice?.number ?? `INV-${order.orderNumber}`} description="Admin invoice includes customer totals, seller package splits, shipment references and commission reconciliation.">
-    <View style={styles.actions}>{!order.invoice ? <Pressable accessibilityRole="button" disabled={issue.isPending} onPress={() => issue.mutate()} style={styles.print}><Text style={styles.printText}>{issue.isPending ? "Issuing…" : "Issue invoice"}</Text></Pressable> : <Pressable disabled={exporting} onPress={printInvoice} style={styles.print}><Ionicons color="#fff" name="print-outline" size={18} /><Text style={styles.printText}>{Platform.OS === "web" ? "Print / Save PDF" : "Share PDF invoice"}</Text></Pressable>}</View>
+    <View style={styles.actions}>{!order.invoice ? <Pressable accessibilityRole="button" disabled={issue.isPending} onPress={() => issue.mutate()} style={styles.print}><Text style={styles.printText}>{issue.isPending ? "Issuing…" : "Issue invoice"}</Text></Pressable> : <Pressable disabled={exporting} onPress={printInvoice} style={styles.print}><Ionicons color={colors.onPrimary} name="print-outline" size={18} /><Text style={styles.printText}>{Platform.OS === "web" ? "Print / Save PDF" : "Share PDF invoice"}</Text></Pressable>}</View>
     {issue.error ? <Text accessibilityRole="alert" style={styles.error}>{issue.error.message}</Text> : null}
     <Link href="/verify-document">Verify invoice or parcel QR</Link>
     {exportError ? <Text accessibilityRole="alert" style={styles.error}>{exportError}</Text> : null}
@@ -50,6 +50,6 @@ export function AdminOrderInvoiceScreen() {
 const styles = StyleSheet.create({
   actions: { alignItems: "flex-end" },
   print: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, flexDirection: "row", gap: 7, minHeight: 44, paddingHorizontal: spacing.lg },
-  printText: { color: "#fff", fontWeight: "700" },
+  printText: { color: colors.onPrimary, fontWeight: "700" },
   error: { color: colors.danger, padding: spacing.md }
 });

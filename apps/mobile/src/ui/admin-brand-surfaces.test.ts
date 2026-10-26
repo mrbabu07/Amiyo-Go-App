@@ -9,11 +9,20 @@ test("admin order and finance command surfaces use semantic brand colors", () =>
     "AdminOrderDetailScreen.tsx",
     "AdminPayoutsScreen.tsx",
     "AdminCommissionScreen.tsx",
+    "AdminAccessScreen.tsx",
+    "AdminCategoryRequestsScreen.tsx",
     "AdminCommerceWorkspaceScreen.tsx",
     "AdminContentScreen.tsx",
+    "AdminGlobalSearch.tsx",
+    "AdminOrderInvoiceScreen.tsx",
+    "AdminOrderRefund.tsx",
+    "AdminOrderSettlement.tsx",
     "AdminOrdersScreen.tsx",
+    "AdminPaymentVerificationScreen.tsx",
     "AdminPlatformScreen.tsx",
+    "AdminReferenceWorkspaceScreen.tsx",
     "AdminReturnsScreen.tsx",
+    "AdminSettingsScreen.tsx",
     "AdminTrustScreen.tsx"
   ].map((file) => read(`../features/admin/${file}`)).join("\n");
   assert.match(source, /colors\.onPrimary/);
