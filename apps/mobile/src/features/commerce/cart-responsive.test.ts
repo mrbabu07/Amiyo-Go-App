@@ -16,6 +16,9 @@ test("cart keeps checkout controls readable on narrow screens", () => {
   assert.match(source, /Select all products/);
   assert.match(source, /accessibilityRole="checkbox"/);
   assert.match(source, /Unselected products stay safely in your cart/);
+  assert.match(source, /Move to wishlist/);
+  assert.match(source, /moveCartItemToWishlist/);
+  assert.match(source, /Remove .* from cart/);
   assert.match(source, /shopGroup: \{ backgroundColor: colors\.surface/);
   assert.match(source, /premiumStyles\.summary/);
   assert.match(source, /quantityButton: \{ height: 44, width: 44 \}/);

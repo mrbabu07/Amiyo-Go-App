@@ -154,10 +154,10 @@ test("dependency register matches the current pinned tooling and gate snapshot",
   assert.match(register, /firebase-tools@15\.34\.1/);
   assert.match(register, /fast-uri@3\.1\.9/);
   assert.match(register, /five high and five moderate package nodes/);
-  assert.match(register, /1,108-test run pass/);
+  assert.match(register, /1,109-test run pass/);
   assert.match(gapMap, /Current gate snapshot \(2026-10-25\)/);
   assert.match(gapMap, /one unresolved business decision/);
-  assert.match(gapMap, /passed 1,108 tests/);
+  assert.match(gapMap, /passed 1,109 tests/);
 });
 
 test("runtime contracts use the remediated Zod and OpenAPI toolchain", async () => {

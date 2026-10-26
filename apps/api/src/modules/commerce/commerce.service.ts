@@ -153,6 +153,19 @@ export class CommerceService {
     catch { return this.client.cart.findFirstOrThrow({ where: { userId, status: "ACTIVE" }, include: cartInclude }); }
   }
 
+  private async defaultWishlist(userId: string) {
+    const existing = await this.client.wishlist.findFirst({ where: { userId, isDefault: true }, select: { id: true } });
+    if (existing) return existing;
+    try {
+      return await withSerializableTransaction(this.client, async (transaction) => await transaction.wishlist.findFirst({ where: { userId, isDefault: true }, select: { id: true } }) || transaction.wishlist.create({ data: { userId, isDefault: true }, select: { id: true } }));
+    } catch (error) {
+      if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") throw error;
+      const winner = await this.client.wishlist.findFirst({ where: { userId, isDefault: true }, select: { id: true } });
+      if (!winner) throw error;
+      return winner;
+    }
+  }
+
   async cart(userId: string) { const cart = await this.activeCart(userId); return cartDto(cart, await activeFlashPrices(this.client, cart)); }
 
   async addItem(userId: string, variantId: string, quantity: number, idempotencyKey?: string) {
@@ -188,6 +201,19 @@ export class CommerceService {
   }
 
   async removeItem(userId: string, itemId: string) { const cart = await this.activeCart(userId); const result = await this.client.cartItem.deleteMany({ where: { id: itemId, cartId: cart.id } }); if (!result.count) throw new ApiProblem(404, "CART_ITEM_NOT_FOUND", "Cart item not found"); return this.cart(userId); }
+
+  async moveItemToWishlist(userId: string, itemId: string) {
+    const list = await this.defaultWishlist(userId);
+    await withSerializableTransaction(this.client, async (transaction) => {
+      const item = await transaction.cartItem.findFirst({ where: { id: itemId, cart: { userId, status: "ACTIVE" }, product: { status: "APPROVED" } }, select: { id: true, productId: true, cartId: true } });
+      if (!item) throw new ApiProblem(404, "CART_ITEM_NOT_FOUND", "Cart item is no longer available");
+      const ownedList = await transaction.wishlist.findFirst({ where: { id: list.id, userId, isDefault: true }, select: { id: true } });
+      if (!ownedList) throw new ApiProblem(409, "WISHLIST_CHANGED", "Your wishlist changed. Try again");
+      await transaction.wishlistItem.upsert({ where: { wishlistId_productId: { wishlistId: ownedList.id, productId: item.productId } }, create: { wishlistId: ownedList.id, productId: item.productId }, update: {} });
+      await transaction.cartItem.delete({ where: { id: item.id } });
+    });
+    return this.cart(userId);
+  }
 
   async quote(userId: string, input: CheckoutQuoteInput = {}) {
     const activeCart = await this.activeCart(userId); if (!activeCart.items.length) throw new ApiProblem(409, "CART_EMPTY", "Your cart is empty");

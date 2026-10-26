@@ -101,6 +101,15 @@ registry.registerPath({
 
 registry.registerPath({
   method: "post",
+  path: "/api/v2/cart/items/{id}/wishlist",
+  tags: ["Commerce"],
+  security: firebaseSecurity,
+  request: { params: z.object({ id: z.string().uuid() }) },
+  responses: { 200: { description: "Cart after moving an item to the default wishlist", content: { "application/json": { schema: cart } } }, ...errorResponses }
+});
+
+registry.registerPath({
+  method: "post",
   path: "/api/v2/checkout/quote",
   tags: ["Commerce"],
   security: firebaseSecurity,

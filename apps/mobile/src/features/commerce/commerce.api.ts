@@ -41,6 +41,10 @@ export async function removeCartItem(user: User, itemId: string) {
   return cartSchema.parse(await authenticatedRequest(user, `/api/v2/cart/items/${itemId}`, { method: "DELETE" }));
 }
 
+export async function moveCartItemToWishlist(user: User, itemId: string) {
+  return cartSchema.parse(await authenticatedRequest(user, `/api/v2/cart/items/${itemId}/wishlist`, { method: "POST" }));
+}
+
 export async function getCheckoutQuote(user: User, couponCode?: string | null, loyaltyPoints = "0", addressId?: string | null, deliveryLocation?: { division: string; district: string; upazila: string; union: string } | null, pickupPointId?: string | null, cartItemIds?: string[]) {
   return checkoutQuoteSchema.parse(await authenticatedRequest(user, "/api/v2/checkout/quote", { method: "POST", body: JSON.stringify({ addressId: addressId || undefined, pickupPointId: pickupPointId || undefined, deliveryLocation: deliveryLocation || undefined, couponCode: couponCode || null, loyaltyPoints, cartItemIds }) }));
 }

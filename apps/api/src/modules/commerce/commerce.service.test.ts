@@ -67,3 +67,23 @@ test("checkout selection rejects stale IDs and keeps only explicitly selected ca
   assert.deepEqual(checkoutCartDisposition(cart, selectedCart(cart, [second.id])), { convertCart: false, selectedItemIds: [second.id] });
   assert.deepEqual(checkoutCartDisposition(cart, cart), { convertCart: true, selectedItemIds: [first.id, second.id] });
 });
+
+test("moving a cart item writes the wishlist before deleting the owned cart line", async () => {
+  const calls: string[] = [];
+  const transaction = {
+    cartItem: {
+      findFirst: async () => ({ id: "22222222-2222-4222-8222-222222222222", productId: "33333333-3333-4333-8333-333333333333", cartId: "44444444-4444-4444-8444-444444444444" }),
+      delete: async () => { calls.push("cart-delete"); }
+    },
+    wishlist: { findFirst: async () => ({ id: "55555555-5555-4555-8555-555555555555" }) },
+    wishlistItem: { upsert: async () => { calls.push("wishlist-upsert"); } }
+  };
+  const client = {
+    wishlist: { findFirst: async () => ({ id: "55555555-5555-4555-8555-555555555555" }) },
+    $transaction: async (operation: (value: typeof transaction) => Promise<unknown>) => operation(transaction)
+  } as unknown as PrismaClient;
+  const service = new CommerceService(client);
+  service.cart = async () => ({ id: "cart-after-move" }) as never;
+  assert.deepEqual(await service.moveItemToWishlist("11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222"), { id: "cart-after-move" });
+  assert.deepEqual(calls, ["wishlist-upsert", "cart-delete"]);
+});
