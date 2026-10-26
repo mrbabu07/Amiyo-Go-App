@@ -255,6 +255,6 @@ const styles = StyleSheet.create({
   notes: { minHeight: 90, textAlignVertical: "top" },
   success: { backgroundColor: colors.primarySoft, borderRadius: radius.md, color: colors.success, padding: spacing.md },
   pickupCurrent: { alignItems: "center", backgroundColor: colors.accentSoft, borderRadius: radius.md, flexDirection: "row", gap: spacing.sm, padding: spacing.md },
-  error: { backgroundColor: "#fef2f2", borderRadius: radius.md, color: colors.danger, padding: spacing.md },
+  error: { backgroundColor: colors.primarySoft, borderRadius: radius.md, color: colors.danger, padding: spacing.md },
   center: { alignItems: "center", backgroundColor: colors.background, flex: 1, gap: spacing.md, justifyContent: "center", padding: spacing.xl }
 });

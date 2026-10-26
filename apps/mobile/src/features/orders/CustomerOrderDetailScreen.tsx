@@ -126,10 +126,10 @@ function SellerPackage({ compact, index, onReturn, returnBusy, vendorOrder }: { 
 
 function Progress({ activeIndex, compact = false, finalStatus, steps }: { activeIndex: number; compact?: boolean; finalStatus: string; steps: string[] }) {
   if (["CANCELLED", "REJECTED", "REFUNDED", "RETURNED"].includes(finalStatus)) return <View style={styles.terminal}><Ionicons color={colors.danger} name="alert-circle-outline" size={18} /><Text style={styles.terminalText}>{statusLabel(finalStatus)}</Text></View>;
-  return <View style={[styles.progress, compact && styles.progressCompact]}>{steps.map((step, index) => { const active = index <= activeIndex; return <View key={step} style={[styles.step, compact && styles.stepCompact]}><View style={[styles.stepDot, active && styles.stepDotActive]}>{active ? <Ionicons color="#fff" name="checkmark" size={12} /> : null}</View><Text numberOfLines={compact ? 1 : 2} style={[styles.stepLabel, active && styles.stepLabelActive]}>{statusLabel(step)}</Text>{index < steps.length - 1 ? <View style={[styles.stepLine, active && styles.stepLineActive]} /> : null}</View>; })}</View>;
+  return <View style={[styles.progress, compact && styles.progressCompact]}>{steps.map((step, index) => { const active = index <= activeIndex; return <View key={step} style={[styles.step, compact && styles.stepCompact]}><View style={[styles.stepDot, active && styles.stepDotActive]}>{active ? <Ionicons color={colors.onPrimary} name="checkmark" size={12} /> : null}</View><Text numberOfLines={compact ? 1 : 2} style={[styles.stepLabel, active && styles.stepLabelActive]}>{statusLabel(step)}</Text>{index < steps.length - 1 ? <View style={[styles.stepLine, active && styles.stepLineActive]} /> : null}</View>; })}</View>;
 }
 
-function ActionButton({ busy, danger, icon, label, onPress, primary }: { busy?: boolean; danger?: boolean; icon: string; label: string; onPress(): void; primary?: boolean }) { return <Pressable disabled={busy} onPress={onPress} style={[styles.action, primary && styles.actionPrimary, danger && styles.actionDanger, busy && styles.disabled]}>{busy ? <ActivityIndicator color={danger || primary ? "#fff" : colors.primary} /> : <Ionicons color={danger || primary ? "#fff" : colors.primary} name={icon as never} size={18} />}<Text style={[styles.actionText, (danger || primary) && styles.actionTextLight]}>{label}</Text></Pressable>; }
+function ActionButton({ busy, danger, icon, label, onPress, primary }: { busy?: boolean; danger?: boolean; icon: string; label: string; onPress(): void; primary?: boolean }) { return <Pressable disabled={busy} onPress={onPress} style={[styles.action, primary && styles.actionPrimary, danger && styles.actionDanger, busy && styles.disabled]}>{busy ? <ActivityIndicator color={danger || primary ? colors.onPrimary : colors.primary} /> : <Ionicons color={danger || primary ? colors.onPrimary : colors.primary} name={icon as never} size={18} />}<Text style={[styles.actionText, (danger || primary) && styles.actionTextLight]}>{label}</Text></Pressable>; }
 function Metric({ icon, label, value }: { icon: string; label: string; value: string }) { return <View style={styles.metric}><View style={styles.metricIcon}><Ionicons color={colors.primary} name={icon as never} size={19} /></View><View><Text style={styles.metricValue}>{value}</Text><Text style={styles.metricLabel}>{label}</Text></View></View>; }
 function Info({ label, value }: { label: string; value: string }) { return <View style={styles.info}><Text style={styles.infoLabel}>{label}</Text><Text style={styles.infoValue}>{value}</Text></View>; }
 function StatusPill({ value }: { value: string }) { const danger = ["CANCELLED", "REFUNDED", "RETURNED"].includes(value); const good = ["DELIVERED", "CONFIRMED"].includes(value); return <Text style={[styles.status, good && styles.statusGood, danger && styles.statusDanger]}>{statusLabel(value)}</Text>; }
@@ -142,19 +142,19 @@ const styles = StyleSheet.create({
   heroCompact: { alignItems: "stretch", flexDirection: "column" },
   heroCopy: { flex: 1, minWidth: 0 },
   statusRow: { alignItems: "center", flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  status: { backgroundColor: "#fff7ed", borderRadius: radius.pill, color: colors.warning, fontSize: 10, fontWeight: "700", overflow: "hidden", paddingHorizontal: 10, paddingVertical: 6 },
+  status: { backgroundColor: colors.accentSoft, borderRadius: radius.pill, color: colors.warning, fontSize: 10, fontWeight: "700", overflow: "hidden", paddingHorizontal: 10, paddingVertical: 6 },
   statusGood: { backgroundColor: "#dcfce7", color: "#166534" },
   statusDanger: { backgroundColor: "#fee2e2", color: colors.danger },
-  version: { color: "#94a3b8", fontSize: 10, fontWeight: "700" },
-  total: { color: "#fff", fontSize: 34, fontWeight: "700", letterSpacing: -0.7, marginTop: spacing.sm },
-  heroText: { color: "#cbd5e1", lineHeight: 20, marginTop: 5 },
+  version: { color: colors.muted, fontSize: 10, fontWeight: "700" },
+  total: { color: colors.onPrimary, fontSize: 34, fontWeight: "700", letterSpacing: -0.7, marginTop: spacing.sm },
+  heroText: { color: colors.shellMuted, lineHeight: 20, marginTop: 5 },
   heroActions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, justifyContent: "flex-end" },
   heroActionsCompact: { justifyContent: "flex-start" },
   action: { alignItems: "center", backgroundColor: colors.surface, borderRadius: radius.md, flexDirection: "row", gap: 7, minHeight: 44, paddingHorizontal: spacing.md },
   actionPrimary: { backgroundColor: colors.primary },
   actionDanger: { backgroundColor: colors.danger },
   actionText: { color: colors.primary, fontSize: 12, fontWeight: "700" },
-  actionTextLight: { color: "#fff" },
+  actionTextLight: { color: colors.onPrimary },
   progress: { flexDirection: "row", gap: 0 },
   progressCompact: { flexWrap: "wrap", rowGap: spacing.sm },
   step: { alignItems: "center", flex: 1, minWidth: 82, position: "relative" },
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   stepLineActive: { backgroundColor: colors.primary },
   stepLabel: { color: colors.muted, fontSize: 9, fontWeight: "600", marginTop: 7, textAlign: "center" },
   stepLabelActive: { color: colors.text, fontWeight: "700" },
-  terminal: { alignItems: "center", backgroundColor: "#fef2f2", borderRadius: radius.md, flexDirection: "row", gap: spacing.sm, padding: spacing.md },
+  terminal: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.md, flexDirection: "row", gap: spacing.sm, padding: spacing.md },
   terminalText: { color: colors.danger, fontWeight: "700" },
   metrics: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   inspection: { alignItems: "center", backgroundColor: colors.accentSoft, borderRadius: radius.md, flexDirection: "row", gap: spacing.md, padding: spacing.md },
@@ -200,10 +200,10 @@ const styles = StyleSheet.create({
   returnTitle: { color: colors.text, fontWeight: "700" },
   input: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, minHeight: 86, outlineStyle: "none", padding: spacing.md, textAlignVertical: "top" } as never,
   primary: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, justifyContent: "center", minHeight: 44, paddingHorizontal: spacing.md },
-  primaryText: { color: "#fff", fontWeight: "700" },
+  primaryText: { color: colors.onPrimary, fontWeight: "700" },
   supportAction: { alignItems: "center", borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: "row", gap: spacing.sm, minHeight: 46 },
   supportLabel: { color: colors.text, flex: 1, fontWeight: "600" },
-  error: { backgroundColor: "#fef2f2", borderRadius: radius.md, color: colors.danger, padding: spacing.md },
+  error: { backgroundColor: colors.primarySoft, borderRadius: radius.md, color: colors.danger, padding: spacing.md },
   disabled: { opacity: 0.55 },
   empty: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl, borderStyle: "dashed", borderWidth: 1, gap: spacing.lg, padding: 42 }
 });

@@ -36,11 +36,11 @@ const styles = StyleSheet.create({
   heroCompact: { paddingVertical: spacing.lg },
   inner: { alignSelf: "center", maxWidth: 1208, width: "100%" },
   crumbs: { alignItems: "center", flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
-  crumb: { color: "#cbd5e1", fontSize: 12, fontWeight: "700" },
-  divider: { color: "#94a3b8", fontSize: 12 },
+  crumb: { color: colors.shellMuted, fontSize: 12, fontWeight: "700" },
+  divider: { color: colors.muted, fontSize: 12 },
   current: { color: colors.surface, fontSize: 12, fontWeight: "600" },
   title: { color: colors.surface, fontSize: 42, fontWeight: "700", letterSpacing: -1.2 },
   titleCompact: { fontSize: 30, letterSpacing: -0.6, lineHeight: 37 },
-  description: { color: "#cbd5e1", fontSize: 16, lineHeight: 24, marginTop: 7 },
+  description: { color: colors.shellMuted, fontSize: 16, lineHeight: 24, marginTop: 7 },
   descriptionCompact: { fontSize: 14, lineHeight: 21 }
 });

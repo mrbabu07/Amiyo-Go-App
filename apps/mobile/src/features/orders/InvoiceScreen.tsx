@@ -35,7 +35,7 @@ export function InvoiceScreen() {
   if (!invoice.data) return <Screen eyebrow="RECEIPT" title="Invoice unavailable" description="We could not load this invoice right now."><Text style={styles.error}>{invoice.error?.message ?? "Could not load invoice"}</Text></Screen>;
 
   return <Screen eyebrow="RECEIPT" title={invoice.data.number} description={`Issued ${new Date(invoice.data.issuedAt).toLocaleDateString("en-BD")} with ${invoice.data.order.vendorOrders.length} seller package split.`}>
-    <View style={styles.actions}><Pressable disabled={exporting} onPress={printInvoice} style={styles.print}><Ionicons color="#fff" name="print-outline" size={18} /><Text style={styles.printText}>{Platform.OS === "web" ? "Print / Save PDF" : "Share PDF invoice"}</Text></Pressable></View>
+    <View style={styles.actions}><Pressable disabled={exporting} onPress={printInvoice} style={styles.print}><Ionicons color={colors.onPrimary} name="print-outline" size={18} /><Text style={styles.printText}>{Platform.OS === "web" ? "Print / Save PDF" : "Share PDF invoice"}</Text></Pressable></View>
     <Link href="/verify-document">Verify invoice or parcel QR</Link>
     {exportError ? <Text accessibilityRole="alert" style={styles.error}>{exportError}</Text> : null}
     <OrderInvoiceDocument getQrRef={(ref) => { qr.current = ref; }} invoiceNumber={invoice.data.number} issuedAt={invoice.data.issuedAt} nativeID={printId} order={invoice.data.order} qrExpiresAt={invoice.data.qrExpiresAt} qrPayload={invoice.data.qrPayload} />
@@ -45,6 +45,6 @@ export function InvoiceScreen() {
 const styles = StyleSheet.create({
   actions: { alignItems: "flex-end" },
   print: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, flexDirection: "row", gap: 7, minHeight: 44, paddingHorizontal: spacing.lg },
-  printText: { color: "#fff", fontWeight: "700" },
-  error: { backgroundColor: "#fef2f2", borderRadius: radius.md, color: colors.danger, padding: spacing.md }
+  printText: { color: colors.onPrimary, fontWeight: "700" },
+  error: { backgroundColor: colors.primarySoft, borderRadius: radius.md, color: colors.danger, padding: spacing.md }
 });
