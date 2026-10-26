@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   promo: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.lg, flexDirection: "row", flexWrap: "wrap", gap: 14, padding: 20 },
   promoIcon: { alignItems: "center", backgroundColor: "rgba(255,255,255,0.15)", borderRadius: radius.pill, height: 58, justifyContent: "center", width: 58 },
   promoCopy: { flex: 1, minWidth: 200 },
-  promoKicker: { color: "#bae6fd", fontSize: 9, fontWeight: "700", letterSpacing: 1 },
+  promoKicker: { color: colors.shellAccent, fontSize: 9, fontWeight: "700", letterSpacing: 1 },
   promoTitle: { color: colors.surface, fontSize: 20, fontWeight: "700", marginTop: 3 },
   promoText: { color: "rgba(255,255,255,0.82)", fontSize: 11, marginTop: 4 },
   promoCode: { borderColor: "rgba(255,255,255,0.6)", borderRadius: radius.md, borderStyle: "dashed", borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10 },

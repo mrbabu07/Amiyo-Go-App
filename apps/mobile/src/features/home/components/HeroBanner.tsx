@@ -15,7 +15,7 @@ export function HeroBanner({ banner, desktop }: { banner?: Banner; desktop: bool
   return <ImageBackground imageStyle={styles.image} source={{ uri: imageUrl }} style={[styles.hero, desktop && styles.desktopHero]}>
     <View style={styles.overlay} />
     <View style={styles.content}>
-      <View style={styles.badge}><Ionicons color="#fff" name="flash" size={13} /><Text style={styles.badgeText}>{banner?.badgeText || "HOT DEALS"}</Text></View>
+      <View style={styles.badge}><Ionicons color={colors.onPrimary} name="flash" size={13} /><Text style={styles.badgeText}>{banner?.badgeText || "HOT DEALS"}</Text></View>
       <Text style={[styles.title, desktop && styles.desktopTitle, !desktop && styles.mobileTitle]}>{banner?.title || "Premium picks, daily deals"}</Text>
       <Text style={styles.subtitle}>{banner?.subtitle || "Shop verified sellers, flash offers, fast delivery and secure checkout across Bangladesh."}</Text>
       <View style={styles.actions}><Pressable accessibilityRole="button" onPress={openDestination} style={[styles.cta, !desktop && styles.mobileAction]}><Text style={styles.ctaText}>{banner?.ctaLabel || "Shop now"}</Text><Ionicons color={colors.surface} name="arrow-forward" size={17} /></Pressable><Pressable accessibilityRole="button" onPress={() => router.push("/categories" as never)} style={[styles.secondary, !desktop && styles.mobileAction]}><Text style={styles.secondaryText}>All categories</Text></Pressable></View>

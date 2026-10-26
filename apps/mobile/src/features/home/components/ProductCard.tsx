@@ -81,7 +81,7 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
           <Text numberOfLines={2} style={styles.title}>{product.title}</Text>
           <View style={styles.shopRow}><Ionicons color={colors.success} name="checkmark-circle" size={12} /><Text numberOfLines={1} style={styles.shop}>{product.shop}</Text></View>
           <View style={styles.priceRow}><Text style={styles.price}>{money(product.priceMinor)}</Text>{product.originalPriceMinor ? <Text style={styles.original}>{money(product.originalPriceMinor)}</Text> : null}</View>
-          <View style={styles.metaRow}><Ionicons color="#f59e0b" name="star" size={13} /><Text style={styles.rating}>{product.rating}</Text><Text style={styles.sold}>{product.reviewCount} reviews</Text></View>
+          <View style={styles.metaRow}><Ionicons color={colors.warning} name="star" size={13} /><Text style={styles.rating}>{product.rating}</Text><Text style={styles.sold}>{product.reviewCount} reviews</Text></View>
         </View>
       </Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={`Add ${product.title} to cart`} accessibilityState={{ busy: addToCart.isPending }} disabled={addToCart.isPending} onPress={() => addToCart.mutate()} style={({ pressed }) => [styles.cart, (pressed || addToCart.isPending) && styles.heartBusy]}>
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   shop: { color: colors.muted, flex: 1, fontSize: 10, fontWeight: "700" },
   priceRow: { alignItems: "baseline", flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 8 },
   price: { color: colors.accent, fontSize: 18, fontWeight: "700" },
-  original: { color: "#94a3b8", fontSize: 10, textDecorationLine: "line-through" },
+  original: { color: colors.muted, fontSize: 10, textDecorationLine: "line-through" },
   metaRow: { alignItems: "center", flexDirection: "row", marginTop: 8, paddingTop: 4 },
   rating: { color: colors.text, fontSize: 10, fontWeight: "600", marginLeft: 3 },
   sold: { color: colors.muted, fontSize: 9, marginLeft: 6 },

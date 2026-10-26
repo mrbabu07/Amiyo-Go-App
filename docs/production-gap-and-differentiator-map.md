@@ -2,7 +2,7 @@
 
 Current gate snapshot (2026-10-25): `npm run release:check` reports one unresolved business decision (`Data retention`) and five propagated high package nodes from two Expo build-tool advisories. API and worker runtime audits are clean. Android, iOS, finance-provider, restore, staging-smoke and retention-approval evidence remain missing. Older counts below are retained only as dated verification history.
 
-Current automated evidence (2026-10-26): the complete workspace and repository regression rebuilt the TypeScript workspaces and passed 1,112 tests: API 311, mobile 466, worker 55, config 10, contracts 86, domain 28, migration 2, observability 2, and repository hardening/integration 152. This proves the automated scope only; it does not replace the external evidence listed above.
+Current automated evidence (2026-10-26): the complete workspace and repository regression rebuilt the TypeScript workspaces and passed 1,113 tests: API 311, mobile 467, worker 55, config 10, contracts 86, domain 28, migration 2, observability 2, and repository hardening/integration 152. This proves the automated scope only; it does not replace the external evidence listed above.
 
 Village assisted-commerce follow-up (2026-10-25): authorized admins can search sellable in-stock variants from Customer 360 and prepare a customer's cart after a phone request. The customer still reviews address, delivery, discounts and payment, so the admin workflow never places an order or charges the customer. The operation is controlled by `villageOperations.assistedOrderingEnabled`, validates active customer and stock state, creates an in-app notification, and records the admin's reason in the audit trail.
 
@@ -15,6 +15,8 @@ Offline experience follow-up (2026-10-25): the global connectivity banner now us
 Workspace theme follow-up (2026-10-25): admin and seller navigation now use semantic on-primary, shell-muted, olive-accent and shell-danger tokens across light and dark mode. Legacy blue active markers and slate/red literals were removed from the shared shell so maroon actions remain readable against the navy command surface.
 
 Workspace palette follow-up (2026-10-26): the remaining hardcoded slate admin dark-mode surfaces, search placeholders, generic orange eyebrow and gray heading copy were replaced by the approved navy, maroon, olive and off-white semantic palettes. The shared customer, seller and admin shell now follows the selected theme without reverting to the earlier blue/slate visual system.
+
+Customer surface palette follow-up (2026-10-26): prominent home promotion copy, product comparison prices, ratings, hero badges, footer links, wishlist bulk actions and address placeholders now use semantic brand tokens instead of legacy blue/slate or literal white values. These high-frequency shopping surfaces therefore remain readable in both configured themes without drifting from the approved palette.
 
 Manual delivery-area follow-up (2026-10-25): admins can independently enable same-union, same-upazila, same-district and outside-district delivery while retaining a fee for each zone. Customer quotes refresh against the selected saved address; guest quotes debounce a complete unsaved village location so the visible summary uses the same zone rules before address creation. Disabled zones return no charge, remain editable in guest checkout, and checkout revalidates the zone inside the order transaction before inventory or payment writes. This supports local manual delivery operations without claiming third-party courier automation.
 

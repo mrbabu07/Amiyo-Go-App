@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   name: { color: colors.text, fontWeight: "600" },
   error: { color: colors.danger, lineHeight: 20 },
   button: { backgroundColor: colors.primary, borderRadius: radius.md, alignItems: "center", justifyContent: "center", minHeight: 44, padding: spacing.sm },
-  buttonText: { color: "#fff", fontWeight: "600" },
+  buttonText: { color: colors.onPrimary, fontWeight: "600" },
   disabled: { opacity: 0.6 },
   results: { gap: spacing.sm },
   item: { backgroundColor: colors.background, borderRadius: radius.sm, padding: spacing.sm, gap: 4 },
