@@ -44,7 +44,7 @@ export function AdminPayoutsScreen({ requestsOnly = false }: { requestsOnly?: bo
   const select = (item: AdminPayoutSummary) => { setSelected(item); closeAction(); };
 
   return <Screen eyebrow="FINANCE CONTROL" title={requestsOnly ? "Payout request review" : "Vendor payout desk"} description="Approve seller withdrawals, verify bank/MFS details and record settlement references with a clean audit trail.">
-    <View style={[styles.hero, compact && styles.heroCompact]}><View style={styles.heroCopy}><Text style={styles.heroTitle}>Seller settlement control</Text><Text style={styles.heroText}>{rows.filter((item) => item.status === "REQUESTED").length} waiting review | {rows.filter((item) => ["APPROVED", "PROCESSING"].includes(item.status)).length} ready to pay | {money(payableMinor)} payable now</Text></View><View style={styles.actions}><Pressable disabled={propose.isPending} onPress={() => propose.mutate()} style={styles.heroRefresh}><Ionicons color="#fff" name="layers-outline" size={19} /><Text style={styles.heroRefreshText}>{propose.isPending ? "Preparing…" : "Build settlement batch"}</Text></Pressable><Pressable onPress={() => payouts.refetch()} style={styles.heroRefresh}><Ionicons color="#fff" name="refresh" size={19} /><Text style={styles.heroRefreshText}>Refresh</Text></Pressable></View></View>
+    <View style={[styles.hero, compact && styles.heroCompact]}><View style={styles.heroCopy}><Text style={styles.heroTitle}>Seller settlement control</Text><Text style={styles.heroText}>{rows.filter((item) => item.status === "REQUESTED").length} waiting review | {rows.filter((item) => ["APPROVED", "PROCESSING"].includes(item.status)).length} ready to pay | {money(payableMinor)} payable now</Text></View><View style={styles.actions}><Pressable disabled={propose.isPending} onPress={() => propose.mutate()} style={styles.heroRefresh}><Ionicons color={colors.onPrimary} name="layers-outline" size={19} /><Text style={styles.heroRefreshText}>{propose.isPending ? "Preparing…" : "Build settlement batch"}</Text></Pressable><Pressable onPress={() => payouts.refetch()} style={styles.heroRefresh}><Ionicons color={colors.onPrimary} name="refresh" size={19} /><Text style={styles.heroRefreshText}>Refresh</Text></Pressable></View></View>
     {propose.error ? <ErrorBox message={propose.error.message} /> : null}{proposals.data?.length ? <View style={styles.proposal}><Ionicons color={colors.success} name="document-text-outline" size={21} /><View style={styles.flex}><Text style={styles.vendor}>Latest proposal · {proposals.data[0]!.status}</Text><Text style={styles.muted}>{money(proposals.data[0]!.amount.amountMinor)} · {new Date(proposals.data[0]!.createdAt).toLocaleString("en-BD")}</Text></View><Text style={styles.status}>{proposals.data.length} BATCH{proposals.data.length === 1 ? "" : "ES"}</Text></View> : null}
     <View style={[styles.metrics, compact && styles.stack]}><Metric icon="time-outline" label="Review queue" value={money(requestedMinor)} detail={`${rows.filter((item) => item.status === "REQUESTED").length} request(s)`} /><Metric icon="wallet-outline" label="Payable approved" value={money(payableMinor)} detail="Approved or processing" /><Metric icon="shield-checkmark-outline" label="Paid total" value={money(paidMinor)} detail={`${rows.filter((item) => item.status === "PAID").length} completed`} /><Metric icon="alert-circle-outline" label="Needs bank check" value={String(rows.filter((item) => !item.bankAccount).length)} detail="Missing payout account" /></View>
     <View style={[styles.toolbar, compact && styles.stack]}><View style={styles.search}><Ionicons color={colors.muted} name="search-outline" size={18} /><TextInput onChangeText={setSearch} placeholder="Search vendor, request ID, bank or MFS..." placeholderTextColor={colors.muted} style={styles.searchInput} value={search} /></View></View>
@@ -81,7 +81,7 @@ function PayoutDetail({ action, error, item, onAction, onClose, onComplete, onPr
     {action === "REJECT" ? <TextInput multiline onChangeText={onReason} placeholder="Rejection reason (required)" placeholderTextColor={colors.muted} style={[styles.field, styles.note]} value={reason} /> : null}
     {action === "APPROVE" ? <TextInput multiline onChangeText={onReason} placeholder="Approval note (optional)" placeholderTextColor={colors.muted} style={[styles.field, styles.note]} value={reason} /> : null}
     {action === "PAY" ? <><TextInput onChangeText={onProvider} placeholder="Payment provider" placeholderTextColor={colors.muted} style={styles.field} value={provider} /><TextInput onChangeText={onProviderRef} placeholder="Transaction reference" placeholderTextColor={colors.muted} style={styles.field} value={providerRef} /></> : null}
-    {action ? <Pressable disabled={saving || (action === "PAY" && !item.bankAccount)} onPress={action === "PAY" ? onComplete : onReview} style={[styles.primary, action === "REJECT" && styles.dangerPrimary, (saving || (action === "PAY" && !item.bankAccount)) && styles.disabled]}>{saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>Confirm {action.toLowerCase()}</Text>}</Pressable> : null}
+    {action ? <Pressable disabled={saving || (action === "PAY" && !item.bankAccount)} onPress={action === "PAY" ? onComplete : onReview} style={[styles.primary, action === "REJECT" && styles.dangerPrimary, (saving || (action === "PAY" && !item.bankAccount)) && styles.disabled]}>{saving ? <ActivityIndicator color={colors.onPrimary} /> : <Text style={styles.primaryText}>Confirm {action.toLowerCase()}</Text>}</Pressable> : null}
     {error ? <ErrorBox message={error} /> : null}
   </View>;
 }
@@ -100,10 +100,10 @@ const styles = StyleSheet.create({
   hero: { alignItems: "center", backgroundColor: colors.navy, borderRadius: radius.xl, flexDirection: "row", gap: spacing.lg, justifyContent: "space-between", padding: spacing.xl },
   heroCompact: { alignItems: "stretch", flexDirection: "column" },
   heroCopy: { flex: 1, minWidth: 0 },
-  heroTitle: { color: "#fff", fontSize: 26, fontWeight: "700", letterSpacing: -0.5 },
-  heroText: { color: "#cbd5e1", lineHeight: 20, marginTop: 5 },
+  heroTitle: { color: colors.onPrimary, fontSize: 26, fontWeight: "700", letterSpacing: -0.5 },
+  heroText: { color: colors.shellMuted, lineHeight: 20, marginTop: 5 },
   heroRefresh: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, flexDirection: "row", gap: 7, justifyContent: "center", minHeight: 44, paddingHorizontal: spacing.lg },
-  heroRefreshText: { color: "#fff", fontWeight: "700" },
+  heroRefreshText: { color: colors.onPrimary, fontWeight: "700" },
   proposal: { alignItems: "center", backgroundColor: colors.accentSoft, borderColor: colors.accent, borderRadius: radius.lg, borderWidth: 1, flexDirection: "row", gap: spacing.sm, padding: spacing.md },
   metrics: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
   stack: { alignItems: "stretch", flexDirection: "column" },
@@ -118,9 +118,9 @@ const styles = StyleSheet.create({
   filter: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 18, borderWidth: 1, flexDirection: "row", gap: 7, paddingHorizontal: 11, paddingVertical: 8 },
   filterActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   filterText: { color: colors.muted, fontSize: 10, fontWeight: "700" },
-  filterTextActive: { color: "#fff" },
+  filterTextActive: { color: colors.onPrimary },
   count: { backgroundColor: colors.accentSoft, borderRadius: 10, color: colors.text, fontSize: 9, fontWeight: "700", minWidth: 18, overflow: "hidden", paddingHorizontal: 5, paddingVertical: 2, textAlign: "center" },
-  countActive: { backgroundColor: "rgba(255,255,255,.2)", color: "#fff" },
+  countActive: { backgroundColor: colors.accent, color: colors.onPrimary },
   list: { gap: spacing.md },
   card: { backgroundColor: colors.surface, borderRadius: radius.lg, overflow: "hidden", padding: spacing.md, shadowColor: colors.navy, shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.06, shadowRadius: 14 },
   cardCompact: { padding: spacing.sm },
@@ -128,12 +128,12 @@ const styles = StyleSheet.create({
   cardTop: { alignItems: "center", flexDirection: "row", gap: 10 },
   cardTopCompact: { alignItems: "flex-start", flexWrap: "wrap" },
   icon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.md, height: 42, justifyContent: "center", width: 42 },
-  iconDanger: { backgroundColor: "#fef2f2" },
+  iconDanger: { backgroundColor: colors.primarySoft },
   flex: { flex: 1, minWidth: 0 },
   vendor: { color: colors.text, fontSize: 13, fontWeight: "700" },
   muted: { color: colors.muted, flexShrink: 1, fontSize: 10, lineHeight: 16, marginTop: 3 },
   status: { backgroundColor: colors.accentSoft, borderRadius: 12, color: colors.text, fontSize: 9, fontWeight: "700", overflow: "hidden", paddingHorizontal: 8, paddingVertical: 5 },
-  statusReady: { backgroundColor: "#fff7ed", color: colors.warning },
+  statusReady: { backgroundColor: colors.primarySoft, color: colors.warning },
   statusGood: { backgroundColor: "#dcfce7", color: "#166534" },
   statusBad: { backgroundColor: "#fee2e2", color: "#991b1b" },
   progress: { flexDirection: "row", flexWrap: "wrap", gap: 0, marginTop: spacing.md },
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   close: { alignItems: "center", backgroundColor: colors.background, borderRadius: radius.md, height: 38, justifyContent: "center", width: 38 },
   reviewBanner: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.lg, flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: spacing.md, padding: spacing.md },
   reviewTitle: { color: colors.text, fontWeight: "700" },
-  amountPill: { backgroundColor: "#fff", borderRadius: radius.pill, color: colors.accent, fontWeight: "700", overflow: "hidden", paddingHorizontal: 12, paddingVertical: 7 },
+  amountPill: { backgroundColor: colors.surface, borderRadius: radius.pill, color: colors.accent, fontWeight: "700", overflow: "hidden", paddingHorizontal: 12, paddingVertical: 7 },
   history: { marginTop: spacing.md },
   section: { color: colors.text, fontSize: 12, fontWeight: "700", marginBottom: 7 },
   historyRow: { alignItems: "center", borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: "row", gap: spacing.md, justifyContent: "space-between", paddingVertical: 9 },
@@ -174,13 +174,13 @@ const styles = StyleSheet.create({
   actionActive: { backgroundColor: colors.primary },
   actionDanger: { borderColor: colors.danger },
   actionText: { color: colors.primary, fontSize: 11, fontWeight: "700" },
-  actionTextActive: { color: "#fff" },
+  actionTextActive: { color: colors.onPrimary },
   actionDangerText: { color: colors.danger, fontSize: 11, fontWeight: "700" },
   field: { backgroundColor: colors.background, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, marginTop: 10, minHeight: 44, outlineStyle: "none", padding: 11 } as never,
   note: { minHeight: 72, textAlignVertical: "top" },
   primary: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, justifyContent: "center", marginTop: 10, minHeight: 44 },
   dangerPrimary: { backgroundColor: colors.danger },
-  primaryText: { color: "#fff", fontSize: 12, fontWeight: "700" },
+  primaryText: { color: colors.onPrimary, fontSize: 12, fontWeight: "700" },
   disabled: { opacity: 0.55 },
   error: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.md, flexDirection: "row", gap: 8, marginTop: 10, padding: 11 },
   errorText: { color: colors.danger, flex: 1, fontSize: 11, fontWeight: "700" },
