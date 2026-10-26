@@ -4,7 +4,7 @@ import type { User } from "@firebase/auth";
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
 
 async function publicRequest(path: string) {
-  const response = await fetch(`${apiUrl}${path}`);
+  const response = await fetch(`${apiUrl}${path}`, { cache: "no-store" });
   if (!response.ok) {
     const problem = await response.json().catch(() => null) as { title?: string } | null;
     throw new Error(problem?.title || `Catalog request failed (${response.status})`);
