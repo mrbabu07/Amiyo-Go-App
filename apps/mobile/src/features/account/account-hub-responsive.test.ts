@@ -24,4 +24,9 @@ test("account hub uses the premium marketplace palette", () => {
 test("account hub exposes navigation and sign-out controls as buttons", () => {
   assert.match(source, /accessibilityLabel="Back to home" accessibilityRole="button"/);
   assert.match(source, /accessibilityLabel="Sign out" accessibilityRole="button"/);
+  assert.match(source, /accessibilityLabel={`\$\{item\.label\}\. \$\{item\.copy\}`} accessibilityRole="button"/);
+  assert.match(source, /accessibilityRole="radiogroup"/);
+  assert.match(source, /accessibilityRole="radio" accessibilityState=\{\{ checked: value === option\.value \}\}/);
+  assert.match(source, /accessibilityLabel=\{label\} \{\.\.\.rest\}/);
+  assert.match(source, /accessibilityRole="button" accessibilityState=\{\{ busy, disabled: busy \}\}/);
 });
