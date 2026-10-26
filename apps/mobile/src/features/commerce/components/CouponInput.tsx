@@ -1,17 +1,21 @@
 import type { CheckoutQuote } from "@amiyo/contracts";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
+import { usePathname } from "expo-router";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../../ui/tokens";
 import { formatMinor } from "../../../ui/money";
+import { CheckoutPackages } from "./CheckoutPackages";
 
 const money = (minor: string) => formatMinor(minor);
 
 export function CouponInput({ appliedQuote, busy, onApply, onRemove }: { appliedQuote?: CheckoutQuote | null; busy?: boolean; onApply(code: string): Promise<void>; onRemove(): void }) {
   const compact = useWindowDimensions().width < 480;
+  const pathname = usePathname();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const applied = appliedQuote?.coupon;
+  const packagePreview = appliedQuote && pathname.includes("checkout") ? <CheckoutPackages quote={appliedQuote} /> : null;
 
   async function apply() {
     const normalized = code.trim().toUpperCase();
@@ -23,7 +27,7 @@ export function CouponInput({ appliedQuote, busy, onApply, onRemove }: { applied
 
   if (applied && appliedQuote) {
     return (
-      <View style={[styles.applied, compact && styles.appliedCompact]}>
+      <View style={styles.container}>{packagePreview}<View style={[styles.applied, compact && styles.appliedCompact]}>
         <View style={styles.appliedIcon}><Ionicons color={colors.success} name="checkmark-circle" size={25} /></View>
         <View style={styles.copy}>
           <Text style={styles.appliedTitle}>Coupon Applied: {applied.code}</Text>
@@ -31,12 +35,12 @@ export function CouponInput({ appliedQuote, busy, onApply, onRemove }: { applied
           <Text style={styles.note}>Only one coupon or voucher can be used per order.</Text>
         </View>
         <Pressable accessibilityRole="button" onPress={onRemove} style={[styles.removeButton, compact && styles.removeButtonCompact]}><Text style={styles.remove}>Remove</Text></Pressable>
-      </View>
+      </View></View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container}>{packagePreview}
       <Text style={styles.label}>Coupon or voucher code</Text>
       <View style={[styles.row, compact && styles.rowCompact]}>
         <View style={styles.inputWrap}>
