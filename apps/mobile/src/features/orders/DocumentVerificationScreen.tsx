@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
   text: { color: colors.text },
   input: { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border, borderWidth: 1, borderRadius: radius.md, padding: spacing.md, minHeight: 130, textAlignVertical: "top" },
   button: { backgroundColor: colors.primary, borderRadius: radius.md, minHeight: 48, alignItems: "center", justifyContent: "center" },
-  buttonText: { color: "#fff", fontWeight: "600" },
+  buttonText: { color: colors.onPrimary, fontWeight: "600" },
   result: { backgroundColor: colors.surface, padding: spacing.md, borderRadius: radius.md, gap: spacing.sm },
   error: { color: colors.danger }
 });

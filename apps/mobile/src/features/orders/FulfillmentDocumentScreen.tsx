@@ -78,12 +78,12 @@ const styles = StyleSheet.create({
   route: { flex: 1, gap: spacing.xs, minWidth: 170 },
   meta: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   cell: { borderColor: "#050B14", borderWidth: 1, flexBasis: 150, flexGrow: 1, gap: 2, minHeight: 52, padding: spacing.sm },
-  pickup: { backgroundColor: "#f8fafc", gap: 2, padding: spacing.sm },
+  pickup: { backgroundColor: colors.background, gap: 2, padding: spacing.sm },
   signed: { color: colors.success, fontSize: 9, fontWeight: "700", textAlign: "center" },
   row: { flexDirection: "row", gap: spacing.md, justifyContent: "space-between" },
   flex: { flex: 1 },
   muted: { color: colors.muted },
   button: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.md, justifyContent: "center", minHeight: 48 },
-  buttonText: { color: "#fff", fontWeight: "700" },
+  buttonText: { color: colors.onPrimary, fontWeight: "700" },
   error: { color: colors.danger }
 });

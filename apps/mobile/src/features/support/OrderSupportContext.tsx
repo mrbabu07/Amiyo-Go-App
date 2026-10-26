@@ -24,5 +24,5 @@ const styles = StyleSheet.create({
   copy: { color: colors.text, lineHeight: 21 },
   error: { color: colors.danger },
   button: { minHeight: 44, padding: spacing.sm, backgroundColor: colors.primary, borderRadius: radius.md, alignItems: "center", justifyContent: "center" },
-  buttonText: { color: "#fff", fontWeight: "600" }
+  buttonText: { color: colors.onPrimary, fontWeight: "600" }
 });

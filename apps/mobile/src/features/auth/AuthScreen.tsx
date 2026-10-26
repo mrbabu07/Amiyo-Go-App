@@ -107,7 +107,7 @@ export function AuthScreen() {
           {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
           {notice ? <Text accessibilityRole="alert" style={styles.notice}>{notice}</Text> : null}
           <Pressable accessibilityRole="button" accessibilityLabel={mode === "login" ? "Sign in" : "Create account"} accessibilityState={{ busy, disabled: busy || !firebaseConfigured || !email.trim() || password.length < 6 }} disabled={busy || !firebaseConfigured || !email.trim() || password.length < 6} onPress={submit} style={({ pressed }) => [styles.primary, (pressed || busy) && styles.pressed]}>
-            {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>{mode === "login" ? "Sign in" : "Create account"}</Text>}
+            {busy ? <ActivityIndicator color={colors.onPrimary} /> : <Text style={styles.primaryText}>{mode === "login" ? "Sign in" : "Create account"}</Text>}
           </Pressable>
           <Pressable accessibilityRole="button" disabled={busy} onPress={() => { setMode(mode === "login" ? "register" : "login"); setError(null); }}>
             <Text style={styles.switchText}>{mode === "login" ? "New to Amiyo-Go? Create account" : "Already have an account? Sign in"}</Text>

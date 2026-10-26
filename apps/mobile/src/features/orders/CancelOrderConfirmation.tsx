@@ -33,11 +33,11 @@ const styles = StyleSheet.create({
   reasonChip: { borderRadius: radius.pill, backgroundColor: colors.surface, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   reasonChipActive: { backgroundColor: colors.primary },
   reasonChipText: { color: colors.text, fontWeight: "500" },
-  reasonChipTextActive: { color: "#fff" },
+  reasonChipTextActive: { color: colors.onPrimary },
   input: { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.md, minHeight: 80, padding: spacing.md },
   error: { color: colors.danger },
   confirm: { backgroundColor: colors.danger, padding: spacing.md, borderRadius: radius.md, minHeight: 44, alignItems: "center" },
-  confirmText: { color: "#fff", fontWeight: "600" },
+  confirmText: { color: colors.onPrimary, fontWeight: "600" },
   keep: { padding: spacing.md, minHeight: 44, alignItems: "center" },
   disabled: { opacity: 0.5 }
 });

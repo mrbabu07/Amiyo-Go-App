@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   previewWrap: { alignItems: "center", flexDirection: "row", minWidth: 92 },
   previewFrame: { backgroundColor: colors.surface, borderRadius: radius.md, overflow: "hidden", position: "relative" },
   qtyBadge: { backgroundColor: "rgba(15,23,42,.78)", borderRadius: radius.pill, bottom: 4, paddingHorizontal: 6, paddingVertical: 2, position: "absolute", right: 4 },
-  qtyText: { color: "#fff", fontSize: 9, fontWeight: "700" },
+  qtyText: { color: colors.onPrimary, fontSize: 9, fontWeight: "700" },
   moreBadge: { alignItems: "center", backgroundColor: colors.primarySoft, borderColor: colors.surface, borderRadius: radius.pill, borderWidth: 3, height: 42, justifyContent: "center", marginLeft: -14, width: 42 },
   moreText: { color: colors.primary, fontSize: 11, fontWeight: "700" },
   productCopy: { flex: 1, minWidth: 0 },

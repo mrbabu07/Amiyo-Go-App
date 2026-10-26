@@ -34,5 +34,5 @@ const styles = StyleSheet.create({
   name: { color: colors.text, fontSize: 16, fontWeight: "600" },
   text: { color: colors.text, fontSize: 14, lineHeight: 22, flexShrink: 1 },
   pay: { minHeight: 44, alignItems: "center", justifyContent: "center", backgroundColor: colors.primary, borderRadius: radius.md, paddingHorizontal: spacing.md },
-  payText: { color: "#fff", fontWeight: "600" }
+  payText: { color: colors.onPrimary, fontWeight: "600" }
 });
