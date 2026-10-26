@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { PrismaClient } from "@prisma/client";
 import type { Session } from "@amiyo/contracts";
-import { cartDto, CommerceService, shopVacationActive } from "./commerce.service.js";
+import { cartDto, checkoutCartDisposition, CommerceService, selectedCart, shopVacationActive } from "./commerce.service.js";
 
 const session = { principal: { userId: "11111111-1111-4111-8111-111111111111", roles: ["CUSTOMER"], vendorIds: [] }, status: "ACTIVE", email: null, phone: null, profile: { firstName: null, lastName: null, displayName: "Customer", avatarStorageKey: null, locale: "en", currency: "BDT" }, permissions: ["checkout:manage"], vendorMemberships: [] } as Session;
 const checkout = { addressId: "22222222-2222-4222-8222-222222222222", paymentMethod: "SSLCOMMERZ" as const };
@@ -56,4 +56,14 @@ test("cart response includes seller shop identity for package grouping", () => {
     shopSlug: cart.items[0].shopSlug
   }, { shopId: "shop-1", shopName: "Amiyo Village Store", shopSlug: "amiyo-village-store" });
   assert.equal(cart.items[0]?.availableQuantity, 10);
+});
+
+test("checkout selection rejects stale IDs and keeps only explicitly selected cart lines", () => {
+  const first = { id: "11111111-1111-4111-8111-111111111111" };
+  const second = { id: "22222222-2222-4222-8222-222222222222" };
+  const cart = { id: "cart-1", items: [first, second] } as unknown as Parameters<typeof selectedCart>[0];
+  assert.deepEqual(selectedCart(cart, [second.id]).items.map((item) => item.id), [second.id]);
+  assert.throws(() => selectedCart(cart, ["33333333-3333-4333-8333-333333333333"]), /selection changed/i);
+  assert.deepEqual(checkoutCartDisposition(cart, selectedCart(cart, [second.id])), { convertCart: false, selectedItemIds: [second.id] });
+  assert.deepEqual(checkoutCartDisposition(cart, cart), { convertCart: true, selectedItemIds: [first.id, second.id] });
 });

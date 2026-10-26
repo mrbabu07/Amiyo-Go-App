@@ -11,6 +11,7 @@ import { formatMinor, isPositiveMinor, subtractMinor } from "../../ui/money";
 import { getMyAddresses } from "../auth/auth.api";
 import { useCurrentUser } from "../auth/use-current-user";
 import { createCheckoutAttempt } from "./checkout-attempt";
+import { parseCartItemIds } from "./cart-selection";
 import { getCheckoutQuote, getPendingCheckout, placeOrder } from "./commerce.api";
 import { CheckoutRecovery } from "./CheckoutRecovery";
 import { CouponInput } from "./components/CouponInput";
@@ -29,7 +30,8 @@ export function CheckoutScreen() {
   const { width } = useWindowDimensions();
   const compact = width < 768;
   const router = useRouter();
-  const params = useLocalSearchParams<{ couponCode?: string }>();
+  const params = useLocalSearchParams<{ couponCode?: string; itemIds?: string }>();
+  const cartItemIds = params.itemIds === undefined ? undefined : parseCartItemIds(params.itemIds);
   const queryClient = useQueryClient();
   const user = useCurrentUser();
   const activeUid = useRef(user?.uid);
@@ -46,7 +48,7 @@ export function CheckoutScreen() {
   const [codPhoneConfirmed, setCodPhoneConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const addresses = useQuery({ queryKey: ["me", "addresses", user?.uid], queryFn: () => getMyAddresses(user!), enabled: Boolean(user) });
-  const quote = useQuery({ queryKey: ["checkout", user?.uid, "quote", couponCode, loyaltyPoints, addressId, pickupPointId], queryFn: () => getCheckoutQuote(user!, couponCode, loyaltyPoints, addressId, null, pickupPointId), enabled: Boolean(user) });
+  const quote = useQuery({ queryKey: ["checkout", user?.uid, "quote", couponCode, loyaltyPoints, addressId, pickupPointId, cartItemIds], queryFn: () => getCheckoutQuote(user!, couponCode, loyaltyPoints, addressId, null, pickupPointId, cartItemIds), enabled: Boolean(user) && (cartItemIds === undefined || cartItemIds.length > 0) });
   const platform = useQuery({ queryKey: ["platform", "public-settings"], queryFn: getPublicPlatformSettings, staleTime: 5 * 60_000 });
   const deliverySettings = useQuery({ queryKey: ["delivery", "settings"], queryFn: getDeliverySettings, staleTime: 5 * 60_000 });
   const pickupPoints = useQuery({ queryKey: ["delivery", "pickup-points"], queryFn: getPickupPoints, enabled: platform.data?.villageOperations.pickupPointsEnabled === true, staleTime: 5 * 60_000 });
@@ -59,7 +61,7 @@ export function CheckoutScreen() {
   useEffect(() => { setAddressId(null); setPickupPointId(null); setPaymentMethod("COD"); setCouponCode(params.couponCode?.toUpperCase() || null); setLoyaltyPoints("0"); setCodPhoneConfirmed(false); setError(null); submitLock.current = false; }, [user?.uid]);
   useEffect(() => { if (!addressId && addresses.data?.length) setAddressId((addresses.data.find((item) => item.isDefault) || addresses.data[0]!).id); }, [addressId, addresses.data]);
   useEffect(() => { setCodPhoneConfirmed(false); }, [addressId, user?.uid]);
-  async function applyCoupon(code: string) { if (!user) return; const ownerUid = user.uid; const next = await getCheckoutQuote(user, code, loyaltyPoints, addressId, null, pickupPointId); if (activeUid.current !== ownerUid) return; queryClient.setQueryData(["checkout", ownerUid, "quote", code, loyaltyPoints, addressId, pickupPointId], next); setCouponCode(code); }
+  async function applyCoupon(code: string) { if (!user) return; const ownerUid = user.uid; const next = await getCheckoutQuote(user, code, loyaltyPoints, addressId, null, pickupPointId, cartItemIds); if (activeUid.current !== ownerUid) return; queryClient.setQueryData(["checkout", ownerUid, "quote", code, loyaltyPoints, addressId, pickupPointId, cartItemIds], next); setCouponCode(code); }
   async function toggleRewards() {
     const loyalty = quote.data?.loyalty;
     if (!loyalty) return;
@@ -73,7 +75,7 @@ export function CheckoutScreen() {
     setBusy(true); setError(null);
     const ownerUid = user.uid;
     try {
-      const input = { addressId, pickupPointId, paymentMethod, couponCode, loyaltyPoints, codPhoneConfirmed };
+      const input = { addressId, pickupPointId, paymentMethod, couponCode, loyaltyPoints, codPhoneConfirmed, cartItemIds };
       const result = await attempt.current(JSON.stringify([user.uid, input]), (key) => placeOrder(user, input, key));
       if (activeUid.current !== ownerUid) return;
       queryClient.removeQueries({ queryKey: ["cart", ownerUid] });
@@ -84,6 +86,7 @@ export function CheckoutScreen() {
     finally { submitLock.current = false; if (activeUid.current === ownerUid) setBusy(false); }
   }
 
+  if (cartItemIds?.length === 0) return <Centered title="Select products first" copy="Return to your cart and choose at least one product for checkout." action="Back to cart" onPress={() => router.replace("/cart")} />;
   if (!user) return <Centered title="Sign in to checkout" copy="Checkout is currently available to authenticated customers." action="Sign in" onPress={() => router.replace("/auth")} />;
   if (recovery.isPending) return <Centered loading title="Checking previous checkout" copy="Looking for an unfinished order request." />;
   if (recovery.error) return <Centered title="Checkout recovery unavailable" copy={recovery.error.message} action="View my orders" onPress={() => router.replace("/orders")} />;

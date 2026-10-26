@@ -11,6 +11,7 @@ import { colors, radius, spacing } from "../../ui/tokens";
 import { createMyAddress } from "../auth/auth.api";
 import { useCurrentUser } from "../auth/use-current-user";
 import { createCheckoutAttempt } from "./checkout-attempt";
+import { parseCartItemIds } from "./cart-selection";
 import { ensureGuestUser } from "../auth/guest-auth";
 import { getCheckoutQuote, getPendingCheckout, placeOrder } from "./commerce.api";
 import { CheckoutRecovery } from "./CheckoutRecovery";
@@ -26,7 +27,8 @@ export function GuestCheckoutScreen() {
   const { width } = useWindowDimensions();
   const compact = width < 768;
   const router = useRouter();
-  const params = useLocalSearchParams<{ couponCode?: string }>();
+  const params = useLocalSearchParams<{ couponCode?: string; itemIds?: string }>();
+  const cartItemIds = params.itemIds === undefined ? undefined : parseCartItemIds(params.itemIds);
   const queryClient = useQueryClient();
   const user = useCurrentUser();
   const activeUid = useRef(user?.uid);
@@ -48,7 +50,7 @@ export function GuestCheckoutScreen() {
   const availableMethods = paymentMethods.filter((method) => paymentMethodEnabled(platform.data, method.value));
   const village = platform.data?.villageOperations;
   const policyError = checkoutPolicyError(platform.error ? undefined : platform.data, paymentMethod, codPhoneConfirmed, form);
-  const quote = useQuery({ queryKey: ["checkout", "guest-quote", couponCode, user?.uid, quoteLocation], queryFn: () => getCheckoutQuote(user!, couponCode, "0", null, quoteLocation), enabled: Boolean(user), placeholderData: (previous) => previous });
+  const quote = useQuery({ queryKey: ["checkout", "guest-quote", couponCode, user?.uid, quoteLocation, cartItemIds], queryFn: () => getCheckoutQuote(user!, couponCode, "0", null, quoteLocation, null, cartItemIds), enabled: Boolean(user) && (cartItemIds === undefined || cartItemIds.length > 0), placeholderData: (previous) => previous });
   const submitDisabled = busy || Boolean(policyError) || quote.isError || quote.isFetching;
 
   useEffect(() => {
@@ -64,7 +66,7 @@ export function GuestCheckoutScreen() {
   }, [form.district, form.division, form.unionName, form.upazila]);
 
   function update(key: keyof typeof form, value: string) { if (key === "phone") setCodPhoneConfirmed(false); setForm((current) => ({ ...current, [key]: value })); }
-  async function applyCoupon(code: string) { if (!user) return; const ownerUid = user.uid; const next = await getCheckoutQuote(user, code, "0", null, quoteLocation); if (activeUid.current !== ownerUid) return; queryClient.setQueryData(["checkout", "guest-quote", code, ownerUid, quoteLocation], next); setCouponCode(code); }
+  async function applyCoupon(code: string) { if (!user) return; const ownerUid = user.uid; const next = await getCheckoutQuote(user, code, "0", null, quoteLocation, null, cartItemIds); if (activeUid.current !== ownerUid) return; queryClient.setQueryData(["checkout", "guest-quote", code, ownerUid, quoteLocation, cartItemIds], next); setCouponCode(code); }
   async function submit() {
     if (submitLock.current) return;
     if (policyError) { setError(policyError); return; }
@@ -82,7 +84,7 @@ export function GuestCheckoutScreen() {
           deliveryAddresses.current.set(addressIdentity, addressId);
         }
         if (activeUid.current !== ownerUid) throw new Error("Account changed. Reopen checkout before continuing.");
-        return placeOrder(user, { addressId, paymentMethod, couponCode, loyaltyPoints: "0", codPhoneConfirmed }, key);
+        return placeOrder(user, { addressId, paymentMethod, couponCode, loyaltyPoints: "0", codPhoneConfirmed, cartItemIds }, key);
       });
       if (activeUid.current !== ownerUid) return;
       queryClient.removeQueries({ queryKey: ["cart", ownerUid] });

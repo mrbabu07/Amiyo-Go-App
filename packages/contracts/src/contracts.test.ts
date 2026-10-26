@@ -98,6 +98,9 @@ test("commerce contracts enforce quantities and supported payments", () => {
   assert.equal(addCartItemSchema.safeParse({ variantId: crypto.randomUUID(), quantity: 0 }).success, false);
   assert.equal(checkoutInputSchema.safeParse({ addressId: crypto.randomUUID(), paymentMethod: "BKASH" }).success, false);
   assert.equal(checkoutInputSchema.safeParse({ addressId: crypto.randomUUID(), paymentMethod: "BITCOIN" }).success, false);
+  const cartItemId = crypto.randomUUID();
+  assert.equal(checkoutInputSchema.safeParse({ addressId: crypto.randomUUID(), paymentMethod: "COD", cartItemIds: [cartItemId] }).success, true);
+  assert.equal(checkoutInputSchema.safeParse({ addressId: crypto.randomUUID(), paymentMethod: "COD", cartItemIds: [cartItemId, cartItemId] }).success, false);
 });
 
 test("assisted cart contracts require bounded quantities and an audit reason", () => {

@@ -21,6 +21,6 @@ test("selected checkout address refreshes the quote and disabled zones are rejec
 test("guest checkout debounces unsaved location quotes without trapping address correction", () => {
   assert.match(guestCheckout, /setTimeout\(\(\) => setQuoteLocation/);
   assert.match(guestCheckout, /placeholderData: \(previous\) => previous/);
-  assert.match(guestCheckout, /getCheckoutQuote\(user!, couponCode, "0", null, quoteLocation\)/);
+  assert.match(guestCheckout, /getCheckoutQuote\(user!, couponCode, "0", null, quoteLocation, null, cartItemIds\)/);
   assert.doesNotMatch(guestCheckout, /if \(!user \|\| quote\.error \|\| !quote\.data\)/);
 });

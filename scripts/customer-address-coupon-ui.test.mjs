@@ -12,8 +12,8 @@ test("address management mirrors the reference add and edit workflow", async () 
 
 test("coupon can be applied in cart and carried into checkout", async () => {
   const [cart, checkout, input] = await Promise.all([read("../apps/mobile/src/features/commerce/CartScreen.tsx"), read("../apps/mobile/src/features/commerce/CheckoutScreen.tsx"), read("../apps/mobile/src/features/commerce/components/CouponInput.tsx")]);
-  assert.match(cart, /couponCode=.*encodeURIComponent/);
-  assert.match(checkout, /const input = \{ addressId, pickupPointId, paymentMethod, couponCode, loyaltyPoints, codPhoneConfirmed \}/);
+  assert.match(cart, /new URLSearchParams\(\{ itemIds: selectedIds\.join\(","\), .*couponCode/);
+  assert.match(checkout, /const input = \{ addressId, pickupPointId, paymentMethod, couponCode, loyaltyPoints, codPhoneConfirmed, cartItemIds \}/);
   assert.match(checkout, /attempt\.current\(JSON\.stringify\(\[user\.uid, input\]\), \(key\) => placeOrder\(user, input, key\)\)/);
   for (const capability of ["Coupon or voucher code", "Coupon Applied", "You saved", "Only one coupon or voucher", "Remove"]) assert.match(input, new RegExp(capability));
 });

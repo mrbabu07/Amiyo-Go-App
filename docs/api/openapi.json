@@ -8089,6 +8089,15 @@
                   "loyaltyPoints": {
                     "type": "string",
                     "pattern": "^\\d+$"
+                  },
+                  "cartItemIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "minItems": 1,
+                    "maxItems": 100
                   }
                 }
               }
@@ -8208,6 +8217,15 @@
                   },
                   "codPhoneConfirmed": {
                     "type": "boolean"
+                  },
+                  "cartItemIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "minItems": 1,
+                    "maxItems": 100
                   }
                 },
                 "required": [
