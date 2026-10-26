@@ -14,6 +14,7 @@ test("primary customer surfaces use semantic brand colors", () => {
     "../features/auth/AuthScreen.tsx",
     "../features/catalog/MarketplacePageHero.tsx",
     "../features/catalog/ProductDetailScreen.tsx",
+    "../features/catalog/ShopScreen.tsx",
     "../features/engagement/AlertsScreen.tsx",
     "../features/engagement/MessagesScreen.tsx",
     "../features/engagement/MyReviewsScreen.tsx",
