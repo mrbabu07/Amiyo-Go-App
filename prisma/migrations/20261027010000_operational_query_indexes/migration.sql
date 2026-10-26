@@ -1,0 +1,13 @@
+CREATE INDEX "vendor_members_vendor_id_created_at_idx" ON "vendor_members"("vendor_id", "created_at");
+CREATE INDEX "vendor_shops_vendor_id_created_at_idx" ON "vendor_shops"("vendor_id", "created_at");
+CREATE INDEX "vendor_kyc_submissions_vendor_id_created_at_idx" ON "vendor_kyc_submissions"("vendor_id", "created_at");
+CREATE INDEX "vendor_kyc_submissions_status_created_at_idx" ON "vendor_kyc_submissions"("status", "created_at");
+CREATE INDEX "vendor_bank_accounts_vendor_id_created_at_idx" ON "vendor_bank_accounts"("vendor_id", "created_at");
+CREATE INDEX "products_vendor_id_updated_at_idx" ON "products"("vendor_id", "updated_at");
+CREATE INDEX "products_status_name_idx" ON "products"("status", "name");
+CREATE INDEX "inventory_items_reorder_level_updated_at_idx" ON "inventory_items"("reorder_level", "updated_at");
+CREATE INDEX "carts_status_updated_at_idx" ON "carts"("status", "updated_at");
+CREATE INDEX "outbox_events_relay_scan_idx" ON "outbox_events"("event_type", "status", "available_at", "created_at");
+CREATE INDEX "payment_verifications_status_created_at_idx" ON "payment_verifications"("status", "created_at");
+CREATE INDEX "chat_threads_updated_at_idx" ON "chat_threads"("updated_at");
+CREATE INDEX "newsletter_deliveries_broadcast_id_status_idx" ON "newsletter_deliveries"("broadcast_id", "status");

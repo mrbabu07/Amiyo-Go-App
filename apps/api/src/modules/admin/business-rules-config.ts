@@ -6,6 +6,7 @@ export type BusinessRules = {
   promotions: { maximumStackedDiscountBps: number; allowCodeWithAutomatic: boolean };
   orders: { customerCancellationMinutes: number };
   inventory: { reservationMinutes: number; allowBackorders: false; preventOverselling: true };
+  operations: { processingSlaHours: number; deliverySlaHours: number; sellerOrderAlertHours: number; codAddressReviewCount: number; codAddressWindowHours: number; buyerVelocityReviewCount: number; buyerVelocityWindowHours: number; highValueFloorMinor: bigint; highValueAverageMultiplier: number };
   settlement: { minimumPayoutMinor: bigint; holdDays: number; cadenceDays: number; automaticProposal: boolean };
   refunds: { requireProviderReference: boolean; allowPartial: boolean };
 };
@@ -15,6 +16,7 @@ type StoredBusinessRules = {
   promotions?: Partial<BusinessRules["promotions"]>;
   orders?: Partial<BusinessRules["orders"]>;
   inventory?: Partial<BusinessRules["inventory"]>;
+  operations?: Partial<Omit<BusinessRules["operations"], "highValueFloorMinor"> & { highValueFloorMinor: string }>;
   settlement?: Partial<{ minimumPayoutMinor: string; holdDays: number; cadenceDays: number; automaticProposal: boolean }>;
   refunds?: Partial<BusinessRules["refunds"]>;
 };
@@ -24,6 +26,7 @@ export const defaultBusinessRules: BusinessRules = {
   promotions: { maximumStackedDiscountBps: 3_500, allowCodeWithAutomatic: true },
   orders: { customerCancellationMinutes: 30 },
   inventory: { reservationMinutes: 30, allowBackorders: false, preventOverselling: true },
+  operations: { processingSlaHours: 48, deliverySlaHours: 120, sellerOrderAlertHours: 18, codAddressReviewCount: 3, codAddressWindowHours: 168, buyerVelocityReviewCount: 3, buyerVelocityWindowHours: 24, highValueFloorMinor: 2_000_000n, highValueAverageMultiplier: 4 },
   settlement: { minimumPayoutMinor: 50_000n, holdDays: 7, cadenceDays: 7, automaticProposal: true },
   refunds: { requireProviderReference: true, allowPartial: true }
 };
@@ -34,6 +37,7 @@ export function serializeBusinessRules(rules: BusinessRules) {
     promotions: rules.promotions,
     orders: rules.orders,
     inventory: rules.inventory,
+    operations: { ...rules.operations, highValueFloorMinor: rules.operations.highValueFloorMinor.toString() },
     settlement: { ...rules.settlement, minimumPayoutMinor: rules.settlement.minimumPayoutMinor.toString() },
     refunds: rules.refunds
   };
@@ -56,6 +60,7 @@ export function parseBusinessRules(value: Prisma.JsonValue | null | undefined): 
     promotions: { ...defaultBusinessRules.promotions, ...stored.promotions },
     orders: { ...defaultBusinessRules.orders, ...stored.orders },
     inventory: { ...defaultBusinessRules.inventory, ...stored.inventory, allowBackorders: false, preventOverselling: true },
+    operations: { ...defaultBusinessRules.operations, ...stored.operations, highValueFloorMinor: BigInt(stored.operations?.highValueFloorMinor ?? defaultBusinessRules.operations.highValueFloorMinor) },
     settlement: { ...defaultBusinessRules.settlement, ...stored.settlement, minimumPayoutMinor: BigInt(stored.settlement?.minimumPayoutMinor ?? defaultBusinessRules.settlement.minimumPayoutMinor) },
     refunds: { ...defaultBusinessRules.refunds, ...stored.refunds }
   };

@@ -394,6 +394,7 @@ model VendorMember {
 
   @@unique([vendorId, userId])
   @@index([userId])
+  @@index([vendorId, createdAt])
   @@map("vendor_members")
 }
 
@@ -429,6 +430,7 @@ model VendorShop {
   followers        ShopFollow[]
 
   @@index([vendorId, status])
+  @@index([vendorId, createdAt])
   @@map("vendor_shops")
 }
 
@@ -458,6 +460,8 @@ model VendorKycSubmission {
   documents       VendorKycDocument[]
 
   @@index([vendorId, status])
+  @@index([vendorId, createdAt])
+  @@index([status, createdAt])
   @@map("vendor_kyc_submissions")
 }
 
@@ -489,6 +493,7 @@ model VendorBankAccount {
   payoutRequests      VendorPayoutRequest[]
 
   @@index([vendorId])
+  @@index([vendorId, createdAt])
   @@map("vendor_bank_accounts")
 }
 
@@ -692,6 +697,8 @@ model Product {
 
   @@index([categoryId, status, createdAt])
   @@index([vendorId, status])
+  @@index([vendorId, updatedAt])
+  @@index([status, name])
   @@map("products")
 }
 
@@ -749,6 +756,7 @@ model InventoryItem {
   variant      ProductVariant      @relation(fields: [variantId], references: [id], onDelete: Restrict)
   movements    InventoryMovement[]
 
+  @@index([reorderLevel, updatedAt])
   @@map("inventory_items")
 }
 
@@ -853,6 +861,7 @@ model Cart {
   reservations InventoryReservation[]
 
   @@index([userId, status])
+  @@index([status, updatedAt])
   @@map("carts")
 }
 
@@ -1340,6 +1349,7 @@ model OutboxEvent {
   processedAt    DateTime? @map("processed_at") @db.Timestamptz(3)
 
   @@index([status, availableAt, createdAt])
+  @@index([eventType, status, availableAt, createdAt], map: "outbox_events_relay_scan_idx")
   @@map("outbox_events")
 }
 
@@ -1409,6 +1419,7 @@ model PaymentVerification {
   payment            Payment   @relation(fields: [paymentId], references: [id], onDelete: Restrict)
 
   @@unique([paymentId, transactionRef])
+  @@index([status, createdAt])
   @@map("payment_verifications")
 }
 
@@ -1887,6 +1898,7 @@ model ChatThread {
   participants ChatParticipant[]
 
   @@index([vendorId, updatedAt])
+  @@index([updatedAt])
   @@map("chat_threads")
 }
 
@@ -2133,6 +2145,7 @@ model NewsletterDelivery {
   subscriber   NewsletterSubscriber @relation(fields: [subscriberId], references: [id], onDelete: Restrict)
 
   @@unique([broadcastId, subscriberId])
+  @@index([broadcastId, status])
   @@index([status, createdAt])
   @@map("newsletter_deliveries")
 }

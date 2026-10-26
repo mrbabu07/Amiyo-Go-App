@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { PrismaClient } from "@prisma/client";
-import { sellerAlertPushEnabled, SellerOperationsAlertScheduler, shipmentAlertDue } from "./seller-operations-alert.scheduler.js";
+import { sellerAlertPushEnabled, sellerOrderAlertHours, SellerOperationsAlertScheduler, shipmentAlertDue } from "./seller-operations-alert.scheduler.js";
 
 test("seller operation preferences default safely and honor explicit opt-out", () => {
   assert.equal(sellerAlertPushEnabled(undefined, "lowStock"), true);
@@ -13,6 +13,12 @@ test("shipment warning starts at the exact eighteen-hour boundary", () => {
   const created = new Date("2026-10-20T00:00:00.000Z");
   assert.equal(shipmentAlertDue(created, new Date("2026-10-20T17:59:59.999Z")), false);
   assert.equal(shipmentAlertDue(created, new Date("2026-10-20T18:00:00.000Z")), true);
+});
+
+test("seller shipment threshold uses bounded admin business rules", () => {
+  assert.equal(sellerOrderAlertHours({ operations: { sellerOrderAlertHours: 6 } }), 6);
+  assert.equal(sellerOrderAlertHours({ operations: { sellerOrderAlertHours: 0 } }), 18);
+  assert.equal(sellerOrderAlertHours(null), 18);
 });
 
 function fixture(push: boolean) {

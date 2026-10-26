@@ -4,7 +4,7 @@ import type { AdminAnalyticsQuery, AdminAuditQuery, AdminBannerInput, AdminCampa
 import type { AdminAssistedCartInput } from "@amiyo/contracts";
 import { withSerializableTransaction } from "../../infrastructure/database/transaction.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
-import { businessRulesCreateData, defaultBusinessRules, parseBusinessRules, serializeBusinessRules } from "./business-rules-config.js";
+import { businessRulesCreateData, defaultBusinessRules, loadBusinessRules, parseBusinessRules, serializeBusinessRules } from "./business-rules-config.js";
 import { consumeOrderReservations } from "../commerce/inventory-reservation.js";
 import { buildInvoiceQrPayload, verifyDocumentQrPayload } from "../orders/document-qr.js";
 import { buildVendorPerformance } from "../vendor/vendor-performance.js";
@@ -260,6 +260,7 @@ export class AdminService {
   }
   async orderSlaBreaches(session: Session) {
     requireAdmin(session);
+    const { rules } = await loadBusinessRules(this.client);
     const now = Date.now();
     const terminal = new Set(["DELIVERED", "CANCELLED", "RETURNED", "REFUNDED"]);
     const orders = await this.client.order.findMany({ where: { status: { notIn: ["DELIVERED", "CANCELLED", "RETURNED", "REFUNDED"] } }, include: { user: { include: { profile: true } }, vendorOrders: { include: { vendor: true, shipments: true } } }, orderBy: { createdAt: "asc" }, take: 500 });
@@ -271,28 +272,29 @@ export class AdminService {
       const shipments = order.vendorOrders.flatMap((item) => item.shipments);
       const shippedAt = shipments.map((item) => item.shippedAt).filter((value): value is Date => Boolean(value)).sort((left, right) => left.getTime() - right.getTime())[0];
       const hasShipped = Boolean(shippedAt) || order.status === "SHIPPED" || shipments.some((item) => ["PICKED_UP", "IN_TRANSIT", "DELIVERED"].includes(item.status));
-      if (!hasShipped) { const deadline = new Date(order.createdAt.getTime() + 48 * 60 * 60_000); if (now > deadline.getTime()) breaches.push({ ...common, breachType: "processing", breachHours: Math.floor((now - deadline.getTime()) / 3_600_000), deadline: deadline.toISOString() }); continue; }
-      if (shippedAt && order.status === "SHIPPED") { const deadline = new Date(shippedAt.getTime() + 120 * 60 * 60_000); if (now > deadline.getTime()) breaches.push({ ...common, breachType: "delivery", breachHours: Math.floor((now - deadline.getTime()) / 3_600_000), deadline: deadline.toISOString() }); }
+      if (!hasShipped) { const deadline = new Date(order.createdAt.getTime() + rules.operations.processingSlaHours * 60 * 60_000); if (now > deadline.getTime()) breaches.push({ ...common, breachType: "processing", breachHours: Math.floor((now - deadline.getTime()) / 3_600_000), deadline: deadline.toISOString() }); continue; }
+      if (shippedAt && order.status === "SHIPPED") { const deadline = new Date(shippedAt.getTime() + rules.operations.deliverySlaHours * 60 * 60_000); if (now > deadline.getTime()) breaches.push({ ...common, breachType: "delivery", breachHours: Math.floor((now - deadline.getTime()) / 3_600_000), deadline: deadline.toISOString() }); }
     }
     breaches.sort((left, right) => right.breachHours - left.breachHours);
     return { summary: { total: breaches.length, processing: breaches.filter((item) => item.breachType === "processing").length, delivery: breaches.filter((item) => item.breachType === "delivery").length }, breaches };
   }
   async orderFraudQueue(session: Session) {
     requireAdmin(session);
+    const { rules } = await loadBusinessRules(this.client);
     const now = Date.now();
     const orders = await this.client.order.findMany({ include: { user: { include: { profile: true } }, addresses: true, vendorOrders: { include: { vendor: true } }, payments: { include: { verifications: true }, orderBy: { createdAt: "desc" }, take: 1 } }, orderBy: { createdAt: "desc" }, take: 500 });
     const average = orders.reduce((sum, order) => sum + Number(order.totalMinor), 0) / Math.max(orders.length, 1);
-    const abnormalThreshold = Math.max(2_000_000, average * 4);
+    const abnormalThreshold = Math.max(Number(rules.operations.highValueFloorMinor), average * rules.operations.highValueAverageMultiplier);
     const addressKey = (order: typeof orders[number]) => { const address = order.addresses.find((item) => item.type === "delivery"); return address ? [address.phone, address.line1, address.upazila, address.district].filter(Boolean).join("|").toLowerCase() : ""; };
     const buyerKey = (order: typeof orders[number]) => order.userId ?? addressKey(order);
     const recentCod = new Map<string, number>(); const velocity = new Map<string, number>();
-    for (const order of orders) { const ageHours = (now - order.createdAt.getTime()) / 3_600_000; const payment = order.payments[0]; const address = addressKey(order); if (ageHours <= 168 && payment?.method === "COD" && address) recentCod.set(address, (recentCod.get(address) ?? 0) + 1); const buyer = buyerKey(order); if (ageHours <= 24 && buyer) velocity.set(buyer, (velocity.get(buyer) ?? 0) + 1); }
+    for (const order of orders) { const ageHours = (now - order.createdAt.getTime()) / 3_600_000; const payment = order.payments[0]; const address = addressKey(order); if (ageHours <= rules.operations.codAddressWindowHours && payment?.method === "COD" && address) recentCod.set(address, (recentCod.get(address) ?? 0) + 1); const buyer = buyerKey(order); if (ageHours <= rules.operations.buyerVelocityWindowHours && buyer) velocity.set(buyer, (velocity.get(buyer) ?? 0) + 1); }
     const flagged = orders.flatMap((order) => {
       const signals: Array<{ type: "multiple_cod_same_address" | "abnormal_order_size" | "velocity_check" | "payment_risk_hold"; severity: "high" | "medium"; label: string }> = [];
       const payment = order.payments[0]; const address = addressKey(order); const buyer = buyerKey(order); const codCount = recentCod.get(address) ?? 0; const buyerCount = velocity.get(buyer) ?? 0;
-      if (payment?.method === "COD" && codCount >= 3) signals.push({ type: "multiple_cod_same_address", severity: "high", label: `${codCount} COD orders from the same address in 7 days` });
+      if (payment?.method === "COD" && codCount >= rules.operations.codAddressReviewCount) signals.push({ type: "multiple_cod_same_address", severity: "high", label: `${codCount} COD orders from the same address in ${rules.operations.codAddressWindowHours} hours` });
       if (Number(order.totalMinor) >= abnormalThreshold) signals.push({ type: "abnormal_order_size", severity: "medium", label: `Order value is ${Math.max(1, Math.round(Number(order.totalMinor) / Math.max(average, 1)))}x marketplace average` });
-      if (buyerCount >= 3) signals.push({ type: "velocity_check", severity: "medium", label: `${buyerCount} orders from this buyer/contact in 24 hours` });
+      if (buyerCount >= rules.operations.buyerVelocityReviewCount) signals.push({ type: "velocity_check", severity: "medium", label: `${buyerCount} orders from this buyer/contact in ${rules.operations.buyerVelocityWindowHours} hours` });
       if (payment?.verifications.some((item) => item.status === "risk_hold")) signals.push({ type: "payment_risk_hold", severity: "high", label: "Payment gateway placed this transaction on risk hold" });
       if (!signals.length) return [];
       const delivery = order.addresses.find((item) => item.type === "delivery");

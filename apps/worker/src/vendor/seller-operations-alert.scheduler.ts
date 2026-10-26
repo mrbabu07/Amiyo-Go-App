@@ -14,6 +14,14 @@ export function shipmentAlertDue(createdAt: Date, now: Date, warningHours = 18) 
   return createdAt.getTime() <= now.getTime() - warningHours * 60 * 60_000;
 }
 
+export function sellerOrderAlertHours(settings: Prisma.JsonValue | null | undefined) {
+  if (!settings || typeof settings !== "object" || Array.isArray(settings)) return 18;
+  const operations = (settings as Record<string, unknown>).operations;
+  if (!operations || typeof operations !== "object" || Array.isArray(operations)) return 18;
+  const value = (operations as Record<string, unknown>).sellerOrderAlertHours;
+  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 168 ? value : 18;
+}
+
 export class SellerOperationsAlertScheduler {
   private timer: ReturnType<typeof setInterval> | null = null;
   private running = false;
@@ -52,11 +60,11 @@ export class SellerOperationsAlertScheduler {
     });
   }
 
-  async deliverShipmentDue(vendorOrderId: string, now = new Date()) {
+  async deliverShipmentDue(vendorOrderId: string, now = new Date(), warningHours = 18) {
     return this.client.$transaction(async (transaction) => {
       const order = await transaction.vendorOrder.findFirst({ where: { id: vendorOrderId, status: { in: ["PLACED", "ACCEPTED", "PROCESSING"] } }, include: { order: { select: { orderNumber: true } }, shop: true } });
-      if (!order || !shipmentAlertDue(order.createdAt, now)) return false;
-      await this.notify(transaction, { vendorId: order.vendorId, settings: order.shop.settings, event: "shipmentDue", type: "vendor.shipment.due", title: `Shipment due for ${order.order.orderNumber}`, body: "This package has been awaiting fulfillment for at least 18 hours. Pack it and arrange pickup before the 24-hour target.", href: `/vendor/order/${order.id}`, key: `vendor-shipment-due:${order.id}:${order.updatedAt.toISOString()}` });
+      if (!order || !shipmentAlertDue(order.createdAt, now, warningHours)) return false;
+      await this.notify(transaction, { vendorId: order.vendorId, settings: order.shop.settings, event: "shipmentDue", type: "vendor.shipment.due", title: `Shipment due for ${order.order.orderNumber}`, body: `This package has been awaiting fulfillment for at least ${warningHours} hours. Pack it and arrange manual delivery as soon as possible.`, href: `/vendor/order/${order.id}`, key: `vendor-shipment-due:${order.id}:${order.updatedAt.toISOString()}` });
       return true;
     });
   }
@@ -80,13 +88,15 @@ export class SellerOperationsAlertScheduler {
     if (this.running) return;
     this.running = true;
     try {
-      const [inventory, orders, campaigns] = await Promise.all([
+      const [businessRules, inventory, campaigns] = await Promise.all([
+        this.client.platformConfiguration.findUnique({ where: { key: "business-rules" }, select: { featureFlags: true } }),
         this.client.inventoryItem.findMany({ where: { reorderLevel: { gt: 0 }, variant: { active: true, product: { status: "APPROVED", vendor: { status: "APPROVED" }, shop: { status: "ACTIVE" } } } }, select: { id: true, onHand: true, reserved: true, reorderLevel: true }, orderBy: { updatedAt: "asc" }, take: 100 }),
-        this.client.vendorOrder.findMany({ where: { status: { in: ["PLACED", "ACCEPTED", "PROCESSING"] }, createdAt: { lte: new Date(now.getTime() - 18 * 60 * 60_000) } }, select: { id: true }, orderBy: { createdAt: "asc" }, take: 100 }),
         this.client.campaign.findMany({ where: { status: "active", startsAt: { lte: new Date(now.getTime() + 24 * 60 * 60_000) }, endsAt: { gt: now }, products: { some: {} } }, select: { id: true }, orderBy: { startsAt: "asc" }, take: 100 })
       ]);
+      const warningHours = sellerOrderAlertHours(businessRules?.featureFlags);
+      const orders = await this.client.vendorOrder.findMany({ where: { status: { in: ["PLACED", "ACCEPTED", "PROCESSING"] }, createdAt: { lte: new Date(now.getTime() - warningHours * 60 * 60_000) } }, select: { id: true }, orderBy: { createdAt: "asc" }, take: 100 });
       for (const item of inventory.filter((entry) => entry.onHand - entry.reserved <= entry.reorderLevel)) try { await this.deliverLowStock(item.id); } catch (error) { this.onError(error); }
-      for (const order of orders) try { await this.deliverShipmentDue(order.id, now); } catch (error) { this.onError(error); }
+      for (const order of orders) try { await this.deliverShipmentDue(order.id, now, warningHours); } catch (error) { this.onError(error); }
       for (const campaign of campaigns) try { await this.deliverCampaign(campaign.id, now); } catch (error) { this.onError(error); }
     } catch (error) { this.onError(error); } finally { this.running = false; }
   }
