@@ -11,6 +11,9 @@ test("checkout package preview groups seller lines with exact money arithmetic",
   assert.match(component, /BigInt\(item\.lineTotal\.amountMinor\)/);
   assert.match(component, /item\.thumbnailUrl \|\| fallbackImage/);
   assert.match(component, /packed separately/);
+  assert.match(component, /quote\.packages\.find/);
+  assert.match(component, /summary\.delivery\.amountMinor/);
+  assert.match(component, /summary\.discount\.amountMinor/);
 });
 
 test("checkout coupon area shows packages only on checkout routes", () => {

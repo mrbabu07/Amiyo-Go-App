@@ -2,7 +2,7 @@
 
 Current gate snapshot (2026-10-25): `npm run release:check` reports one unresolved business decision (`Data retention`) and five propagated high package nodes from two Expo build-tool advisories. API and worker runtime audits are clean. Android, iOS, finance-provider, restore, staging-smoke and retention-approval evidence remain missing. Older counts below are retained only as dated verification history.
 
-Current automated evidence (2026-10-26): the complete workspace and repository regression rebuilt the TypeScript workspaces and passed 1,110 tests: API 311, mobile 465, worker 55, config 10, contracts 85, domain 28, migration 2, observability 2, and repository hardening/integration 152. This proves the automated scope only; it does not replace the external evidence listed above.
+Current automated evidence (2026-10-26): the complete workspace and repository regression rebuilt the TypeScript workspaces and passed 1,111 tests: API 311, mobile 465, worker 55, config 10, contracts 86, domain 28, migration 2, observability 2, and repository hardening/integration 152. This proves the automated scope only; it does not replace the external evidence listed above.
 
 Village assisted-commerce follow-up (2026-10-25): authorized admins can search sellable in-stock variants from Customer 360 and prepare a customer's cart after a phone request. The customer still reviews address, delivery, discounts and payment, so the admin workflow never places an order or charges the customer. The operation is controlled by `villageOperations.assistedOrderingEnabled`, validates active customer and stock state, creates an in-app notification, and records the admin's reason in the audit trail.
 
@@ -26,7 +26,7 @@ Shop service-policy follow-up (2026-10-26): every storefront now explains that m
 
 Multi-store cart follow-up (2026-10-26): cart responses include the owning shop identity for every line and the customer cart groups products into seller packages with direct shop navigation and clear package-level delivery language. Customers can select all products, one seller package, or individual lines. Quote, coupon, loyalty, delivery, stock locking and order creation use only the server-validated selection; after a partial checkout, unselected lines remain in the active cart.
 
-Checkout package follow-up (2026-10-26): authenticated and guest checkout now preview the selected products grouped by seller, including product images, variants, quantities, exact package subtotals and clear separate-dispatch language before the customer places the order.
+Checkout package follow-up (2026-10-26): authenticated and guest checkout now preview the selected products grouped by seller, including product images, variants, quantities and clear separate-dispatch language before the customer places the order. The quote contract also returns an authoritative seller-package breakdown with proportionally allocated discount, per-package manual delivery fee and final package payable total, so the UI does not infer finance totals from display lines.
 
 Cart save-for-later follow-up (2026-10-26): each cart line now has explicit Remove and Move to wishlist actions. Moving a line verifies active-cart ownership and approved-product state, upserts the default wishlist before deleting the cart line inside one serializable transaction, then refreshes the account-scoped cart and wishlist caches.
 

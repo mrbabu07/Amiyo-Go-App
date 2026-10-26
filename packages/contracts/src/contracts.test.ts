@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { accountPreferencesSchema, addCartItemSchema, addressInputSchema, adminOrderDetailSchema, cancelOrderSchema, catalogQuerySchema, checkoutInputSchema, commissionRuleInputSchema, createOpenApiDocument, createProductSchema, createReturnSchema, deviceInputSchema, minorUnitSchema, moneySchema, productReportInputSchema, publicPlatformSettingsSchema, vendorOrderStatusSchema, vendorRegistrationSchema } from "./index.js";
+import { accountPreferencesSchema, addCartItemSchema, addressInputSchema, adminOrderDetailSchema, cancelOrderSchema, catalogQuerySchema, checkoutInputSchema, checkoutQuoteSchema, commissionRuleInputSchema, createOpenApiDocument, createProductSchema, createReturnSchema, deviceInputSchema, minorUnitSchema, moneySchema, productReportInputSchema, publicPlatformSettingsSchema, vendorOrderStatusSchema, vendorRegistrationSchema } from "./index.js";
 import { adminAssistedCartInputSchema } from "./admin.js";
 
 test("money contracts preserve bigint-safe minor units", () => {
@@ -101,6 +101,14 @@ test("commerce contracts enforce quantities and supported payments", () => {
   const cartItemId = crypto.randomUUID();
   assert.equal(checkoutInputSchema.safeParse({ addressId: crypto.randomUUID(), paymentMethod: "COD", cartItemIds: [cartItemId] }).success, true);
   assert.equal(checkoutInputSchema.safeParse({ addressId: crypto.randomUUID(), paymentMethod: "COD", cartItemIds: [cartItemId, cartItemId] }).success, false);
+});
+
+test("checkout quotes require an authoritative seller package breakdown", () => {
+  const packageId = crypto.randomUUID();
+  const shopId = crypto.randomUUID();
+  const amount = (amountMinor: string) => ({ amountMinor, currency: "BDT" });
+  assert.equal(checkoutQuoteSchema.shape.packages.safeParse([]).success, false);
+  assert.equal(checkoutQuoteSchema.shape.packages.safeParse([{ vendorId: packageId, shopId, shopName: "Village Store", itemCount: 2, subtotal: amount("150000"), discount: amount("10000"), delivery: amount("6000"), total: amount("146000") }]).success, true);
 });
 
 test("assisted cart contracts require bounded quantities and an audit reason", () => {
