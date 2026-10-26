@@ -157,3 +157,25 @@ test("growth feed hides flash sales when the platform flag is disabled", async (
   const result = await new EngagementService(client).growthFeed();
   assert.deepEqual(result.flashSales, []);
 });
+
+test("admin review shutdown rejects before reading purchases or writing reviews", async () => {
+  let touched = false;
+  const client = {
+    platformConfiguration: { findUnique: async () => ({ featureFlags: { reviews: false } }) },
+    orderItem: { findFirst: async () => { touched = true; return null; } },
+    review: { create: async () => { touched = true; } }
+  } as unknown as PrismaClient;
+  await assert.rejects(() => new EngagementService(client).createReview({ ...customer, permissions: ["reviews:manage"] }, { orderItemId: threadId, rating: 5 }), /currently paused/);
+  assert.equal(touched, false);
+});
+
+test("admin question shutdown rejects before reading products or writing questions", async () => {
+  let touched = false;
+  const client = {
+    platformConfiguration: { findUnique: async () => ({ featureFlags: { questions: false } }) },
+    product: { findFirst: async () => { touched = true; return null; } },
+    question: { create: async () => { touched = true; } }
+  } as unknown as PrismaClient;
+  await assert.rejects(() => new EngagementService(client).createQuestion(customer, threadId, { body: "Is this available?" }), /currently paused/);
+  assert.equal(touched, false);
+});
