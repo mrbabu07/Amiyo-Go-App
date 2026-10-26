@@ -20,3 +20,8 @@ test("account hub uses the premium marketplace palette", () => {
   assert.match(source, /backgroundColor: colors\.background/);
   assert.doesNotMatch(source, /#fff|#f8fafc|#f1f5f9|#ecfdf5|#eef2f7|#cbd5e1|#fecaca|#fed7aa|#94a3b8|#2563eb|#db2777|#7c3aed/);
 });
+
+test("account hub exposes navigation and sign-out controls as buttons", () => {
+  assert.match(source, /accessibilityLabel="Back to home" accessibilityRole="button"/);
+  assert.match(source, /accessibilityLabel="Sign out" accessibilityRole="button"/);
+});
