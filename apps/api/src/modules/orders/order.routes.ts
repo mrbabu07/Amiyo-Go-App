@@ -36,6 +36,7 @@ export function createOrderRouter() {
   router.get("/api/v2/orders/:id", async (req, res, next) => { try { res.json(await service.customerOrder(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   router.get("/api/v2/orders/:id/invoice", async (req, res, next) => { try { res.json(await service.invoice(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   router.get("/api/v2/vendor/orders", async (req, res, next) => { try { res.json(await service.vendorOrders(requireSession(req), listSchema.parse(req.query))); } catch (error) { next(error); } });
+  router.get("/api/v2/vendor/orders/counts", async (req, res, next) => { try { res.json(await service.vendorOrderCounts(requireSession(req))); } catch (error) { next(error); } });
   router.get("/api/v2/vendor/orders/:id", async (req, res, next) => { try { res.json(await service.vendorOrder(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   router.post("/api/v2/vendor/orders/:id/customer-thread", async (req, res, next) => { try { res.json(await service.customerThread(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
   router.post("/api/v2/vendor/orders/:id/delivery-exceptions", async (req, res, next) => {

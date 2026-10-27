@@ -90,6 +90,7 @@ export const vendorOrderSummarySchema = vendorOrderDetailSchema.pick({
   items: true
 });
 export const vendorOrderListResponseSchema = paginatedResponseSchema(vendorOrderSummarySchema);
+export const vendorOrderCountsSchema = z.object({ total: z.number().int().nonnegative(), statuses: z.array(z.object({ status: vendorOrderStatusSchema, count: z.number().int().nonnegative() })) });
 
 export const customerOrderSummarySchema = z.object({
   id: uuidSchema,

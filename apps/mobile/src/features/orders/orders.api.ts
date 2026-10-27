@@ -19,3 +19,5 @@ export async function getFulfillmentDocument(user: User, id: string) { return fu
 export async function verifyDocumentQr(user: User, payload: string) { return documentQrVerificationSchema.parse(await request(user, "/api/v2/documents/verify", { method: "POST", body: JSON.stringify({ payload }) })); }
 import { scannerBarcodeSchema } from "@amiyo/contracts";
 export async function getScannerBarcode(user: User, id: string) { return scannerBarcodeSchema.parse(await request(user, `/api/v2/vendor/orders/${id}/scanner-barcode`)); }
+import { vendorOrderCountsSchema } from "@amiyo/contracts";
+export async function getVendorOrderCounts(user: User) { return vendorOrderCountsSchema.parse(await request(user, "/api/v2/vendor/orders/counts")); }

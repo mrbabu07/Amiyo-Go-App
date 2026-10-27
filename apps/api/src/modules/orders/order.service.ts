@@ -159,6 +159,13 @@ export class OrderService {
   private readonly outbox = new OutboxRepository();
   constructor(private readonly client: PrismaClient) {}
 
+  async vendorOrderCounts(session: Session) {
+    requireVendorReader(session);
+    const elevated = session.principal.roles.some((role) => role === "SUPER_ADMIN" || role === "OPERATIONS_ADMIN");
+    const rows = await this.client.vendorOrder.groupBy({ by: ["status"], where: elevated ? {} : { vendorId: { in: session.principal.vendorIds } }, _count: { _all: true } });
+    return { total: rows.reduce((sum, row) => sum + row._count._all, 0), statuses: rows.map((row) => ({ status: row.status, count: row._count._all })) };
+  }
+
   async vendorOrders(session: Session, query: { cursor?: string | undefined; limit?: number | undefined; status?: VendorOrderStatus | undefined; orderId?: string | undefined; search?: string | undefined; shop?: string | undefined } = {}) {
     if (session.status !== "ACTIVE" || !session.permissions.includes("orders:read")) throw new ApiProblem(403, "ORDERS_FORBIDDEN", "Order access is not allowed");
     const elevated = session.principal.roles.some((role) => ["SUPER_ADMIN", "OPERATIONS_ADMIN"].includes(role));
