@@ -17,6 +17,7 @@ import { AdminOrderInterventions } from "./AdminOrderInterventions";
 import { AdminOrderRefund } from "./AdminOrderRefund";
 import { AdminOrderSettlement } from "./AdminOrderSettlement";
 import { AdminOrderReturnWindow } from "./AdminOrderReturnWindow";
+import { AdminOrderPrintCenter } from "./AdminOrderPrintCenter";
 
 const parentSteps = ["PENDING_PAYMENT", "CONFIRMED", "PROCESSING", "READY_TO_SHIP", "SHIPPED", "DELIVERED"];
 const vendorSteps = ["PLACED", "ACCEPTED", "PROCESSING", "READY_TO_SHIP", "PICKED_UP", "IN_TRANSIT", "DELIVERED"];
@@ -58,6 +59,7 @@ export function AdminOrderDetailScreen() {
       <View style={[styles.commandActions, compact && styles.commandActionsCompact]}><Button icon="refresh" label="Refresh" onPress={() => order.refetch()} /><Button primary icon="print-outline" label="Print invoice" onPress={() => router.push(`/admin/orders/${data.id}/invoice` as never)} /></View>
     </View>
     {transition.error || cancelOrder.error ? <Text style={styles.error}>{(transition.error || cancelOrder.error)?.message}</Text> : null}
+    {user ? <AdminOrderPrintCenter key={`${user.uid}:${data.id}`} order={data} user={user} /> : null}
     <ModuleCard title="Operational progress" meta="Live order state across payment, packing and delivery."><Progress compact={compact} steps={parentSteps} activeIndex={statusIndex(parentSteps, data.status)} finalStatus={data.status} /></ModuleCard>
     <View style={styles.metrics}><Metric icon="cash-outline" label="Order total" value={money(data.total.amountMinor)} /><Metric icon="card-outline" label="Payment" value={data.payment?.status ?? "UNPAID"} /><Metric icon="storefront-outline" label="Seller orders" value={String(data.vendorOrders.length)} /><Metric icon="cube-outline" label="Units" value={String(itemCount)} /></View>
     <View style={styles.twoColumn}>
