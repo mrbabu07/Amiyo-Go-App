@@ -10,6 +10,7 @@ import { createAuthenticationMiddleware, requireSession } from "../identity/iden
 import { IdentityService } from "../identity/identity.service.js";
 import { DeliveryCallbackService } from "./delivery-callback.service.js";
 import { OrderService } from "./order.service.js";
+import { scannerBarcode } from "./scanner-barcode.js";
 
 const idSchema = z.object({ id: z.string().uuid() });
 const listSchema = z.object({ cursor: z.string().uuid().optional(), limit: z.coerce.number().int().min(1).max(100).default(30), status: vendorOrderStatusSchema.optional(), orderId: z.string().uuid().optional(), search: z.string().trim().max(100).optional(), shop: z.string().trim().max(160).optional() });
@@ -52,6 +53,7 @@ export function createOrderRouter() {
     } catch (error) { next(error); }
   });
   router.get("/api/v2/vendor/orders/:id/documents", async (req, res, next) => { try { res.json(await service.fulfillmentDocument(requireSession(req), idSchema.parse(req.params).id)); } catch (error) { next(error); } });
+  router.get("/api/v2/vendor/orders/:id/scanner-barcode", async (req, res, next) => { try { const document = await service.fulfillmentDocument(requireSession(req), idSchema.parse(req.params).id); res.setHeader("Cache-Control", "no-store"); res.json(await scannerBarcode(document.parcelId)); } catch (error) { next(error); } });
   router.post("/api/v2/vendor/orders/:id/transitions", async (req, res, next) => {
     try {
       const key = req.header("idempotency-key");

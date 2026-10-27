@@ -17,3 +17,5 @@ export async function transitionVendorOrder(user: User, id: string, input: Vendo
 export async function getInvoice(user: User, id: string) { return invoiceSchema.parse(await request(user, `/api/v2/orders/${id}/invoice`)); }
 export async function getFulfillmentDocument(user: User, id: string) { return fulfillmentDocumentSchema.parse(await request(user, `/api/v2/vendor/orders/${id}/documents`)); }
 export async function verifyDocumentQr(user: User, payload: string) { return documentQrVerificationSchema.parse(await request(user, "/api/v2/documents/verify", { method: "POST", body: JSON.stringify({ payload }) })); }
+import { scannerBarcodeSchema } from "@amiyo/contracts";
+export async function getScannerBarcode(user: User, id: string) { return scannerBarcodeSchema.parse(await request(user, `/api/v2/vendor/orders/${id}/scanner-barcode`)); }

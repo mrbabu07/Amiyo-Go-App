@@ -11,6 +11,7 @@ import { useCurrentUser } from "../auth/use-current-user";
 import { getFulfillmentDocument } from "./orders.api";
 import { captureDocumentQr, shareDocumentPdf, type DocumentQrRef } from "./document-export";
 import { fulfillmentHtml } from "./fulfillment-html";
+import { ScannerBarcodeExport } from "./ScannerBarcodeExport";
 
 const printId = "vendor-parcel-label";
 const money = (value: { amountMinor: string; currency: string }) => formatMinor(value.amountMinor, value.currency, 2).replace(/^৳/, "Tk ");
@@ -39,6 +40,7 @@ export function FulfillmentDocumentScreen() {
     {exportError ? <Text accessibilityRole="alert" style={styles.error}>{exportError}</Text> : null}
     <Link href="/verify-document">Scan or verify a parcel QR</Link>
     {data ? <>
+      <ScannerBarcodeExport key={`${user?.uid}:${id}`} id={id} />
       <View nativeID={printId} style={styles.label}>
         <View style={styles.labelHead}><View><Text style={styles.brand}>Amiyo-Go</Text><Text style={styles.kicker}>SIGNED MARKETPLACE PARCEL</Text></View><Text style={styles.status}>{data.status.replaceAll("_", " ")}</Text></View>
         <Text style={styles.parcel}>{data.parcelId}</Text>

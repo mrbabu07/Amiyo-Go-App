@@ -17,6 +17,7 @@
     "@amiyo/domain": "file:../../packages/domain",
     "@amiyo/observability": "file:../../packages/observability",
     "@prisma/client": "^5.22.0",
+    "bwip-js": "4.10.1",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "express": "^4.19.2",
