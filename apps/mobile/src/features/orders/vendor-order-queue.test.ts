@@ -9,7 +9,8 @@ test("seller queue exposes missing lifecycle filters and scoped print selection"
   assert.match(source, /order.payment\?\.method === paymentFilter/);
   assert.match(source, /order.shopName === shopFilter/);
   assert.match(source, /visible.slice\(0, batchDocumentLimit\)/);
-  assert.match(source, /Filters apply to loaded orders/);
+  assert.match(source, /Payment filters apply to loaded orders/);
+  assert.match(source, /search: debouncedSearch, status: filter, shop: shopFilter/);
   assert.match(source, /setSelected\(\[\]\).*\[user\?\.uid\]/);
 });
 

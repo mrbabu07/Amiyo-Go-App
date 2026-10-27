@@ -18,7 +18,7 @@ Mobile strict type-check and all 484 mobile tests passed. Focused API collection
 
 ## Still open
 
-- Server-side search/filter across all orders and authoritative queue counters.
+- Server-side order/customer/phone/product search and status/store filters are implemented before pagination with vendor scoping. Build, 14 API read tests and two queue UI contract tests pass. Payment filtering and authoritative queue counters still need server-side integration.
 - Reference desktop table and inline order expansion.
 - Return evidence/actions embedded within the order workspace.
 - Separate scanner barcode export.
