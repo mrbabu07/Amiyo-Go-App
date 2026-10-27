@@ -1,11 +1,12 @@
 import * as Sentry from "@sentry/react-native";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { Platform, StyleSheet, Text, useColorScheme, View } from "react-native";
 import { AuthBootstrap } from "../src/features/auth/AuthBootstrap";
 import { PushRegistration } from "../src/features/notifications/PushRegistration";
+import { getPublicPlatformSettings } from "../src/features/platform/platform.api";
 import { OfflineNotice } from "../src/ui/OfflineNotice";
 import { ThemeProvider } from "../src/ui/ThemeProvider";
 import { colors, typography } from "../src/ui/tokens";
@@ -29,6 +30,7 @@ function RootLayout() {
 }
 
 function GlobalWebStyles() {
+  const platform = useQuery({ queryKey: ["platform", "public-settings"], queryFn: getPublicPlatformSettings, enabled: Platform.OS === "web", staleTime: 5 * 60_000 });
   useEffect(() => {
     if (Platform.OS !== "web" || typeof document === "undefined") return;
     const styleId = "amiyo-web-fonts";
@@ -47,6 +49,13 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 `;
     document.head.appendChild(style);
   }, []);
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof document === "undefined" || !platform.data) return;
+    document.title = platform.data.seo.title;
+    let description = document.head.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (!description) { description = document.createElement("meta"); description.name = "description"; document.head.appendChild(description); }
+    description.content = platform.data.seo.description;
+  }, [platform.data]);
   return null;
 }
 

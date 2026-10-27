@@ -1,6 +1,12 @@
 import assert from "node:assert/strict"; import test from "node:test"; import type { PrismaClient } from "@prisma/client"; import type { Session } from "@amiyo/contracts"; import { AdminService } from "./admin.service.js";
 const userId = "11111111-1111-4111-8111-111111111111"; const customer: Session = { principal: { userId, roles: ["CUSTOMER"], vendorIds: [] }, status: "ACTIVE", email: null, phone: null, profile: { firstName: null, lastName: null, displayName: "Customer", avatarStorageKey: null, locale: "en", currency: "BDT" }, permissions: ["catalog:read"], vendorMemberships: [] }; const admin: Session = { ...customer, principal: { ...customer.principal, roles: ["SUPER_ADMIN"] }, permissions: ["admin:read", "admin:manage"] };
 test("customer cannot read admin trust queues", async () => { await assert.rejects(() => new AdminService({} as PrismaClient).workspace(customer), /admin:read access is required/); });
+test("public settings expose the admin-controlled storefront identity", async () => {
+  const client = { platformConfiguration: { findUnique: async () => ({ seo: { title: "Amiyo Village", description: "Local products from trusted nearby sellers." }, version: 7 }) } } as unknown as PrismaClient;
+  const settings = await new AdminService(client).publicSettings();
+  assert.deepEqual(settings.seo, { title: "Amiyo Village", description: "Local products from trusted nearby sellers." });
+  assert.equal(settings.version, 7);
+});
 test("assisted cart prepares an active customer cart without creating an order", async () => {
   const variantId = "22222222-2222-4222-8222-222222222222"; let notification = false; let audit = false; let itemQuantity = 0;
   const transaction = {

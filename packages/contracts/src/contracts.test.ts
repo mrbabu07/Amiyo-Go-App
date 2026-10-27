@@ -119,9 +119,10 @@ test("assisted cart contracts require bounded quantities and an audit reason", (
 });
 
 test("public settings validate admin-controlled village operations", () => {
-  const settings = publicPlatformSettingsSchema.parse({ featureFlags: { sellerRegistration: true, reviews: true, questions: true, flashSales: true, loyalty: true, voiceSearch: true, googleLogin: true }, paymentMethods: { cod: { enabled: true }, sslcommerz: { enabled: true }, bkashManual: { enabled: true } }, maintenanceMode: { enabled: false, message: "Marketplace is available" }, villageOperations: { enabled: true, defaultLocale: "bn", lowDataModeDefault: true, allowCustomerLowDataOverride: true, requireCodPhoneConfirmation: true, requireUnionForDelivery: true, ruralDeliveryEnabled: true, assistedOrderingEnabled: true, smsOrderUpdatesEnabled: false, pickupPointsEnabled: false, supportPhone: "01700000000", supportWhatsapp: "8801700000000" }, version: 1 });
+  const settings = publicPlatformSettingsSchema.parse({ featureFlags: { sellerRegistration: true, reviews: true, questions: true, flashSales: true, loyalty: true, voiceSearch: true, googleLogin: true }, paymentMethods: { cod: { enabled: true }, sslcommerz: { enabled: true }, bkashManual: { enabled: true } }, maintenanceMode: { enabled: false, message: "Marketplace is available" }, seo: { title: "Amiyo-Go Marketplace", description: "Trusted village marketplace in Bangladesh." }, villageOperations: { enabled: true, defaultLocale: "bn", lowDataModeDefault: true, allowCustomerLowDataOverride: true, requireCodPhoneConfirmation: true, requireUnionForDelivery: true, ruralDeliveryEnabled: true, assistedOrderingEnabled: true, smsOrderUpdatesEnabled: false, pickupPointsEnabled: false, supportPhone: "01700000000", supportWhatsapp: "8801700000000" }, version: 1 });
   assert.equal(settings.villageOperations.defaultLocale, "bn");
   assert.equal(settings.villageOperations.requireCodPhoneConfirmation, true);
+  assert.equal(settings.seo.title, "Amiyo-Go Marketplace");
   assert.equal(publicPlatformSettingsSchema.safeParse({ ...settings, villageOperations: { ...settings.villageOperations, smsOrderUpdatesEnabled: true } }).success, false);
   assert.equal(publicPlatformSettingsSchema.safeParse({ ...settings, villageOperations: { ...settings.villageOperations, pickupPointsEnabled: true } }).success, true);
 });

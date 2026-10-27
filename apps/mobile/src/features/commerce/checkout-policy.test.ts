@@ -7,7 +7,7 @@ function settings() {
   return publicPlatformSettingsSchema.parse({
     featureFlags: { sellerRegistration: true, reviews: true, questions: true, flashSales: true, loyalty: true, voiceSearch: true, googleLogin: true },
     paymentMethods: { cod: { enabled: true }, sslcommerz: { enabled: true }, bkashManual: { enabled: true } },
-    maintenanceMode: { enabled: false, message: "Scheduled maintenance" }, version: 1
+    maintenanceMode: { enabled: false, message: "Scheduled maintenance" }, seo: { title: "Amiyo-Go Marketplace", description: "Trusted village marketplace in Bangladesh." }, version: 1
   });
 }
 const address = { upazila: "Savar", unionName: "Birulia" };
