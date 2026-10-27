@@ -19,7 +19,7 @@ Mobile strict type-check and all 484 mobile tests passed. Focused API collection
 ## Still open
 
 - Server-side order/customer/phone/product search and status/store filters are implemented before pagination with vendor scoping. Build, 14 API read tests and two queue UI contract tests pass. Payment filtering and authoritative queue counters still need server-side integration.
-- Reference desktop table and inline order expansion.
+- Inline order expansion now lazily loads account-scoped package products, delivery, payment and recorded shipment events, with manage/print links. Reference desktop table layout remains open.
 - Return evidence/actions embedded within the order workspace.
 - Separate scanner barcode export.
 - Complete cancellation/rejection server validation and recovery/error-path audit, including reload during bulk work.
