@@ -22,7 +22,7 @@ Mobile strict type-check and all 484 mobile tests passed. Focused API collection
 - Inline order expansion lazily loads account-scoped package products, delivery, payment and recorded shipment events, with manage/print links. Wide screens now use an order/customer/product/payment/status/actions table sharing selection and expansion with mobile cards. Visual verification remains open.
 - Return evidence/actions embedded within the order workspace.
 - Separate Code 128 scanner barcode export is implemented on the package documents page, with the same server-side ownership checks as parcel documents. It identifies the parcel without replacing signed-QR verification. Physical scanner/print verification remains open.
-- Complete cancellation/rejection server validation and recovery/error-path audit, including reload during bulk work.
+- Transition replay now rechecks active management permission and current vendor ownership before exposing a saved response. Server rejection/cancellation requires a reason; sellers cannot impersonate courier movement. Cancellation inventory/refund effects and recovery/error-path audit, including reload during bulk work, remain open.
 - Reference-matched browser review at desktop and 360px mobile widths, print preview and final full regression.
 
 The earlier production-gap document's assertion that no code-only gaps remain does not establish seller reference parity; the open items here supersede that assertion for this scope.

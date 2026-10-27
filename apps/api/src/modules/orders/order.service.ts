@@ -298,14 +298,18 @@ export class OrderService {
   }
 
   async transitionVendorOrder(session: Session, id: string, input: VendorOrderTransition, idempotencyKey: string, correlationId?: string) {
+    if (session.status !== "ACTIVE" || !session.permissions.includes("orders:manage")) throw new ApiProblem(403, "VENDOR_ORDER_FORBIDDEN", "Order management access is required");
     const scope = `vendor-order-transition:${session.principal.userId}:${id}`;
     const requestHash = createHash("sha256").update(JSON.stringify(input)).digest("hex");
     return withSerializableTransaction(this.client, async (transaction) => {
-      const previous = await transaction.idempotencyRecord.findUnique({ where: { scope_key: { scope, key: idempotencyKey } } });
-      if (previous) { if (previous.requestHash !== requestHash) throw new ApiProblem(409, "IDEMPOTENCY_KEY_REUSED", "Idempotency key was used for a different transition"); return previous.response; }
       const current = await transaction.vendorOrder.findUnique({ where: { id }, include: vendorOrderInclude });
       if (!current) throw new ApiProblem(404, "VENDOR_ORDER_NOT_FOUND", "Vendor order not found");
       requireVendorAccess(session, current.vendorId, "orders:manage");
+      const previous = await transaction.idempotencyRecord.findUnique({ where: { scope_key: { scope, key: idempotencyKey } } });
+      if (previous) { if (previous.requestHash !== requestHash) throw new ApiProblem(409, "IDEMPOTENCY_KEY_REUSED", "Idempotency key was used for a different transition"); return previous.response; }
+      if (["REJECTED", "CANCELLED"].includes(input.status) && (!input.reason || input.reason.trim().length < 5)) throw new ApiProblem(400, "VENDOR_ORDER_REASON_REQUIRED", "Explain the rejection or cancellation in at least five characters");
+      const operator = session.principal.roles.some((role) => role === "SUPER_ADMIN" || role === "OPERATIONS_ADMIN");
+      if (!operator && ["PICKED_UP", "IN_TRANSIT", "DELIVERED"].includes(input.status)) throw new ApiProblem(403, "COURIER_TRANSITION_FORBIDDEN", "Courier movement must be recorded by operations");
       if (current.order.status === "PENDING_PAYMENT") throw new ApiProblem(409, "ORDER_PAYMENT_PENDING", "The order cannot be processed before payment confirmation");
       if (current.version !== input.expectedVersion) throw new ApiProblem(409, "VENDOR_ORDER_VERSION_CONFLICT", "Vendor order changed; refresh and try again");
       if (!canTransitionVendorOrder(current.status, input.status)) throw new ApiProblem(409, "VENDOR_ORDER_TRANSITION_INVALID", `Cannot move ${current.status} to ${input.status}`);
