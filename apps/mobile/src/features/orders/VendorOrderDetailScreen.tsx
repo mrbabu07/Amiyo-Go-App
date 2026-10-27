@@ -4,20 +4,23 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Crypto from "expo-crypto";
 import { useRouter } from "expo-router";
 import type { ReactNode } from "react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
+import { formatMinor } from "../../ui/money";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
 import { OrderItemImage } from "./OrderItemImage";
-import { getVendorOrder, openVendorOrderCustomerThread, reportVendorDeliveryException, requestVendorOrderPickup, transitionVendorOrder } from "./orders.api";
+import { BatchDocuments } from "./BatchDocuments";
+import { vendorTransitionRecovery } from "./vendor-transition.storage";
+import { getFulfillmentDocument, getVendorOrder, openVendorOrderCustomerThread, reportVendorDeliveryException, requestVendorOrderPickup, transitionVendorOrder } from "./orders.api";
 
 const actions: Partial<Record<VendorOrderStatus, Array<{ status: VendorOrderStatus; label: string; danger?: boolean }>>> = {
   PLACED: [{ status: "ACCEPTED", label: "Accept order" }, { status: "REJECTED", label: "Reject", danger: true }],
   ACCEPTED: [{ status: "PROCESSING", label: "Start processing" }],
   PROCESSING: [{ status: "READY_TO_SHIP", label: "Ready for pickup" }]
 };
-const money = (minor: string, currency = "BDT") => `${currency === "BDT" ? "Tk" : currency} ${(Number(minor) / 100).toLocaleString("en-BD", { minimumFractionDigits: 2 })}`;
+const money = (minor: string, currency = "BDT") => formatMinor(minor, currency, 2);
 const label = (value: string) => value.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 const exceptionCategories: VendorDeliveryExceptionInput["category"][] = ["PICKUP_DELAY", "CARRIER_NO_SHOW", "ADDRESS_ISSUE", "CUSTOMER_UNAVAILABLE", "PARCEL_DAMAGED", "OTHER"];
 const exceptionResolutions: VendorDeliveryExceptionInput["requestedResolution"][] = ["REATTEMPT", "CONTACT_CUSTOMER", "RETURN_TO_SELLER", "INVESTIGATE"];
@@ -32,6 +35,9 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
   const { width } = useWindowDimensions();
   const compact = width < 640;
   const [busy, setBusy] = useState<VendorOrderStatus | null>(null);
+  const [proposedStatus, setProposedStatus] = useState<VendorOrderStatus | null>(null);
+  const [actionReason, setActionReason] = useState("");
+  const [recoveryStatus, setRecoveryStatus] = useState<VendorOrderStatus | null>(null);
   const [openingChat, setOpeningChat] = useState(false);
   const [exceptionOpen, setExceptionOpen] = useState(false);
   const [exceptionBusy, setExceptionBusy] = useState(false);
@@ -48,18 +54,33 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
   const [pickupBusy, setPickupBusy] = useState(false);
   const [pickupSuccess, setPickupSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    setRecoveryStatus(null);
+    if (user) void vendorTransitionRecovery.load(user.uid, id).then((saved) => { if (active) setRecoveryStatus(saved?.input.status ?? null); }).catch((failure) => { if (active) setError(failure instanceof Error ? failure.message : "Could not read saved action"); });
+    return () => { active = false; };
+  }, [user?.uid, id]);
   const order = useQuery({ queryKey: ["orders", "vendor", id, user?.uid], queryFn: () => getVendorOrder(user!, id), enabled: Boolean(user) });
+  const collection = useQuery({ queryKey: ["vendor", "collection", user?.uid, id, order.data?.version], queryFn: () => getFulfillmentDocument(user!, id), enabled: Boolean(user && order.data), staleTime: 0, refetchInterval: 15_000 });
 
   async function transition(status: VendorOrderStatus) {
     if (!user || !order.data) return;
     setBusy(status);
     setError(null);
     try {
-      const updated = await transitionVendorOrder(user, id, { status, expectedVersion: order.data.version }, Crypto.randomUUID());
+      const updated = await vendorTransitionRecovery.run(user.uid, id, { status, expectedVersion: order.data.version, reason: actionReason.trim() || undefined }, Crypto.randomUUID(), (input, key) => {
+        if (activeUid.current !== user.uid) throw new Error("Account changed. Reopen the package.");
+        return transitionVendorOrder(user, id, input, key);
+      });
       if (activeUid.current !== user.uid) return;
       queryClient.setQueryData(["orders", "vendor", id, user.uid], updated);
+      setProposedStatus(null);
+      setActionReason("");
+      setRecoveryStatus(null);
       await queryClient.invalidateQueries({ queryKey: ["orders", "vendor", user.uid] });
     } catch (caught) {
+      if (activeUid.current !== user.uid) return;
+      setRecoveryStatus(status);
       setError(caught instanceof Error ? caught.message : "Order update failed");
     } finally {
       setBusy(null);
@@ -133,11 +154,13 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
       <View style={[styles.heroActions, compact && styles.heroActionsCompact]}><HeroButton icon="chatbubble-ellipses-outline" label={openingChat ? "Opening chat..." : "Message customer"} disabled={openingChat} onPress={messageCustomer} /><HeroButton icon="document-text-outline" label="Shipping documents" onPress={() => router.push(`/vendor/order/${item.id}/documents` as never)} primary /><HeroButton icon="refresh" label="Refresh" onPress={() => order.refetch()} /></View>
     </View>
     {error ? <Text style={styles.error}>{error}</Text> : null}
+    {recoveryStatus ? <Panel title="Recover pending update" meta="Retry sends the original saved version, reason and request key, not a new operation."><HeroButton icon="refresh" label={`Retry ${label(recoveryStatus)}`} disabled={Boolean(busy)} onPress={() => transition(recoveryStatus)} /></Panel> : null}
     <View style={styles.metrics}><Metric icon="cube-outline" label="Units" value={String(units)} /><Metric icon="cash-outline" label="Package total" value={money(item.total.amountMinor, item.total.currency)} /><Metric icon="card-outline" label="Payment" value={item.payment ? `${item.payment.method} - ${item.payment.status}` : "Pending"} /></View>
     <View style={styles.columns}>
       <View style={[styles.column, compact && styles.full]}><Panel title="Customer & delivery" meta="Use this for delivery handoff only."><Detail label="Customer" value={item.customer.displayName} /><Detail label="Phone" value={item.deliveryAddress?.phone ?? item.customer.phone ?? "-"} /><Detail label={item.fulfillmentMethod === "PICKUP" ? "Pickup point" : "Address"} value={item.fulfillmentMethod === "PICKUP" && item.pickupPoint ? [item.pickupPoint.name, item.pickupPoint.address, item.pickupPoint.unionName, item.pickupPoint.upazila, item.pickupPoint.district].join(", ") : item.deliveryAddress ? address(item.deliveryAddress) : "Delivery address unavailable"} /><Detail label="Parcel inspection" value={item.deliveryInspection.openBoxAllowed ? `Open-box · ${item.deliveryInspection.inspectionMinutes} minute window` : "Closed-box · direct customers to returns for eligible issues"} /></Panel></View>
-      <View style={[styles.column, compact && styles.full]}><Panel title="Payment collection" meta={item.payment?.transactionId ?? "No transaction reference yet"}><Detail label="Method" value={item.payment?.method ?? "-"} /><Detail label="Status" value={item.payment?.status ?? "-"} /><Detail label="Collect on delivery" value={item.payment?.method === "COD" ? money(item.total.amountMinor, item.total.currency) : "Prepaid / no COD collection"} strong /></Panel></View>
+      <View style={[styles.column, compact && styles.full]}><Panel title="Payment collection" meta={item.payment?.transactionId ?? "No transaction reference yet"}><Detail label="Method" value={item.payment?.method ?? "-"} /><Detail label="Status" value={item.payment?.status ?? "-"} /><Detail label="Collect on delivery" value={collection.isError ? "Unable to verify — do not collect until refreshed" : collection.data ? money(collection.data.payment.collectAmount.amountMinor, collection.data.payment.collectAmount.currency) : "Verifying collection amount…"} strong /><Text style={styles.muted}>Verified package balance, not the combined multi-store order total.</Text></Panel></View>
     </View>
+    {user ? <Panel title="Print & packing tools" meta="Parcel sticker: 100 × 150 mm. Packing slip: A4. Only this store’s products and collection amount are included."><BatchDocuments key={`${user.uid}:${item.id}:${item.version}`} ids={[item.id]} user={user} /></Panel> : null}
     <Panel title="Products to fulfill" meta={`${item.items.length} product line${item.items.length === 1 ? "" : "s"} from this store.`}>
       <View style={styles.tableHead}><Text style={[styles.head, styles.product]}>Product</Text><Text style={styles.head}>Qty</Text><Text style={styles.head}>Unit</Text><Text style={[styles.head, styles.right]}>Total</Text></View>
       {item.items.map((line) => <View key={line.id} style={[styles.line, compact && styles.lineCompact]}><View style={[styles.product, styles.productIdentity]}><OrderItemImage name={line.productName} uri={line.thumbnailUrl} /><View style={styles.productCopy}><Text style={styles.itemName}>{line.productName}</Text><Text style={styles.muted}>{line.sku}{line.attributes ? ` - ${Object.values(line.attributes).filter(Boolean).join(", ")}` : ""}</Text></View></View><Text style={styles.cell}>{line.quantity}</Text><Text style={styles.cell}>{money(line.unitPrice.amountMinor, line.unitPrice.currency)}</Text><Text style={[styles.cell, styles.right]}>{money(line.lineTotal.amountMinor, line.lineTotal.currency)}</Text></View>)}
@@ -169,7 +192,8 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
         <View style={styles.actions}><Pressable accessibilityRole="button" disabled={exceptionBusy || exceptionReason.trim().length < 5} onPress={reportException} style={[styles.primary, (exceptionBusy || exceptionReason.trim().length < 5) && styles.disabled]}>{exceptionBusy ? <ActivityIndicator color={colors.onPrimary} /> : <Text style={styles.primaryText}>Send to operations</Text>}</Pressable><Pressable accessibilityRole="button" disabled={exceptionBusy} onPress={() => setExceptionOpen(false)} style={styles.heroButton}><Text style={styles.heroButtonText}>Cancel</Text></Pressable></View>
       </View>}
     </Panel> : null}
-    {actions[item.status]?.length ? <View style={styles.actions}>{actions[item.status]!.map((action) => <Pressable disabled={Boolean(busy)} key={action.status} onPress={() => transition(action.status)} style={[styles.primary, action.danger && styles.danger, busy && styles.disabled]}>{busy === action.status ? <ActivityIndicator color={colors.onPrimary} /> : <><Ionicons name={action.status === "READY_TO_SHIP" ? "cube-outline" : "checkmark-circle-outline"} size={19} color={colors.onPrimary} /><Text style={styles.primaryText}>{action.label}</Text></>}</Pressable>)}</View> : <Text style={styles.notice}>No seller action is required at this stage.</Text>}
+    {proposedStatus ? <Panel title={`Confirm ${label(proposedStatus)}`} meta="Review this seller package before changing its fulfillment state."><Text style={styles.muted}>{item.orderNumber} · {item.shopName} · {units} units</Text><TextInput accessibilityLabel="Order action reason" editable={!busy} maxLength={500} placeholder={proposedStatus === "REJECTED" ? "Required rejection reason" : "Optional operational note"} placeholderTextColor={colors.muted} value={actionReason} onChangeText={setActionReason} style={styles.input} /><View style={styles.actions}><HeroButton icon="checkmark" label="Confirm update" disabled={Boolean(busy) || (proposedStatus === "REJECTED" && actionReason.trim().length < 5)} onPress={() => transition(proposedStatus)} primary /><HeroButton icon="close" label="Keep current status" disabled={Boolean(busy)} onPress={() => { setProposedStatus(null); setActionReason(""); }} /></View></Panel> : null}
+    {actions[item.status]?.length ? <View style={styles.actions}>{actions[item.status]!.map((action) => <Pressable disabled={Boolean(busy)} key={action.status} onPress={() => { setProposedStatus(action.status); setActionReason(""); }} style={[styles.primary, action.danger && styles.danger, busy && styles.disabled]}>{busy === action.status ? <ActivityIndicator color={colors.onPrimary} /> : <><Ionicons name={action.status === "READY_TO_SHIP" ? "cube-outline" : "checkmark-circle-outline"} size={19} color={colors.onPrimary} /><Text style={styles.primaryText}>{action.label}</Text></>}</Pressable>)}</View> : <Text style={styles.notice}>No seller action is required at this stage.</Text>}
   </View></Screen>;
 }
 
