@@ -4,6 +4,7 @@ import type { ArchiveProduct, BulkProductCsvInput, CatalogQuery, CreateProductIn
 import { withSerializableTransaction, type TransactionClient } from "../../infrastructure/database/transaction.js";
 import { TtlCache } from "../../infrastructure/cache/ttl-cache.js";
 import { ApiProblem } from "../../middleware/api-problem.js";
+import { publicStoreOffer } from "../vendor/store-offers.js";
 import { CatalogRepository, publicProductInclude, publicProductSummaryInclude, type PublicProduct, type PublicProductSummary } from "./catalog.repository.js";
 import { fuzzySearchScore, fuzzySearchThreshold, normalizeSearchValue } from "./catalog-ranking.js";
 import { parseProductCsv, serializeProductCsv } from "./product-csv.js";
@@ -291,13 +292,16 @@ export class CatalogService {
   async shop(identifier: string, query: CatalogQuery) {
     const shop = await this.repository.getShop(identifier);
     if (!shop) throw new ApiProblem(404, "SHOP_NOT_FOUND", "Shop not found");
-    const [products, questionCount, answeredQuestionCount] = await Promise.all([
+    const now = new Date();
+    const [products, questionCount, answeredQuestionCount, vouchers] = await Promise.all([
       this.products({ ...query, shop: shop.id }),
       this.client.question.count({ where: { product: { shopId: shop.id }, status: { not: "hidden" } } }),
-      this.client.question.count({ where: { product: { shopId: shop.id }, status: "answered" } })
+      this.client.question.count({ where: { product: { shopId: shop.id }, status: "answered" } }),
+      this.client.voucher.findMany({ where: { ownerType: "vendor", ownerId: shop.vendorId, active: true, startsAt: { lte: now }, endsAt: { gt: now } }, orderBy: { startsAt: "desc" }, take: 20 })
     ]);
     const servicePromise = shopServicePromise(questionCount, answeredQuestionCount);
-    return { id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, followerCount: shop._count.followers, version: shop.version, servicePromise, products };
+    const offers = vouchers.map((voucher) => publicStoreOffer(voucher, shop)).filter((offer): offer is NonNullable<typeof offer> => Boolean(offer?.showOnShop));
+    return { id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, followerCount: shop._count.followers, version: shop.version, servicePromise, offers, products };
   }
 
   async shopFollowStatus(session: Session, identifier: string) {

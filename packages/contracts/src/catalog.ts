@@ -1,6 +1,7 @@
 import { z } from "./zod.js";
 import { moneySchema, timestampSchema, uuidSchema, versionSchema } from "./common.js";
 import { paginatedResponseSchema } from "./pagination.js";
+import { storeOfferSchema } from "./vendor.js";
 
 export const productStatusSchema = z.enum(["DRAFT", "SUBMITTED", "APPROVED", "REJECTED", "ARCHIVED"]);
 
@@ -102,6 +103,7 @@ export const shopSummarySchema = z.object({
 
 export const shopDetailSchema = shopSummarySchema.extend({
   servicePromise: z.object({ questionCount: z.number().int().nonnegative(), qnaResponseRate: z.number().int().min(0).max(100).nullable() }),
+  offers: z.array(storeOfferSchema),
   products: productListResponseSchema
 });
 export const shopListResponseSchema = paginatedResponseSchema(shopSummarySchema);

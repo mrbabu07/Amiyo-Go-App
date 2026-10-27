@@ -1598,6 +1598,7 @@ model Voucher {
   version   Int      @default(1)
 
   @@index([ownerType, ownerId, active])
+  @@index([ownerType, active, startsAt, endsAt])
   @@map("vouchers")
 }
 

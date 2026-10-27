@@ -125,7 +125,25 @@ export const inviteVendorStaffSchema = z.object({
 });
 export const updateVendorStaffSchema = z.object({ status: z.enum(["active", "suspended"]), permissions: vendorStaffPermissionsSchema });
 export const vendorVoucherSchema = z.object({ id: uuidSchema, code: z.string(), active: z.boolean(), startsAt: timestampSchema, endsAt: timestampSchema, version: versionSchema, rules: z.record(z.string(), z.unknown()) });
-export const createVendorVoucherSchema = z.object({ code: z.string().trim().min(3).max(40).transform((value) => value.toUpperCase()), discountType: z.enum(["PERCENT", "FIXED"]), value: z.number().int().positive(), startsAt: z.string().datetime(), endsAt: z.string().datetime() }).refine((value) => value.startsAt < value.endsAt, "startsAt must precede endsAt");
+export const storeOfferSchema = z.object({ id: uuidSchema, shopId: uuidSchema, shopName: z.string(), shopSlug: z.string(), code: z.string(), title: z.string(), subtitle: z.string().nullable(), imageUrl: z.string().url().nullable(), ctaLabel: z.string(), href: z.string(), discountType: z.enum(["PERCENT", "FIXED"]), value: z.number().int().positive(), showOnHome: z.boolean(), showOnShop: z.boolean(), showAsPopup: z.boolean(), startsAt: timestampSchema, endsAt: timestampSchema });
+export const createVendorVoucherSchema = z.object({
+  shopId: uuidSchema,
+  code: z.string().trim().min(3).max(40).transform((value) => value.toUpperCase()),
+  title: z.string().trim().min(3).max(120),
+  subtitle: z.string().trim().max(240).nullable().optional(),
+  bannerUploadId: uuidSchema.nullable().optional(),
+  ctaLabel: z.string().trim().min(2).max(40).default("Shop offer"),
+  discountType: z.enum(["PERCENT", "FIXED"]),
+  value: z.number().int().positive(),
+  showOnHome: z.boolean().default(true),
+  showOnShop: z.boolean().default(true),
+  showAsPopup: z.boolean().default(true),
+  startsAt: z.string().datetime(),
+  endsAt: z.string().datetime()
+}).superRefine((value, context) => {
+  if (value.startsAt >= value.endsAt) context.addIssue({ code: z.ZodIssueCode.custom, message: "startsAt must precede endsAt", path: ["endsAt"] });
+  if (value.discountType === "PERCENT" && value.value > 100) context.addIssue({ code: z.ZodIssueCode.custom, message: "Percentage discount cannot exceed 100", path: ["value"] });
+});
 const vendorPerformanceMetricSchema = z.object({ value: z.number().min(0), target: z.number().min(0), sampleSize: z.number().int().nonnegative(), state: z.enum(["healthy", "watch", "action_required", "not_enough_data"]) });
 export const vendorPerformanceSchema = z.object({
   score: z.number().int().min(0).max(100), tier: z.enum(["excellent", "good", "needs_attention", "new_seller"]), dispatchSlaHours: z.number().int().positive(),
@@ -143,5 +161,6 @@ export type UpdateVendorBankAccount = z.infer<typeof updateVendorBankAccountSche
 export type InviteVendorStaff = z.infer<typeof inviteVendorStaffSchema>;
 export type UpdateVendorStaff = z.infer<typeof updateVendorStaffSchema>;
 export type CreateVendorVoucher = z.infer<typeof createVendorVoucherSchema>;
+export type StoreOfferDto = z.infer<typeof storeOfferSchema>;
 export type CreateVendorCategoryRequest = z.infer<typeof createVendorCategoryRequestSchema>;
 export type VendorRegistration = z.infer<typeof vendorRegistrationSchema>;

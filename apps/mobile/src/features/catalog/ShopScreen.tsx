@@ -9,6 +9,7 @@ import { compareMinor } from "../../ui/money";
 import { useCurrentUser } from "../auth/use-current-user";
 import { createThread } from "../engagement/engagement.api";
 import { ProductCard } from "../home/components/ProductCard";
+import { OfferPopup } from "../home/components/OfferPopup";
 import { StoreHeader } from "../home/components/StoreHeader";
 import { getCategories, getShop, getShopFollowStatus, setShopFollowing } from "./catalog.api";
 import { toHomeProduct } from "./catalog.view-model";
@@ -53,7 +54,7 @@ export function ShopScreen({ identifier }: { identifier: string }) {
   function resetFilters() { setSelectedCategory("all"); setSort("newest"); }
   const filters = <ShopFilters categories={categoryOptions} onCategory={setSelectedCategory} onReset={resetFilters} onSort={setSort} productCount={products.length} selectedCategory={selectedCategory} sort={sort} />;
 
-  return <SafeAreaView style={styles.safe}><ScrollView><StoreHeader desktop={desktop} viewportWidth={width} /><View style={[styles.content, compact && responsive.contentCompact]}>
+  return <SafeAreaView style={styles.safe}><OfferPopup offers={result.data?.offers || []} scope={`shop:${identifier}`} /><ScrollView><StoreHeader desktop={desktop} viewportWidth={width} /><View style={[styles.content, compact && responsive.contentCompact]}>
     <Pressable onPress={() => router.back()} style={styles.back}><Ionicons color={colors.primary} name="chevron-back" size={17} /><Text style={styles.link}>Back</Text></Pressable>
     {result.isLoading ? <ActivityIndicator color={colors.primary} size="large" /> : null}
     {result.data ? <>

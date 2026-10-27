@@ -12,6 +12,7 @@ import { FlashSaleCountdown } from "./components/FlashSaleCountdown";
 import { HeroBanner } from "./components/HeroBanner";
 import { HomeSectionTitle } from "./components/HomeSectionTitle";
 import { NewsletterSignup } from "./components/NewsletterSignup";
+import { OfferPopup } from "./components/OfferPopup";
 import { ProductCard } from "./components/ProductCard";
 import { PromoTiles } from "./components/PromoTiles";
 import { ShopRail } from "./components/ShopRail";
@@ -78,7 +79,7 @@ export function CustomerHomeScreen() {
           <StoreHeader desktop={desktop} viewportWidth={width} />
           <View style={[styles.content, compact && responsive.contentCompact, { width: contentWidth }]}>
             {village?.enabled ? <View style={[styles.villageBar, compact && responsive.villageBarCompact]}><View style={[styles.villageCopy, compact && responsive.villageCopyCompact]}><Text style={styles.villageTitle}>{t.villageTitle}</Text><Text style={styles.villageText}>{lowData ? t.dataSaver : t.fullMode}</Text></View>{village.allowCustomerLowDataOverride ? <Pressable onPress={() => void toggleLowData()} style={[styles.dataButton, compact && responsive.actionCompact]}><Ionicons color={colors.surface} name={lowData ? "speedometer-outline" : "images-outline"} size={16} /><Text style={styles.dataButtonText}>{lowData ? t.useFull : t.saveData}</Text></Pressable> : null}{village.assistedOrderingEnabled && village.supportPhone ? <Pressable onPress={() => void Linking.openURL(`tel:${village.supportPhone}`)} style={[styles.helpButton, compact && responsive.actionCompact]}><Ionicons color={colors.primary} name="call-outline" size={16} /><Text style={styles.helpButtonText}>{t.callOrder}</Text></Pressable> : null}</View> : null}
-            {lowData ? <View style={styles.lowDataHero}><Ionicons color={colors.accent} name="leaf-outline" size={28} /><View style={styles.villageCopy}><Text style={styles.lowDataTitle}>{t.fastVillage}</Text><Text style={styles.villageText}>{t.fastVillageCopy}</Text></View></View> : <View style={styles.heroShowcase}><View style={styles.heroMain}><HeroBanner banner={heroBanner} desktop={desktop} /></View>{desktop ? <PromoTiles campaigns={growthQuery.data?.campaigns || []} couponCode={growthQuery.data?.coupons[0]?.code} /> : null}</View>}
+            {lowData ? <View style={styles.lowDataHero}><Ionicons color={colors.accent} name="leaf-outline" size={28} /><View style={styles.villageCopy}><Text style={styles.lowDataTitle}>{t.fastVillage}</Text><Text style={styles.villageText}>{t.fastVillageCopy}</Text></View></View> : <View style={styles.heroShowcase}><View style={styles.heroMain}><HeroBanner banner={heroBanner} desktop={desktop} /></View>{desktop ? <PromoTiles campaigns={growthQuery.data?.campaigns || []} couponCode={growthQuery.data?.coupons[0]?.code} storeOffers={growthQuery.data?.storeOffers || []} /> : null}</View>}
             <View style={[styles.quickDeals, compact && responsive.quickDealsCompact]}>{quickDeals.map((deal) => <Pressable key={deal.title} onPress={() => router.push(deal.href as never)} style={[styles.quickDeal, compact && responsive.quickDealCompact]}><View style={styles.quickIcon}><Ionicons color={colors.accent} name={deal.icon as never} size={22} /></View><Text style={styles.quickText}>{deal.title}</Text></Pressable>)}</View>
             <View style={[styles.section, compact && responsive.sectionCompact]}><HomeSectionTitle eyebrow="EXPLORE DEPARTMENTS" href="/categories" title="Shop by category" />{categoryQuery.isLoading ? <ActivityIndicator color={colors.primary} /> : <CategoryRail data={liveCategories} />}{categoryQuery.error ? <RetryState label="Categories unavailable. Start the API and run npm run demo:setup." onRetry={() => categoryQuery.refetch()} /> : null}</View>
 
@@ -117,6 +118,7 @@ export function CustomerHomeScreen() {
           </View>
         </ScrollView>
         {!desktop ? <BottomNav /> : null}
+        <OfferPopup offers={growthQuery.data?.storeOffers || []} scope="home" />
       </View>
     </SafeAreaView>
   );

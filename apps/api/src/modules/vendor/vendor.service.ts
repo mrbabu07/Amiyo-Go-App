@@ -191,7 +191,20 @@ export class VendorService {
     return this.staff(session);
   }
   async vouchers(session: Session) { const id = vendorId(session); requirePermission(session, "vendor:read"); const rows = await this.client.voucher.findMany({ where: { ownerType: "vendor", ownerId: id }, orderBy: { startsAt: "desc" }, take: 100 }); return rows.map((row) => ({ ...row, startsAt: row.startsAt.toISOString(), endsAt: row.endsAt.toISOString() })); }
-  async createVoucher(session: Session, input: CreateVendorVoucher) { const id = vendorId(session); requirePermission(session, "vendor:manage"); const row = await this.client.voucher.create({ data: { ownerType: "vendor", ownerId: id, code: input.code, rules: json({ discountType: input.discountType, value: input.value }), startsAt: new Date(input.startsAt), endsAt: new Date(input.endsAt) } }); await this.client.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "vendor.voucher.created", resourceType: "voucher", resourceId: row.id, after: json({ code: row.code }) } }); return this.vouchers(session); }
+  async createVoucher(session: Session, input: CreateVendorVoucher) {
+    const id = vendorId(session); requirePermission(session, "vendor:manage");
+    const shop = await this.client.vendorShop.findFirst({ where: { id: input.shopId, vendorId: id, status: "ACTIVE" }, select: { id: true } });
+    if (!shop) throw new ApiProblem(404, "VENDOR_OFFER_SHOP_NOT_FOUND", "Choose an active shop from your seller workspace");
+    let bannerStorageKey: string | null = null;
+    if (input.bannerUploadId) {
+      const upload = await this.client.mediaUpload.findFirst({ where: { id: input.bannerUploadId, userId: session.principal.userId, purpose: "banner", visibility: "public", status: "ready", mimeType: { startsWith: "image/" } }, select: { storageKey: true } });
+      if (!upload) throw new ApiProblem(400, "VENDOR_OFFER_BANNER_INVALID", "Offer banner must be your completed public banner upload");
+      bannerStorageKey = upload.storageKey;
+    }
+    const row = await this.client.voucher.create({ data: { ownerType: "vendor", ownerId: id, code: input.code, rules: json({ discountType: input.discountType, value: input.value, shopId: input.shopId, title: input.title, subtitle: input.subtitle ?? null, bannerStorageKey, ctaLabel: input.ctaLabel, showOnHome: input.showOnHome, showOnShop: input.showOnShop, showAsPopup: input.showAsPopup }), startsAt: new Date(input.startsAt), endsAt: new Date(input.endsAt) } });
+    await this.client.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "vendor", action: "vendor.voucher.created", resourceType: "voucher", resourceId: row.id, after: json({ code: row.code, shopId: input.shopId, showOnHome: input.showOnHome, showOnShop: input.showOnShop, showAsPopup: input.showAsPopup }) } });
+    return this.vouchers(session);
+  }
   async report(session: Session, days = 30) {
     const id = vendorId(session); requirePermission(session, "vendor:read");
     const since = new Date(Date.now() - days * 24 * 60 * 60_000);
