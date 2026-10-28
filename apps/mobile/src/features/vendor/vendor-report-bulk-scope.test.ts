@@ -4,6 +4,7 @@ import test from "node:test";
 
 const reports = readFileSync(new URL("./VendorReportsScreen.tsx", import.meta.url), "utf8");
 const bulk = readFileSync(new URL("./VendorBulkProductsScreen.tsx", import.meta.url), "utf8");
+const dashboard = readFileSync(new URL("../../../app/vendor/dashboard.tsx", import.meta.url), "utf8");
 
 test("seller reports and bulk catalog data are account scoped", () => {
   assert.match(reports, /useCurrentUser\(\)/);
@@ -26,4 +27,12 @@ test("seller reports use exact money and open operational order detail", () => {
   assert.match(reports, /order\.itemCount/);
   assert.match(reports, /`\/vendor\/order\/\$\{order\.id\}`/);
   assert.doesNotMatch(reports, /Number\(minor\)/);
+});
+
+test("seller dashboard never presents pending or failed report reads as zero", () => {
+  assert.match(dashboard, /const reportPending = report\.isLoading && !report\.data/);
+  assert.match(dashboard, /Loading seller dashboard data/);
+  assert.match(dashboard, /Some dashboard data could not load/);
+  assert.match(dashboard, /void workspace\.refetch\(\); void report\.refetch\(\)/);
+  assert.match(dashboard, /reportPending \? "—"/);
 });

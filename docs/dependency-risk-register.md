@@ -23,7 +23,7 @@ NPM reports four high package nodes because the two advisories propagate through
 - `firebase-tools@15.34.1` is exact-pinned and the compatible `fast-uri@3.1.9` patch is installed; this removed the URI-parser advisory from the complete graph.
 - Expo Doctor passes all 20 checks.
 - Mobile strict type-check and all 476 mobile tests pass.
-- The complete monorepo build and 1,171-test run pass on 2026-10-28. The configured PostgreSQL database also accepted the operational query-index migrations.
+- The complete monorepo build and 1,172-test run pass on 2026-10-28. The configured PostgreSQL database also accepted the operational query-index migrations.
 - Expo web production export completes.
 - API and worker runtime audits report zero findings.
 - The complete dependency audit currently reports four high, five moderate, and five low package nodes. The four high nodes remain the production blocker described above; this document records risk but does not approve it.
