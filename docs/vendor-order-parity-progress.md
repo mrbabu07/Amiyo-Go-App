@@ -15,7 +15,7 @@ Scope: compare `Client/src/pages/vendor/VendorOrders.jsx` and `VendorOrderDetail
 
 ## Evidence
 
-The complete 2026-10-28 regression rebuilt every TypeScript workspace and passed 1,169 tests, including 334 API and 495 mobile tests. These are automated checks, not browser, native-device or physical-printer acceptance.
+The complete 2026-10-28 regression rebuilt every TypeScript workspace and passed 1,170 tests, including 335 API and 495 mobile tests. These are automated checks, not browser, native-device or physical-printer acceptance.
 
 ## Still open
 
@@ -24,6 +24,7 @@ The complete 2026-10-28 regression rebuilt every TypeScript workspace and passed
 - Seller reads now bypass browser HTTP `304` bodies, the detail endpoint authorizes before loading its bounded relation graph through Prisma's PostgreSQL relation join, and duplicate React keys between seller export and bulk-action controls are removed. The same configured remote-database detail read dropped from about 10.8 seconds to 1.77 seconds in a local authenticated measurement. Concurrent staging capacity and tail latency remain launch evidence requirements.
 - Package-document generation now follows the same ownership-first joined-read pattern instead of four additional relation roundtrips. Against the configured remote database, an authenticated cold measurement completed in about 2.43 seconds and the immediate warm repeat in 1.19 seconds; physical print rendering remains an external acceptance item.
 - The seller queue now loads each bounded page, latest payment, customer summary and product thumbnails through one joined read instead of a package query followed by two relation queries. Five authenticated local samples against the configured remote database produced a 1.16-second median, down from the earlier observed roughly 3.0-second median; staged concurrency evidence is still required.
+- Seller workspace bootstrap now loads the vendor, shops, KYC history/documents and payout accounts in one joined read instead of four parallel reads. Five authenticated local samples against the configured remote database produced a 1.52-second median versus the earlier observed 3.77-second request.
 - Native PDF sharing plus physical label, barcode-scanner and signed-QR print acceptance remain external evidence requirements.
 
 The remaining items require native-device, physical-printer/scanner, staging-provider or performance evidence; no known seller-order UI/code-only parity gap remains in this tracker.

@@ -13,6 +13,22 @@ const kycSession: Session = { ...session, principal: { ...session.principal, rol
 const shopSession: Session = { ...kycSession, permissions: ["vendor:read", "vendor:manage"], vendorMemberships: [{ vendorId, role: "VENDOR_OWNER", permissions: ["vendor:read", "vendor:manage"] }] };
 const kycDocument = { documentType: "TRADE_LICENSE" as const, storageKey: `private/kyc/${userId}/license.pdf`, mimeType: "application/pdf", checksum: "a".repeat(64) };
 
+test("vendor workspace loads shops, KYC and payout accounts in one joined read", async () => {
+  const row = { id: vendorId, legalName: "Seller Commerce", displayName: "Seller Shop", status: "APPROVED", version: 1, shops: [], kycSubmissions: [], bankAccounts: [] };
+  let calls = 0;
+  const client = { vendor: { findUniqueOrThrow: async (query: { where: { id: string }; include: Record<string, unknown>; relationLoadStrategy?: string }) => {
+    calls++;
+    assert.equal(query.where.id, vendorId);
+    assert.equal(query.relationLoadStrategy, "join");
+    assert.ok(query.include.shops);
+    assert.ok(query.include.kycSubmissions);
+    assert.ok(query.include.bankAccounts);
+    return row;
+  } } } as unknown as PrismaClient;
+  assert.equal((await new VendorService(client).getWorkspace(kycSession)).id, vendorId);
+  assert.equal(calls, 1);
+});
+
 test("vendor registration rejects an existing membership", async () => {
   const client = { vendorMember: { findFirst: async () => ({ id: "member" }) } } as unknown as PrismaClient;
   await assert.rejects(() => new VendorService(client).register(session, input), /already belongs to a vendor workspace/);

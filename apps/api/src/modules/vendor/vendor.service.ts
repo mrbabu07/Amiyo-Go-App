@@ -48,13 +48,8 @@ const include = { shops: { orderBy: { createdAt: "asc" as const } }, kycSubmissi
 export class VendorService {
   constructor(private readonly client: PrismaClient) {}
   private async workspace(id: string) {
-    const [vendor, shops, kycSubmissions, bankAccounts] = await Promise.all([
-      this.client.vendor.findUniqueOrThrow({ where: { id } }),
-      this.client.vendorShop.findMany({ where: { vendorId: id }, orderBy: { createdAt: "asc" } }),
-      this.client.vendorKycSubmission.findMany({ where: { vendorId: id }, include: { documents: true }, orderBy: { createdAt: "desc" } }),
-      this.client.vendorBankAccount.findMany({ where: { vendorId: id }, orderBy: { createdAt: "desc" } })
-    ]);
-    return workspace({ ...vendor, shops, kycSubmissions, bankAccounts });
+    const vendor = await this.client.vendor.findUniqueOrThrow({ where: { id }, include, relationLoadStrategy: "join" });
+    return workspace(vendor);
   }
   async register(session: Session, input: VendorRegistration, correlationId?: string) {
     if (session.status !== "ACTIVE") throw new ApiProblem(403, "ACCOUNT_NOT_ACTIVE", "An active customer account is required");
