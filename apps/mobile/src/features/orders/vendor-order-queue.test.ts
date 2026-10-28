@@ -10,6 +10,8 @@ test("seller queue exposes missing lifecycle filters and scoped print selection"
   assert.match(source, /visible.slice\(0, batchDocumentLimit\)/);
   assert.match(source, /Search, status, store and payment filters run before pagination/);
   assert.match(source, /setSelected\(\[\]\).*\[user\?\.uid\]/);
+  assert.match(source, /VendorOrderExport key=\{`export:\$\{user\.uid\}`\}/);
+  assert.match(source, /VendorBulkActions key=\{`bulk:\$\{user\.uid\}`\}/);
 });
 
 test("seller detail exposes independent package print tools with account and version boundaries", () => {

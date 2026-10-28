@@ -22,24 +22,6 @@ const vendorOrderInclude = {
 } satisfies Prisma.VendorOrderInclude;
 type LoadedVendorOrder = Prisma.VendorOrderGetPayload<{ include: typeof vendorOrderInclude }>;
 
-const vendorOrderBaseSelect = {
-  id: true,
-  orderId: true,
-  vendorId: true,
-  shopId: true,
-  status: true,
-  subtotalMinor: true,
-  discountMinor: true,
-  deliveryMinor: true,
-  totalMinor: true,
-  commissionMinor: true,
-  version: true,
-  createdAt: true,
-  updatedAt: true,
-  order: { select: { orderNumber: true, currency: true, user: { include: { profile: true } } } },
-  shop: true
-} satisfies Prisma.VendorOrderSelect;
-
 const vendorOrderSummaryBaseSelect = {
   id: true,
   orderId: true,
@@ -204,17 +186,12 @@ export class OrderService {
 
   async vendorOrder(session: Session, id: string) {
     requireVendorReader(session);
-    const base = await this.client.vendorOrder.findUnique({ where: { id }, select: vendorOrderBaseSelect });
-    if (!base) throw new ApiProblem(404, "VENDOR_ORDER_NOT_FOUND", "Vendor order not found");
-    requireVendorAccess(session, base.vendorId, "orders:read");
-    const [addresses, payments, items, shipments, dispatches] = await Promise.all([
-      this.client.orderAddress.findMany({ where: { orderId: base.orderId } }),
-      this.client.payment.findMany({ where: { orderId: base.orderId }, orderBy: { createdAt: "desc" }, take: 1 }),
-      this.client.orderItem.findMany({ where: { vendorOrderId: base.id }, include: { product: { select: { media: { orderBy: { displayOrder: "asc" }, take: 1, select: { storageKey: true } } } } } }),
-      this.client.shipment.findMany({ where: { vendorOrderId: base.id }, orderBy: { createdAt: "desc" }, take: 1, include: { assignment: true, events: { orderBy: { occurredAt: "asc" } } } }),
-      this.client.deliveryDispatch.findMany({ where: { vendorOrderId: base.id }, orderBy: { createdAt: "desc" }, take: 1 })
-    ]);
-    return vendorOrderDto({ ...base, order: { ...base.order, addresses, payments }, items, shipments, dispatches } as LoadedVendorOrder);
+    const access = await this.client.vendorOrder.findUnique({ where: { id }, select: { id: true, vendorId: true } });
+    if (!access) throw new ApiProblem(404, "VENDOR_ORDER_NOT_FOUND", "Vendor order not found");
+    requireVendorAccess(session, access.vendorId, "orders:read");
+    const row = await this.client.vendorOrder.findUnique({ where: { id }, include: vendorOrderInclude });
+    if (!row) throw new ApiProblem(409, "VENDOR_ORDER_CHANGED", "Vendor order changed while it was being opened");
+    return vendorOrderDto(row);
   }
 
   async customerThread(session: Session, id: string) {

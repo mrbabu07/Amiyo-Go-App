@@ -38,4 +38,6 @@ test("expired read token acquisition does not issue a late request", async () =>
     assert.match(source, /await user.getIdToken\(\); if \(signal\?\.aborted\)/);
     assert.match(source, /signal: signal \?\? init\?\.signal/);
   }
+  const ordersApi = readFileSync(new URL("./orders.api.ts", import.meta.url), "utf8");
+  assert.match(ordersApi, /cache: read \? "no-store" : init\?\.cache/);
 });
