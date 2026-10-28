@@ -13,7 +13,7 @@ import { OrderService } from "./order.service.js";
 import { scannerBarcode } from "./scanner-barcode.js";
 
 const idSchema = z.object({ id: z.string().uuid() });
-const listSchema = z.object({ cursor: z.string().uuid().optional(), limit: z.coerce.number().int().min(1).max(100).default(30), status: vendorOrderStatusSchema.optional(), orderId: z.string().uuid().optional(), search: z.string().trim().max(100).optional(), shop: z.string().trim().max(160).optional() });
+const listSchema = z.object({ cursor: z.string().uuid().optional(), limit: z.coerce.number().int().min(1).max(100).default(30), status: vendorOrderStatusSchema.optional(), orderId: z.string().uuid().optional(), search: z.string().trim().max(100).optional(), shop: z.string().trim().max(160).optional(), payment: z.string().trim().toUpperCase().regex(/^[A-Z0-9_ -]{2,50}$/).optional() });
 
 export function createOrderRouter() {
   const router = Router();

@@ -11,12 +11,13 @@ test("seller search filters before pagination and retains vendor ownership", asy
     assert.deepEqual(query.where.vendorId, { in: ["vendor"] });
     assert.deepEqual(query.where.shop, { name: "Owned store" });
     assert.equal(query.where.status, "ACCEPTED");
+    assert.deepEqual(query.where.order, { payments: { some: { method: { equals: "COD", mode: "insensitive" } } } });
     assert.equal((query.where.OR as unknown[]).length, 5);
     assert.match(JSON.stringify(query.where.OR), /Rice/);
     assert.equal(query.take, 3);
     return [];
   } } } as never);
-  await service.vendorOrders(seller, { search: " Rice ", shop: "Owned store", status: "ACCEPTED", limit: 2 });
+  await service.vendorOrders(seller, { search: " Rice ", shop: "Owned store", status: "ACCEPTED", payment: "COD", limit: 2 });
 });
 
 test("unauthorized order and document readers are denied before database access", async () => {

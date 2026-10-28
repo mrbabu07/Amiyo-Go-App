@@ -166,7 +166,7 @@ export class OrderService {
     return { total: rows.reduce((sum, row) => sum + row._count._all, 0), statuses: rows.map((row) => ({ status: row.status, count: row._count._all })) };
   }
 
-  async vendorOrders(session: Session, query: { cursor?: string | undefined; limit?: number | undefined; status?: VendorOrderStatus | undefined; orderId?: string | undefined; search?: string | undefined; shop?: string | undefined } = {}) {
+  async vendorOrders(session: Session, query: { cursor?: string | undefined; limit?: number | undefined; status?: VendorOrderStatus | undefined; orderId?: string | undefined; search?: string | undefined; shop?: string | undefined; payment?: string | undefined } = {}) {
     if (session.status !== "ACTIVE" || !session.permissions.includes("orders:read")) throw new ApiProblem(403, "ORDERS_FORBIDDEN", "Order access is not allowed");
     const elevated = session.principal.roles.some((role) => ["SUPER_ADMIN", "OPERATIONS_ADMIN"].includes(role));
     if (!elevated && session.principal.vendorIds.length === 0) return { data: [], pageInfo: { hasNextPage: false, nextCursor: null } };
@@ -179,7 +179,7 @@ export class OrderService {
       { order: { user: { profile: { displayName: { contains: term, mode: "insensitive" } } } } },
       { order: { user: { normalizedPhone: { contains: term } } } }
     ] } : {};
-    const rows = await this.client.vendorOrder.findMany({ where: { ...(elevated ? {} : { vendorId: { in: session.principal.vendorIds } }), ...(query.status ? { status: query.status } : {}), ...(query.orderId ? { orderId: query.orderId } : {}), ...(query.shop ? { shop: { name: query.shop } } : {}), ...searchWhere }, select: vendorOrderSummaryBaseSelect, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: limit + 1, ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}) });
+    const rows = await this.client.vendorOrder.findMany({ where: { ...(elevated ? {} : { vendorId: { in: session.principal.vendorIds } }), ...(query.status ? { status: query.status } : {}), ...(query.orderId ? { orderId: query.orderId } : {}), ...(query.shop ? { shop: { name: query.shop } } : {}), ...(query.payment ? { order: { payments: { some: { method: { equals: query.payment, mode: "insensitive" } } } } } : {}), ...searchWhere }, select: vendorOrderSummaryBaseSelect, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: limit + 1, ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}) });
     const hasNextPage = rows.length > limit;
     const page = hasNextPage ? rows.slice(0, limit) : rows;
     if (page.length === 0) return { data: [], pageInfo: { hasNextPage: false, nextCursor: null } };
