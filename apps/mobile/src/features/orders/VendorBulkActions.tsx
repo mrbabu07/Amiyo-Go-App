@@ -5,7 +5,8 @@ import { Pressable, Text, View } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { colors, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
-import { getVendorOrder, transitionVendorOrder } from "./orders.api";
+import { getVendorOrder, OrdersRequestError, transitionVendorOrder } from "./orders.api";
+import { mayDiscardVendorTransition } from "./pending-vendor-transition";
 import { vendorTransitionRecovery } from "./vendor-transition.storage";
 import { eligibleSellerPackages, runSellerBatch, sellerBulkActions, type SellerBulkAction } from "./vendor-bulk-actions";
 
@@ -36,7 +37,7 @@ export function VendorBulkActions({ user, rows }: { user: User; rows: Array<{ id
           if (!active()) throw new Error("Account changed.");
           if (input.status !== plan.action) throw new Error("Recover the previous package action in order details first.");
           return transitionVendorOrder(user, id, input, key);
-        });
+        }, (failure, fresh) => failure instanceof OrdersRequestError && mayDiscardVendorTransition(fresh, failure.status, failure.code));
       }, active, (id) => setDone((previous) => [...previous, id]));
     } catch (failure) { if (active()) setError(failure instanceof Error ? failure.message : "Batch stopped. Review the pending package before retrying."); }
     finally { running.current = false; if (active()) { setBusy(false); await cache.invalidateQueries({ queryKey: ["orders", "vendor", user.uid] }); } }

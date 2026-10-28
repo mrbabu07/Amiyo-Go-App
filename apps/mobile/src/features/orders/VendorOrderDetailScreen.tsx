@@ -13,7 +13,8 @@ import { useCurrentUser } from "../auth/use-current-user";
 import { OrderItemImage } from "./OrderItemImage";
 import { BatchDocuments } from "./BatchDocuments";
 import { vendorTransitionRecovery } from "./vendor-transition.storage";
-import { getFulfillmentDocument, getVendorOrder, openVendorOrderCustomerThread, reportVendorDeliveryException, requestVendorOrderPickup, transitionVendorOrder } from "./orders.api";
+import { getFulfillmentDocument, getVendorOrder, openVendorOrderCustomerThread, OrdersRequestError, reportVendorDeliveryException, requestVendorOrderPickup, transitionVendorOrder } from "./orders.api";
+import { mayDiscardVendorTransition } from "./pending-vendor-transition";
 
 const actions: Partial<Record<VendorOrderStatus, Array<{ status: VendorOrderStatus; label: string; danger?: boolean }>>> = {
   PLACED: [{ status: "ACCEPTED", label: "Accept order" }, { status: "REJECTED", label: "Reject", danger: true }],
@@ -71,7 +72,7 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
       const updated = await vendorTransitionRecovery.run(user.uid, id, { status, expectedVersion: order.data.version, reason: actionReason.trim() || undefined }, Crypto.randomUUID(), (input, key) => {
         if (activeUid.current !== user.uid) throw new Error("Account changed. Reopen the package.");
         return transitionVendorOrder(user, id, input, key);
-      });
+      }, (failure, fresh) => failure instanceof OrdersRequestError && mayDiscardVendorTransition(fresh, failure.status, failure.code));
       if (activeUid.current !== user.uid) return;
       queryClient.setQueryData(["orders", "vendor", id, user.uid], updated);
       setProposedStatus(null);
@@ -80,7 +81,8 @@ export function VendorOrderDetailScreen({ id }: { id: string }) {
       await queryClient.invalidateQueries({ queryKey: ["orders", "vendor", user.uid] });
     } catch (caught) {
       if (activeUid.current !== user.uid) return;
-      setRecoveryStatus(status);
+      const saved = await vendorTransitionRecovery.load(user.uid, id).catch(() => null);
+      setRecoveryStatus(saved?.input.status ?? null);
       setError(caught instanceof Error ? caught.message : "Order update failed");
     } finally {
       setBusy(null);
