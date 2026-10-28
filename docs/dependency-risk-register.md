@@ -12,21 +12,21 @@ Any temporary acceptance must name the security approver and release owner, iden
 
 | Advisory | Installed path | Exposure | Current control | Resolution condition |
 | --- | --- | --- | --- | --- |
-| `GHSA-86w9-cpqp-85rv` | Expo CLI -> `@expo/code-signing-certificates` -> `node-forge@1.4.0` | Build/code-signing tooling; not loaded by the API or worker runtime | Release builds run in protected CI; immutable commit and image provenance are required; untrusted signing inputs are not accepted | Upgrade to a compatible Expo release whose certificate chain uses a patched dependency, then rerun Doctor, export and full regression |
 | `GHSA-mrhx-c7xc-m3w5` | Expo CLI -> `zod@3.25.76` | CLI validation can be forced into excessive allocation by oversized constrained collections; application packages use patched `zod@4.6.7` | Build inputs and app configuration are repository-controlled; API and worker runtime audits are clean | Upgrade to a compatible Expo CLI using patched Zod, then rerun all release gates |
 
-NPM reports four high package nodes because the two advisories propagate through `@expo/cli`, `expo`, `node-forge`, and `zod`. These are not four independent vulnerabilities.
+NPM reports three high package nodes because the remaining Zod advisory propagates through `@expo/cli`, `expo`, and `zod`. These are not three independent vulnerabilities. The previous `node-forge` advisory is resolved by the compatible `1.4.2` override.
 
 ## Current compatibility evidence
 
-- `expo@58.0.19`, `@expo/cli@58.1.15`, and `expo-router@58.0.26` are installed.
+- `expo@58.0.21`, `@expo/cli@58.1.17`, and `expo-router@58.0.28` are installed.
+- Expo's certificate tooling resolves to patched `node-forge@1.4.2`.
 - `firebase-tools@15.34.1` is exact-pinned and the compatible `fast-uri@3.1.9` patch is installed; this removed the URI-parser advisory from the complete graph.
 - Expo Doctor passes all 20 checks.
-- Mobile strict type-check and all 476 mobile tests pass.
+- Mobile strict type-check and all 496 mobile tests pass.
 - The complete monorepo build and 1,172-test run pass on 2026-10-28. The configured PostgreSQL database also accepted the operational query-index migrations.
 - Expo web production export completes.
 - API and worker runtime audits report zero findings.
-- The complete dependency audit currently reports four high, five moderate, and five low package nodes. The four high nodes remain the production blocker described above; this document records risk but does not approve it.
+- The complete dependency audit currently reports three high, zero moderate, and five low package nodes. The three high nodes remain the production blocker described above; this document records risk but does not approve it.
 
 ## Review procedure
 

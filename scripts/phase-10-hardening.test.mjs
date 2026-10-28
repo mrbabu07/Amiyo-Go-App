@@ -153,7 +153,7 @@ test("dependency register matches the current pinned tooling and gate snapshot",
   assert.match(register, /Last reviewed: 2026-10-28/);
   assert.match(register, /firebase-tools@15\.34\.1/);
   assert.match(register, /fast-uri@3\.1\.9/);
-  assert.match(register, /four high, five moderate, and five low package nodes/);
+  assert.match(register, /three high, zero moderate, and five low package nodes/);
   assert.match(register, /1,172-test run pass/);
   assert.match(gapMap, /Current gate snapshot \(2026-10-28\)/);
   assert.match(gapMap, /one unresolved business decision/);

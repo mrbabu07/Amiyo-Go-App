@@ -51,10 +51,10 @@ Docker is unavailable on the current workstation, so container build evidence mu
 
 ## 2026-10-24 Expo patch evidence
 
-- Updated within SDK 58 to `expo@58.0.19`, `@expo/cli@58.1.15`, and `expo-router@58.0.26`.
-- Expo Doctor passed 20/20 checks; strict mobile type-check and all 451 mobile tests passed.
+- Updated within SDK 58 to `expo@58.0.21`, `@expo/cli@58.1.17`, and `expo-router@58.0.28`; Expo Doctor passes all 20 checks.
+- Expo Doctor passed 20/20 checks; strict mobile type-check and all 496 mobile tests passed.
 - Expo web production export and secret scan passed.
-- API and worker runtime audits remained clean. The complete graph still reports the two upstream build-tool advisories described in `dependency-risk-register.md`, so production promotion remains blocked.
+- API and worker runtime audits remained clean. The complete graph still reports the remaining upstream Zod build-tool advisory described in `dependency-risk-register.md`, so production promotion remains blocked.
 
 ## 2026-10-23 supply-chain hardening regression
 

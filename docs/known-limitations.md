@@ -10,7 +10,7 @@
 
 ## Technical debt
 
-- npm audit has no critical findings, but high/moderate transitive findings remain in the Expo/Metro/React Native production dependency graph; Firebase CLI findings are development-only. Available npm fixes currently require incompatible major-version downgrades or upgrades, so the release audit remains intentionally blocking until supported upstream patches are available and validated.
+- npm audit has no critical or moderate findings, but three propagated high package nodes remain from Expo CLI's Zod 3 dependency. The patched `node-forge@1.4.2` is enforced. Available npm fixes for the remaining advisory require an incompatible Expo change, so the release audit remains intentionally blocking until a supported upstream patch is available and validated.
 - Dependabot checks npm and GitHub Actions weekly and groups the coupled Expo/React Native runtime so compatibility changes are reviewed together. Automated pull requests are update candidates only; they must pass Expo compatibility, full regression, export and device acceptance before merge.
 - Every third-party GitHub Action is pinned to an immutable commit SHA with its major release documented inline. Dependabot may propose reviewed SHA updates; mutable action tags are rejected by workflow contract tests.
 - API and worker build/runtime stages pin the official multi-architecture Node 20 Alpine image by digest. Dependabot watches both Dockerfiles weekly; digest updates still require the complete container and regression gates.
