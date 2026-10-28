@@ -74,9 +74,10 @@ test("vendor detail authorizes first and loads bounded relations in one joined r
   const row = { id: "package", orderId: "parent", vendorId: "vendor", shopId: "shop", status: "PLACED", subtotalMinor: 100n, discountMinor: 0n, deliveryMinor: 20n, totalMinor: 120n, commissionMinor: 6n, version: 1, createdAt, updatedAt: createdAt, order: { orderNumber: "AG-100", currency: "BDT", fulfillmentMethod: "DELIVERY", pickupPointSnapshot: null, openBoxAllowed: false, inspectionMinutes: 0, addresses: [], payments: [], reservations: [], vendorOrders: [], user: null }, shop: { id: "shop", vendorId: "vendor", name: "Shop", slug: "shop", status: "ACTIVE", settings: {}, createdAt, updatedAt: createdAt }, items: [], shipments: [], dispatches: [] };
   let calls = 0;
   const client = {
-    vendorOrder: { findUnique: async (query: { select?: Record<string, unknown>; include?: Record<string, unknown> }) => {
+    vendorOrder: { findUnique: async (query: { select?: Record<string, unknown>; include?: Record<string, unknown>; relationLoadStrategy?: string }) => {
       calls++;
       if (query.select) { assert.deepEqual(query.select, { id: true, vendorId: true }); return { id: "package", vendorId: "vendor" }; }
+      assert.equal(query.relationLoadStrategy, "join");
       assert.ok(query.include?.order); assert.ok(query.include?.items); assert.ok(query.include?.shipments); assert.ok(query.include?.dispatches);
       return row;
     } }

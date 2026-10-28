@@ -189,7 +189,7 @@ export class OrderService {
     const access = await this.client.vendorOrder.findUnique({ where: { id }, select: { id: true, vendorId: true } });
     if (!access) throw new ApiProblem(404, "VENDOR_ORDER_NOT_FOUND", "Vendor order not found");
     requireVendorAccess(session, access.vendorId, "orders:read");
-    const row = await this.client.vendorOrder.findUnique({ where: { id }, include: vendorOrderInclude });
+    const row = await this.client.vendorOrder.findUnique({ where: { id }, include: vendorOrderInclude, relationLoadStrategy: "join" });
     if (!row) throw new ApiProblem(409, "VENDOR_ORDER_CHANGED", "Vendor order changed while it was being opened");
     return vendorOrderDto(row);
   }
