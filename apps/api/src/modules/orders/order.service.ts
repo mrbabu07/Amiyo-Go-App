@@ -11,9 +11,10 @@ import { OutboxRepository } from "../outbox/outbox.repository.js";
 import { synchronizeParentOrderStatus } from "./parent-status.service.js";
 import { buildInvoiceQrPayload, buildParcelQrPayload, verifyDocumentQrPayload } from "./document-qr.js";
 import { releaseVendorOrderReservations } from "../commerce/inventory-reservation.js";
+import { packageCancellationRefundAmount } from "./package-cancellation-refund.js";
 
 const vendorOrderInclude = {
-  order: { include: { addresses: true, payments: { orderBy: { createdAt: "desc" as const }, take: 1 }, reservations: { where: { status: { in: ["ACTIVE", "CONSUMED"] as const } } }, user: { include: { profile: true } } } },
+  order: { include: { addresses: true, payments: { orderBy: { createdAt: "desc" as const }, take: 1 }, reservations: { where: { status: { in: ["ACTIVE", "CONSUMED"] as const } } }, vendorOrders: { select: { id: true, totalMinor: true } }, user: { include: { profile: true } } } },
   shop: true,
   items: { include: { product: { select: { media: { orderBy: { displayOrder: "asc" as const }, take: 1, select: { storageKey: true } } } } } },
   shipments: { orderBy: { createdAt: "desc" as const }, take: 1, include: { assignment: true, events: { orderBy: { occurredAt: "asc" as const } } } },
@@ -321,7 +322,21 @@ export class OrderService {
       if (current.order.status === "PENDING_PAYMENT") throw new ApiProblem(409, "ORDER_PAYMENT_PENDING", "The order cannot be processed before payment confirmation");
       if (current.version !== input.expectedVersion) throw new ApiProblem(409, "VENDOR_ORDER_VERSION_CONFLICT", "Vendor order changed; refresh and try again");
       if (!canTransitionVendorOrder(current.status, input.status)) throw new ApiProblem(409, "VENDOR_ORDER_TRANSITION_INVALID", `Cannot move ${current.status} to ${input.status}`);
-      if (["REJECTED", "CANCELLED"].includes(input.status)) await releaseVendorOrderReservations(transaction, current.orderId, current.items, current.order.reservations);
+      if (["REJECTED", "CANCELLED"].includes(input.status)) {
+        await releaseVendorOrderReservations(transaction, current.orderId, current.items, current.order.reservations);
+        const payment = current.order.payments[0];
+        if (payment && ["CAPTURED", "PARTIALLY_REFUNDED"].includes(payment.status)) {
+          const amountMinor = packageCancellationRefundAmount(current.order.vendorOrders, payment.amountMinor, current.id);
+          const [{ rules }, pending] = await Promise.all([
+            loadBusinessRules(transaction),
+            transaction.refund.aggregate({ where: { paymentId: payment.id, status: "pending" }, _sum: { amountMinor: true } })
+          ]);
+          const available = payment.amountMinor - payment.refundedMinor - (pending._sum.amountMinor ?? 0n);
+          if (amountMinor > available) throw new ApiProblem(409, "PACKAGE_REFUND_CAPACITY_EXCEEDED", "Existing refunds leave insufficient captured payment for this package cancellation");
+          if (!rules.refunds.allowPartial && amountMinor !== payment.amountMinor - payment.refundedMinor) throw new ApiProblem(409, "PARTIAL_REFUND_DISABLED", "Platform policy does not allow a partial package refund");
+          await transaction.refund.create({ data: { orderId: current.orderId, paymentId: payment.id, vendorOrderId: current.id, amountMinor, currency: payment.currency, reason: `Seller package ${input.status.toLowerCase()}: ${input.reason!.trim()}` } });
+        }
+      }
       await transaction.vendorOrder.update({ where: { id, version: input.expectedVersion }, data: { status: input.status, version: { increment: 1 } } });
       await this.outbox.enqueue(transaction, { aggregateType: "vendor_order", aggregateId: id, eventType: "vendor_order.status.changed", idempotencyKey: `vendor-order-status:${id}:${input.expectedVersion + 1}`, payload: { from: current.status, to: input.status, version: input.expectedVersion + 1 } });
       if (input.status === "READY_TO_SHIP") {

@@ -261,6 +261,42 @@ export class OperationsService {
     });
   }
 
+  async packageCancellationRefunds(session: Session) {
+    requirePermission(session, "finance:manage"); if (!elevated(session)) throw new ApiProblem(403, "ADMIN_REQUIRED", "Finance admin access is required");
+    const rows = await this.client.refund.findMany({ where: { vendorOrderId: { not: null }, returnId: null, status: "pending" }, include: { order: { select: { orderNumber: true } }, payment: { select: { provider: true, method: true, status: true, refundedMinor: true, currency: true } }, vendorOrder: { include: { shop: { select: { name: true } }, vendor: { select: { displayName: true } } } } }, orderBy: { createdAt: "asc" }, take: 100 });
+    return rows.map((row) => ({ refundId: row.id, orderId: row.orderId, orderNumber: row.order.orderNumber, vendorOrderId: row.vendorOrderId!, shopName: row.vendorOrder!.shop.name, vendorName: row.vendorOrder!.vendor.displayName, reason: row.reason, status: row.status, amount: money(row.amountMinor, row.currency), payment: { provider: row.payment.provider, method: row.payment.method, status: row.payment.status, refunded: money(row.payment.refundedMinor, row.payment.currency) }, createdAt: row.createdAt.toISOString() }));
+  }
+
+  async completePackageCancellationRefund(session: Session, refundId: string, input: CompleteRefund, key: string) {
+    requirePermission(session, "finance:manage"); if (!elevated(session)) throw new ApiProblem(403, "ADMIN_REQUIRED", "Finance admin access is required"); const scope = `package-refund-complete:${refundId}`;
+    return withSerializableTransaction(this.client, async (transaction) => {
+      const prior = await replay(transaction, scope, key, input); if (prior.response) return prior.response;
+      const refund = await transaction.refund.findUnique({ where: { id: refundId }, include: { order: true, payment: { include: { attempts: { orderBy: { attemptNumber: "desc" }, take: 1 } } }, vendorOrder: true } });
+      if (!refund || !refund.vendorOrderId || refund.returnId) throw new ApiProblem(404, "PACKAGE_REFUND_NOT_FOUND", "Package cancellation refund not found");
+      if (refund.status !== "pending") throw new ApiProblem(409, "PACKAGE_REFUND_NOT_PENDING", "Package cancellation refund is not pending");
+      const { rules } = await loadBusinessRules(transaction);
+      if (rules.refunds.requireProviderReference && !providerReferenceValid(refund.payment, input.providerRefundId)) { const rule = refundProviderRule(refund.payment); throw new ApiProblem(409, "REFUND_PROVIDER_REFERENCE_REQUIRED", rule.reason); }
+      assertRefundLimit(refund.payment.amountMinor, refund.payment.refundedMinor, refund.amountMinor);
+      await assertRefundAccountingHistory(transaction, refund.orderId);
+      await verifySslRefund(this.sslCommerz, refund.payment, input.providerRefundId);
+      const refundedTotal = refund.payment.refundedMinor + refund.amountMinor;
+      const paymentChanged = await transaction.payment.updateMany({ where: { id: refund.paymentId, version: refund.payment.version }, data: { refundedMinor: refundedTotal, status: refundedTotal === refund.payment.amountMinor ? "REFUNDED" : "PARTIALLY_REFUNDED", version: { increment: 1 } } });
+      if (!paymentChanged.count) throw new ApiProblem(409, "PAYMENT_VERSION_CONFLICT", "Payment changed; refresh the refund queue");
+      await transaction.refund.update({ where: { id: refund.id }, data: { status: "completed", providerRefundId: input.providerRefundId ?? null, completedAt: new Date() } });
+      await reverseSellerSettlement(transaction, { packageId: refund.vendorOrderId, packageTotalMinor: refund.vendorOrder!.totalMinor, refundId: refund.id, amountMinor: refund.amountMinor, currency: refund.currency });
+      await transaction.financialLedgerEntry.create({ data: { accountType: "customer_refund", accountId: refund.order.userId ?? refund.orderId, direction: "DEBIT", amountMinor: refund.amountMinor, currency: refund.currency, entryType: "PACKAGE_CANCELLATION_REFUND", referenceType: "refund", referenceId: refund.id, idempotencyKey: `financial-package-refund:${refund.id}` } });
+      await reverseLoyaltyForRefund(transaction, refund.orderId, refund.id, refund.amountMinor, refund.payment.amountMinor);
+      if (refundedTotal === refund.payment.amountMinor) {
+        await transaction.order.update({ where: { id: refund.orderId }, data: { status: "REFUNDED", version: { increment: 1 } } });
+        await transaction.orderStatusEvent.create({ data: { orderId: refund.orderId, fromStatus: refund.order.status, toStatus: "REFUNDED", actorType: "admin", actorId: session.principal.userId, reason: refund.reason } });
+      }
+      await this.outbox.enqueue(transaction, { aggregateType: "refund", aggregateId: refund.id, eventType: "refund.completed", idempotencyKey: `package-refund-completed:${refund.id}`, payload: { orderId: refund.orderId, vendorOrderId: refund.vendorOrderId, paymentId: refund.paymentId, amountMinor: refund.amountMinor.toString() } });
+      await transaction.auditLog.create({ data: { actorUserId: session.principal.userId, actorType: "admin", action: "package_cancellation.refund.completed", resourceType: "refund", resourceId: refund.id, before: json({ status: "pending" }), after: json({ status: "completed", providerRefundId: input.providerRefundId, amountMinor: refund.amountMinor.toString() }) } });
+      const result = { refundId: refund.id, orderId: refund.orderId, vendorOrderId: refund.vendorOrderId, status: "completed" as const, amount: money(refund.amountMinor, refund.currency), refundedTotal: money(refundedTotal, refund.currency) };
+      await remember(transaction, scope, key, prior.hash, result); return result;
+    });
+  }
+
   async forceOrderRefund(session: Session, orderId: string, input: AdminOrderRefundInput, key: string) {
     requirePermission(session, "finance:manage"); if (!elevated(session)) throw new ApiProblem(403, "ADMIN_REQUIRED", "Finance admin access is required"); const scope = `order-refund:${orderId}`;
     return withSerializableTransaction(this.client, async (transaction) => {

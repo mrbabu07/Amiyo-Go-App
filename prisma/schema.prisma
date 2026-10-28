@@ -979,6 +979,7 @@ model VendorOrder {
   shipments       Shipment[]
   dispatches      DeliveryDispatch[]
   returns         Return[]
+  refunds         Refund[]
 
   @@unique([orderId, vendorId])
   @@index([vendorId, status, createdAt])
@@ -1428,6 +1429,7 @@ model Refund {
   orderId          String    @map("order_id") @db.Uuid
   paymentId        String    @map("payment_id") @db.Uuid
   returnId         String?   @map("return_id") @db.Uuid
+  vendorOrderId    String?   @unique @map("vendor_order_id") @db.Uuid
   amountMinor      BigInt    @map("amount_minor")
   currency         String    @default("BDT") @db.Char(3)
   status           String    @default("pending")
@@ -1438,6 +1440,7 @@ model Refund {
   order            Order     @relation(fields: [orderId], references: [id], onDelete: Restrict)
   payment          Payment   @relation(fields: [paymentId], references: [id], onDelete: Restrict)
   returnRequest    Return?   @relation(fields: [returnId], references: [id], onDelete: Restrict)
+  vendorOrder      VendorOrder? @relation(fields: [vendorOrderId], references: [id], onDelete: Restrict)
 
   @@index([orderId, status])
   @@map("refunds")

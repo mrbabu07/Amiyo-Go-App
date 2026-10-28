@@ -8,6 +8,7 @@ import { colors, radius, spacing } from "../../ui/tokens";
 import { formatMinor, minorToMajorInput, parseMajorToMinor, sumMinor } from "../../ui/money";
 import { useCurrentUser } from "../auth/use-current-user";
 import { ReturnEvidencePanel } from "./ReturnEvidencePanel";
+import { PackageCancellationRefundDesk } from "./PackageCancellationRefundDesk";
 import { applyAdminReturnLogisticsAction, completeAdminRefundCase, getAdminReturnDetail, getAdminReturns, transitionAdminReturnCase, type AdminReturnLogisticsAction, type AdminReturnStatus } from "../operations/operations.api";
 
 const flows = [
@@ -60,6 +61,7 @@ export function AdminReturnsScreen() {
 
   return <Screen eyebrow="ORDER CONTROL" title="Returns & refund desk" description="Triage seller responses, inspect return evidence, process refunds and keep every decision auditable.">
     <View style={[styles.metrics, width < 720 && styles.stack]}><Metric icon="return-down-back-outline" label="Total cases" value={String(rows.length)} /><Metric icon="alert-circle-outline" label="Needs decision" value={String(rows.filter((item) => ["REQUESTED", "REVIEWING"].includes(item.status)).length)} /><Metric icon="cash-outline" label="Refund ready" value={String(refundReady)} /><Metric icon="wallet-outline" label="Requested value" value={money(requestedMinor)} /></View>
+    <PackageCancellationRefundDesk />
     <View style={[styles.control, width < 720 && styles.stack]}><View style={styles.search}><Ionicons color={colors.muted} name="search-outline" size={18} /><TextInput onChangeText={setSearch} placeholder="Search return, order or reason..." placeholderTextColor={colors.muted} style={styles.searchInput} value={search} /></View><Pressable onPress={() => returns.refetch()} style={styles.refresh}><Ionicons color={colors.primary} name="refresh" size={17} /><Text style={styles.refreshText}>Refresh</Text></Pressable></View>
     <View style={styles.flowBar}>{flows.map((item) => <Pressable key={item.key} onPress={() => setFlow(item.key)} style={[styles.flow, flow === item.key && styles.flowActive]}><Text style={[styles.flowText, flow === item.key && styles.flowTextActive]}>{item.label}</Text><Text style={[styles.flowCount, flow === item.key && styles.flowCountActive]}>{item.key === "all" ? rows.length : rows.filter((row) => caseFlow(row.status) === item.key).length}</Text></Pressable>)}</View>
     {returns.isLoading ? <ActivityIndicator color={colors.primary} /> : null}{returns.error ? <ErrorBox message={returns.error.message} /> : null}

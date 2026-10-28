@@ -836,6 +836,100 @@
               "qnaResponseRate"
             ]
           },
+          "offers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "shopId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "shopName": {
+                  "type": "string"
+                },
+                "shopSlug": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "subtitle": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "imageUrl": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uri"
+                },
+                "ctaLabel": {
+                  "type": "string"
+                },
+                "href": {
+                  "type": "string"
+                },
+                "discountType": {
+                  "type": "string",
+                  "enum": [
+                    "PERCENT",
+                    "FIXED"
+                  ]
+                },
+                "value": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "showOnHome": {
+                  "type": "boolean"
+                },
+                "showOnShop": {
+                  "type": "boolean"
+                },
+                "showAsPopup": {
+                  "type": "boolean"
+                },
+                "startsAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "endsAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "shopId",
+                "shopName",
+                "shopSlug",
+                "code",
+                "title",
+                "subtitle",
+                "imageUrl",
+                "ctaLabel",
+                "href",
+                "discountType",
+                "value",
+                "showOnHome",
+                "showOnShop",
+                "showAsPopup",
+                "startsAt",
+                "endsAt"
+              ]
+            }
+          },
           "products": {
             "type": "object",
             "properties": {
@@ -994,6 +1088,7 @@
           "followerCount",
           "version",
           "servicePromise",
+          "offers",
           "products"
         ]
       },
@@ -1517,6 +1612,112 @@
               "updatedAt"
             ]
           },
+          "packages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "vendorId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "shopId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "shopName": {
+                  "type": "string"
+                },
+                "itemCount": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "subtotal": {
+                  "type": "object",
+                  "properties": {
+                    "amountMinor": {
+                      "type": "string",
+                      "pattern": "^\\d+$"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "minLength": 3,
+                      "maxLength": 3,
+                      "default": "BDT"
+                    }
+                  },
+                  "required": [
+                    "amountMinor"
+                  ]
+                },
+                "discount": {
+                  "type": "object",
+                  "properties": {
+                    "amountMinor": {
+                      "type": "string",
+                      "pattern": "^\\d+$"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "minLength": 3,
+                      "maxLength": 3,
+                      "default": "BDT"
+                    }
+                  },
+                  "required": [
+                    "amountMinor"
+                  ]
+                },
+                "delivery": {
+                  "type": "object",
+                  "properties": {
+                    "amountMinor": {
+                      "type": "string",
+                      "pattern": "^\\d+$"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "minLength": 3,
+                      "maxLength": 3,
+                      "default": "BDT"
+                    }
+                  },
+                  "required": [
+                    "amountMinor"
+                  ]
+                },
+                "total": {
+                  "type": "object",
+                  "properties": {
+                    "amountMinor": {
+                      "type": "string",
+                      "pattern": "^\\d+$"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "minLength": 3,
+                      "maxLength": 3,
+                      "default": "BDT"
+                    }
+                  },
+                  "required": [
+                    "amountMinor"
+                  ]
+                }
+              },
+              "required": [
+                "vendorId",
+                "shopId",
+                "shopName",
+                "itemCount",
+                "subtotal",
+                "discount",
+                "delivery",
+                "total"
+              ]
+            },
+            "minItems": 1
+          },
           "subtotal": {
             "type": "object",
             "properties": {
@@ -1588,6 +1789,9 @@
             "required": [
               "amountMinor"
             ]
+          },
+          "taxIncluded": {
+            "type": "boolean"
           },
           "total": {
             "type": "object",
@@ -1746,10 +1950,12 @@
         },
         "required": [
           "cart",
+          "packages",
           "subtotal",
           "discount",
           "delivery",
           "tax",
+          "taxIncluded",
           "total",
           "vendorCount",
           "coupon",
@@ -10772,6 +10978,100 @@
                           "questionCount",
                           "qnaResponseRate"
                         ]
+                      },
+                      "offers": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "shopId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "shopName": {
+                              "type": "string"
+                            },
+                            "shopSlug": {
+                              "type": "string"
+                            },
+                            "code": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "subtitle": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "imageUrl": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "uri"
+                            },
+                            "ctaLabel": {
+                              "type": "string"
+                            },
+                            "href": {
+                              "type": "string"
+                            },
+                            "discountType": {
+                              "type": "string",
+                              "enum": [
+                                "PERCENT",
+                                "FIXED"
+                              ]
+                            },
+                            "value": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0
+                            },
+                            "showOnHome": {
+                              "type": "boolean"
+                            },
+                            "showOnShop": {
+                              "type": "boolean"
+                            },
+                            "showAsPopup": {
+                              "type": "boolean"
+                            },
+                            "startsAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "endsAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "shopId",
+                            "shopName",
+                            "shopSlug",
+                            "code",
+                            "title",
+                            "subtitle",
+                            "imageUrl",
+                            "ctaLabel",
+                            "href",
+                            "discountType",
+                            "value",
+                            "showOnHome",
+                            "showOnShop",
+                            "showAsPopup",
+                            "startsAt",
+                            "endsAt"
+                          ]
+                        }
                       }
                     },
                     "required": [
@@ -10786,7 +11086,8 @@
                       "productCount",
                       "followerCount",
                       "version",
-                      "servicePromise"
+                      "servicePromise",
+                      "offers"
                     ]
                   }
                 }
@@ -16644,6 +16945,342 @@
         "responses": {
           "200": {
             "description": "Provider-confirmed refund completed"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/refunds/package-cancellations": {
+      "get": {
+        "tags": [
+          "Admin Finance"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pending seller package cancellation refunds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "refundId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "orderId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "orderNumber": {
+                        "type": "string"
+                      },
+                      "vendorOrderId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "shopName": {
+                        "type": "string"
+                      },
+                      "vendorName": {
+                        "type": "string"
+                      },
+                      "reason": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "amount": {
+                        "type": "object",
+                        "properties": {
+                          "amountMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "currency": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 3,
+                            "default": "BDT"
+                          }
+                        },
+                        "required": [
+                          "amountMinor"
+                        ]
+                      },
+                      "payment": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "method": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "refunded": {
+                            "type": "object",
+                            "properties": {
+                              "amountMinor": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "minLength": 3,
+                                "maxLength": 3,
+                                "default": "BDT"
+                              }
+                            },
+                            "required": [
+                              "amountMinor"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "provider",
+                          "method",
+                          "status",
+                          "refunded"
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "refundId",
+                      "orderId",
+                      "orderNumber",
+                      "vendorOrderId",
+                      "shopName",
+                      "vendorName",
+                      "reason",
+                      "status",
+                      "amount",
+                      "payment",
+                      "createdAt"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/refunds/package-cancellations/{id}/completion": {
+      "post": {
+        "tags": [
+          "Admin Finance"
+        ],
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "providerRefundId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "minLength": 2,
+                    "maxLength": 200
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Package cancellation refund completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "refundId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "orderId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "vendorOrderId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "completed"
+                      ]
+                    },
+                    "amount": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    },
+                    "refundedTotal": {
+                      "type": "object",
+                      "properties": {
+                        "amountMinor": {
+                          "type": "string",
+                          "pattern": "^\\d+$"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "minLength": 3,
+                          "maxLength": 3,
+                          "default": "BDT"
+                        }
+                      },
+                      "required": [
+                        "amountMinor"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "refundId",
+                    "orderId",
+                    "vendorOrderId",
+                    "status",
+                    "amount",
+                    "refundedTotal"
+                  ]
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid request",
@@ -24626,6 +25263,100 @@
                         ]
                       }
                     },
+                    "storeOffers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "shopId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "shopName": {
+                            "type": "string"
+                          },
+                          "shopSlug": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "subtitle": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "imageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri"
+                          },
+                          "ctaLabel": {
+                            "type": "string"
+                          },
+                          "href": {
+                            "type": "string"
+                          },
+                          "discountType": {
+                            "type": "string",
+                            "enum": [
+                              "PERCENT",
+                              "FIXED"
+                            ]
+                          },
+                          "value": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          },
+                          "showOnHome": {
+                            "type": "boolean"
+                          },
+                          "showOnShop": {
+                            "type": "boolean"
+                          },
+                          "showAsPopup": {
+                            "type": "boolean"
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "shopId",
+                          "shopName",
+                          "shopSlug",
+                          "code",
+                          "title",
+                          "subtitle",
+                          "imageUrl",
+                          "ctaLabel",
+                          "href",
+                          "discountType",
+                          "value",
+                          "showOnHome",
+                          "showOnShop",
+                          "showAsPopup",
+                          "startsAt",
+                          "endsAt"
+                        ]
+                      }
+                    },
                     "flashSales": {
                       "type": "array",
                       "items": {
@@ -24707,6 +25438,7 @@
                     "banners",
                     "coupons",
                     "campaigns",
+                    "storeOffers",
                     "flashSales"
                   ]
                 }
@@ -34053,10 +34785,39 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "shopId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
                   "code": {
                     "type": "string",
                     "minLength": 3,
                     "maxLength": 40
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 120
+                  },
+                  "subtitle": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 240
+                  },
+                  "bannerUploadId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid"
+                  },
+                  "ctaLabel": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 40,
+                    "default": "Shop offer"
                   },
                   "discountType": {
                     "type": "string",
@@ -34069,6 +34830,18 @@
                     "type": "integer",
                     "exclusiveMinimum": 0
                   },
+                  "showOnHome": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "showOnShop": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "showAsPopup": {
+                    "type": "boolean",
+                    "default": true
+                  },
                   "startsAt": {
                     "type": "string",
                     "format": "date-time"
@@ -34079,7 +34852,9 @@
                   }
                 },
                 "required": [
+                  "shopId",
                   "code",
+                  "title",
                   "discountType",
                   "value",
                   "startsAt",
@@ -40133,6 +40908,77 @@
                             "preventOverselling"
                           ]
                         },
+                        "operations": {
+                          "type": "object",
+                          "properties": {
+                            "processingSlaHours": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 168
+                            },
+                            "deliverySlaHours": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 720
+                            },
+                            "sellerOrderAlertHours": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 168
+                            },
+                            "codAddressReviewCount": {
+                              "type": "integer",
+                              "minimum": 2,
+                              "maximum": 20
+                            },
+                            "codAddressWindowHours": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 720
+                            },
+                            "buyerVelocityReviewCount": {
+                              "type": "integer",
+                              "minimum": 2,
+                              "maximum": 20
+                            },
+                            "buyerVelocityWindowHours": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 168
+                            },
+                            "highValueFloorMinor": {
+                              "type": "string",
+                              "pattern": "^\\d+$"
+                            },
+                            "highValueAverageMultiplier": {
+                              "type": "integer",
+                              "minimum": 2,
+                              "maximum": 20
+                            }
+                          },
+                          "default": {
+                            "processingSlaHours": 48,
+                            "deliverySlaHours": 120,
+                            "sellerOrderAlertHours": 18,
+                            "codAddressReviewCount": 3,
+                            "codAddressWindowHours": 168,
+                            "buyerVelocityReviewCount": 3,
+                            "buyerVelocityWindowHours": 24,
+                            "highValueFloorMinor": "2000000",
+                            "highValueAverageMultiplier": 4
+                          },
+                          "required": [
+                            "processingSlaHours",
+                            "deliverySlaHours",
+                            "sellerOrderAlertHours",
+                            "codAddressReviewCount",
+                            "codAddressWindowHours",
+                            "buyerVelocityReviewCount",
+                            "buyerVelocityWindowHours",
+                            "highValueFloorMinor",
+                            "highValueAverageMultiplier"
+                          ]
+                        },
                         "settlement": {
                           "type": "object",
                           "properties": {
@@ -40199,6 +41045,17 @@
                           "reservationMinutes": 30,
                           "allowBackorders": false,
                           "preventOverselling": true
+                        },
+                        "operations": {
+                          "processingSlaHours": 48,
+                          "deliverySlaHours": 120,
+                          "sellerOrderAlertHours": 18,
+                          "codAddressReviewCount": 3,
+                          "codAddressWindowHours": 168,
+                          "buyerVelocityReviewCount": 3,
+                          "buyerVelocityWindowHours": 24,
+                          "highValueFloorMinor": "2000000",
+                          "highValueAverageMultiplier": 4
                         },
                         "settlement": {
                           "minimumPayoutMinor": "50000",
@@ -40762,6 +41619,77 @@
                           "preventOverselling"
                         ]
                       },
+                      "operations": {
+                        "type": "object",
+                        "properties": {
+                          "processingSlaHours": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 168
+                          },
+                          "deliverySlaHours": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 720
+                          },
+                          "sellerOrderAlertHours": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 168
+                          },
+                          "codAddressReviewCount": {
+                            "type": "integer",
+                            "minimum": 2,
+                            "maximum": 20
+                          },
+                          "codAddressWindowHours": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 720
+                          },
+                          "buyerVelocityReviewCount": {
+                            "type": "integer",
+                            "minimum": 2,
+                            "maximum": 20
+                          },
+                          "buyerVelocityWindowHours": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 168
+                          },
+                          "highValueFloorMinor": {
+                            "type": "string",
+                            "pattern": "^\\d+$"
+                          },
+                          "highValueAverageMultiplier": {
+                            "type": "integer",
+                            "minimum": 2,
+                            "maximum": 20
+                          }
+                        },
+                        "default": {
+                          "processingSlaHours": 48,
+                          "deliverySlaHours": 120,
+                          "sellerOrderAlertHours": 18,
+                          "codAddressReviewCount": 3,
+                          "codAddressWindowHours": 168,
+                          "buyerVelocityReviewCount": 3,
+                          "buyerVelocityWindowHours": 24,
+                          "highValueFloorMinor": "2000000",
+                          "highValueAverageMultiplier": 4
+                        },
+                        "required": [
+                          "processingSlaHours",
+                          "deliverySlaHours",
+                          "sellerOrderAlertHours",
+                          "codAddressReviewCount",
+                          "codAddressWindowHours",
+                          "buyerVelocityReviewCount",
+                          "buyerVelocityWindowHours",
+                          "highValueFloorMinor",
+                          "highValueAverageMultiplier"
+                        ]
+                      },
                       "settlement": {
                         "type": "object",
                         "properties": {
@@ -40828,6 +41756,17 @@
                         "reservationMinutes": 30,
                         "allowBackorders": false,
                         "preventOverselling": true
+                      },
+                      "operations": {
+                        "processingSlaHours": 48,
+                        "deliverySlaHours": 120,
+                        "sellerOrderAlertHours": 18,
+                        "codAddressReviewCount": 3,
+                        "codAddressWindowHours": 168,
+                        "buyerVelocityReviewCount": 3,
+                        "buyerVelocityWindowHours": 24,
+                        "highValueFloorMinor": "2000000",
+                        "highValueAverageMultiplier": 4
                       },
                       "settlement": {
                         "minimumPayoutMinor": "50000",
@@ -41258,6 +42197,77 @@
                             "preventOverselling"
                           ]
                         },
+                        "operations": {
+                          "type": "object",
+                          "properties": {
+                            "processingSlaHours": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 168
+                            },
+                            "deliverySlaHours": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 720
+                            },
+                            "sellerOrderAlertHours": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 168
+                            },
+                            "codAddressReviewCount": {
+                              "type": "integer",
+                              "minimum": 2,
+                              "maximum": 20
+                            },
+                            "codAddressWindowHours": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 720
+                            },
+                            "buyerVelocityReviewCount": {
+                              "type": "integer",
+                              "minimum": 2,
+                              "maximum": 20
+                            },
+                            "buyerVelocityWindowHours": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 168
+                            },
+                            "highValueFloorMinor": {
+                              "type": "string",
+                              "pattern": "^\\d+$"
+                            },
+                            "highValueAverageMultiplier": {
+                              "type": "integer",
+                              "minimum": 2,
+                              "maximum": 20
+                            }
+                          },
+                          "default": {
+                            "processingSlaHours": 48,
+                            "deliverySlaHours": 120,
+                            "sellerOrderAlertHours": 18,
+                            "codAddressReviewCount": 3,
+                            "codAddressWindowHours": 168,
+                            "buyerVelocityReviewCount": 3,
+                            "buyerVelocityWindowHours": 24,
+                            "highValueFloorMinor": "2000000",
+                            "highValueAverageMultiplier": 4
+                          },
+                          "required": [
+                            "processingSlaHours",
+                            "deliverySlaHours",
+                            "sellerOrderAlertHours",
+                            "codAddressReviewCount",
+                            "codAddressWindowHours",
+                            "buyerVelocityReviewCount",
+                            "buyerVelocityWindowHours",
+                            "highValueFloorMinor",
+                            "highValueAverageMultiplier"
+                          ]
+                        },
                         "settlement": {
                           "type": "object",
                           "properties": {
@@ -41324,6 +42334,17 @@
                           "reservationMinutes": 30,
                           "allowBackorders": false,
                           "preventOverselling": true
+                        },
+                        "operations": {
+                          "processingSlaHours": 48,
+                          "deliverySlaHours": 120,
+                          "sellerOrderAlertHours": 18,
+                          "codAddressReviewCount": 3,
+                          "codAddressWindowHours": 168,
+                          "buyerVelocityReviewCount": 3,
+                          "buyerVelocityWindowHours": 24,
+                          "highValueFloorMinor": "2000000",
+                          "highValueAverageMultiplier": 4
                         },
                         "settlement": {
                           "minimumPayoutMinor": "50000",
