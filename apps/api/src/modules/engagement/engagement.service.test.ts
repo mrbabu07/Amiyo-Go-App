@@ -10,6 +10,18 @@ const vendorId = "33333333-3333-4333-8333-333333333333";
 const customer = { principal: { userId, roles: ["CUSTOMER"], vendorIds: [] }, status: "ACTIVE", email: null, phone: null, profile: { firstName: null, lastName: null, displayName: "Customer", avatarStorageKey: null, locale: "en", currency: "BDT" }, permissions: [], vendorMemberships: [] } as Session;
 const seller = { ...customer, principal: { userId, roles: ["VENDOR_OWNER"], vendorIds: [vendorId] }, permissions: ["vendor:read", "support:manage"] } as Session;
 
+test("notification feed uses the bounded user timeline projection", async () => {
+  const createdAt = new Date("2026-10-28T00:00:00Z");
+  const client = { notification: { findMany: async (query: { where: unknown; select: Record<string, boolean>; orderBy: unknown; take: number }) => {
+    assert.deepEqual(query.where, { userId });
+    assert.deepEqual(query.orderBy, { createdAt: "desc" });
+    assert.equal(query.take, 100);
+    assert.deepEqual(Object.keys(query.select).sort(), ["body", "createdAt", "data", "id", "readAt", "title", "type"]);
+    return [{ id: "notification", type: "order.updated", title: "Order updated", body: "Packed", data: { href: "/orders/order" }, readAt: null, createdAt }];
+  } } } as unknown as PrismaClient;
+  assert.deepEqual(await new EngagementService(client).notifications(userId), [{ id: "notification", type: "order.updated", title: "Order updated", body: "Packed", href: "/orders/order", readAt: null, createdAt: createdAt.toISOString() }]);
+});
+
 test("review creation checks active permission and owned delivered purchase", async () => {
   let reads = 0;
   const client = { orderItem: { findFirst: async ({ where }: { where: unknown }) => {

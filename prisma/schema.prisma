@@ -2017,6 +2017,7 @@ model Notification {
   deliveries     NotificationDelivery[]
 
   @@index([userId, readAt, createdAt])
+  @@index([userId, createdAt])
   @@map("notifications")
 }
 
