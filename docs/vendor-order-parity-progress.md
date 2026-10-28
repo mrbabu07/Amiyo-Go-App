@@ -14,15 +14,13 @@ Scope: compare `Client/src/pages/vendor/VendorOrders.jsx` and `VendorOrderDetail
 
 ## Evidence
 
-Mobile strict type-check and all 484 mobile tests passed. Focused API collection-amount tests passed. These are automated checks, not browser or physical printer acceptance.
+The complete 2026-10-28 regression rebuilt every TypeScript workspace and passed 1,159 tests, including 329 API and 490 mobile tests. These are automated checks, not browser, native-device or physical-printer acceptance.
 
 ## Still open
 
-- Server-side order/customer/phone/product search plus status/store/payment filters run before pagination with vendor scoping. Queue counters aggregate all seller packages independently of the current search, with unavailable states instead of misleading zeroes.
-- Inline order expansion lazily loads account-scoped package products, delivery, payment and recorded shipment events, with manage/print links. Wide screens now use an order/customer/product/payment/status/actions table sharing selection and expansion with mobile cards. Visual verification remains open.
-- Inline order expansion now also loads package-scoped return cases through a seller-owned server filter and links pending cases directly to the existing evidence/response/receipt workspace.
-- Separate Code 128 scanner barcode export is implemented on the package documents page, with the same server-side ownership checks as parcel documents. It identifies the parcel without replacing signed-QR verification. Physical scanner/print verification remains open.
-- Transition replay rechecks active management permission and current vendor ownership before exposing a saved response. Server rejection/cancellation requires a reason; sellers cannot impersonate courier movement. Seller package rejection/cancellation releases only that package's matching stock reservation and fails closed on quantity drift. Fresh definite validation/version/permission failures clear recovery, while ambiguous or replay failures preserve the original payload and key. Prepaid partial-package refund orchestration and reload during bulk work remain open.
-- Reference-matched browser review at desktop and 360px mobile widths, print preview and final full regression.
+- Prepaid partial-package seller cancellation still needs a durable, idempotent refund-allocation workflow tied to the package. Stock release is safe today, but captured payment must not create a stranded or duplicate provider refund.
+- Bulk seller actions preserve each package transition independently, but the overall selected batch plan and completed-ID list do not survive a full page/app reload.
+- Reference-matched authenticated browser review of the latest seller order changes at desktop and 360px widths remains open.
+- Native PDF sharing plus physical label, barcode-scanner and signed-QR print acceptance remain external evidence requirements.
 
 The earlier production-gap document's assertion that no code-only gaps remain does not establish seller reference parity; the open items here supersede that assertion for this scope.

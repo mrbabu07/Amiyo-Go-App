@@ -98,7 +98,8 @@ test("seller orders stay inside the workspace with reference controls", () => {
   for (const control of ["Search seller orders", "Batch print", "Documents", "View order"]) assert.match(orders, new RegExp(control));
   assert.match(orders, /thumbnailUrl/);
   assert.match(orders, /useLocalSearchParams<\{ orderId\?: string \}>/);
-  assert.match(orders, /`\$\{order\.orderId\} \$\{order\.orderNumber\}/);
+  assert.match(orders, /getVendorOrders\(user!, pageParam, linkedOrderId, \{ search: debouncedSearch, status: filter, shop: shopFilter, payment: paymentFilter \}\)/);
+  assert.match(orders, /Search, status, store and payment filters run before pagination/);
   assert.match(orders, /useInfiniteQuery/);
   assert.match(orders, /page\.pageInfo\.nextCursor/);
   assert.match(orders, /Load more orders/);
