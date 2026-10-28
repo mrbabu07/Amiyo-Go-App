@@ -27,3 +27,12 @@ test("expanded order data remains account scoped and uses real package event tim
   assert.match(source, /compact && styles.fullWidth/);
   assert.doesNotMatch(source, /#[0-9a-f]{3,8}/i);
 });
+
+test("vendor package expansion embeds package-scoped return cases and actions", () => {
+  const source = readFileSync(new URL("./VendorOrderExpansion.tsx", import.meta.url), "utf8");
+  assert.match(source, /getVendorReturns\(user!, id\)/);
+  assert.match(source, /\["vendor", "returns", "package", id, user\?\.uid\]/);
+  assert.match(source, /Returns for this package/);
+  assert.match(source, /Review & respond/);
+  assert.match(source, /\/vendor\/returns\/\$\{item\.id\}/);
+});

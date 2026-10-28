@@ -163,3 +163,13 @@ test("vendor report applies the selected period and derives fulfilment metrics",
   const report = await new VendorService(client).report(reportSession, 7);
   assert.equal(report.periodDays, 7); assert.equal(report.orderCount, 9); assert.equal(report.averageOrderMinor, "25000"); assert.equal(report.fulfilmentRate, 88.9); assert.equal(report.cancelledCount, 1); assert.equal(report.returnCount, 1); assert.equal(report.performance.onTimeDispatch.value, 100); assert.equal(report.performance.rating.value, 4.5); assert.equal(report.performance.tier, "needs_attention"); assert.ok(report.performance.recommendations.length >= 2); assert.equal(report.recentOrders[0]?.orderNumber, "AGO-1001"); assert.equal(report.recentOrders[0]?.itemCount, 2); assert.equal(recentTake, 12); assert.ok(since instanceof Date);
 });
+
+test("vendor package returns are scoped by both seller and package before reading", async () => {
+  const vendorOrderId = "44444444-4444-4444-8444-444444444444";
+  let query: any;
+  const client = { return: { findMany: async (input: any) => { query = input; return []; } } } as unknown as PrismaClient;
+  const result = await new VendorService(client).returns({ ...shopSession, permissions: ["vendor:read", "orders:read"] }, vendorOrderId);
+  assert.deepEqual(result, []);
+  assert.deepEqual(query.where, { vendorOrderId, vendorOrder: { vendorId } });
+  assert.equal(query.take, 20);
+});

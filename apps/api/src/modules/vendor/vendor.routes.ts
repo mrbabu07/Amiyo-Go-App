@@ -9,6 +9,7 @@ import { VendorService } from "./vendor.service.js";
 import { marketplaceRateLimit } from "../../middleware/marketplace-rate-limit.js";
 
 const idSchema = z.object({ id: z.string().uuid() });
+const returnListSchema = z.object({ vendorOrderId: z.string().uuid().optional() });
 export function createVendorRouter() {
   const router = Router(); const service = new VendorService(prisma); const authenticate = createAuthenticationMiddleware(new FirebaseTokenVerifier(), new IdentityService(prisma));
   const writeLimit = marketplaceRateLimit("vendor-writes", { windowMs: 60_000, limit: 15, standardHeaders: "draft-7", legacyHeaders: false, message: { title: "Too many vendor requests", status: 429, code: "VENDOR_RATE_LIMITED" } });
@@ -28,7 +29,7 @@ export function createVendorRouter() {
   router.get("/api/v2/vendor/workspace/vouchers", async (req, res, next) => { try { res.json(await service.vouchers(requireSession(req))); } catch (error) { next(error); } });
   router.post("/api/v2/vendor/workspace/vouchers", writeLimit, async (req, res, next) => { try { res.status(201).json(await service.createVoucher(requireSession(req), createVendorVoucherSchema.parse(req.body))); } catch (error) { next(error); } });
 router.get("/api/v2/vendor/workspace/report", async (req, res, next) => { try { const requestedDays = Number(req.query.days ?? 30); const days = [7, 30, 90, 365].includes(requestedDays) ? requestedDays : 30; res.json(await service.report(requireSession(req), days)); } catch (error) { next(error); } });
-  router.get("/api/v2/vendor/workspace/returns", async (req, res, next) => { try { res.json(await service.returns(requireSession(req))); } catch (error) { next(error); } });
+  router.get("/api/v2/vendor/workspace/returns", async (req, res, next) => { try { const query = returnListSchema.parse(req.query); res.json(await service.returns(requireSession(req), query.vendorOrderId)); } catch (error) { next(error); } });
   router.get("/api/v2/vendor/workspace/category-requests", async (req, res, next) => { try { res.json(await service.categoryRequests(requireSession(req))); } catch (error) { next(error); } });
   router.post("/api/v2/vendor/workspace/category-requests", writeLimit, async (req, res, next) => { try { res.status(201).json(await service.createCategoryRequest(requireSession(req), createVendorCategoryRequestSchema.parse(req.body))); } catch (error) { next(error); } });
   return router;

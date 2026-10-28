@@ -20,7 +20,7 @@ Mobile strict type-check and all 484 mobile tests passed. Focused API collection
 
 - Server-side order/customer/phone/product search and status/store filters are implemented before pagination with vendor scoping. Queue counters now aggregate all seller packages independently of the current search, with unavailable states instead of misleading zeroes. Payment filtering still needs server-side integration.
 - Inline order expansion lazily loads account-scoped package products, delivery, payment and recorded shipment events, with manage/print links. Wide screens now use an order/customer/product/payment/status/actions table sharing selection and expansion with mobile cards. Visual verification remains open.
-- Return evidence/actions embedded within the order workspace.
+- Inline order expansion now also loads package-scoped return cases through a seller-owned server filter and links pending cases directly to the existing evidence/response/receipt workspace.
 - Separate Code 128 scanner barcode export is implemented on the package documents page, with the same server-side ownership checks as parcel documents. It identifies the parcel without replacing signed-QR verification. Physical scanner/print verification remains open.
 - Transition replay now rechecks active management permission and current vendor ownership before exposing a saved response. Server rejection/cancellation requires a reason; sellers cannot impersonate courier movement. Cancellation inventory/refund effects and recovery/error-path audit, including reload during bulk work, remain open.
 - Reference-matched browser review at desktop and 360px mobile widths, print preview and final full regression.
