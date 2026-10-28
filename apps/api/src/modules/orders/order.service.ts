@@ -163,25 +163,11 @@ export class OrderService {
       { order: { user: { profile: { displayName: { contains: term, mode: "insensitive" } } } } },
       { order: { user: { normalizedPhone: { contains: term } } } }
     ] } : {};
-    const rows = await this.client.vendorOrder.findMany({ where: { ...(elevated ? {} : { vendorId: { in: session.principal.vendorIds } }), ...(query.status ? { status: query.status } : {}), ...(query.orderId ? { orderId: query.orderId } : {}), ...(query.shop ? { shop: { name: query.shop } } : {}), ...(query.payment ? { order: { payments: { some: { method: { equals: query.payment, mode: "insensitive" } } } } } : {}), ...searchWhere }, select: vendorOrderSummaryBaseSelect, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: limit + 1, ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}) });
+    const rows = await this.client.vendorOrder.findMany({ where: { ...(elevated ? {} : { vendorId: { in: session.principal.vendorIds } }), ...(query.status ? { status: query.status } : {}), ...(query.orderId ? { orderId: query.orderId } : {}), ...(query.shop ? { shop: { name: query.shop } } : {}), ...(query.payment ? { order: { payments: { some: { method: { equals: query.payment, mode: "insensitive" } } } } } : {}), ...searchWhere }, select: vendorOrderSummarySelect, relationLoadStrategy: "join", orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: limit + 1, ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}) });
     const hasNextPage = rows.length > limit;
     const page = hasNextPage ? rows.slice(0, limit) : rows;
     if (page.length === 0) return { data: [], pageInfo: { hasNextPage: false, nextCursor: null } };
-    const orderIds = [...new Set(page.map((row) => row.orderId))];
-    const packageIds = page.map((row) => row.id);
-    const [orders, items] = await Promise.all([
-      this.client.order.findMany({ where: { id: { in: orderIds } }, select: vendorOrderSummaryOrderSelect }),
-      this.client.orderItem.findMany({ where: { vendorOrderId: { in: packageIds } }, select: vendorOrderSummaryItemSelect, orderBy: { id: "asc" } })
-    ]);
-    const orderById = new Map(orders.map((order) => [order.id, order]));
-    const itemsByPackage = new Map<string, typeof items>();
-    for (const item of items) itemsByPackage.set(item.vendorOrderId, [...(itemsByPackage.get(item.vendorOrderId) ?? []), item]);
-    const loaded = page.map((row) => {
-      const order = orderById.get(row.orderId);
-      if (!order) throw new ApiProblem(503, "ORDER_READ_INCOMPLETE", "Order data is temporarily unavailable");
-      return { ...row, order, items: itemsByPackage.get(row.id) ?? [] } as LoadedVendorOrderSummary;
-    });
-    return { data: loaded.map(vendorOrderSummaryDto), pageInfo: { hasNextPage, nextCursor: hasNextPage ? page.at(-1)?.id ?? null : null } };
+    return { data: page.map(vendorOrderSummaryDto), pageInfo: { hasNextPage, nextCursor: hasNextPage ? page.at(-1)?.id ?? null : null } };
   }
 
   async vendorOrder(session: Session, id: string) {
