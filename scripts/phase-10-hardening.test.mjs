@@ -72,6 +72,20 @@ test("release artifacts enforce immutable builds and non-root containers", async
   assert.match(pullRequestTemplate, /No unresolved business decision/);
 });
 
+test("CodeQL scans JavaScript and TypeScript with immutable actions", async () => {
+  const workflow = await readFile(new URL("../.github/workflows/codeql.yml", import.meta.url), "utf8");
+  assert.match(workflow, /pull_request:/);
+  assert.match(workflow, /push:[\s\S]*branches: \[main\]/);
+  assert.match(workflow, /schedule:[\s\S]*cron: "23 2 \* \* 1"/);
+  assert.match(workflow, /^permissions:\n  contents: read$/m);
+  assert.match(workflow, /security-events: write/);
+  assert.match(workflow, /languages: javascript-typescript/);
+  assert.match(workflow, /queries: security-extended/);
+  assert.match(workflow, /github\/codeql-action\/init@[0-9a-f]{40} # v3/);
+  assert.match(workflow, /github\/codeql-action\/analyze@[0-9a-f]{40} # v3/);
+  assert.doesNotMatch(workflow, /uses:\s+[^\s]+@v\d+/);
+});
+
 test("Render blueprint deploys API and worker only after checks pass", async () => {
   const blueprint = await readFile(new URL("../render.yaml", import.meta.url), "utf8");
   assert.match(blueprint, /type: web[\s\S]*name: amiyo-api[\s\S]*healthCheckPath: \/ready/);
@@ -154,10 +168,10 @@ test("dependency register matches the current pinned tooling and gate snapshot",
   assert.match(register, /firebase-tools@15\.34\.1/);
   assert.match(register, /fast-uri@3\.1\.9/);
   assert.match(register, /three high, zero moderate, and five low package nodes/);
-  assert.match(register, /1,172-test run pass/);
+  assert.match(register, /1,173-test run pass/);
   assert.match(gapMap, /Current gate snapshot \(2026-10-28\)/);
   assert.match(gapMap, /one unresolved business decision/);
-  assert.match(gapMap, /passed 1,172 tests/);
+  assert.match(gapMap, /passed 1,173 tests/);
 });
 
 test("runtime contracts use the remediated Zod and OpenAPI toolchain", async () => {
