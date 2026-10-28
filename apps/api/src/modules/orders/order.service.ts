@@ -265,15 +265,25 @@ export class OrderService {
 
   async fulfillmentDocument(session: Session, id: string) {
     requireVendorReader(session);
-    const row = await this.client.vendorOrder.findUnique({ where: { id }, select: { id: true, orderId: true, vendorId: true, status: true, subtotalMinor: true, discountMinor: true, deliveryMinor: true, totalMinor: true, createdAt: true, order: { select: { orderNumber: true, currency: true } }, shop: { select: { name: true, settings: true } } } });
-    if (!row) throw new ApiProblem(404, "VENDOR_ORDER_NOT_FOUND", "Vendor order not found");
-    requireVendorAccess(session, row.vendorId, "orders:read");
-    const [deliveryAddress, payment, items, shipment] = await Promise.all([
-      this.client.orderAddress.findUnique({ where: { orderId_type: { orderId: row.orderId, type: "delivery" } } }),
-      this.client.payment.findFirst({ where: { orderId: row.orderId }, orderBy: { createdAt: "desc" } }),
-      this.client.orderItem.findMany({ where: { vendorOrderId: row.id }, select: { id: true, productNameSnapshot: true, skuSnapshot: true, quantity: true, unitPriceMinor: true, lineTotalMinor: true, currency: true } }),
-      this.client.shipment.findUnique({ where: { vendorOrderId: row.id }, select: { trackingNumber: true } })
-    ]);
+    const access = await this.client.vendorOrder.findUnique({ where: { id }, select: { id: true, vendorId: true } });
+    if (!access) throw new ApiProblem(404, "VENDOR_ORDER_NOT_FOUND", "Vendor order not found");
+    requireVendorAccess(session, access.vendorId, "orders:read");
+    const row = await this.client.vendorOrder.findUnique({
+      where: { id },
+      relationLoadStrategy: "join",
+      select: {
+        id: true, orderId: true, vendorId: true, status: true, subtotalMinor: true, discountMinor: true, deliveryMinor: true, totalMinor: true, createdAt: true,
+        order: { select: { orderNumber: true, currency: true, addresses: { where: { type: "delivery" }, take: 1 }, payments: { orderBy: { createdAt: "desc" }, take: 1 } } },
+        shop: { select: { name: true, settings: true } },
+        items: { select: { id: true, productNameSnapshot: true, skuSnapshot: true, quantity: true, unitPriceMinor: true, lineTotalMinor: true, currency: true } },
+        shipments: { take: 1, select: { trackingNumber: true } }
+      }
+    });
+    if (!row) throw new ApiProblem(409, "VENDOR_ORDER_CHANGED", "Vendor order changed while its documents were being prepared");
+    const deliveryAddress = row.order.addresses[0];
+    const payment = row.order.payments[0];
+    const items = row.items;
+    const shipment = row.shipments[0];
     if (!deliveryAddress) throw new ApiProblem(409, "DELIVERY_ADDRESS_MISSING", "Order delivery address is missing");
     const pickup = pickupFromSettings(row.shop.settings, row.shop.name);
     const parcelId = `AG-${row.order.orderNumber}-${row.id.slice(-6).toUpperCase()}`;

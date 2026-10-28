@@ -12,12 +12,9 @@ function packageRow(paymentStatus = "AUTHORIZED") {
 
 function documentClient(paymentStatus = "AUTHORIZED") {
   const row = packageRow(paymentStatus);
+  let calls = 0;
   return {
-    vendorOrder: { findUnique: async () => row },
-    orderAddress: { findUnique: async () => row.order.addresses[0] },
-    payment: { findFirst: async () => row.order.payments[0] },
-    orderItem: { findMany: async () => row.items },
-    shipment: { findUnique: async () => row.shipments[0] ?? null }
+    vendorOrder: { findUnique: async () => ++calls === 1 ? { id: row.id, vendorId: row.vendorId } : row }
   };
 }
 
@@ -39,30 +36,26 @@ test("paid COD document cannot ask courier to collect twice", async () => {
 });
 
 test("seller cannot read another seller parcel document", async () => {
-  const client = { vendorOrder: { findUnique: async () => ({ ...packageRow(), vendorId: "other-vendor" }) } };
+  const client = { vendorOrder: { findUnique: async () => ({ id: "package-123456", vendorId: "other-vendor" }) } };
   await assert.rejects(new OrderService(client as never).fulfillmentDocument(session, "package-123456"), /cannot access/i);
 });
 
-test("parcel document starts independent relation reads concurrently after ownership", async () => {
+test("parcel document authorizes first and loads bounded relations in one joined read", async () => {
   const row = packageRow();
-  let started = 0;
-  let release: (() => void) | undefined;
-  const barrier = new Promise<void>((resolve) => { release = resolve; });
-  const branch = async (value: unknown) => {
-    started++;
-    if (started === 4) release?.();
-    await barrier;
-    return value;
-  };
+  let calls = 0;
   const client = {
-    vendorOrder: { findUnique: async () => row },
-    orderAddress: { findUnique: async () => branch(row.order.addresses[0]) },
-    payment: { findFirst: async () => branch(row.order.payments[0]) },
-    orderItem: { findMany: async () => branch(row.items) },
-    shipment: { findUnique: async () => branch(null) }
+    vendorOrder: { findUnique: async (query: { relationLoadStrategy?: string; select?: { order?: unknown; items?: unknown; shipments?: unknown } }) => {
+      calls++;
+      if (calls === 1) return { id: row.id, vendorId: row.vendorId };
+      assert.equal(query.relationLoadStrategy, "join");
+      assert.ok(query.select?.order);
+      assert.ok(query.select?.items);
+      assert.ok(query.select?.shipments);
+      return row;
+    } }
   };
   const result = await new OrderService(client as never).fulfillmentDocument(session, row.id);
-  assert.equal(started, 4);
+  assert.equal(calls, 2);
   assert.equal(result.vendorOrderId, row.id);
 });
 
