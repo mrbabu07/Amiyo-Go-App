@@ -9,13 +9,13 @@ export function eligibleSellerPackages<T extends { id: string; status: string }>
   return [...new Map(rows.filter((row) => row.status === sellerBulkActions[action].from).map((row) => [row.id, row])).values()];
 }
 
-export async function runSellerBatch(ids: string[], send: (id: string) => Promise<void>, active: () => boolean, completed: (id: string) => void) {
+export async function runSellerBatch(ids: string[], send: (id: string) => Promise<void>, active: () => boolean, completed: (id: string) => unknown | Promise<unknown>) {
   const unique = [...new Set(ids)];
   if (!unique.length || unique.length > 20) throw new Error("Choose 1 to 20 eligible packages.");
   for (const id of unique) {
     if (!active()) throw new Error("Account changed. Reopen seller orders.");
     await send(id);
     if (!active()) throw new Error("Account changed. Reopen seller orders.");
-    completed(id);
+    await completed(id);
   }
 }

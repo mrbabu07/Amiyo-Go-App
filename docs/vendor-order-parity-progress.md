@@ -19,7 +19,7 @@ The complete 2026-10-28 regression rebuilt every TypeScript workspace and passed
 ## Still open
 
 - Prepaid partial-package seller cancellation still needs a durable, idempotent refund-allocation workflow tied to the package. Stock release is safe today, but captured payment must not create a stranded or duplicate provider refund.
-- Bulk seller actions preserve each package transition independently, but the overall selected batch plan and completed-ID list do not survive a full page/app reload.
+- Bulk seller actions persist the account-scoped selected plan and completed package IDs for 23 hours, restore them after page/app reload, and safely reconcile a package already confirmed at the target status before continuing.
 - Reference-matched authenticated browser review of the latest seller order changes at desktop and 360px widths remains open.
 - Native PDF sharing plus physical label, barcode-scanner and signed-QR print acceptance remain external evidence requirements.
 
