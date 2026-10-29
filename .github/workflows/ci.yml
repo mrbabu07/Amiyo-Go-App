@@ -33,7 +33,8 @@ jobs:
           RELEASE_ENVIRONMENT: ci
           RELEASE_RUN_ID: ${{ github.run_id }}
       - run: npm run export:web --workspace @amiyo/mobile
-      - run: npm audit --audit-level=high
+      - name: Enforce deployable runtime dependency audit
+        run: npm run audit:runtime
       - name: Upload CI release-readiness evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

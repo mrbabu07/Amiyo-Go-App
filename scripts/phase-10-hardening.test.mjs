@@ -21,6 +21,7 @@ test("health stays live while failed dependencies make readiness truthful", asyn
 });
 
 test("release artifacts enforce immutable builds and non-root containers", async () => {
+  const rootPackage = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const apiDockerfile = await readFile(new URL("../apps/api/Dockerfile", import.meta.url), "utf8");
   const workerDockerfile = await readFile(new URL("../apps/worker/Dockerfile", import.meta.url), "utf8");
   const workflow = await readFile(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
@@ -39,7 +40,8 @@ test("release artifacts enforce immutable builds and non-root containers", async
   assert.match(workerDockerfile, /org\.opencontainers\.image\.revision=\$RELEASE_COMMIT_SHA/);
   assert.match(apiDockerfile, /npm ci --omit=dev --workspace @amiyo\/api --include-workspace-root/);
   assert.match(workerDockerfile, /npm ci --omit=dev --workspace @amiyo\/worker --include-workspace-root/);
-  assert.match(workflow, /npm audit --audit-level=high/);
+  assert.match(workflow, /name: Enforce deployable runtime dependency audit[\s\S]*npm run audit:runtime/);
+  assert.equal(rootPackage.scripts["audit:runtime"], "npm audit --omit=dev --workspace @amiyo/api --audit-level=high && npm audit --omit=dev --workspace @amiyo/worker --audit-level=high");
   assert.match(workflow, /^  workflow_dispatch:$/m);
   assert.match(workflow, /docker build/);
   assert.equal((workflow.match(/--build-arg RELEASE_COMMIT_SHA=\$\{\{ github\.sha \}\}/g) ?? []).length, 2);
@@ -55,7 +57,7 @@ test("release artifacts enforce immutable builds and non-root containers", async
   assert.match(workflow, /RELEASE_REPORT_PATH: ci-release-readiness\.json/);
   assert.match(workflow, /RELEASE_ENVIRONMENT: ci/);
   assert.match(workflow, /name: ci-release-readiness-\$\{\{ github\.sha \}\}-\$\{\{ github\.run_attempt \}\}/);
-  assert.ok(workflow.indexOf("npm run export:web --workspace @amiyo/mobile") < workflow.indexOf("npm audit --audit-level=high"));
+  assert.ok(workflow.indexOf("npm run export:web --workspace @amiyo/mobile") < workflow.indexOf("npm run audit:runtime"));
   assert.match(dependabot, /package-ecosystem: npm/);
   assert.match(dependabot, /package-ecosystem: github-actions/);
   assert.equal((dependabot.match(/package-ecosystem: docker/g) ?? []).length, 2);

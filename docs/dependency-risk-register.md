@@ -26,6 +26,7 @@ NPM reports three high package nodes because the remaining Zod advisory propagat
 - The complete monorepo build and 1,174-test run pass on 2026-10-29. The configured PostgreSQL database also accepted the operational query-index migrations.
 - Expo web production export completes.
 - API and worker runtime audits report zero findings.
+- Pull-request and main-branch CI hard-fail on high or critical findings in the deployable API and worker runtime graphs through `npm run audit:runtime`. The complete install graph is still audited by `npm run release:check`; its Expo build-tool advisory continues to block production promotion until compatible remediation or approved time-bounded acceptance exists.
 - The complete dependency audit currently reports three high, zero moderate, and five low package nodes. The three high nodes remain the production blocker described above; this document records risk but does not approve it.
 
 ## Review procedure
