@@ -85,8 +85,8 @@ test("CodeQL scans JavaScript and TypeScript with immutable actions", async () =
   assert.match(workflow, /security-events: write/);
   assert.match(workflow, /languages: javascript-typescript/);
   assert.match(workflow, /queries: security-extended/);
-  assert.match(workflow, /github\/codeql-action\/init@[0-9a-f]{40} # v3/);
-  assert.match(workflow, /github\/codeql-action\/analyze@[0-9a-f]{40} # v3/);
+  assert.match(workflow, /github\/codeql-action\/init@[0-9a-f]{40} # v4\.31\.10/);
+  assert.match(workflow, /github\/codeql-action\/analyze@[0-9a-f]{40} # v4\.31\.10/);
   assert.doesNotMatch(workflow, /uses:\s+[^\s]+@v\d+/);
 });
 
@@ -155,7 +155,7 @@ test("staging smoke retains public contract and load evidence", async () => {
   assert.match(workflow, /npm run smoke:staging-preflight/);
   assert.match(workflow, /API_PUBLIC_URL: \$\{\{ vars\.API_PUBLIC_URL \}\}/);
   assert.match(workflow, /LOAD_TARGET_URL: \$\{\{ vars\.LOAD_TARGET_URL \}\}/);
-  assert.match(workflow, /actions\/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4/);
+  assert.match(workflow, /actions\/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7\.0\.2/);
   assert.match(workflow, /LOAD_MAX_FAILURE_RATE: "0"/);
   assert.match(workflow, /LOAD_TARGET_ORIGIN: \$\{\{ vars\.API_PUBLIC_URL \}\}/);
   assert.match(workflow, /LOAD_TARGET_PATH: \/api\/v2\/vendor\/orders\?limit=1/);
