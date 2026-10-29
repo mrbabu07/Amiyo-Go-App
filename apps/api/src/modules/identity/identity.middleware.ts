@@ -6,9 +6,12 @@ import type { IdentityTokenVerifier } from "./identity.types.js";
 const authenticatedRequests = new WeakMap<Request, { token: string; session: NonNullable<Request["auth"]>; identity: NonNullable<Request["verifiedIdentity"]> }>();
 
 export function readBearerToken(authorization: string | undefined) {
-  const match = authorization?.match(/^Bearer\s+(.+)$/i);
-  if (!match?.[1]) throw new ApiProblem(401, "AUTHENTICATION_REQUIRED", "A bearer access token is required");
-  return match[1];
+  const value = authorization?.trim();
+  const separator = value?.indexOf(" ") ?? -1;
+  const token = separator > 0 ? value!.slice(separator + 1).trim() : "";
+  const invalidToken = !token || token.length > 16_384 || Array.from(token).some((character) => character.charCodeAt(0) <= 32);
+  if (value?.slice(0, separator).toLowerCase() !== "bearer" || invalidToken) throw new ApiProblem(401, "AUTHENTICATION_REQUIRED", "A bearer access token is required");
+  return token;
 }
 
 export function createAuthenticationMiddleware(verifier: IdentityTokenVerifier, service: IdentityService) {

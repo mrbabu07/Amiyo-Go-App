@@ -7,7 +7,7 @@ test("seller statement escapes text, preserves signed big integers and labels it
   const amount = { amountMinor: "-9007199254740993", currency: "BDT" };
   const html = statementHtml({ vendorName: "<script>Seller</script>", month: "2026-09", generatedAt: "2026-10-01", opening: amount, credits: { ...amount, amountMinor: "0" }, debits: amount, closing: amount, entries: [] } as unknown as VendorStatement);
   assert.match(html, /&lt;script&gt;Seller/);
-  assert.doesNotMatch(html, /<script>/);
+  assert.equal(html.includes("<script>"), false);
   assert.match(html, /BDT -90071992547409\.93/);
   assert.match(html, /not a tax invoice/);
   assert.match(html, /No ledger entries/);

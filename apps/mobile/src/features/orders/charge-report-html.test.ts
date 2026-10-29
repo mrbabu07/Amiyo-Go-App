@@ -8,7 +8,8 @@ test("commission export escapes dynamic text and distinguishes assessment from s
   const html = chargeReportHtml(report);
   assert.match(html, /&lt;script&gt;Seller/);
   assert.match(html, /&lt;img src=x&gt;/);
-  assert.doesNotMatch(html, /<script>|<img src=x>/);
+  assert.equal(html.includes("<script>"), false);
+  assert.equal(html.includes("<img src=x>"), false);
   assert.match(html, /BDT 90071992547409\.93/);
   assert.match(html, /CANCELLED \(excluded\)/);
   assert.match(html, /not a tax invoice/);

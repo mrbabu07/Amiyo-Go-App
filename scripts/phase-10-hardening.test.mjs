@@ -157,10 +157,9 @@ test("staging smoke retains public contract and load evidence", async () => {
   assert.match(workflow, /LOAD_TARGET_URL: \$\{\{ vars\.LOAD_TARGET_URL \}\}/);
   assert.match(workflow, /actions\/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7\.0\.2/);
   assert.match(workflow, /LOAD_MAX_FAILURE_RATE: "0"/);
-  assert.match(workflow, /LOAD_TARGET_ORIGIN: \$\{\{ vars\.API_PUBLIC_URL \}\}/);
   assert.match(workflow, /LOAD_TARGET_PATH: \/api\/v2\/vendor\/orders\?limit=1/);
-  assert.match(workflow, /node scripts\/staging-firebase-tokens\.mjs/);
-  assert.match(workflow, /LOAD_BEARER_TOKEN: \$\{\{ steps\.staging_auth\.outputs\.vendor_token \}\}/);
+  assert.match(workflow, /name: Authenticated role and seller-load smoke[\s\S]*node scripts\/staging-firebase-tokens\.mjs[\s\S]*SMOKE_API_URL: \$\{\{ vars\.API_PUBLIC_URL \}\}[\s\S]*LOAD_TARGET_PATH: \/api\/v2\/vendor\/orders\?limit=1/);
+  assert.doesNotMatch(workflow, /steps\.staging_auth\.outputs|LOAD_BEARER_TOKEN/);
   assert.match(workflow, /staging-authenticated-load-smoke\.json/);
   assert.match(smoke, /SMOKE_REPORT_PATH/);
   assert.match(smoke, /flag: "wx"/);

@@ -12,7 +12,7 @@ test("parcel PDF uses thermal size, escaped address and actual collection balanc
   assert.match(html, /100mm 150mm/);
   assert.match(html, /Collect: BDT 0\.00/);
   assert.match(html, /&lt;script&gt;buyer&lt;\/script&gt;/);
-  assert.doesNotMatch(html, /<script>/);
+  assert.equal(html.includes("<script>"), false);
   assert.match(html, /data:image\/png;base64,cXJpbWFnZQ==/);
 });
 

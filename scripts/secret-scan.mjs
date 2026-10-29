@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 
 const root = process.cwd();
 const patterns = [
@@ -17,9 +17,9 @@ const findings = new Set();
 function scanRepositoryFiles() {
   const paths = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "-z"], { cwd: root, encoding: "utf8" }).split("\0").filter(Boolean);
   for (const path of paths) {
-    const stat = statSync(path);
-    if (stat.size > 1024 * 1024) continue;
-    const text = readFileSync(path, "utf8");
+    const content = readFileSync(path);
+    if (content.byteLength > 1024 * 1024) continue;
+    const text = content.toString("utf8");
     patterns.forEach((pattern) => {
       if (pattern.test(text) && !path.endsWith(".env.example")) findings.add(path);
     });

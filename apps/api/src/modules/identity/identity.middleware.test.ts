@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import express, { type NextFunction, type Request, type Response } from "express";
-import type { AddressInfo } from "node:net";
+import type { Request, Response } from "express";
 import type { Session } from "@amiyo/contracts";
 import { createAuthenticationMiddleware, readBearerToken, requireSession } from "./identity.middleware.js";
 import type { IdentityService } from "./identity.service.js";
@@ -31,36 +30,42 @@ test("overlapping routers reuse verified authentication only within the same req
     if (token !== "valid") throw new ApiProblem(401, "INVALID_ACCESS_TOKEN", "Invalid token");
     return { subject: "user" };
   } };
-  const app = express();
-  app.use(createAuthenticationMiddleware(verifier, service));
-  app.use((req, _res, next) => {
-    if (req.path === "/changed-token") req.headers.authorization = "Bearer revoked";
-    next();
-  });
-  app.use(createAuthenticationMiddleware(verifier, service));
-  app.get(["/orders", "/changed-token"], (req, res) => res.json(requireSession(req)));
-  app.use((error: ApiProblem, _req: Request, res: Response, _next: NextFunction) => res.status(error.status).json({ code: error.code }));
-  const server = app.listen(0, "127.0.0.1");
-  await new Promise<void>((resolve) => server.once("listening", resolve));
-  const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-  const request = (path = "/orders", token = "valid") => fetch(`${origin}${path}`, { headers: { Authorization: `Bearer ${token}` } });
-  try {
-    assert.equal((await request()).status, 200);
-    assert.equal(verifications, 1);
-    assert.equal(synchronizations, 1);
-    permissions = [];
-    assert.deepEqual((await (await request()).json()).permissions, []);
-    assert.equal(verifications, 2);
-    assert.equal(synchronizations, 2);
-    assert.equal((await request("/changed-token")).status, 401);
-    assert.equal(verifications, 4);
-    assert.equal(synchronizations, 3);
-    assert.equal((await request("/orders", "revoked")).status, 401);
-    status = "SUSPENDED";
-    assert.equal((await request()).status, 403);
-    assert.equal(synchronizations, 4);
-  } finally {
-    server.closeAllConnections();
-    await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
-  }
+  const first = createAuthenticationMiddleware(verifier, service);
+  const second = createAuthenticationMiddleware(verifier, service);
+  const request = (token = "valid") => {
+    const headers: Record<string, string> = { authorization: `Bearer ${token}` };
+    return { headers, header: (name: string) => headers[name.toLowerCase()] } as unknown as Request;
+  };
+  const invoke = async (middleware: typeof first, req: Request) => {
+    let nextError: unknown;
+    await middleware(req, {} as Response, (error?: unknown) => { nextError = error; });
+    return nextError;
+  };
+
+  const shared = request();
+  assert.equal(await invoke(first, shared), undefined);
+  assert.equal(await invoke(second, shared), undefined);
+  assert.deepEqual(requireSession(shared).permissions, ["orders:read"]);
+  assert.equal(verifications, 1);
+  assert.equal(synchronizations, 1);
+
+  permissions = [];
+  const refreshed = request();
+  assert.equal(await invoke(first, refreshed), undefined);
+  assert.deepEqual(requireSession(refreshed).permissions, []);
+  assert.equal(verifications, 2);
+  assert.equal(synchronizations, 2);
+
+  const changed = request();
+  assert.equal(await invoke(first, changed), undefined);
+  changed.headers.authorization = "Bearer revoked";
+  assert.ok(await invoke(second, changed) instanceof ApiProblem);
+  assert.equal(verifications, 4);
+  assert.equal(synchronizations, 3);
+
+  assert.ok(await invoke(first, request("revoked")) instanceof ApiProblem);
+  status = "SUSPENDED";
+  const suspendedError = await invoke(first, request());
+  assert.ok(suspendedError instanceof ApiProblem && suspendedError.status === 403);
+  assert.equal(synchronizations, 4);
 });

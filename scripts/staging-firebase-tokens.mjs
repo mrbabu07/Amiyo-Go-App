@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
-import { appendFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
+import { loadSmokeConfiguration, runLoadSmoke } from "./load-smoke-lib.mjs";
+import { runStagingAuthenticatedSmoke, stagingSmokeConfiguration } from "./staging-authenticated-smoke.mjs";
 
 const roles = ["customer", "vendor", "admin"];
 
@@ -19,8 +21,7 @@ export function stagingFirebaseConfiguration(environment) {
     const password = boundedSingleLine(environment[`${prefix}_PASSWORD`], `${prefix}_PASSWORD`, 256);
     return [role, { email, password }];
   }));
-  const outputPath = boundedSingleLine(environment.GITHUB_OUTPUT, "GITHUB_OUTPUT", 4_096);
-  return { apiKey, identities, outputPath };
+  return { apiKey, identities };
 }
 
 export async function mintStagingFirebaseTokens(configuration, fetcher = fetch) {
@@ -40,15 +41,34 @@ export async function mintStagingFirebaseTokens(configuration, fetcher = fetch) 
   return tokens;
 }
 
-export async function writeGithubTokenOutputs(outputPath, tokens) {
-  const lines = roles.map((role) => `${role}_token=${tokens[role]}\n`).join("");
-  await appendFile(outputPath, lines, { encoding: "utf8" });
+export async function runStagingAuthenticatedSuite(environment, dependencies = {}) {
+  const tokens = await mintStagingFirebaseTokens(stagingFirebaseConfiguration(environment), dependencies.firebaseFetch ?? fetch);
+  dependencies.onTokens?.(tokens);
+  const authenticated = await runStagingAuthenticatedSmoke(stagingSmokeConfiguration({
+    SMOKE_API_URL: environment.SMOKE_API_URL,
+    SMOKE_MAX_P95_MS: environment.SMOKE_MAX_P95_MS,
+    STAGING_CUSTOMER_TOKEN: tokens.customer,
+    STAGING_VENDOR_TOKEN: tokens.vendor,
+    STAGING_ADMIN_TOKEN: tokens.admin
+  }), dependencies.apiFetch ?? fetch, dependencies.clock);
+  const load = await runLoadSmoke(loadSmokeConfiguration({
+    LOAD_TARGET_ORIGIN: environment.SMOKE_API_URL,
+    LOAD_TARGET_PATH: environment.LOAD_TARGET_PATH,
+    LOAD_BEARER_TOKEN: tokens.vendor,
+    LOAD_REQUESTS: environment.LOAD_REQUESTS,
+    LOAD_CONCURRENCY: environment.LOAD_CONCURRENCY,
+    LOAD_WARMUP_REQUESTS: environment.LOAD_WARMUP_REQUESTS,
+    LOAD_TIMEOUT_MS: environment.LOAD_TIMEOUT_MS,
+    LOAD_MAX_FAILURE_RATE: environment.LOAD_MAX_FAILURE_RATE,
+    LOAD_MAX_P95_MS: environment.LOAD_MAX_P95_MS
+  }), { fetch: dependencies.apiFetch ?? fetch, now: dependencies.clock });
+  return { authenticated, load };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const configuration = stagingFirebaseConfiguration(process.env);
-  const tokens = await mintStagingFirebaseTokens(configuration);
-  for (const token of Object.values(tokens)) process.stdout.write(`::add-mask::${token}\n`);
-  await writeGithubTokenOutputs(configuration.outputPath, tokens);
-  console.log("Fresh staging Firebase tokens prepared for customer, vendor, and admin smoke checks.");
+  const result = await runStagingAuthenticatedSuite(process.env, { onTokens: (tokens) => { for (const token of Object.values(tokens)) process.stdout.write(`::add-mask::${token}\n`); } });
+  if (process.env.SMOKE_REPORT_PATH) await writeFile(process.env.SMOKE_REPORT_PATH, `${JSON.stringify(result.authenticated.report, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
+  if (process.env.LOAD_REPORT_PATH) await writeFile(process.env.LOAD_REPORT_PATH, `${JSON.stringify(result.load, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
+  console.log("Authenticated staging role and seller-load smoke checks completed without persisting access tokens.");
+  if (!result.authenticated.passed || !result.load.passed) process.exitCode = 1;
 }
