@@ -34,13 +34,14 @@ test("release artifacts enforce immutable builds and non-root containers", async
   assert.match(workerDockerfile, /USER node/);
   assert.doesNotMatch(apiDockerfile, /^FROM\s+[^\s@]+(?=\s|$)/m);
   assert.doesNotMatch(workerDockerfile, /^FROM\s+[^\s@]+(?=\s|$)/m);
-  assert.equal((apiDockerfile.match(/node:20-alpine@sha256:[0-9a-f]{64}/g) ?? []).length, 2);
-  assert.equal((workerDockerfile.match(/node:20-alpine@sha256:[0-9a-f]{64}/g) ?? []).length, 2);
+  assert.equal((apiDockerfile.match(/node:24-alpine@sha256:[0-9a-f]{64}/g) ?? []).length, 2);
+  assert.equal((workerDockerfile.match(/node:24-alpine@sha256:[0-9a-f]{64}/g) ?? []).length, 2);
   assert.match(apiDockerfile, /org\.opencontainers\.image\.revision=\$RELEASE_COMMIT_SHA/);
   assert.match(workerDockerfile, /org\.opencontainers\.image\.revision=\$RELEASE_COMMIT_SHA/);
   assert.match(apiDockerfile, /npm ci --omit=dev --workspace @amiyo\/api --include-workspace-root/);
   assert.match(workerDockerfile, /npm ci --omit=dev --workspace @amiyo\/worker --include-workspace-root/);
   assert.match(workflow, /name: Enforce deployable runtime dependency audit[\s\S]*npm run audit:runtime/);
+  assert.match(workflow, /node-version: 24/);
   assert.equal(rootPackage.scripts["audit:runtime"], "npm audit --omit=dev --workspace @amiyo/api --audit-level=high && npm audit --omit=dev --workspace @amiyo/worker --audit-level=high");
   assert.match(workflow, /^  workflow_dispatch:$/m);
   assert.match(workflow, /docker build/);
