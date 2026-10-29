@@ -88,6 +88,19 @@ test("CodeQL scans JavaScript and TypeScript with immutable actions", async () =
   assert.doesNotMatch(workflow, /uses:\s+[^\s]+@v\d+/);
 });
 
+test("compiled workspace tests use a cross-platform deterministic launcher", async () => {
+  const launcher = await readFile(new URL("./run-compiled-tests.mjs", import.meta.url), "utf8");
+  const packages = ["apps/api", "apps/worker", "packages/config", "packages/contracts", "packages/domain", "packages/migration", "packages/observability"];
+  for (const directory of packages) {
+    const manifest = JSON.parse(await readFile(new URL("../" + directory + "/package.json", import.meta.url), "utf8"));
+    assert.equal(manifest.scripts.test, "node ../../scripts/run-compiled-tests.mjs dist");
+  }
+  assert.match(launcher, /entry\.name\.endsWith\("\.test\.js"\)/);
+  assert.match(launcher, /files\.length === 0/);
+  assert.match(launcher, /spawnSync\(process\.execPath, \["--test", \.\.\.files\]/);
+  assert.doesNotMatch(launcher, /shell:\s*true/);
+});
+
 test("Render blueprint deploys API and worker only after checks pass", async () => {
   const blueprint = await readFile(new URL("../render.yaml", import.meta.url), "utf8");
   assert.match(blueprint, /type: web[\s\S]*name: amiyo-api[\s\S]*healthCheckPath: \/ready/);
@@ -166,14 +179,14 @@ test("dependency register matches the current pinned tooling and gate snapshot",
   const gapMap = await readFile(new URL("../docs/production-gap-and-differentiator-map.md", import.meta.url), "utf8");
   assert.equal(rootPackage.devDependencies["firebase-tools"], "15.34.1");
   assert.equal(lock.packages["node_modules/fast-uri"].version, "3.1.9");
-  assert.match(register, /Last reviewed: 2026-10-28/);
+  assert.match(register, /Last reviewed: 2026-10-29/);
   assert.match(register, /firebase-tools@15\.34\.1/);
   assert.match(register, /fast-uri@3\.1\.9/);
   assert.match(register, /three high, zero moderate, and five low package nodes/);
-  assert.match(register, /1,173-test run pass/);
+  assert.match(register, /1,174-test run pass/);
   assert.match(gapMap, /Current gate snapshot \(2026-10-28\)/);
   assert.match(gapMap, /one unresolved business decision/);
-  assert.match(gapMap, /passed 1,173 tests/);
+  assert.match(gapMap, /passed 1,174 tests/);
 });
 
 test("runtime contracts use the remediated Zod and OpenAPI toolchain", async () => {

@@ -15,7 +15,7 @@ Scope: compare `Client/src/pages/vendor/VendorOrders.jsx` and `VendorOrderDetail
 
 ## Evidence
 
-The complete 2026-10-28 regression rebuilt every TypeScript workspace and passed 1,173 tests, including 336 API and 496 mobile tests. These are automated checks, not browser, native-device or physical-printer acceptance.
+The complete 2026-10-29 regression rebuilt every TypeScript workspace and passed 1,174 tests, including 336 API and 496 mobile tests. These are automated checks, not browser, native-device or physical-printer acceptance.
 
 ## Still open
 
