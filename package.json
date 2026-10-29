@@ -54,7 +54,7 @@
     "test:demo-role-db": "node --env-file=apps/api/.env scripts/demo-role-db-smoke.mjs"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "0.5.4",
+    "@electric-sql/pglite": "0.5.11",
     "@types/node": "^20.14.10",
     "@types/react": "~19.3.0",
     "firebase-tools": "15.34.1",
