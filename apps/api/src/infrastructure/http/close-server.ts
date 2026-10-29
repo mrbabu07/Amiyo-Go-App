@@ -17,7 +17,6 @@ export async function closeHttpServer(server: Server, timeoutMs: number) {
       server.closeAllConnections();
       finish();
     }, timeoutMs);
-    timer.unref();
     server.close((error) => finish(error));
   });
   return { forced };
