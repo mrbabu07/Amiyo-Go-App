@@ -40,6 +40,7 @@ test("release artifacts enforce immutable builds and non-root containers", async
   assert.match(apiDockerfile, /npm ci --omit=dev --workspace @amiyo\/api --include-workspace-root/);
   assert.match(workerDockerfile, /npm ci --omit=dev --workspace @amiyo\/worker --include-workspace-root/);
   assert.match(workflow, /npm audit --audit-level=high/);
+  assert.match(workflow, /^  workflow_dispatch:$/m);
   assert.match(workflow, /docker build/);
   assert.equal((workflow.match(/--build-arg RELEASE_COMMIT_SHA=\$\{\{ github\.sha \}\}/g) ?? []).length, 2);
   assert.match(workflow, /name: Verify container runtime contracts/);
@@ -74,6 +75,7 @@ test("release artifacts enforce immutable builds and non-root containers", async
 
 test("CodeQL scans JavaScript and TypeScript with immutable actions", async () => {
   const workflow = await readFile(new URL("../.github/workflows/codeql.yml", import.meta.url), "utf8");
+  assert.match(workflow, /^  workflow_dispatch:$/m);
   assert.match(workflow, /pull_request:/);
   assert.match(workflow, /push:[\s\S]*branches: \[main\]/);
   assert.match(workflow, /schedule:[\s\S]*cron: "23 2 \* \* 1"/);
