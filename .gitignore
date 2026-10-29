@@ -18,7 +18,6 @@ apps/api/.env*
 !apps/api/.env.example
 apps/worker/.env*
 !apps/worker/.env.example
-prisma/migrations/*/migration.sql
 *.pem
 *.key
 service-account*.json
