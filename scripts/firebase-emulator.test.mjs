@@ -35,6 +35,8 @@ test("local demo identities align Firebase users, database roles, and login shor
     assert.match(databaseSeed, new RegExp(identity));
   }
   assert.match(authSeed, /loopback Firebase Auth Emulator/);
+  assert.match(authSeed, /auth\.getUser\(account\.uid\)/);
+  assert.doesNotMatch(authSeed, /updateUser\(account\.uid, \{[^}]*password/);
   assert.match(authScreen, /Local demo accounts/);
   assert.match(authScreen, /EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_URL/);
   assert.match(authScreen, /createSession/);

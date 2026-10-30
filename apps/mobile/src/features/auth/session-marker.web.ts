@@ -7,7 +7,10 @@ export async function ensureSessionMarker(userId: string, now = Date.now()) {
   if (stored) {
     try {
       const marker = JSON.parse(stored) as SessionMarker;
-      if (marker.userId === userId && marker.expiresAt > now) return true;
+      if (marker.userId === userId && marker.expiresAt > now) {
+        globalThis.localStorage?.setItem(sessionKey, JSON.stringify({ ...marker, expiresAt: now + sessionDurationMs } satisfies SessionMarker));
+        return true;
+      }
       if (marker.userId === userId && marker.expiresAt <= now) { await clearSessionMarker(); return false; }
     } catch {}
   }

@@ -9,7 +9,10 @@ export async function ensureSessionMarker(userId: string, now = Date.now()) {
   if (stored) {
     try {
       const marker = JSON.parse(stored) as SessionMarker;
-      if (marker.userId === userId && marker.expiresAt > now) return true;
+      if (marker.userId === userId && marker.expiresAt > now) {
+        await SecureStore.setItemAsync(sessionKey, JSON.stringify({ ...marker, expiresAt: now + sessionDurationMs } satisfies SessionMarker), { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY });
+        return true;
+      }
       if (marker.userId === userId && marker.expiresAt <= now) { await clearSessionMarker(); return false; }
     } catch {}
   }

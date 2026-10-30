@@ -17,7 +17,9 @@ const accounts = [
 
 for (const account of accounts) {
   try {
-    await auth.updateUser(account.uid, { email: account.email, password, displayName: account.displayName, disabled: false, emailVerified: true });
+    const existing = await auth.getUser(account.uid);
+    const profileChanged = existing.email !== account.email || existing.displayName !== account.displayName || existing.disabled || !existing.emailVerified;
+    if (profileChanged) await auth.updateUser(account.uid, { email: account.email, displayName: account.displayName, disabled: false, emailVerified: true });
   } catch (error) {
     if (error?.code !== "auth/user-not-found") throw error;
     await auth.createUser({ uid: account.uid, email: account.email, password, displayName: account.displayName, emailVerified: true });
