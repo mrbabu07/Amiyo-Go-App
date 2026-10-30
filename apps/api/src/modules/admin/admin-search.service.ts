@@ -8,7 +8,7 @@ type Result = { id: string; type: AdminSearchType; title: string; subtitle: stri
 const supportedTypes: AdminSearchType[] = ["order", "vendor", "product", "customer", "return", "support"];
 const hrefs: Record<AdminSearchType, (id: string) => string> = {
   order: (id) => `/admin/orders/${id}`, vendor: (id) => `/admin/vendors/${id}`, product: (id) => `/admin/products/edit/${id}`,
-  customer: (id) => `/admin/customers?search=${id}`, return: (id) => `/admin/returns?search=${id}`, support: (id) => `/admin/support?search=${id}`
+  customer: (id) => `/admin/customers?search=${encodeURIComponent(id)}`, return: (id) => `/admin/returns?returnId=${encodeURIComponent(id)}`, support: (id) => `/admin/support?search=${encodeURIComponent(id)}`
 };
 
 function requireAdmin(session: Session) { if (session.status !== "ACTIVE" || !session.permissions.includes("admin:read")) throw new ApiProblem(403, "ADMIN_REQUIRED", "Admin search access is required"); }

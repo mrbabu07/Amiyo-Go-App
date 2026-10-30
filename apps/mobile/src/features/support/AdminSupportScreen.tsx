@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import type { User } from "@firebase/auth";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
@@ -14,6 +14,8 @@ const statuses = ["open", "in_progress", "resolved", "closed"] as const;
 
 export function AdminSupportScreen() {
   const compact = useWindowDimensions().width < 620;
+  const params = useLocalSearchParams<{ search?: string }>();
+  const requestedTicket = typeof params.search === "string" ? params.search.trim().toLocaleLowerCase() : "";
   const user = useCurrentUser();
   const activeUid = useRef(user?.uid);
   activeUid.current = user?.uid;
@@ -23,7 +25,7 @@ export function AdminSupportScreen() {
   const [openingAttachment, setOpeningAttachment] = useState<string | null>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   useEffect(() => { setDrafts({}); setOpeningAttachment(null); setAttachmentError(null); }, [user?.uid]);
-  const tickets = useQuery({ queryKey: ["support", "admin", user?.uid], queryFn: () => getAdminTickets(user!), enabled: Boolean(user), retry: false });
+  const tickets = useQuery({ queryKey: ["support", "admin", user?.uid], queryFn: () => getAdminTickets(user!), enabled: Boolean(user), retry: false, select: (rows) => requestedTicket ? rows.filter((ticket) => ticket.id.toLocaleLowerCase() === requestedTicket) : rows });
   const update = useMutation({ retry: false, mutationFn: ({ owner, id, status }: { owner: User; id: string; status: (typeof statuses)[number] }) => updateTicketStatus(owner, id, { status }), onSuccess: (_data, variables) => activeUid.current === variables.owner.uid ? queryClient.invalidateQueries({ queryKey: ["support", "admin", variables.owner.uid] }) : undefined });
   const reply = useMutation({ retry: false, mutationFn: ({ owner, id, body }: { owner: User; id: string; body: string }) => replyToTicket(owner, id, body), onSuccess: async (_, variables) => {
     if (activeUid.current !== variables.owner.uid) return;

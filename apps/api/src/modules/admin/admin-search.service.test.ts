@@ -19,3 +19,11 @@ test("admin search rejects sessions without admin read permission", async () => 
   const customer = { ...session, principal: { ...session.principal, roles: ["CUSTOMER" as const] }, permissions: [] };
   await assert.rejects(() => new AdminSearchService({} as PrismaClient).search(customer, "demo"), /Admin search access is required/);
 });
+
+test("admin search deep links target the selected resource", async () => {
+  const id = "11111111-1111-4111-8111-111111111111";
+  const client = { $queryRaw: async () => [{ id, title: "Case", subtitle: "Live record", status: "OPEN", createdAt: new Date("2026-08-14T10:00:00Z"), updatedAt: new Date("2026-08-14T11:00:00Z") }] } as unknown as PrismaClient;
+  const service = new AdminSearchService(client);
+  assert.equal((await service.search(session, id, ["return"], 1, 1)).results[0]?.href, `/admin/returns?returnId=${id}`);
+  assert.equal((await service.search(session, id, ["support"], 1, 1)).results[0]?.href, `/admin/support?search=${id}`);
+});

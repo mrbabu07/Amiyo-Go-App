@@ -29,3 +29,9 @@ test("admin support links verified cases into operational workspaces", () => {
   assert.match(returns, /validReturnSelection\(params\.returnId\)/);
   assert.match(returns, /\^\[0-9a-f\]/);
 });
+
+test("admin support resolves global-search ticket deep links", () => {
+  const support = readFileSync(new URL("./AdminSupportScreen.tsx", import.meta.url), "utf8");
+  assert.match(support, /useLocalSearchParams/);
+  assert.match(support, /ticket\.id\.toLocaleLowerCase\(\) === requestedTicket/);
+});

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useCurrentUser } from "../auth/use-current-user";
 import { colors, darkPalette, radius, spacing } from "../../ui/tokens";
-import { getAdminSearchDetail, searchAdminResources, type AdminSearchResult } from "./admin-search.api";
+import { searchAdminResources, type AdminSearchResult } from "./admin-search.api";
 
 type RouteLink = { label: string; href: string; icon: string };
 
@@ -13,7 +13,6 @@ export function AdminGlobalSearch({ dark, onOpen, routes }: { dark: boolean; onO
   const userId = user?.uid ?? null;
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
-  const [selected, setSelected] = useState<AdminSearchResult | null>(null);
   const normalized = query.trim().toLocaleLowerCase();
   const routeResults = normalized ? routes.filter((route) => `${route.label} ${route.href}`.toLocaleLowerCase().includes(normalized)).slice(0, 5) : [];
   const resources = useQuery({
@@ -23,42 +22,31 @@ export function AdminGlobalSearch({ dark, onOpen, routes }: { dark: boolean; onO
     staleTime: 15_000,
     retry: false
   });
-  const detail = useQuery({
-    queryKey: ["admin", "global-search", userId, selected?.type, selected?.id],
-    queryFn: () => getAdminSearchDetail(user!, selected!),
-    enabled: Boolean(user && selected && focused),
-    staleTime: 30_000,
-    retry: false
-  });
-  const clear = () => { setQuery(""); setSelected(null); };
+  const clear = () => { setQuery(""); };
   const open = (href: string) => { clear(); setFocused(false); onOpen(href); };
-  const submit = () => { const first = resources.data?.results[0]; if (first) setSelected(first); else if (routeResults[0]) open(routeResults[0].href); };
+  const submit = () => { const first = resources.data?.results[0]; if (first) open(first.href); else if (routeResults[0]) open(routeResults[0].href); };
   const visible = focused && normalized.length > 0;
 
   return <View style={styles.wrap}>
     <View style={[styles.inputShell, dark && styles.darkInput, focused && styles.focused]}>
       <Ionicons color={dark ? darkPalette.muted : colors.muted} name="search-outline" size={18} />
-      <TextInput accessibilityLabel="Search admin resources" autoCapitalize="none" onBlur={() => setTimeout(() => setFocused(false), 160)} onChangeText={(value) => { setQuery(value); setSelected(null); }} onFocus={() => setFocused(true)} onSubmitEditing={submit} placeholder="Search orders, products, vendors..." placeholderTextColor={dark ? darkPalette.muted : colors.muted} returnKeyType="search" style={[styles.input, dark && styles.darkText]} value={query} />
+      <TextInput accessibilityLabel="Search admin resources" autoCapitalize="none" onBlur={() => setTimeout(() => setFocused(false), 240)} onChangeText={setQuery} onFocus={() => setFocused(true)} onSubmitEditing={submit} placeholder="Search orders, products, vendors..." placeholderTextColor={dark ? darkPalette.muted : colors.muted} returnKeyType="search" style={[styles.input, dark && styles.darkText]} value={query} />
       {resources.isFetching ? <ActivityIndicator color={colors.primary} size="small" /> : query ? <Pressable accessibilityLabel="Clear admin search" onPress={clear}><Ionicons color={dark ? darkPalette.muted : colors.muted} name="close-circle" size={18} /></Pressable> : null}
     </View>
     {visible ? <View style={[styles.results, dark && styles.darkResults]}><ScrollView keyboardShouldPersistTaps="handled" style={styles.resultsScroll}>
-      {selected ? <DetailView dark={dark} error={detail.error?.message} loading={detail.isLoading} onBack={() => setSelected(null)} onOpen={open} result={detail.data} /> : <>
+      <>
         {normalized.length < 2 ? <Hint text="Type at least 2 characters to search live records." /> : null}
         {resources.error ? <Hint error text={resources.error.message} /> : null}
-        {resources.data?.results.length ? <><Heading label={`Records (${resources.data.total})`} />{resources.data.results.map((result) => <ResourceRow dark={dark} key={`${result.type}-${result.id}`} onPress={() => setSelected(result)} result={result} />)}</> : null}
+        {resources.data?.results.length ? <><Heading label={`Records (${resources.data.total})`} />{resources.data.results.map((result) => <ResourceRow dark={dark} key={`${result.type}-${result.id}`} onPress={() => open(result.href)} result={result} />)}</> : null}
         {routeResults.length ? <><Heading label="Admin pages" />{routeResults.map((route) => <Pressable key={route.href} onPress={() => open(route.href)} style={[styles.row, dark && styles.darkRow]}><View style={styles.icon}><Ionicons color={colors.primary} name={route.icon as never} size={17} /></View><View style={styles.copy}><Text style={[styles.title, dark && styles.darkText]}>{route.label}</Text><Text style={styles.subtitle}>{route.href}</Text></View><Ionicons color={dark ? darkPalette.muted : colors.muted} name="arrow-forward" size={15} /></Pressable>)}</> : null}
         {normalized.length >= 2 && !resources.isLoading && !resources.error && !resources.data?.results.length && !routeResults.length ? <Hint text={`No result found for "${query.trim()}".`} /> : null}
-      </>}
+      </>
     </ScrollView></View> : null}
   </View>;
 }
 
 function ResourceRow({ dark, onPress, result }: { dark: boolean; onPress: () => void; result: AdminSearchResult }) {
   return <Pressable onPress={onPress} style={[styles.row, dark && styles.darkRow]}><View style={styles.typeIcon}><Ionicons color={colors.onPrimary} name={typeIcon(result.type) as never} size={16} /></View><View style={styles.copy}><View style={styles.titleLine}><Text numberOfLines={1} style={[styles.title, styles.flex, dark && styles.darkText]}>{result.title}</Text><Text style={[styles.badge, result.badges[0]?.tone === "danger" && styles.dangerBadge, result.badges[0]?.tone === "success" && styles.successBadge]}>{result.type.toUpperCase()}</Text></View><Text numberOfLines={1} style={styles.subtitle}>{result.subtitle}</Text></View><Ionicons color={dark ? darkPalette.muted : colors.muted} name="chevron-forward" size={15} /></Pressable>;
-}
-
-function DetailView({ dark, error, loading, onBack, onOpen, result }: { dark: boolean; error?: string; loading: boolean; onBack: () => void; onOpen: (href: string) => void; result?: Awaited<ReturnType<typeof getAdminSearchDetail>> }) {
-  return <View><View style={styles.detailHeader}><Pressable onPress={onBack} style={styles.back}><Ionicons color={colors.primary} name="arrow-back" size={18} /></Pressable><Text style={[styles.detailTitle, dark && styles.darkText]}>Search result</Text></View>{loading ? <ActivityIndicator color={colors.primary} style={styles.loader} /> : error ? <Hint error text={error} /> : result ? <><View style={styles.detailBody}><Text style={[styles.detailName, dark && styles.darkText]}>{result.title}</Text><Text style={styles.subtitle}>{result.subtitle}</Text>{result.sections.flatMap((section) => section.items).map((item) => <View key={item.label} style={styles.detailRow}><Text style={styles.detailLabel}>{item.label}</Text><Text numberOfLines={2} style={[styles.detailValue, dark && styles.darkText]}>{item.value}</Text></View>)}</View><Pressable onPress={() => onOpen(result.href)} style={styles.openButton}><Text style={styles.openText}>Open workspace</Text><Ionicons color={colors.onPrimary} name="arrow-forward" size={16} /></Pressable></> : null}</View>;
 }
 
 function Heading({ label }: { label: string }) { return <Text style={styles.heading}>{label}</Text>; }
