@@ -1,4 +1,4 @@
-FROM node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85 AS build
+FROM node:25-alpine@sha256:bdf2cca6fe3dabd014ea60163eca3f0f7015fbd5c7ee1b0e9ccb4ced6eb02ef4 AS build
 WORKDIR /app
 RUN npm install --global npm@12.0.2 && test "$(npm --version)" = "12.0.2"
 COPY package.json package-lock.json ./
@@ -18,7 +18,7 @@ RUN rm -rf node_modules \
     && npm run prisma:generate \
     && npm cache clean --force
 
-FROM node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85 AS runtime
+FROM node:25-alpine@sha256:bdf2cca6fe3dabd014ea60163eca3f0f7015fbd5c7ee1b0e9ccb4ced6eb02ef4 AS runtime
 ARG RELEASE_COMMIT_SHA=unknown
 LABEL org.opencontainers.image.source="https://github.com/mrbabu07/Amiyo-Go-App" \
       org.opencontainers.image.revision=$RELEASE_COMMIT_SHA
