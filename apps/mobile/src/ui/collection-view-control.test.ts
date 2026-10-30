@@ -5,6 +5,7 @@ import { URL } from "node:url";
 
 const source = readFileSync(new URL("./CollectionViewControl.tsx", import.meta.url), "utf8");
 const screen = readFileSync(new URL("./Screen.tsx", import.meta.url), "utf8");
+const adminOrders = readFileSync(new URL("../features/admin/AdminOrdersScreen.tsx", import.meta.url), "utf8");
 
 test("collection view controls persist direction and size choices", () => {
   for (const label of ["Vertical", "Horizontal", "Small", "Large"]) assert.match(source, new RegExp(`label="${label}"`));
@@ -13,10 +14,10 @@ test("collection view controls persist direction and size choices", () => {
   assert.match(source, /accessibilityState=\{\{ selected: active \}\}/);
 });
 
-test("customer, admin and seller sections expose independent view preferences", () => {
-  for (const scope of ["customer-workspace", "admin-workspace", "vendor-workspace"]) assert.match(screen, new RegExp(`useCollectionView\\("${scope}"\\)`));
-  assert.equal(screen.match(/<CollectionViewControl \{\.\.\.collectionView\} \/>/g)?.length, 3);
-  assert.match(screen, /collectionVertical/);
-  assert.match(screen, /collectionHorizontal/);
-  assert.match(screen, /collectionSmall/);
+test("view controls appear only on collections with real layout behavior", () => {
+  assert.doesNotMatch(screen, /CollectionViewControl/);
+  assert.match(adminOrders, /useCollectionView\("admin-orders"\)/);
+  assert.match(adminOrders, /preference\.direction === "horizontal"/);
+  assert.match(adminOrders, /orderSlotHorizontal/);
+  assert.match(adminOrders, /orderSlotSmall/);
 });
