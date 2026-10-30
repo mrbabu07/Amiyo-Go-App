@@ -341,7 +341,48 @@ export class OperationsService {
     });
   }
 
-  async payouts(session: Session) { requirePermission(session, "finance:read"); if (!elevated(session)) throw new ApiProblem(403, "ADMIN_REQUIRED", "Finance admin access is required"); const rows = await this.client.vendorPayoutRequest.findMany({ include: { vendor: true, bankAccount: { select: { provider: true, accountName: true, accountNumberMasked: true } }, payouts: true }, orderBy: { requestedAt: "desc" }, take: 100 }); return rows.map((row) => ({ id: row.id, vendorId: row.vendorId, vendor: { legalName: row.vendor.legalName, displayName: row.vendor.displayName }, bankAccount: row.bankAccount, amount: money(row.amountMinor, row.currency), status: row.status, version: row.version, requestedAt: row.requestedAt.toISOString(), reviewedAt: row.reviewedAt?.toISOString() ?? null, rejectionReason: row.rejectionReason, payouts: row.payouts.map((payout) => ({ id: payout.id, provider: payout.provider, providerRef: payout.providerRef, amount: money(payout.amountMinor, payout.currency), status: payout.status, paidAt: payout.paidAt?.toISOString() ?? null })) })); }
+  async payouts(session: Session) {
+    requirePermission(session, "finance:read");
+    if (!elevated(session)) throw new ApiProblem(403, "ADMIN_REQUIRED", "Finance admin access is required");
+    const rows = await this.client.vendorPayoutRequest.findMany({
+      include: {
+        vendor: {
+          include: {
+            members: { where: { role: "VENDOR_OWNER", status: "active" }, take: 1, include: { user: { select: { normalizedEmail: true, normalizedPhone: true, profile: { select: { displayName: true } } } } } },
+            shops: { orderBy: { createdAt: "asc" }, select: { id: true, name: true, slug: true, status: true }, take: 5 }
+          }
+        },
+        bankAccount: { select: { id: true, provider: true, accountName: true, accountNumberMasked: true, isDefault: true, verifiedAt: true } },
+        payouts: { orderBy: { createdAt: "desc" } }
+      },
+      orderBy: { requestedAt: "desc" },
+      take: 100
+    });
+    return rows.map((row) => {
+      const owner = row.vendor.members[0]?.user;
+      return {
+        id: row.id,
+        vendorId: row.vendorId,
+        vendor: {
+          legalName: row.vendor.legalName,
+          displayName: row.vendor.displayName,
+          status: row.vendor.status,
+          ownerName: owner?.profile?.displayName ?? null,
+          email: owner?.normalizedEmail ?? null,
+          phone: owner?.normalizedPhone ?? null,
+          shops: row.vendor.shops
+        },
+        bankAccount: row.bankAccount ? { ...row.bankAccount, verifiedAt: row.bankAccount.verifiedAt?.toISOString() ?? null } : null,
+        amount: money(row.amountMinor, row.currency),
+        status: row.status,
+        version: row.version,
+        requestedAt: row.requestedAt.toISOString(),
+        reviewedAt: row.reviewedAt?.toISOString() ?? null,
+        rejectionReason: row.rejectionReason,
+        payouts: row.payouts.map((payout) => ({ id: payout.id, provider: payout.provider, providerRef: payout.providerRef, amount: money(payout.amountMinor, payout.currency), status: payout.status, paidAt: payout.paidAt?.toISOString() ?? null }))
+      };
+    });
+  }
 
   async reviewPayout(session: Session, id: string, input: ReviewPayout, key: string) {
     requirePermission(session, "finance:manage"); if (!elevated(session)) throw new ApiProblem(403, "ADMIN_REQUIRED", "Finance admin access is required"); const scope = `payout-review:${id}`;
