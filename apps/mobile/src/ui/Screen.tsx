@@ -66,6 +66,7 @@ const adminPrimaryLinks: WorkspaceLink[] = [
   { label: "Operations", href: "/admin/operations", icon: "pulse-outline" },
   { label: "University", href: "/admin/university", icon: "school-outline" },
   { label: "Audit Logs", href: "/admin/audit", icon: "time-outline" },
+  { label: "Data Integrity", href: "/admin/data-integrity", icon: "shield-checkmark-outline" },
   { label: "Analytics & Reports", href: "/admin/analytics", icon: "bar-chart-outline" },
   { label: "Platform Control", href: "/admin/platform", icon: "settings-outline" },
   { label: "Settings", href: "/admin/settings", icon: "options-outline" },

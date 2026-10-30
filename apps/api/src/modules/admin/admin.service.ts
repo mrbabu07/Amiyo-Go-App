@@ -169,6 +169,31 @@ export class AdminService {
     const totalPages = Math.max(1, Math.ceil(total / query.limit));
     return { logs: rows.map((item) => { const actor = item.actorUserId ? actorById.get(item.actorUserId) : null; return { id: item.id, actor: { id: item.actorUserId, type: item.actorType, email: actor?.normalizedEmail ?? null, name: actor?.profile?.displayName ?? null }, action: item.action, resource: { type: item.resourceType, id: item.resourceId }, module: auditModule(item.resourceType), severity: auditSeverity(item.action), correlationId: item.correlationId, ipHash: item.ipHash, before: item.before, after: item.after, metadata: item.metadata, createdAt: item.createdAt.toISOString() }; }), summary, pagination: { page: query.page, limit: query.limit, total, totalPages, hasPreviousPage: query.page > 1, hasNextPage: query.page < totalPages }, facets: { actorTypes: actorFacets.map((item) => item.actorType), resourceTypes: resourceFacets.map((item) => item.resourceType) } };
   }
+  async dataIntegrity(session: Session) {
+    requireAdmin(session);
+    const now = new Date();
+    const dayAgo = new Date(now.getTime() - 24 * 60 * 60_000);
+    const [users, vendors, products, orders, payments, payouts, auditEvents, ordersWithoutPackages, confirmedOrdersWithoutPayments, expiredActiveReservations, overdueOutbox, failedOutbox, paymentReconciliation, payoutReview] = await Promise.all([
+      this.client.user.count(), this.client.vendor.count(), this.client.product.count(), this.client.order.count(), this.client.payment.count(), this.client.vendorPayoutRequest.count(), this.client.auditLog.count({ where: { createdAt: { gte: dayAgo } } }),
+      this.client.order.count({ where: { vendorOrders: { none: {} } } }),
+      this.client.order.count({ where: { status: { notIn: ["PENDING_PAYMENT", "CANCELLED"] }, payments: { none: {} } } }),
+      this.client.inventoryReservation.count({ where: { status: "ACTIVE", expiresAt: { lt: now } } }),
+      this.client.outboxEvent.count({ where: { status: "pending", availableAt: { lt: now } } }),
+      this.client.outboxEvent.count({ where: { status: "failed" } }),
+      this.client.paymentVerification.count({ where: { status: "reconciliation_required" } }),
+      this.client.vendorPayoutRequest.count({ where: { status: { in: ["REQUESTED", "APPROVED", "PROCESSING"] } } })
+    ]);
+    const checks = [
+      { key: "orders_without_packages", label: "Orders without seller packages", count: ordersWithoutPackages, severity: "critical", route: "/admin/orders" },
+      { key: "orders_without_payments", label: "Confirmed orders without payment records", count: confirmedOrdersWithoutPayments, severity: "critical", route: "/admin/orders" },
+      { key: "expired_reservations", label: "Expired inventory holds still active", count: expiredActiveReservations, severity: "warning", route: "/admin/inventory" },
+      { key: "overdue_outbox", label: "Queued events ready for processing", count: overdueOutbox, severity: "warning", route: "/admin/operations" },
+      { key: "failed_outbox", label: "Failed background events", count: failedOutbox, severity: "critical", route: "/admin/operations" },
+      { key: "payment_reconciliation", label: "Payments needing reconciliation", count: paymentReconciliation, severity: "warning", route: "/admin/payment-verification" },
+      { key: "payout_review", label: "Payouts in review or processing", count: payoutReview, severity: "info", route: "/admin/payouts" }
+    ] as const;
+    return { generatedAt: now.toISOString(), healthy: checks.every((check) => check.severity === "info" || check.count === 0), entities: { users, vendors, products, orders, payments, payouts }, auditEventsLast24Hours: auditEvents, checks };
+  }
   async settings(session: Session) {
     requireAdmin(session);
     const row = await this.client.platformConfiguration.upsert({ where: { key: "default" }, update: {}, create: { key: "default", featureFlags: json(defaultPlatformSettings.featureFlags), paymentMethods: json(defaultPlatformSettings.paymentMethods), maintenanceMode: json(defaultPlatformSettings.maintenanceMode), returnPolicy: json(defaultPlatformSettings.returnPolicy), tax: json(defaultPlatformSettings.tax), seo: json(defaultPlatformSettings.seo), notificationControls: json(defaultPlatformSettings.notificationControls), villageOperations: json(defaultPlatformSettings.villageOperations), updatedBy: session.principal.userId } });

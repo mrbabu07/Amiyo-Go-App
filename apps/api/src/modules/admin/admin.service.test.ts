@@ -30,6 +30,14 @@ test("admin cannot suspend their own account", async () => { await assert.reject
 test("admin cannot change their own platform roles", async () => { await assert.rejects(() => new AdminService({} as PrismaClient).updateUserRoles(admin, userId, { roles: [], reason: "Access review" }), /cannot change your own platform roles/); });
 test("customer cannot read marketplace analytics", async () => { await assert.rejects(() => new AdminService({} as PrismaClient).analytics(customer, { range: "30d" }), /admin:read access is required/); });
 test("customer cannot read admin commerce workspaces", async () => { await assert.rejects(() => new AdminService({} as PrismaClient).commerce(customer), /admin:read access is required/); });
+test("data integrity is permission protected and reports operational anomalies", async () => {
+  const counts = { user: 10, vendor: 2, product: 40, order: 8, payment: 7, vendorPayoutRequest: [3, 2], auditLog: 12, inventoryReservation: 1, outboxEvent: [4, 1], paymentVerification: 2 };
+  let payoutCall = 0; let outboxCall = 0; let orderCall = 0;
+  const client = { user: { count: async () => counts.user }, vendor: { count: async () => counts.vendor }, product: { count: async () => counts.product }, order: { count: async () => ++orderCall === 1 ? counts.order : orderCall === 2 ? 0 : 1 }, payment: { count: async () => counts.payment }, vendorPayoutRequest: { count: async () => counts.vendorPayoutRequest[payoutCall++]! }, auditLog: { count: async () => counts.auditLog }, inventoryReservation: { count: async () => counts.inventoryReservation }, outboxEvent: { count: async () => counts.outboxEvent[outboxCall++]! }, paymentVerification: { count: async () => counts.paymentVerification } } as unknown as PrismaClient;
+  const result = await new AdminService(client).dataIntegrity(admin);
+  assert.equal(result.entities.products, 40); assert.equal(result.healthy, false); assert.equal(result.checks.find((check) => check.key === "orders_without_payments")?.count, 1);
+  await assert.rejects(() => new AdminService(client).dataIntegrity(customer), /admin:read access is required/);
+});
 test("admin vendor performance is vendor-scoped and evidence based", async () => {
   const vendorId = "33333333-3333-4333-8333-333333333333"; const createdAt = new Date("2026-10-20T00:00:00.000Z");
   const client = { vendor: { findUnique: async ({ where }: any) => where.id === vendorId ? { id: vendorId } : null }, vendorOrder: { groupBy: async () => [{ status: "DELIVERED", _count: { _all: 9 } }, { status: "CANCELLED", _count: { _all: 1 } }], findMany: async () => [{ createdAt, shipments: [{ shippedAt: new Date("2026-10-21T00:00:00.000Z") }] }] }, return: { count: async () => 0 }, review: { aggregate: async () => ({ _avg: { rating: 4.8 }, _count: { _all: 12 } }) } } as unknown as PrismaClient;
