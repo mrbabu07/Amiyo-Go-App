@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { useMemo, useState } from "react";
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Screen } from "../../ui/Screen";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { useCurrentUser } from "../auth/use-current-user";
@@ -11,12 +12,16 @@ export function FollowedShopsScreen() {
   const router = useRouter();
   const user = useCurrentUser();
   const compact = useWindowDimensions().width < 620;
+  const [search, setSearch] = useState("");
   const query = useQuery({ queryKey: ["catalog", "followed-shops", user?.uid], queryFn: () => getFollowedShops(user!), enabled: Boolean(user), retry: false });
+  const filtered = useMemo(() => { const term = search.trim().toLocaleLowerCase(); return term ? (query.data ?? []).filter((shop) => `${shop.name} ${shop.description ?? ""}`.toLocaleLowerCase().includes(term)) : query.data ?? []; }, [query.data, search]);
   if (!user) return <Screen eyebrow="MY MARKETPLACE" title="Followed shops" description="Sign in to keep your favourite sellers in one place."><Pressable onPress={() => router.replace("/auth")} style={styles.primary}><Text style={styles.primaryText}>Sign in</Text></Pressable></Screen>;
   return <Screen eyebrow="MY MARKETPLACE" title="Followed shops" description="Return quickly to sellers you trust and the products they publish.">
     {query.isLoading ? <ActivityIndicator color={colors.primary} size="large" /> : null}
     {query.error ? <View accessibilityRole="alert" style={styles.notice}><Text style={styles.error}>{query.error.message}</Text><Pressable onPress={() => query.refetch()}><Text style={styles.link}>Try again</Text></Pressable></View> : null}
-    {query.data?.length ? <View style={styles.grid}>{query.data.map((shop) => <Pressable accessibilityLabel={`Open ${shop.name} shop`} accessibilityRole="link" key={shop.id} onPress={() => router.push(`/shop/${shop.slug}` as never)} style={[styles.card, compact && styles.cardCompact]}>{shop.logoUrl ? <Image source={{ uri: shop.logoUrl }} style={styles.logo} /> : <View style={styles.logoFallback}><Text style={styles.initial}>{shop.name.slice(0, 1).toUpperCase()}</Text></View>}<View style={styles.copy}><Text numberOfLines={1} style={styles.name}>{shop.name}</Text><Text numberOfLines={2} style={styles.description}>{shop.description || "Verified Amiyo-Go seller"}</Text><View style={styles.meta}><Text style={styles.metaText}>{shop.productCount} products</Text><Text style={styles.metaText}>{shop.followerCount.toLocaleString("en-BD")} followers</Text></View></View><Ionicons color={colors.muted} name="chevron-forward" size={19} /></Pressable>)}</View> : null}
+    {query.data?.length ? <View style={{ alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flexDirection: "row", gap: spacing.sm, paddingHorizontal: spacing.md }}><Ionicons color={colors.muted} name="search-outline" size={18} /><TextInput accessibilityLabel="Search followed shops" onChangeText={setSearch} placeholder="Search followed shops" placeholderTextColor={colors.muted} style={{ color: colors.text, flex: 1, minHeight: 46, outlineStyle: "none" } as never} value={search} /></View> : null}
+    {filtered.length ? <View style={styles.grid}>{filtered.map((shop) => <Pressable accessibilityLabel={`Open ${shop.name} shop`} accessibilityRole="link" key={shop.id} onPress={() => router.push(`/shop/${shop.slug}` as never)} style={[styles.card, compact && styles.cardCompact]}>{shop.logoUrl ? <Image source={{ uri: shop.logoUrl }} style={styles.logo} /> : <View style={styles.logoFallback}><Text style={styles.initial}>{shop.name.slice(0, 1).toUpperCase()}</Text></View>}<View style={styles.copy}><Text numberOfLines={1} style={styles.name}>{shop.name}</Text><Text numberOfLines={2} style={styles.description}>{shop.description || "Verified Amiyo-Go seller"}</Text><View style={styles.meta}><Text style={styles.metaText}>{shop.productCount} products</Text><Text style={styles.metaText}>{shop.followerCount.toLocaleString("en-BD")} followers</Text></View></View><Ionicons color={colors.muted} name="chevron-forward" size={19} /></Pressable>)}</View> : null}
+    {query.data?.length && filtered.length === 0 ? <View style={styles.empty}><Text style={styles.emptyTitle}>No matching shop</Text><Text style={styles.description}>Try another shop name or keyword.</Text></View> : null}
     {query.data?.length === 0 ? <View style={styles.empty}><View style={styles.emptyIcon}><Ionicons color={colors.primary} name="storefront-outline" size={34} /></View><Text style={styles.emptyTitle}>No followed shops yet</Text><Text style={styles.description}>Follow a storefront to find it here later.</Text><Pressable onPress={() => router.push("/shops")} style={styles.primary}><Text style={styles.primaryText}>Browse shops</Text></Pressable></View> : null}
   </Screen>;
 }
