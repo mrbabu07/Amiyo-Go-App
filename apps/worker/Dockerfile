@@ -1,6 +1,6 @@
 FROM node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85 AS build
 WORKDIR /app
-RUN npm install --global npm@12.0.2
+RUN npm install --global npm@12.0.2 && test "$(npm --version)" = "12.0.2"
 COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/worker/package.json apps/worker/package.json
