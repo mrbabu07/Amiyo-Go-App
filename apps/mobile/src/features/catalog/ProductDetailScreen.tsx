@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query";
 import type { ProductDetailDto, ProductReportInput } from "@amiyo/contracts";
 import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Image, Platform, Pressable, SafeAreaView, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
 import { formatMinor, multiplyMinor, percentageDiscount } from "../../ui/money";
@@ -11,6 +11,7 @@ import { firebaseAuth } from "../auth/firebase";
 import { useCurrentUser } from "../auth/use-current-user";
 import { ensureGuestUser } from "../auth/guest-auth";
 import { addCartItem } from "../commerce/commerce.api";
+import { CartAddedToast } from "../commerce/components/CartAddedToast";
 import { addWishlistItem, createProductQuestion, getAlerts, getProductQuestions, getProductReviews, getWishlist, removeAlert, removeWishlistItem, reportProduct, saveAlert } from "../engagement/engagement.api";
 import { DeliveryAvailability } from "../home/components/DeliveryAvailability";
 import { ProductCard } from "../home/components/ProductCard";
@@ -40,6 +41,8 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
   const [quantity, setQuantity] = useState(1);
   const [cartBusy, setCartBusy] = useState(false);
   const [cartError, setCartError] = useState<string | null>(null);
+  const [cartAdded, setCartAdded] = useState(false);
+  const dismissCartToast = useCallback(() => setCartAdded(false), []);
   const [questionBody, setQuestionBody] = useState("");
   const [showReport, setShowReport] = useState(false);
   const [activeTab, setActiveTab] = useState<"description" | "specifications">("description");
@@ -99,7 +102,7 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
     ...Object.entries(item.dynamicAttributes ?? {})
   ].filter(([, value]) => value !== null && value !== undefined && value !== "");
 
-  async function addToCart(destination: "/cart" | "/checkout" = "/cart") {
+  async function addToCart(destination?: "/checkout") {
     if (!selected) return;
     setCartBusy(true);
     setCartError(null);
@@ -109,7 +112,8 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
       if (firebaseAuth?.currentUser?.uid !== currentUser.uid) return;
       queryClient.setQueryData(["cart", currentUser.uid], cart);
       if (discoverySessionId) safelyRecordDiscoveryEvent({ sessionId: discoverySessionId, eventType: "ADD_TO_CART", productId: item.id });
-      router.push(destination);
+      if (destination) router.push(destination);
+      else setCartAdded(true);
     } catch (caught) {
       setCartError(caught instanceof Error ? caught.message : "Could not add item");
     } finally {
@@ -122,6 +126,7 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
   function shareProduct() { void Share.share({ title: item.name, message: `${item.name} · ${process.env.EXPO_PUBLIC_APP_URL || "http://localhost:8081"}/product/${item.slug}` }); }
 
   return <SafeAreaView style={styles.safe}>
+    {cartAdded ? <CartAddedToast onDismiss={dismissCartToast} quantity={quantity} /> : null}
     <ScrollView contentContainerStyle={!desktop && styles.mobileScroll}>
       <StoreHeader desktop={desktop} viewportWidth={width} />
       <View style={styles.breadcrumbBar}><View style={styles.breadcrumb}><Pressable onPress={() => router.push("/")}><Text style={styles.crumb}>Home</Text></Pressable><Ionicons color={colors.muted} name="chevron-forward" size={14} /><Pressable onPress={() => router.push("/search")}><Text style={styles.crumb}>Products</Text></Pressable><Ionicons color={colors.muted} name="chevron-forward" size={14} /><Text numberOfLines={1} style={styles.crumbCurrent}>{item.name}</Text></View></View>

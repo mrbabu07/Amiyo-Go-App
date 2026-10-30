@@ -11,7 +11,7 @@ import { getCategoryNavigation, searchProducts } from "../../catalog/catalog.api
 import { buildCategoryTree } from "../../catalog/category-tree";
 import { clearRecentSearches, getDiscoverySessionId, getRecentSearches, getTrendingSearches, rememberSearch, safelyRecordDiscoveryEvent } from "../../catalog/discovery.api";
 import { getCart } from "../../commerce/commerce.api";
-import { getWishlist } from "../../engagement/engagement.api";
+import { getNotifications, getWishlist } from "../../engagement/engagement.api";
 import { getPublicPlatformSettings } from "../../platform/platform.api";
 import { BrandLogo } from "./BrandLogo";
 import { VoiceSearchButton } from "./VoiceSearchButton";
@@ -25,6 +25,8 @@ export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; view
   const user = useCurrentUser();
   const cart = useQuery({ queryKey: ["cart", user?.uid ?? null], queryFn: () => getCart(user!), enabled: Boolean(user) });
   const wishlist = useQuery({ queryKey: ["wishlist", user?.uid ?? null], queryFn: () => getWishlist(user!), enabled: Boolean(user), staleTime: 30_000 });
+  const notifications = useQuery({ queryKey: ["notifications", user?.uid ?? null], queryFn: () => getNotifications(user!), enabled: Boolean(user), refetchInterval: 30_000 });
+  const unreadNotifications = notifications.data?.filter((item) => !item.readAt).length ?? 0;
   const platform = useQuery({ queryKey: ["platform", "public-settings"], queryFn: getPublicPlatformSettings, staleTime: 5 * 60_000 });
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -88,7 +90,7 @@ export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; view
           {desktop ? <ThemeToggle /> : <ThemeToggle compact />}
           {desktop ? <Pressable accessibilityLabel="My account" onPress={() => router.push("/account")} style={styles.iconButton}><Ionicons color={colors.text} name="person-outline" size={22} /></Pressable> : null}
           <Pressable accessibilityLabel={`Wishlist with ${wishlist.data?.items.length ?? 0} items`} onPress={() => router.push("/wishlist")} style={[styles.iconButton, compact && styles.compactIconButton]}><Ionicons color={colors.text} name={wishlist.data?.items.length ? "heart" : "heart-outline"} size={22} />{wishlist.data?.items.length ? <View style={styles.cartBadge}><Text style={styles.cartBadgeText}>{Math.min(wishlist.data.items.length, 99)}</Text></View> : null}</Pressable>
-          <Pressable accessibilityLabel="Notifications" onPress={() => router.push("/notifications")} style={[styles.iconButton, compact && styles.compactIconButton]}><Ionicons color={colors.text} name="notifications-outline" size={22} /></Pressable>
+          <Pressable accessibilityLabel={unreadNotifications ? `Notifications, ${unreadNotifications} unread` : "Notifications"} onPress={() => router.push("/notifications")} style={[styles.iconButton, compact && styles.compactIconButton]}><Ionicons color={colors.text} name="notifications-outline" size={22} />{unreadNotifications ? <View style={styles.cartBadge}><Text style={styles.cartBadgeText}>{unreadNotifications > 99 ? "99+" : unreadNotifications}</Text></View> : null}</Pressable>
           <Pressable accessibilityLabel={`Shopping cart with ${cart.data?.itemCount ?? 0} items`} onPress={() => router.push("/cart")} style={[styles.iconButton, compact && styles.compactIconButton]}><Ionicons color={colors.text} name="cart-outline" size={23} /><View style={styles.cartBadge}><Text style={styles.cartBadgeText}>{Math.min(cart.data?.itemCount ?? 0, 99)}</Text></View></Pressable>
         </View>
       </View>

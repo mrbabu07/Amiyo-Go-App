@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { GestureResponderEvent } from "react-native";
 import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, radius, spacing } from "../../../ui/tokens";
@@ -17,6 +17,7 @@ import { getDiscoverySessionId, safelyRecordDiscoveryEvent } from "../../catalog
 import type { HomeProduct } from "../home.data";
 import { useMarketplaceLocale } from "../../platform/marketplace-locale";
 import { useLowDataMode } from "../../platform/use-low-data-mode";
+import { CartAddedToast } from "../../commerce/components/CartAddedToast";
 
 const money = (value: string) => formatMinor(value);
 const fallbackImage = "https://images.unsplash.com/photo-1560343090-f0409e92791a?w=700&h=700&fit=crop";
@@ -28,6 +29,8 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
   const dataSaver = lowData || policyLowData;
   const queryClient = useQueryClient();
   const user = useCurrentUser();
+  const [showCartToast, setShowCartToast] = useState(false);
+  const dismissCartToast = useCallback(() => setShowCartToast(false), []);
   const activeUid = useRef(user?.uid); activeUid.current = user?.uid;
   const discount = productDiscount(product.priceMinor, product.originalPriceMinor);
   const wishlist = useQuery({ queryKey: ["wishlist", user?.uid ?? null], queryFn: () => getWishlist(user!), enabled: Boolean(user), staleTime: 30_000 });
@@ -46,6 +49,7 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
     onSuccess: (result) => {
       if (!result || firebaseAuth?.currentUser?.uid !== result.uid) return;
       queryClient.setQueryData(["cart", result.uid], result.cart);
+      setShowCartToast(true);
       void getDiscoverySessionId().then((sessionId) => safelyRecordDiscoveryEvent({ sessionId, eventType: "ADD_TO_CART", productId: product.id }));
     }
   });
@@ -71,6 +75,7 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
 
   return (
     <View style={styles.card}>
+      {showCartToast ? <CartAddedToast onDismiss={dismissCartToast} /> : null}
       <Pressable accessibilityRole="link" onPress={() => router.push(`/product/${product.slug || product.id}` as never)} style={({ pressed }) => [styles.openArea, pressed && styles.pressed]}>
         <View style={styles.imageWrap}>
           {dataSaver ? <View accessibilityLabel={`${product.title} image hidden to save data`} accessibilityRole="image" style={[styles.image, styles.lowDataImage]}><Ionicons color={colors.accent} name="leaf-outline" size={26} /><Text style={styles.lowDataLabel}>DATA SAVER</Text></View> : <Image accessibilityLabel={product.title} resizeMode="cover" source={{ uri: product.image || fallbackImage }} style={styles.image} />}
@@ -89,7 +94,6 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
         <Text style={styles.cartLabel}>{addToCart.isPending ? t.adding : t.addCart}</Text>
       </Pressable>
       {addToCart.isError ? <Text accessibilityRole="alert" style={styles.cartError}>{addToCart.error instanceof Error ? addToCart.error.message : "Could not add item. Try again."}</Text> : null}
-      {addToCart.isSuccess && addToCart.data ? <Text accessibilityLiveRegion="polite" style={styles.cartFeedback}>Added to cart</Text> : null}
       <Pressable accessibilityLabel={`${saved ? "Remove" : "Save"} ${product.title} ${saved ? "from" : "to"} wishlist`} accessibilityRole="button" disabled={toggleWishlist.isPending} onPress={onWishlist} style={[styles.heart, saved && styles.heartActive, toggleWishlist.isPending && styles.heartBusy]}>
         <Ionicons color={saved ? colors.onPrimary : colors.accent} name={saved ? "heart" : "heart-outline"} size={18} />
       </Pressable>
@@ -124,5 +128,4 @@ const styles = StyleSheet.create({
   cart: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.sm, minHeight: 44, justifyContent: "center", flexDirection: "row", gap: 6, marginHorizontal: spacing.sm, marginBottom: spacing.sm, paddingHorizontal: 6, paddingVertical: 10 },
   cartLabel: { color: colors.onPrimary, fontSize: 12, fontWeight: "600", flexShrink: 1 },
   cartError: { color: colors.danger, fontSize: 11, paddingHorizontal: spacing.sm, paddingBottom: spacing.sm },
-  cartFeedback: { color: colors.success, fontSize: 11, paddingHorizontal: spacing.sm, paddingBottom: spacing.sm }
 });

@@ -147,6 +147,7 @@ export function Screen(props: ScreenProps) {
 
 function AdminScreen({ children, description, desktop, eyebrow, hideHeading = false, pathname, title, width }: ScreenProps & { desktop: boolean; pathname: string; width: number }) {
   const router = useRouter();
+  const user = useCurrentUser();
   const session = useAuthStore((state) => state.session);
   const systemColorScheme = useColorScheme();
   const themeMode = useThemeStore((state) => state.mode);
@@ -161,6 +162,9 @@ function AdminScreen({ children, description, desktop, eyebrow, hideHeading = fa
   const accountRole = adminRolePriority.find((role) => session?.principal.roles.includes(role)) ?? session?.principal.roles[0] ?? "ADMIN";
   const dark = themeMode === "dark" || (themeMode === "system" && systemColorScheme === "dark");
   const topbarIcon = dark ? colors.onPrimary : colors.text;
+  const notifications = useQuery({ queryKey: ["notifications", user?.uid], queryFn: () => getNotifications(user!), enabled: Boolean(user), refetchInterval: 30_000 });
+  const unreadNotifications = notifications.data?.filter((item) => !item.readAt).length ?? 0;
+  const unreadOrders = notifications.data?.filter((item) => !item.readAt && item.href?.startsWith("/admin/orders")).length ?? 0;
   const logout = async () => { if (firebaseAuth) await signOut(firebaseAuth); open("/login"); };
 
   return <SafeAreaView style={[styles.safe, dark && styles.adminDarkSafe]}>
@@ -174,9 +178,9 @@ function AdminScreen({ children, description, desktop, eyebrow, hideHeading = fa
       </View>
       {desktop ? <AdminGlobalSearch dark={dark} onOpen={open} routes={adminLinks} /> : null}
       <View style={[styles.workspaceActions, !desktop && styles.adminMobileActions]}>
-        {desktop ? <><Pressable accessibilityLabel="Orders" onPress={() => open("/admin/orders")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="clipboard-outline" size={19} /></Pressable><Pressable accessibilityLabel="Vendors" onPress={() => open("/admin/vendor-requests")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="storefront-outline" size={19} /></Pressable><Pressable accessibilityLabel="Payments" onPress={() => open("/admin/payment-verification")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="card-outline" size={19} /></Pressable></> : null}
+        {desktop ? <><Pressable accessibilityLabel={unreadOrders ? `Orders, ${unreadOrders} new updates` : "Orders"} onPress={() => open("/admin/orders")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="clipboard-outline" size={19} />{unreadOrders ? <CountBadge count={unreadOrders} /> : null}</Pressable><Pressable accessibilityLabel="Vendors" onPress={() => open("/admin/vendor-requests")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="storefront-outline" size={19} /></Pressable><Pressable accessibilityLabel="Payments" onPress={() => open("/admin/payment-verification")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="card-outline" size={19} /></Pressable></> : null}
         {desktop ? <Pressable accessibilityLabel="Open storefront" onPress={() => open("/")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="storefront-outline" size={19} /></Pressable> : null}
-        <Pressable accessibilityLabel="Notifications" onPress={() => open("/admin/notifications")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="notifications-outline" size={19} /><View style={styles.notificationDot} /></Pressable>
+        <Pressable accessibilityLabel={unreadNotifications ? `Notifications, ${unreadNotifications} unread` : "Notifications"} onPress={() => open("/admin/notifications")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="notifications-outline" size={19} />{unreadNotifications ? <CountBadge count={unreadNotifications} /> : null}</Pressable>
         <Pressable accessibilityLabel={dark ? "Use light admin theme" : "Use dark admin theme"} accessibilityRole="button" onPress={toggleTheme} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name={dark ? "sunny-outline" : "moon-outline"} size={19} /></Pressable>
         {desktop ? <Pressable accessibilityLabel={`Account: ${accountName}, ${roleLabel(accountRole)}`} onPress={() => open("/account")} style={[styles.adminAccount, dark && styles.adminDarkAccount]}><View style={styles.avatar}><Text style={styles.avatarText}>{accountInitials}</Text></View><View><Text numberOfLines={1} style={[styles.accountName, dark && styles.adminDarkText]}>{accountName}</Text><Text style={[styles.accountRole, dark && styles.adminDarkMuted]}>{roleLabel(accountRole)}</Text></View></Pressable> : null}
         <Pressable accessibilityLabel="Sign out" onPress={logout} style={[styles.iconButton, styles.logoutButton, dark && styles.adminDarkButton]}><Ionicons color={colors.danger} name="log-out-outline" size={19} /></Pressable>
@@ -200,6 +204,8 @@ function AdminScreen({ children, description, desktop, eyebrow, hideHeading = fa
     </View>
   </SafeAreaView>;
 }
+
+function CountBadge({ count }: { count: number }) { return <View style={styles.vendorNotificationBadge}><Text style={styles.vendorNotificationBadgeText}>{count > 99 ? "99+" : count}</Text></View>; }
 
 function AdminMobileSearch({ dark, onOpen }: { dark: boolean; onOpen(href: string): void }) {
   const [search, setSearch] = useState("");
