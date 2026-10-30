@@ -82,7 +82,7 @@ test("CodeQL scans JavaScript and TypeScript with immutable actions", async () =
   assert.match(workflow, /pull_request:/);
   assert.match(workflow, /push:[\s\S]*branches: \[main\]/);
   assert.match(workflow, /schedule:[\s\S]*cron: "23 2 \* \* 1"/);
-  assert.match(workflow, /^permissions:\n  contents: read$/m);
+  assert.match(workflow, /^permissions:\r?\n  contents: read$/m);
   assert.match(workflow, /security-events: write/);
   assert.match(workflow, /languages: javascript-typescript/);
   assert.match(workflow, /queries: security-extended/);
@@ -119,8 +119,8 @@ test("deploy workflow validates environment before publishing images", async () 
   const preflight = await readFile(new URL("./deployment-env.mjs", import.meta.url), "utf8");
   assert.match(workflow, /preflight:/);
   assert.doesNotMatch(workflow, /uses:\s+[^\s]+@v\d+/);
-  assert.match(workflow, /^permissions:\n  contents: read\n\nconcurrency:/m);
-  assert.match(workflow, /images:[\s\S]*permissions:\n      contents: read\n      packages: write[\s\S]*docker\/login-action/);
+  assert.match(workflow, /^permissions:\r?\n  contents: read\r?\n\r?\nconcurrency:/m);
+  assert.match(workflow, /images:[\s\S]*permissions:\r?\n      contents: read\r?\n      packages: write[\s\S]*docker\/login-action/);
   assert.match(workflow, /name: Verify production source branch[\s\S]*inputs\.environment == 'production'[\s\S]*test "\$GITHUB_REF" = "refs\/heads\/main"/);
   assert.match(workflow, /name: Verify release readiness[\s\S]*npm run release:check/);
   assert.match(workflow, /REQUIRE_PRODUCTION_READY: \$\{\{ inputs\.environment == 'production' && 'true' \|\| 'false' \}\}/);
