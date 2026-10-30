@@ -1,6 +1,6 @@
 # Dependency Risk Register
 
-Last reviewed: 2026-10-29
+Last reviewed: 2026-10-30
 
 ## Release rule
 
@@ -20,14 +20,14 @@ NPM reports three high package nodes because the remaining Zod advisory propagat
 
 - `expo@58.0.21`, `@expo/cli@58.1.17`, and `expo-router@58.0.28` are installed.
 - Expo's certificate tooling resolves to patched `node-forge@1.4.2`.
-- `firebase-tools@15.34.1` is exact-pinned and the compatible `fast-uri@3.1.9` patch is installed; this removed the URI-parser advisory from the complete graph.
+- `firebase-tools@15.34.2` is exact-pinned and the compatible `fast-uri@3.1.9` patch is installed; this removed the URI-parser advisory from the complete graph. Its current dev-only emulator/CLI graph still carries six moderate package nodes through Google Pub/Sub, OpenTelemetry, Hono, Gaxios and UUID. npm proposes a Firebase CLI 14 downgrade rather than a compatible 15.x remediation, so production runtime promotion remains governed by the clean API/worker audits while this tooling risk stays explicitly tracked.
 - Expo Doctor passes all 20 checks.
 - Mobile strict type-check and all 496 mobile tests pass.
 - The complete monorepo build and 1,174-test run pass on 2026-10-29. The configured PostgreSQL database also accepted the operational query-index migrations.
 - Expo web production export completes.
 - API and worker runtime audits report zero findings.
 - Pull-request and main-branch CI hard-fail on high or critical findings in the deployable API and worker runtime graphs through `npm run audit:runtime`. The complete install graph is still audited by `npm run release:check`; its Expo build-tool advisory continues to block production promotion until compatible remediation or approved time-bounded acceptance exists.
-- The complete dependency audit currently reports three high, zero moderate, and five low package nodes. The three high nodes remain the production blocker described above; this document records risk but does not approve it.
+- The complete dependency audit currently reports three high, six moderate, and five low package nodes. The three high Expo nodes remain the production blocker described above; the six moderate nodes are confined to the Firebase CLI development/emulator graph. This document records risk but does not approve it.
 
 ## Review procedure
 

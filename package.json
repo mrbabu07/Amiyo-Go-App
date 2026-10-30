@@ -57,7 +57,7 @@
     "@electric-sql/pglite": "0.5.11",
     "@types/node": "^24.19.2",
     "@types/react": "~19.3.0",
-    "firebase-tools": "15.34.1",
+    "firebase-tools": "15.34.2",
     "prisma": "^5.22.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

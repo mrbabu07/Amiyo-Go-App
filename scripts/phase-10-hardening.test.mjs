@@ -179,12 +179,12 @@ test("dependency register matches the current pinned tooling and gate snapshot",
   const lock = JSON.parse(await readFile(new URL("../package-lock.json", import.meta.url), "utf8"));
   const register = await readFile(new URL("../docs/dependency-risk-register.md", import.meta.url), "utf8");
   const gapMap = await readFile(new URL("../docs/production-gap-and-differentiator-map.md", import.meta.url), "utf8");
-  assert.equal(rootPackage.devDependencies["firebase-tools"], "15.34.1");
+  assert.equal(rootPackage.devDependencies["firebase-tools"], "15.34.2");
   assert.equal(lock.packages["node_modules/fast-uri"].version, "3.1.9");
-  assert.match(register, /Last reviewed: 2026-10-29/);
-  assert.match(register, /firebase-tools@15\.34\.1/);
+  assert.match(register, /Last reviewed: 2026-10-30/);
+  assert.match(register, /firebase-tools@15\.34\.2/);
   assert.match(register, /fast-uri@3\.1\.9/);
-  assert.match(register, /three high, zero moderate, and five low package nodes/);
+  assert.match(register, /three high, six moderate, and five low package nodes/);
   assert.match(register, /1,174-test run pass/);
   assert.match(gapMap, /Current gate snapshot \(2026-10-28\)/);
   assert.match(gapMap, /one unresolved business decision/);
