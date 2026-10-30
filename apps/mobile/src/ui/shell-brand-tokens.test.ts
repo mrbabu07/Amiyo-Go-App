@@ -17,3 +17,10 @@ test("workspace dark mode does not fall back to the legacy slate palette", () =>
   assert.match(shell, /darkPalette\.border/);
   assert.doesNotMatch(shell, /#0f172a|#111827|#1e293b|#334155|#f8fafc|#94a3b8|#fdba74|#cbd5e1/i);
 });
+
+test("admin shell resolves the persisted theme and keeps light navigation light", () => {
+  assert.match(shell, /themeMode === "dark"/);
+  assert.match(shell, /adminSidebar: \{ backgroundColor: colors\.surface/);
+  assert.match(shell, /adminDarkSidebar: \{ backgroundColor: darkPalette\.surface/);
+  assert.match(shell, /dark=\{dark\}/);
+});
