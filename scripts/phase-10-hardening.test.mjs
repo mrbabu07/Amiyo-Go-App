@@ -202,6 +202,9 @@ test("dependency register matches the current pinned tooling and gate snapshot",
   assert.match(register, /firebase-tools@15\.34\.2/);
   assert.match(register, /fast-uri@3\.1\.9/);
   assert.match(register, /three high, six moderate, and five low package nodes/);
+  assert.match(register, /npm `12\.0\.2`/);
+  assert.match(register, /exact package-and-version entries only/);
+  assert.match(register, /npm install-scripts ls --json/);
   assert.match(register, /1,174-test run pass/);
   assert.match(gapMap, /Current gate snapshot \(2026-10-30\)/);
   assert.match(gapMap, /six moderate nodes confined to the Firebase CLI development\/emulator graph/);

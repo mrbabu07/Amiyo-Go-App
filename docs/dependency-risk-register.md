@@ -19,6 +19,7 @@ NPM reports three high package nodes because the remaining Zod advisory propagat
 ## Current compatibility evidence
 
 - `expo@58.0.21`, `@expo/cli@58.1.17`, and `expo-router@58.0.28` are installed.
+- Expo-managed native compatibility is aligned to `react-native@0.88.1` and `@sentry/react-native@8.28.0`; `expo install --check` reports no mismatch.
 - Expo's certificate tooling resolves to patched `node-forge@1.4.2`.
 - `firebase-tools@15.34.2` is exact-pinned and the compatible `fast-uri@3.1.9` patch is installed; this removed the URI-parser advisory from the complete graph. Its current dev-only emulator/CLI graph still carries six moderate package nodes through Google Pub/Sub, OpenTelemetry, Hono, Gaxios and UUID. npm proposes a Firebase CLI 14 downgrade rather than a compatible 15.x remediation, so production runtime promotion remains governed by the clean API/worker audits while this tooling risk stays explicitly tracked.
 - Expo Doctor passes all 20 checks.
@@ -29,6 +30,13 @@ NPM reports three high package nodes because the remaining Zod advisory propagat
 - Pull-request and main-branch CI hard-fail on high or critical findings in the deployable API and worker runtime graphs through `npm run audit:runtime`. The complete install graph is still audited by `npm run release:check`; its Expo build-tool advisory continues to block production promotion until compatible remediation or approved time-bounded acceptance exists.
 - The complete dependency audit currently reports three high, six moderate, and five low package nodes. The three high Expo nodes remain the production blocker described above; the six moderate nodes are confined to the Firebase CLI development/emulator graph. This document records risk but does not approve it.
 
+## Install-script supply-chain policy
+
+- The repository and all automated build paths pin npm `12.0.2` so lifecycle-script enforcement does not depend on the npm version bundled with a runner or base image.
+- `allowScripts` contains exact package-and-version entries only. The approved scripts are Prisma client/engine generation, the pinned Expo/Sentry build tooling, Firebase utility setup, protobuf generation, esbuild, and the pinned optional native acceleration packages used by the queue/emulator graph.
+- A dependency update that changes one of those versions remains blocked until the new lifecycle script is reviewed and the exact allowlist contract is deliberately updated. Package-name wildcards, unversioned approvals, and `--ignore-scripts` as a release workaround are prohibited.
+- `npm install-scripts ls --json` must report no pending scripts after a clean install. CI and container builds must still generate Prisma and complete their normal build/export checks; approval alone is not execution evidence.
+
 ## Review procedure
 
 1. Check compatible Expo SDK 58 patch releases before every production candidate.
@@ -36,3 +44,4 @@ NPM reports three high package nodes because the remaining Zod advisory propagat
 3. Run `npx expo-doctor apps/mobile`, mobile type-check/tests, web export, secret scan, and `npm run release:check` after an update.
 4. Remove resolved rows and retain the audit artifact with the release record.
 5. If no compatible patch exists, obtain the explicit, expiring security acceptance described above or do not promote.
+6. Review every lifecycle-script version change before updating `allowScripts`, then repeat a clean `npm ci`, Prisma generation, build, and install-script pending check.
