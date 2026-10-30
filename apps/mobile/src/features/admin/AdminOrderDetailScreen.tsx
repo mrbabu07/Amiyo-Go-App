@@ -59,7 +59,6 @@ export function AdminOrderDetailScreen() {
       <View style={[styles.commandActions, compact && styles.commandActionsCompact]}><Button icon="refresh" label="Refresh" onPress={() => order.refetch()} /><Button primary icon="print-outline" label="Print invoice" onPress={() => router.push(`/admin/orders/${data.id}/invoice` as never)} /></View>
     </View>
     {transition.error || cancelOrder.error ? <Text style={styles.error}>{(transition.error || cancelOrder.error)?.message}</Text> : null}
-    {user ? <AdminOrderPrintCenter key={`${user.uid}:${data.id}`} order={data} user={user} /> : null}
     <ModuleCard title="Operational progress" meta="Live order state across payment, packing and delivery."><Progress compact={compact} steps={parentSteps} activeIndex={statusIndex(parentSteps, data.status)} finalStatus={data.status} /></ModuleCard>
     <View style={styles.metrics}><Metric icon="cash-outline" label="Order total" value={money(data.total.amountMinor)} /><Metric icon="card-outline" label="Payment" value={data.payment?.status ?? "UNPAID"} /><Metric icon="storefront-outline" label="Seller orders" value={String(data.vendorOrders.length)} /><Metric icon="cube-outline" label="Units" value={String(itemCount)} /></View>
     <View style={styles.twoColumn}>
@@ -68,6 +67,7 @@ export function AdminOrderDetailScreen() {
     </View>
     <View style={[styles.sectionHeading, compact && styles.sectionHeadingCompact]}><View><Text style={styles.kicker}>SELLER FULFILLMENT</Text><Text style={styles.sectionTitle}>Package control</Text></View><Text style={styles.muted}>{data.vendorOrders.length} shipment group(s)</Text></View>
     {data.vendorOrders.map((vendorOrder, index) => <VendorOrderCard compact={compact} key={vendorOrder.id} index={index + 1} narrow={narrow} pending={transition.isPending} vendorOrder={vendorOrder} onTransition={(status) => transition.mutate({ vendorOrderId: vendorOrder.id, status, version: vendorOrder.version })} />)}
+    {user ? <AdminOrderPrintCenter key={`${user.uid}:${data.id}`} order={data} user={user} /> : null}
     <View style={styles.twoColumn}>
       <View style={[styles.column, compact && styles.fullColumn]}><ModuleCard title="Order totals" meta="Customer-facing invoice amounts"><Info label="Subtotal" value={money(data.subtotal.amountMinor)} /><Info label="Discount" value={`- ${money(data.discount.amountMinor)}`} /><Info label="Delivery" value={money(data.delivery.amountMinor)} /><Info label="Tax" value={money(data.tax.amountMinor)} /><TotalLine label="Grand total" value={money(data.total.amountMinor)} /></ModuleCard></View>
       <View style={[styles.column, compact && styles.fullColumn]}><ModuleCard title="Audit timeline" meta={`${data.events.length} recorded event(s)`}>{data.events.length ? data.events.map((event, index) => <AuditEvent event={event} key={event.id} last={index === data.events.length - 1} />) : <Text style={styles.muted}>No status events recorded yet.</Text>}</ModuleCard></View>
@@ -98,7 +98,7 @@ function AuditEvent({ event, last }: { event: AdminOrderDetail["events"][number]
 
 const styles = StyleSheet.create({
   flex: { flex: 1, minWidth: 0 },
-  commandBar: { alignItems: "center", backgroundColor: colors.navy, borderRadius: radius.xl, flexDirection: "row", gap: spacing.lg, justifyContent: "space-between", padding: spacing.xl },
+  commandBar: { alignItems: "center", backgroundColor: colors.navy, borderRadius: radius.xl, flexDirection: "row", gap: spacing.md, justifyContent: "space-between", padding: spacing.lg },
   commandBarCompact: { alignItems: "stretch", flexDirection: "column" },
   commandCopy: { flex: 1, minWidth: 0 },
   statusLine: { alignItems: "center", flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   statusDanger: { backgroundColor: "#fee2e2", color: colors.danger },
   version: { color: colors.muted, fontSize: 10, fontWeight: "700" },
   risk: { backgroundColor: "#7f1d1d", borderRadius: radius.pill, color: "#fecaca", fontSize: 9, fontWeight: "700", overflow: "hidden", paddingHorizontal: 8, paddingVertical: 5 },
-  commandTotal: { color: colors.onPrimary, fontSize: 34, fontWeight: "700", letterSpacing: -0.7, marginTop: spacing.sm },
+  commandTotal: { color: colors.onPrimary, fontSize: 30, fontWeight: "700", letterSpacing: -0.7, marginTop: 6 },
   commandMeta: { color: colors.shellMuted, lineHeight: 20, marginTop: 5 },
   commandActions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, justifyContent: "flex-end" },
   commandActionsCompact: { justifyContent: "flex-start" },
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   terminal: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.md, flexDirection: "row", gap: spacing.sm, padding: spacing.md },
   terminalText: { color: colors.danger, fontWeight: "700" },
   metrics: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  metric: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flex: 1, flexDirection: "row", gap: spacing.sm, minWidth: 175, padding: spacing.md },
+  metric: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flex: 1, flexDirection: "row", gap: spacing.sm, minWidth: 155, padding: 12 },
   metricIcon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.md, height: 40, justifyContent: "center", width: 40 },
   metricValue: { color: colors.text, fontSize: 18, fontWeight: "700" },
   muted: { color: colors.muted, flexShrink: 1, fontSize: 11, lineHeight: 18, marginTop: 3 },
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   sectionTitle: { color: colors.text, fontSize: 21, fontWeight: "700" },
   amountGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
   items: { borderTopColor: colors.border, borderTopWidth: 1, marginTop: spacing.md },
-  item: { alignItems: "center", borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: "row", gap: spacing.sm, paddingVertical: spacing.md },
+  item: { alignItems: "center", borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: "row", gap: spacing.sm, paddingVertical: 10 },
   itemNarrow: { alignItems: "flex-start", flexDirection: "column" },
   itemIcon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.md, height: 38, justifyContent: "center", width: 38 },
   itemImage: { backgroundColor: colors.primarySoft, borderRadius: radius.md, height: 54, width: 54 },
