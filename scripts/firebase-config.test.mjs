@@ -16,13 +16,13 @@ test("Firebase public configuration stays env-driven and analytics is consent-ga
 test("partial Firebase setup remains a production readiness blocker", async () => {
   const checker = await readFile(new URL("../scripts/release-readiness.mjs", import.meta.url), "utf8");
   assert.match(checker, /TBD\|PARTIAL\|BLOCKED/);
-  assert.match(checker, /const args = \["audit", "--omit=dev"/);
+  assert.match(checker, /const dependencyAudit = runAudit\(\)/);
   assert.match(checker, /dependencyAudit\.status !== "passed"/);
   assert.match(checker, /unresolvedDecisionNames/);
   assert.match(checker, /blockingPackages/);
   assert.match(checker, /runtimeDependencyAudits/);
-  assert.match(checker, /runAudit\("@amiyo\/api"\)/);
-  assert.match(checker, /runAudit\("@amiyo\/worker"\)/);
+  assert.match(checker, /runAudit\("@amiyo\/api", \{ omitDev: true \}\)/);
+  assert.match(checker, /runAudit\("@amiyo\/worker", \{ omitDev: true \}\)/);
   assert.match(checker, /RELEASE_REPORT_PATH/);
   assert.match(checker, /flag: "wx"/);
   assert.match(checker, /schemaVersion: 1/);

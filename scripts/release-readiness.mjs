@@ -54,8 +54,8 @@ const decisionBlockers = decisions.split("\n").flatMap((line) => {
 const root = fileURLToPath(new URL("..", import.meta.url));
 const npmCli = process.env.npm_execpath;
 const unavailableAudit = () => ({ status: "unavailable", critical: 0, high: 0, moderate: 0, low: 0, total: 0, blockingPackages: [] });
-const runAudit = (workspace) => {
-  const args = ["audit", "--omit=dev", ...(workspace ? ["--workspace", workspace] : []), "--json"];
+const runAudit = (workspace, { omitDev = false } = {}) => {
+  const args = ["audit", ...(omitDev ? ["--omit=dev"] : []), ...(workspace ? ["--workspace", workspace] : []), "--json"];
   const audit = npmCli
     ? spawnSync(process.execPath, [npmCli, ...args], { cwd: root, encoding: "utf8", maxBuffer: 10 * 1024 * 1024 })
     : spawnSync("npm", args, { cwd: root, encoding: "utf8", maxBuffer: 10 * 1024 * 1024, shell: process.platform === "win32" });
@@ -81,8 +81,8 @@ const runAudit = (workspace) => {
 };
 const dependencyAudit = runAudit();
 const runtimeDependencyAudits = {
-  api: runAudit("@amiyo/api"),
-  worker: runAudit("@amiyo/worker")
+  api: runAudit("@amiyo/api", { omitDev: true }),
+  worker: runAudit("@amiyo/worker", { omitDev: true })
 };
 const provenance = {
   commitSha: boundedMetadata(process.env.RELEASE_COMMIT_SHA, "RELEASE_COMMIT_SHA", /^[0-9a-f]{40}$/i),
