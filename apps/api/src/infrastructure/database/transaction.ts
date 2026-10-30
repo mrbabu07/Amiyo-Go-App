@@ -2,6 +2,14 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 
 export type TransactionClient = Prisma.TransactionClient;
 
+export function isRetryableTransactionConflict(error: unknown) {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
+  if (error.code === "P2034") return true;
+  if (error.code !== "P2010") return false;
+  const databaseCode = typeof error.meta?.code === "string" ? error.meta.code : "";
+  return databaseCode === "40001" || databaseCode === "40P01";
+}
+
 export async function withSerializableTransaction<Result>(
   client: PrismaClient,
   operation: (transaction: TransactionClient) => Promise<Result>
@@ -14,7 +22,7 @@ export async function withSerializableTransaction<Result>(
         timeout: 60_000
       });
     } catch (error) {
-      if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2034" || attempt === 3) throw error;
+      if (!isRetryableTransactionConflict(error) || attempt === 3) throw error;
       await new Promise((resolve) => setTimeout(resolve, attempt * 25));
     }
   }
