@@ -29,6 +29,20 @@ test("release artifacts enforce immutable builds and non-root containers", async
   const codeowners = await readFile(new URL("../.github/CODEOWNERS", import.meta.url), "utf8");
   const securityPolicy = await readFile(new URL("../SECURITY.md", import.meta.url), "utf8");
   const pullRequestTemplate = await readFile(new URL("../.github/pull_request_template.md", import.meta.url), "utf8");
+  assert.equal(rootPackage.packageManager, "npm@12.0.2");
+  assert.deepEqual(Object.keys(rootPackage.allowScripts).sort(), [
+    "@firebase/util@1.15.3",
+    "@prisma/client@5.22.0",
+    "@prisma/engines@5.22.0",
+    "@sentry/cli@2.58.6",
+    "@sentry/cli@3.8.0",
+    "esbuild@0.28.1",
+    "msgpackr-extract@3.0.4",
+    "prisma@5.22.0",
+    "protobufjs@7.6.5",
+    "re2@1.26.1"
+  ]);
+  assert.ok(Object.values(rootPackage.allowScripts).every((allowed) => allowed === true));
   assert.match(apiDockerfile, /USER node/);
   assert.match(apiDockerfile, /\/app\/prisma \.\/prisma/);
   assert.match(workerDockerfile, /USER node/);
@@ -40,8 +54,11 @@ test("release artifacts enforce immutable builds and non-root containers", async
   assert.match(workerDockerfile, /org\.opencontainers\.image\.revision=\$RELEASE_COMMIT_SHA/);
   assert.match(apiDockerfile, /npm ci --omit=dev --workspace @amiyo\/api --include-workspace-root/);
   assert.match(workerDockerfile, /npm ci --omit=dev --workspace @amiyo\/worker --include-workspace-root/);
+  assert.match(apiDockerfile, /npm install --global npm@12\.0\.2/);
+  assert.match(workerDockerfile, /npm install --global npm@12\.0\.2/);
   assert.match(workflow, /name: Enforce deployable runtime dependency audit[\s\S]*npm run audit:runtime/);
   assert.match(workflow, /node-version: 24/);
+  assert.match(workflow, /npm install --global npm@12\.0\.2/);
   assert.equal(rootPackage.scripts["audit:runtime"], "npm audit --omit=dev --workspace @amiyo/api --audit-level=high && npm audit --omit=dev --workspace @amiyo/worker --audit-level=high");
   assert.match(workflow, /^  workflow_dispatch:$/m);
   assert.match(workflow, /docker build/);

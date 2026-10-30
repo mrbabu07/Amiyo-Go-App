@@ -8,7 +8,7 @@ Mobile-first multi-vendor marketplace built with Expo React Native, Node.js, Exp
 ## Requirements
 
 - Node.js 24 LTS
-- npm 10
+- npm 12.0.2
 - PostgreSQL and Redis, locally or through configured managed services
 - Firebase project credentials for non-emulator authentication
 

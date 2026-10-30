@@ -25,6 +25,7 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - run: npm install --global npm@12.0.2
       - name: Verify production source branch
         if: ${{ inputs.environment == 'production' }}
         shell: bash
@@ -154,6 +155,7 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - run: npm install --global npm@12.0.2
       - run: npm ci
       - run: npm run prisma:generate
       - run: npm run prisma:migrate:deploy
