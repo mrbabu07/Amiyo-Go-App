@@ -16,10 +16,10 @@
     "@amiyo/contracts": "file:../../packages/contracts",
     "@amiyo/domain": "file:../../packages/domain",
     "@amiyo/observability": "file:../../packages/observability",
-    "@prisma/client": "^5.22.0",
-    "bullmq": "^5.81.5",
+    "@prisma/client": "^7.10.1",
+    "bullmq": "^6.5.0",
     "firebase-admin": "^14.2.0",
-    "ioredis": "^5.11.1"
+    "ioredis": "^6.0.0"
   },
   "devDependencies": {
     "tsx": "^4.23.15"

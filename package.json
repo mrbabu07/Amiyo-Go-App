@@ -58,7 +58,7 @@
     "@types/node": "^24.19.2",
     "@types/react": "~19.3.0",
     "firebase-tools": "15.34.2",
-    "prisma": "^5.22.0",
+    "prisma": "^7.10.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-native": "^0.88.0",
