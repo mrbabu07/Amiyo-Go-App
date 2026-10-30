@@ -162,6 +162,13 @@ export class CommerceService {
     catch { return this.client.cart.findFirstOrThrow({ where: { userId, status: "ACTIVE" }, include: cartInclude }); }
   }
 
+  private async activeCartId(userId: string) {
+    const existing = await this.client.cart.findFirst({ where: { userId, status: "ACTIVE" }, select: { id: true } });
+    if (existing) return existing.id;
+    try { return (await this.client.cart.create({ data: { userId }, select: { id: true } })).id; }
+    catch { return (await this.client.cart.findFirstOrThrow({ where: { userId, status: "ACTIVE" }, select: { id: true } })).id; }
+  }
+
   private async defaultWishlist(userId: string) {
     const existing = await this.client.wishlist.findFirst({ where: { userId, isDefault: true }, select: { id: true } });
     if (existing) return existing;
@@ -178,7 +185,7 @@ export class CommerceService {
   async cart(userId: string) { const cart = await this.activeCart(userId); return cartDto(cart, await activeFlashPrices(this.client, cart)); }
 
   async addItem(userId: string, variantId: string, quantity: number, idempotencyKey?: string) {
-    const cart = await this.activeCart(userId);
+    const cartId = await this.activeCartId(userId);
     const scope = `cart-add:${userId}`;
     const requestHash = createHash("sha256").update(JSON.stringify({ variantId, quantity })).digest("hex");
     await withSerializableTransaction(this.client, async (transaction) => {
@@ -190,14 +197,14 @@ export class CommerceService {
           return;
         }
       }
-      if (!await transaction.cart.findFirst({ where: { id: cart.id, userId, status: "ACTIVE" }, select: { id: true } })) throw new ApiProblem(409, "CART_CHANGED", "Your cart changed. Refresh before adding items");
+      if (!await transaction.cart.findFirst({ where: { id: cartId, userId, status: "ACTIVE" }, select: { id: true } })) throw new ApiProblem(409, "CART_CHANGED", "Your cart changed. Refresh before adding items");
       const variant = await transaction.productVariant.findFirst({ where: { id: variantId, active: true, product: { status: "APPROVED", vendor: { status: "APPROVED" }, shop: { status: "ACTIVE" } } }, include: { product: true, inventory: true } });
       if (!variant?.inventory) throw new ApiProblem(404, "VARIANT_NOT_AVAILABLE", "This product variant is not available");
-      const current = await transaction.cartItem.findUnique({ where: { cartId_variantId: { cartId: cart.id, variantId } } });
+      const current = await transaction.cartItem.findUnique({ where: { cartId_variantId: { cartId: cartId, variantId } } });
       const requested = (current?.quantity ?? 0) + quantity;
       if (requested > variant.inventory.onHand - variant.inventory.reserved) throw new ApiProblem(409, "INSUFFICIENT_STOCK", "Requested quantity is not available");
-      await transaction.cartItem.upsert({ where: { cartId_variantId: { cartId: cart.id, variantId } }, create: { cartId: cart.id, productId: variant.productId, variantId, quantity, displayPriceMinor: variant.priceMinor, currency: variant.currency }, update: { quantity: requested, displayPriceMinor: variant.priceMinor } });
-      if (idempotencyKey) await transaction.idempotencyRecord.create({ data: { scope, key: idempotencyKey, requestHash, response: { cartId: cart.id }, expiresAt: new Date(Date.now() + 24 * 60 * 60_000) } });
+      await transaction.cartItem.upsert({ where: { cartId_variantId: { cartId: cartId, variantId } }, create: { cartId, productId: variant.productId, variantId, quantity, displayPriceMinor: variant.priceMinor, currency: variant.currency }, update: { quantity: requested, displayPriceMinor: variant.priceMinor } });
+      if (idempotencyKey) await transaction.idempotencyRecord.create({ data: { scope, key: idempotencyKey, requestHash, response: { cartId }, expiresAt: new Date(Date.now() + 24 * 60 * 60_000) } });
     });
     return this.cart(userId);
   }
@@ -248,7 +255,13 @@ export class CommerceService {
       const zoneFee = zone === "same_union" ? settings.sameUnionFeeMinor : zone === "same_upazila" ? settings.sameUpazilaFeeMinor : zone === "same_district" ? settings.sameDistrictFeeMinor : settings.outsideDistrictFeeMinor;
       perVendorDelivery = settings.freeDeliveryEnabled && subtotal >= settings.freeDeliveryThresholdMinor ? 0n : zoneFee;
     }
-    const delivery = perVendorDelivery * BigInt(vendors); const { rules } = await loadBusinessRules(this.client); const applied = await codeDiscount(this.client, userId, input.couponCode, cart, subtotal); const promotionCandidates = applied && !rules.promotions.allowCodeWithAutomatic ? [] : await activePromotionCandidates(this.client); const promotionPlan = stackedPromotionDiscount(subtotal, applied?.discount ?? 0n, promotionCandidates, rules.promotions.maximumStackedDiscountBps); const tax = checkoutTax(subtotal - promotionPlan.totalDiscountMinor, configuration?.tax as CheckoutTaxPolicy); const loyaltyAccount = await this.client.$transaction(async (transaction) => { await transaction.loyaltyAccount.upsert({ where: { userId }, create: { userId }, update: {} }); await expireLoyaltyBalance(transaction, userId); return transaction.loyaltyAccount.findUniqueOrThrow({ where: { userId } }); }); const redeemed = loyaltyRedemption(BigInt(input.loyaltyPoints ?? "0"), loyaltyAccount.pointsBalance, subtotal - promotionPlan.totalDiscountMinor + delivery + tax.addedMinor, rules.loyalty); const discount = promotionPlan.totalDiscountMinor + redeemed.amountMinor; const expiresAt = new Date(Date.now() + 5 * 60_000).toISOString();
+    const delivery = perVendorDelivery * BigInt(vendors); const requestedLoyaltyPoints = BigInt(input.loyaltyPoints ?? "0");
+    const [{ rules }, applied, initialLoyaltyAccount] = await Promise.all([
+      loadBusinessRules(this.client),
+      codeDiscount(this.client, userId, input.couponCode, cart, subtotal),
+      this.client.loyaltyAccount.upsert({ where: { userId }, create: { userId }, update: {} })
+    ]);
+    const promotionCandidates = applied && !rules.promotions.allowCodeWithAutomatic ? [] : await activePromotionCandidates(this.client); const promotionPlan = stackedPromotionDiscount(subtotal, applied?.discount ?? 0n, promotionCandidates, rules.promotions.maximumStackedDiscountBps); const tax = checkoutTax(subtotal - promotionPlan.totalDiscountMinor, configuration?.tax as CheckoutTaxPolicy); const loyaltyAccount = requestedLoyaltyPoints > 0n ? await this.client.$transaction(async (transaction) => { await expireLoyaltyBalance(transaction, userId); return transaction.loyaltyAccount.findUniqueOrThrow({ where: { userId } }); }, { maxWait: 5_000, timeout: 20_000 }) : initialLoyaltyAccount; const redeemed = loyaltyRedemption(requestedLoyaltyPoints, loyaltyAccount.pointsBalance, subtotal - promotionPlan.totalDiscountMinor + delivery + tax.addedMinor, rules.loyalty); const discount = promotionPlan.totalDiscountMinor + redeemed.amountMinor; const expiresAt = new Date(Date.now() + 5 * 60_000).toISOString();
     const quoteGroups = new Map<string, typeof cart.items>(); for (const item of cart.items) { const rows = quoteGroups.get(item.product.vendorId) ?? []; rows.push(item); quoteGroups.set(item.product.vendorId, rows); }
     const quoteGroupEntries = [...quoteGroups.entries()]; const packageSubtotals = quoteGroupEntries.map(([, items]) => items.reduce((sum, item) => sum + itemPrice(item, flashPrices) * BigInt(item.quantity), 0n)); const packageDiscounts = allocateDiscount(packageSubtotals, discount);
     const packages = quoteGroupEntries.map(([vendorId, items], index) => { const packageSubtotal = packageSubtotals[index]!; const packageDiscount = packageDiscounts[index]!; return { vendorId, shopId: items[0]!.product.shopId, shopName: items[0]!.product.shop.name, itemCount: items.length, subtotal: money(packageSubtotal), discount: money(packageDiscount), delivery: money(perVendorDelivery), total: money(packageSubtotal - packageDiscount + perVendorDelivery) }; });

@@ -3,8 +3,12 @@ import type { User } from "@firebase/auth";
 import { pendingCheckoutStore } from "./checkout-recovery.storage";
 import { mayDiscardRejectedCheckout } from "./pending-checkout";
 
-class CommerceRequestError extends Error {
+export class CommerceRequestError extends Error {
   constructor(message: string, readonly status: number, readonly code: string) { super(message); }
+}
+
+export function commerceErrorCode(error: unknown) {
+  return error instanceof CommerceRequestError ? error.code : null;
 }
 
 const activeCheckouts = new Set<string>();

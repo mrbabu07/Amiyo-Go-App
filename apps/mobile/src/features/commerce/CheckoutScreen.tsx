@@ -12,7 +12,7 @@ import { getMyAddresses } from "../auth/auth.api";
 import { useCurrentUser } from "../auth/use-current-user";
 import { createCheckoutAttempt } from "./checkout-attempt";
 import { parseCartItemIds } from "./cart-selection";
-import { getCheckoutQuote, getPendingCheckout, placeOrder } from "./commerce.api";
+import { commerceErrorCode, getCheckoutQuote, getPendingCheckout, placeOrder } from "./commerce.api";
 import { CheckoutRecovery } from "./CheckoutRecovery";
 import { CouponInput } from "./components/CouponInput";
 import { getPublicPlatformSettings } from "../platform/platform.api";
@@ -48,7 +48,8 @@ export function CheckoutScreen() {
   const [codPhoneConfirmed, setCodPhoneConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const addresses = useQuery({ queryKey: ["me", "addresses", user?.uid], queryFn: () => getMyAddresses(user!), enabled: Boolean(user) });
-  const quote = useQuery({ queryKey: ["checkout", user?.uid, "quote", couponCode, loyaltyPoints, addressId, pickupPointId, cartItemIds], queryFn: () => getCheckoutQuote(user!, couponCode, loyaltyPoints, addressId, null, pickupPointId, cartItemIds), enabled: Boolean(user) && (cartItemIds === undefined || cartItemIds.length > 0) });
+  const quoteReady = Boolean(user && !addresses.isLoading && addressId) && (cartItemIds === undefined || cartItemIds.length > 0);
+  const quote = useQuery({ queryKey: ["checkout", user?.uid, "quote", couponCode, loyaltyPoints, addressId, pickupPointId, cartItemIds], queryFn: () => getCheckoutQuote(user!, couponCode, loyaltyPoints, addressId, null, pickupPointId, cartItemIds), enabled: quoteReady, retry: false });
   const platform = useQuery({ queryKey: ["platform", "public-settings"], queryFn: getPublicPlatformSettings, staleTime: 5 * 60_000 });
   const deliverySettings = useQuery({ queryKey: ["delivery", "settings"], queryFn: getDeliverySettings, staleTime: 5 * 60_000 });
   const pickupPoints = useQuery({ queryKey: ["delivery", "pickup-points"], queryFn: getPickupPoints, enabled: platform.data?.villageOperations.pickupPointsEnabled === true, staleTime: 5 * 60_000 });
@@ -93,9 +94,14 @@ export function CheckoutScreen() {
   if (recovery.isPending) return <Centered loading title="Checking previous checkout" copy="Looking for an unfinished order request." />;
   if (recovery.error) return <Centered title="Checkout recovery unavailable" copy={recovery.error.message} action="View my orders" onPress={() => router.replace("/orders")} />;
   if (recovery.data) return <CheckoutRecovery user={user} pending={recovery.data} />;
-  if (addresses.isLoading || quote.isLoading) return <Centered loading title="Preparing checkout" copy="Confirming inventory and current prices." />;
+  if (addresses.isLoading) return <Centered loading title="Loading delivery details" copy="Finding your saved delivery addresses." />;
+  if (!addresses.data?.length) return <Centered title="Add a delivery address" copy="A delivery address is required before prices and delivery fees can be confirmed." action="Add address" onPress={() => router.push("/addresses")} />;
+  if (!addressId || quote.isLoading) return <Centered loading title="Preparing checkout" copy="Confirming inventory and current prices." />;
   const loadError = addresses.error || quote.error;
-  if (loadError || !quote.data) return <Centered title="Checkout unavailable" copy={loadError instanceof Error ? loadError.message : "Please return to your cart."} action="Back to cart" onPress={() => router.replace("/cart")} />;
+  if (loadError || !quote.data) {
+    const staleSelection = ["CART_EMPTY", "CART_SELECTION_CHANGED"].includes(commerceErrorCode(loadError) || "");
+    return <Centered title={staleSelection ? "Selected cart item is unavailable" : "Checkout unavailable"} copy={staleSelection ? "This checkout link belongs to another signed-in cart, or the item was removed. Open your current cart and select the item again." : loadError instanceof Error ? loadError.message : "Please return to your cart."} action="Open current cart" onPress={() => router.replace("/cart")} />;
+  }
   return <Screen eyebrow="SECURE CHECKOUT" title="Delivery and payment" description="Confirm your delivery address and preferred payment method.">
     {error || policyError ? <Text accessibilityRole="alert" style={styles.error}>{error || policyError}</Text> : null}
     {platform.error ? <Pressable accessibilityRole="button" onPress={() => void platform.refetch()} style={styles.primary}><Text style={styles.primaryText}>Retry marketplace settings</Text></Pressable> : null}
