@@ -130,7 +130,7 @@ const adminGroups: AdminGroup[] = [
   ] }
 ];
 
-const adminStandaloneLinks: WorkspaceLink[] = [{ label: "Delivery Settings", href: "/admin/delivery-settings", icon: "car-outline" }];
+const adminStandaloneLinks: WorkspaceLink[] = [{ label: "Notifications", href: "/admin/notification-inbox", icon: "notifications-outline" }, { label: "Delivery Settings", href: "/admin/delivery-settings", icon: "car-outline" }];
 const adminLinks = [...adminPrimaryLinks, ...adminGroups.flatMap((group) => group.links), ...adminStandaloneLinks];
 const adminRolePriority = ["SUPER_ADMIN", "OPERATIONS_ADMIN", "FINANCE_ADMIN", "SUPPORT_AGENT"] as const;
 const roleLabel = (role: string) => role.toLocaleLowerCase().split("_").map((part) => part[0]?.toLocaleUpperCase() + part.slice(1)).join(" ");
@@ -180,7 +180,7 @@ function AdminScreen({ children, description, desktop, eyebrow, hideHeading = fa
       <View style={[styles.workspaceActions, !desktop && styles.adminMobileActions]}>
         {desktop ? <><Pressable accessibilityLabel={unreadOrders ? `Orders, ${unreadOrders} new updates` : "Orders"} onPress={() => open("/admin/orders")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="clipboard-outline" size={19} />{unreadOrders ? <CountBadge count={unreadOrders} /> : null}</Pressable><Pressable accessibilityLabel="Vendors" onPress={() => open("/admin/vendor-requests")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="storefront-outline" size={19} /></Pressable><Pressable accessibilityLabel="Payments" onPress={() => open("/admin/payment-verification")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="card-outline" size={19} /></Pressable></> : null}
         {desktop ? <Pressable accessibilityLabel="Open storefront" onPress={() => open("/")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="storefront-outline" size={19} /></Pressable> : null}
-        <Pressable accessibilityLabel={unreadNotifications ? `Notifications, ${unreadNotifications} unread` : "Notifications"} onPress={() => open("/admin/notifications")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="notifications-outline" size={19} />{unreadNotifications ? <CountBadge count={unreadNotifications} /> : null}</Pressable>
+        <Pressable accessibilityLabel={unreadNotifications ? `Notifications, ${unreadNotifications} unread` : "Notifications"} onPress={() => open("/admin/notification-inbox")} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name="notifications-outline" size={19} />{unreadNotifications ? <CountBadge count={unreadNotifications} /> : null}</Pressable>
         <Pressable accessibilityLabel={dark ? "Use light admin theme" : "Use dark admin theme"} accessibilityRole="button" onPress={toggleTheme} style={[styles.iconButton, dark && styles.adminDarkButton]}><Ionicons color={topbarIcon} name={dark ? "sunny-outline" : "moon-outline"} size={19} /></Pressable>
         {desktop ? <Pressable accessibilityLabel={`Account: ${accountName}, ${roleLabel(accountRole)}`} onPress={() => open("/account")} style={[styles.adminAccount, dark && styles.adminDarkAccount]}><View style={styles.avatar}><Text style={styles.avatarText}>{accountInitials}</Text></View><View><Text numberOfLines={1} style={[styles.accountName, dark && styles.adminDarkText]}>{accountName}</Text><Text style={[styles.accountRole, dark && styles.adminDarkMuted]}>{roleLabel(accountRole)}</Text></View></Pressable> : null}
         <Pressable accessibilityLabel="Sign out" onPress={logout} style={[styles.iconButton, styles.logoutButton, dark && styles.adminDarkButton]}><Ionicons color={colors.danger} name="log-out-outline" size={19} /></Pressable>
@@ -190,12 +190,12 @@ function AdminScreen({ children, description, desktop, eyebrow, hideHeading = fa
     {!desktop && mobileSidebarOpen ? <View style={styles.adminDrawerLayer}>
       <Pressable accessibilityLabel="Close admin menu" onPress={() => setMobileSidebarOpen(false)} style={styles.adminDrawerBackdrop} />
       <View accessibilityLabel="Admin navigation" style={[styles.adminDrawer, dark && styles.adminDarkSidebar, { width: Math.min(width - 48, 288) }]}>
-        <AdminSidebarNavigation collapsed={false} dark={dark} expandedGroups={expandedGroups} onOpen={open} pathname={pathname} setExpandedGroups={setExpandedGroups} />
+      <AdminSidebarNavigation collapsed={false} dark={dark} expandedGroups={expandedGroups} notificationCount={unreadNotifications} onOpen={open} pathname={pathname} setExpandedGroups={setExpandedGroups} />
       </View>
     </View> : null}
     <View style={styles.adminBody}>
       {desktop ? <View style={[styles.adminSidebar, dark && styles.adminDarkSidebar, { width: sidebarWidth }]}>
-        <AdminSidebarNavigation collapsed={collapsed} dark={dark} expandedGroups={expandedGroups} onOpen={open} pathname={pathname} setExpandedGroups={setExpandedGroups} />
+        <AdminSidebarNavigation collapsed={collapsed} dark={dark} expandedGroups={expandedGroups} notificationCount={unreadNotifications} onOpen={open} pathname={pathname} setExpandedGroups={setExpandedGroups} />
       </View> : null}
       <ScrollView contentContainerStyle={[styles.adminPage, !desktop && styles.adminMobilePage]} showsVerticalScrollIndicator={false} style={[styles.adminMain, dark && styles.adminDarkMain]}>
         {!hideHeading ? <AdminHeading dark={dark} description={description} eyebrow={eyebrow} onBack={() => open("/admin")} title={title} /> : null}
@@ -218,7 +218,7 @@ function AdminMobileSearch({ dark, onOpen }: { dark: boolean; onOpen(href: strin
   </View>;
 }
 
-function AdminSidebarNavigation({ collapsed, dark, expandedGroups, onOpen, pathname, setExpandedGroups }: { collapsed: boolean; dark: boolean; expandedGroups: Record<string, boolean>; onOpen: (href: string) => void; pathname: string; setExpandedGroups: Dispatch<SetStateAction<Record<string, boolean>>> }) {
+function AdminSidebarNavigation({ collapsed, dark, expandedGroups, notificationCount, onOpen, pathname, setExpandedGroups }: { collapsed: boolean; dark: boolean; expandedGroups: Record<string, boolean>; notificationCount: number; onOpen: (href: string) => void; pathname: string; setExpandedGroups: Dispatch<SetStateAction<Record<string, boolean>>> }) {
   return <>
     <View style={[styles.workspacePanel, dark && styles.adminDarkWorkspacePanel, collapsed && styles.workspacePanelCollapsed]}><View style={styles.workspacePulse} />{!collapsed ? <View><Text style={[styles.workspacePanelTitle, dark && styles.adminDarkNavText]}>Admin workspace</Text><Text style={[styles.workspacePanelCopy, dark && styles.adminDarkMuted]}>Super admin access</Text></View> : null}</View>
     <ScrollView contentContainerStyle={styles.adminSidebarScroll} showsVerticalScrollIndicator={false} style={styles.adminSidebarScroller}>
@@ -231,16 +231,16 @@ function AdminSidebarNavigation({ collapsed, dark, expandedGroups, onOpen, pathn
           {collapsed || expanded ? <View style={[!collapsed && styles.adminGroupChildren, dark && !collapsed && styles.adminDarkGroupChildren]}>{group.links.map((link) => <AdminNavLink dark={dark} key={link.href} link={link} pathname={pathname} collapsed={collapsed} nested onOpen={onOpen} />)}</View> : null}
         </View>;
       })}
-      <View style={[styles.adminStandalone, dark && styles.adminDarkSection]}>{adminStandaloneLinks.map((link) => <AdminNavLink dark={dark} key={link.href} link={link} pathname={pathname} collapsed={collapsed} onOpen={onOpen} />)}</View>
+      <View style={[styles.adminStandalone, dark && styles.adminDarkSection]}>{adminStandaloneLinks.map((link) => <AdminNavLink badgeCount={link.href === "/admin/notification-inbox" ? notificationCount : 0} dark={dark} key={link.href} link={link} pathname={pathname} collapsed={collapsed} onOpen={onOpen} />)}</View>
     </ScrollView>
     <Pressable onPress={() => onOpen("/")} style={[styles.storefrontLink, dark && styles.adminDarkStorefront, collapsed && styles.navCollapsed]}><Ionicons color={dark ? colors.shellMuted : colors.muted} name="home-outline" size={19} />{!collapsed ? <Text style={[styles.storefrontText, !dark && styles.adminLightNavText]}>View storefront</Text> : null}</Pressable>
   </>;
 }
 
-function AdminNavLink({ collapsed, dark, link, nested = false, onOpen, pathname }: { collapsed: boolean; dark: boolean; link: WorkspaceLink; nested?: boolean; onOpen: (href: string) => void; pathname: string }) {
+function AdminNavLink({ badgeCount = 0, collapsed, dark, link, nested = false, onOpen, pathname }: { badgeCount?: number; collapsed: boolean; dark: boolean; link: WorkspaceLink; nested?: boolean; onOpen: (href: string) => void; pathname: string }) {
   const activeHref = adminLinks.filter((candidate) => pathname === candidate.href || pathname.startsWith(`${candidate.href}/`)).sort((left, right) => right.href.length - left.href.length)[0]?.href;
   const active = activeHref === link.href;
-  return <Pressable accessibilityLabel={link.label} onPress={() => onOpen(link.href)} style={[styles.adminNavItem, active && (nested ? styles.adminNestedActive : styles.adminNavItemActive), dark && active && (nested ? styles.adminDarkNestedActive : styles.adminDarkNavActive), collapsed && styles.navCollapsed]}>{nested && !collapsed ? <View style={[styles.childDot, dark && styles.adminDarkChildDot, active && styles.childDotActive]} /> : <Ionicons color={active ? (dark ? colors.onPrimary : colors.primary) : (dark ? colors.shellMuted : colors.muted)} name={link.icon as never} size={19} />}{!collapsed ? <Text style={[styles.adminNavLabel, dark && styles.adminDarkNavMuted, active && styles.adminLightActiveText, dark && active && styles.adminNavLabelActive]}>{link.label}</Text> : null}</Pressable>;
+  return <Pressable accessibilityLabel={badgeCount ? `${link.label}, ${badgeCount} unread` : link.label} onPress={() => onOpen(link.href)} style={[styles.adminNavItem, active && (nested ? styles.adminNestedActive : styles.adminNavItemActive), dark && active && (nested ? styles.adminDarkNestedActive : styles.adminDarkNavActive), collapsed && styles.navCollapsed]}>{nested && !collapsed ? <View style={[styles.childDot, dark && styles.adminDarkChildDot, active && styles.childDotActive]} /> : <Ionicons color={active ? (dark ? colors.onPrimary : colors.primary) : (dark ? colors.shellMuted : colors.muted)} name={link.icon as never} size={19} />}{!collapsed ? <Text style={[styles.adminNavLabel, dark && styles.adminDarkNavMuted, active && styles.adminLightActiveText, dark && active && styles.adminNavLabelActive]}>{link.label}</Text> : null}{badgeCount ? <CountBadge count={badgeCount} /> : null}</Pressable>;
 }
 
 function VendorScreen({ children, description, desktop, eyebrow, hideHeading = false, pathname, title, width }: ScreenProps & { desktop: boolean; pathname: string; width: number }) {
