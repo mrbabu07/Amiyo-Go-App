@@ -32,7 +32,7 @@ export function StoreHeader({ desktop, viewportWidth }: { desktop: boolean; view
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [discoverySessionId, setDiscoverySessionId] = useState("");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const categories = useQuery({ queryKey: ["catalog", "category-navigation"], queryFn: getCategoryNavigation, enabled: desktop || debouncedQuery.length >= 2, staleTime: 5 * 60_000 });
+  const categories = useQuery({ queryKey: ["catalog", "category-navigation"], queryFn: getCategoryNavigation, enabled: true, staleTime: 5 * 60_000, retry: false });
   const suggestionQuery = useQuery({ queryKey: ["catalog", "search-suggestions", debouncedQuery], queryFn: () => searchProducts(debouncedQuery, 8), enabled: debouncedQuery.length >= 2, staleTime: 60_000 });
   const trendingQuery = useQuery({ queryKey: ["catalog", "trending-searches"], queryFn: getTrendingSearches, staleTime: 5 * 60_000, retry: 1 });
   const categoryTree = useMemo(() => buildCategoryTree(categories.data || []), [categories.data]);
