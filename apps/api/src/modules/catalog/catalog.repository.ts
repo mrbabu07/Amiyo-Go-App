@@ -12,7 +12,7 @@ export const publicProductInclude = {
 export const publicProductSummaryInclude = {
   shop: { include: { vendor: { select: { status: true } } } },
   media: { orderBy: { displayOrder: "asc" as const }, take: 1 },
-  variants: { where: { active: true }, orderBy: { priceMinor: "asc" as const }, take: 1, include: { inventory: true } },
+  variants: { where: { active: true }, orderBy: { priceMinor: "asc" as const }, take: 2, include: { inventory: true } },
   _count: { select: { reviews: true } }
 } satisfies Prisma.ProductInclude;
 

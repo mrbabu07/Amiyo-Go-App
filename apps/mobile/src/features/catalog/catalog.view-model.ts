@@ -11,6 +11,7 @@ export function toHomeProduct(product: ProductSummaryDto): HomeProduct {
     shop: product.shopName,
     isVerified: product.isVerified,
     image: product.thumbnailUrl || fallbackProductImage,
+    quickAddVariantId: product.quickAddVariantId,
     priceMinor: product.minimumPrice.amountMinor,
     rating: product.rating,
     reviewCount: product.reviewCount,

@@ -59,6 +59,7 @@ function productSummary(product: PublicProduct | PublicProductSummary) {
     brand: product.brand,
     status: product.status,
     thumbnailUrl: mediaUrl(product.media[0]?.storageKey ?? null),
+    quickAddVariantId: product.variants.length === 1 && (product.variants[0]?.inventory?.onHand ?? 0) > (product.variants[0]?.inventory?.reserved ?? 0) ? product.variants[0]!.id : null,
     minimumPrice: { amountMinor: (variant?.priceMinor ?? 0n).toString(), currency: variant?.currency ?? "BDT" },
     rating: 0,
     reviewCount: product._count.reviews,

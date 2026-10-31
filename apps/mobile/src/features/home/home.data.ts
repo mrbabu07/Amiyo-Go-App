@@ -13,6 +13,7 @@ export type HomeProduct = {
   shop: string;
   isVerified?: boolean;
   image: string;
+  quickAddVariantId?: string | null;
   priceMinor: string;
   originalPriceMinor?: string;
   rating: number;

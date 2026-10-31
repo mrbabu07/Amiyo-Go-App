@@ -37,8 +37,8 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
   const saved = Boolean(wishlist.data?.items.some((item) => item.productId === product.id));
   const addToCart = useMutation({
     mutationFn: async () => {
-      const detail = await getProduct(product.slug || product.id);
-      const variantId = quickCartVariant(detail.variants);
+      const detail = product.quickAddVariantId ? null : await getProduct(product.slug || product.id);
+      const variantId = product.quickAddVariantId || (detail ? quickCartVariant(detail.variants) : null);
       if (!variantId) {
         router.push(`/product/${product.slug || product.id}` as never);
         return null;

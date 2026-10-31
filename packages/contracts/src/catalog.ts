@@ -52,6 +52,7 @@ export const productSummarySchema = z.object({
   brand: z.string().nullable(),
   status: productStatusSchema,
   thumbnailUrl: z.string().url().nullable(),
+  quickAddVariantId: uuidSchema.nullable().optional(),
   minimumPrice: moneySchema,
   rating: z.number().min(0).max(5),
   reviewCount: z.number().int().nonnegative(),
