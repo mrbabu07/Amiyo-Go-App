@@ -318,9 +318,12 @@ function VendorAccessDenied({ onBack }: { onBack(): void }) {
 }
 
 function VendorNavLink({ collapsed, link, nested = false, onOpen, pathname }: { collapsed: boolean; link: WorkspaceLink; nested?: boolean; onOpen: (href: string) => void; pathname: string }) {
+  const user = useCurrentUser();
+  const notifications = useQuery({ queryKey: ["notifications", user?.uid], queryFn: () => getNotifications(user!), enabled: Boolean(user), refetchInterval: 30_000 });
+  const unreadNotifications = link.href === "/vendor/notifications" ? notifications.data?.filter((item) => !item.readAt).length ?? 0 : 0;
   const activeHref = vendorLinks.filter((candidate) => pathname === candidate.href || pathname.startsWith(`${candidate.href}/`)).sort((left, right) => right.href.length - left.href.length)[0]?.href;
   const active = activeHref === link.href;
-  return <Pressable accessibilityLabel={link.label} onPress={() => onOpen(link.href)} style={[styles.adminNavItem, active && (nested ? styles.vendorNestedActive : styles.vendorNavActive), collapsed && styles.navCollapsed]}>{nested && !collapsed ? <View style={[styles.childDot, active && styles.vendorChildDot]} /> : <Ionicons color={active ? colors.onPrimary : colors.shellMuted} name={link.icon as never} size={19} />}{!collapsed ? <Text style={[styles.adminNavLabel, active && styles.adminNavLabelActive]}>{link.label}</Text> : null}</Pressable>;
+  return <Pressable accessibilityLabel={unreadNotifications ? `${link.label}, ${unreadNotifications} unread` : link.label} onPress={() => onOpen(link.href)} style={[styles.adminNavItem, active && (nested ? styles.vendorNestedActive : styles.vendorNavActive), collapsed && styles.navCollapsed]}>{nested && !collapsed ? <View style={[styles.childDot, active && styles.vendorChildDot]} /> : <Ionicons color={active ? colors.onPrimary : colors.shellMuted} name={link.icon as never} size={19} />}{!collapsed ? <Text style={[styles.adminNavLabel, active && styles.adminNavLabelActive]}>{link.label}</Text> : null}{unreadNotifications ? <CountBadge count={unreadNotifications} /> : null}</Pressable>;
 }
 
 function VendorDockLink({ link, onOpen, pathname }: { link: WorkspaceLink; onOpen: (href: string) => void; pathname: string }) {
