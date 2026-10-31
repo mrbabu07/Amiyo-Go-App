@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Image, Platform, Pressable, SafeAreaView, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { colors, radius, spacing } from "../../ui/tokens";
+import { BrandLoader } from "../../ui/BrandLoader";
 import { formatMinor, multiplyMinor, percentageDiscount } from "../../ui/money";
 import { firebaseAuth } from "../auth/firebase";
 import { useCurrentUser } from "../auth/use-current-user";
@@ -87,7 +88,7 @@ export function ProductDetailScreen({ identifier }: { identifier: string }) {
     if (discoverySessionId && productId) safelyRecordDiscoveryEvent({ sessionId: discoverySessionId, eventType: "PRODUCT_VIEW", productId });
   }, [discoverySessionId, productId]);
 
-  if (product.isLoading) return <SafeAreaView style={styles.center}><ActivityIndicator color={colors.primary} size="large" /></SafeAreaView>;
+  if (product.isLoading) return <SafeAreaView style={styles.center}><BrandLoader label="Loading product" /></SafeAreaView>;
   if (!item) return <SafeAreaView style={styles.center}><Ionicons color={colors.danger} name="alert-circle-outline" size={52} /><Text style={styles.errorTitle}>Product unavailable</Text><Text style={styles.error}>{product.error instanceof Error ? product.error.message : "Product not found"}</Text><Pressable onPress={() => router.back()} style={styles.backButton}><Text style={styles.backButtonText}>Go back</Text></Pressable></SafeAreaView>;
 
   const maximumQuantity = Math.min(99, selected?.availableQuantity ?? 0);
