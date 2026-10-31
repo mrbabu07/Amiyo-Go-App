@@ -38,7 +38,7 @@ function publicStorefront(settings: Prisma.JsonValue | null) {
   const storefront = { tagline: text("tagline", 120), announcement: text("announcement", 180), trustMessage: text("trustMessage", 180), vacation: vacationPublic };
   return Object.values(storefront).some(Boolean) ? storefront : null;
 }
-function isShopVerified(settings: Prisma.JsonValue | null, vendorStatus: string) { if (vendorStatus !== "APPROVED" || !settings || typeof settings !== "object" || Array.isArray(settings)) return false; const verification = (settings as Record<string, unknown>).verification; return Boolean(verification && typeof verification === "object" && !Array.isArray(verification) && (verification as Record<string, unknown>).adminApproved === true); }
+function isShopVerified(settings: Prisma.JsonValue | null, vendorStatus?: string) { if (vendorStatus !== "APPROVED" || !settings || typeof settings !== "object" || Array.isArray(settings)) return false; const verification = (settings as Record<string, unknown>).verification; return Boolean(verification && typeof verification === "object" && !Array.isArray(verification) && (verification as Record<string, unknown>).adminApproved === true); }
 
 export function shopServicePromise(questionCount: number, answeredQuestionCount: number) {
   return { questionCount, qnaResponseRate: questionCount ? Math.round((answeredQuestionCount / questionCount) * 100) : null };
@@ -52,7 +52,7 @@ function productSummary(product: PublicProduct | PublicProductSummary) {
     shopId: product.shopId,
     shopName: product.shop.name,
     shopSlug: product.shop.slug,
-    isVerified: isShopVerified(product.shop.settings, product.shop.vendor.status),
+    isVerified: isShopVerified(product.shop.settings, product.shop.vendor?.status),
     categoryId: product.categoryId,
     name: product.name,
     slug: product.slug,
@@ -222,17 +222,23 @@ export class CatalogService {
       const since = new Date(Date.now() - 90 * 24 * 60 * 60_000);
       const personalEvents = sessionId ? await this.client.recommendationEvent.findMany({
         where: { sessionId, productId: { not: null }, occurredAt: { gte: since } },
-        select: { productId: true, eventType: true, product: { select: { categoryId: true } } },
+        select: { productId: true, eventType: true, occurredAt: true, product: { select: { categoryId: true, shopId: true, brand: true } } },
         orderBy: { occurredAt: "desc" },
         take: 100
       }) : [];
       const categoryWeights = new Map<string, number>();
+      const shopWeights = new Map<string, number>();
+      const brandWeights = new Map<string, number>();
       const seen = new Set<string>();
       for (const event of personalEvents) {
         if (event.productId) seen.add(event.productId);
         if (event.product?.categoryId) {
-          const weight = event.eventType === "ADD_TO_CART" ? 6 : event.eventType === "WISHLIST" ? 4 : 2;
+          const ageDays = Math.max(0, (Date.now() - event.occurredAt.getTime()) / 86_400_000);
+          const recency = Math.max(0.25, 1 - ageDays / 90);
+          const weight = (event.eventType === "ADD_TO_CART" ? 8 : event.eventType === "WISHLIST" ? 6 : event.eventType === "PRODUCT_VIEW" ? 3 : 2) * recency;
           categoryWeights.set(event.product.categoryId, (categoryWeights.get(event.product.categoryId) ?? 0) + weight);
+          shopWeights.set(event.product.shopId, (shopWeights.get(event.product.shopId) ?? 0) + weight * 0.65);
+          if (event.product.brand) brandWeights.set(event.product.brand.toLowerCase(), (brandWeights.get(event.product.brand.toLowerCase()) ?? 0) + weight * 0.45);
         }
       }
 
@@ -241,7 +247,6 @@ export class CatalogService {
           status: "APPROVED",
           shop: { status: "ACTIVE" },
           vendor: { status: "APPROVED" },
-          ...(categoryWeights.size ? { categoryId: { in: [...categoryWeights.keys()] } } : {})
         },
         include: publicProductSummaryInclude,
         orderBy: { publishedAt: "desc" },
@@ -263,7 +268,7 @@ export class CatalogService {
       const ranked = candidates
         .map((product) => ({
           product,
-          score: (categoryWeights.get(product.categoryId) ?? 0) * 10 + (globalScore.get(product.id) ?? 0) + Math.min(product._count.reviews, 20) + (sponsored.has(product.id) ? 15 : 0) - (seen.has(product.id) ? 8 : 0)
+          score: (categoryWeights.get(product.categoryId) ?? 0) * 10 + (shopWeights.get(product.shopId) ?? 0) * 5 + (product.brand ? (brandWeights.get(product.brand.toLowerCase()) ?? 0) * 4 : 0) + (globalScore.get(product.id) ?? 0) + Math.min(product._count.reviews, 20) + (sponsored.has(product.id) ? 15 : 0) - (seen.has(product.id) ? 8 : 0)
         }))
         .sort((left, right) => right.score - left.score || (right.product.publishedAt?.getTime() ?? 0) - (left.product.publishedAt?.getTime() ?? 0))
         .slice(0, 12);
@@ -281,7 +286,7 @@ export class CatalogService {
   async shops(cursor: string | undefined, limit: number) {
     return this.publicCache.getOrCreate(`shops:${cursor ?? "first"}:${limit}`, 60_000, async () => {
       const result = await this.repository.listShops(cursor, limit);
-      return { data: result.data.map((shop) => ({ id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, isVerified: isShopVerified(shop.settings, shop.vendor.status), description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, followerCount: shop._count.followers, version: shop.version })), pageInfo: result.pageInfo };
+      return { data: result.data.map((shop) => ({ id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, isVerified: isShopVerified(shop.settings, shop.vendor?.status), description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, followerCount: shop._count.followers, version: shop.version })), pageInfo: result.pageInfo };
     }, 5 * 60_000);
   }
 
@@ -303,7 +308,7 @@ export class CatalogService {
     ]);
     const servicePromise = shopServicePromise(questionCount, answeredQuestionCount);
     const offers = vouchers.map((voucher) => publicStoreOffer(voucher, shop)).filter((offer): offer is NonNullable<typeof offer> => Boolean(offer?.showOnShop));
-    return { id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, isVerified: isShopVerified(shop.settings, shop.vendor.status), description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, followerCount: shop._count.followers, version: shop.version, servicePromise, offers, products };
+    return { id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, isVerified: isShopVerified(shop.settings, shop.vendor?.status), description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, followerCount: shop._count.followers, version: shop.version, servicePromise, offers, products };
   }
 
   async shopFollowStatus(session: Session, identifier: string) {
@@ -330,7 +335,7 @@ export class CatalogService {
 
   async followedShops(session: Session) {
     const rows = await this.client.shopFollow.findMany({ where: { userId: session.principal.userId, shop: { status: "ACTIVE" } }, include: { shop: { include: { vendor: { select: { status: true } }, _count: { select: { products: { where: { status: "APPROVED" } }, followers: true } } } } }, orderBy: { createdAt: "desc" }, take: 100 });
-    return rows.map(({ shop }) => ({ id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, isVerified: isShopVerified(shop.settings, shop.vendor.status), description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, followerCount: shop._count.followers, version: shop.version }));
+    return rows.map(({ shop }) => ({ id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, isVerified: isShopVerified(shop.settings, shop.vendor?.status), description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, followerCount: shop._count.followers, version: shop.version }));
   }
 
   async createProduct(session: Session, input: CreateProductInput, correlationId?: string) {
