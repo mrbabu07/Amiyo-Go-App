@@ -38,6 +38,7 @@ function publicStorefront(settings: Prisma.JsonValue | null) {
   const storefront = { tagline: text("tagline", 120), announcement: text("announcement", 180), trustMessage: text("trustMessage", 180), vacation: vacationPublic };
   return Object.values(storefront).some(Boolean) ? storefront : null;
 }
+function isShopVerified(settings: Prisma.JsonValue | null, vendorStatus: string) { if (vendorStatus !== "APPROVED" || !settings || typeof settings !== "object" || Array.isArray(settings)) return false; const verification = (settings as Record<string, unknown>).verification; return Boolean(verification && typeof verification === "object" && !Array.isArray(verification) && (verification as Record<string, unknown>).adminApproved === true); }
 
 export function shopServicePromise(questionCount: number, answeredQuestionCount: number) {
   return { questionCount, qnaResponseRate: questionCount ? Math.round((answeredQuestionCount / questionCount) * 100) : null };
@@ -51,7 +52,7 @@ function productSummary(product: PublicProduct | PublicProductSummary) {
     shopId: product.shopId,
     shopName: product.shop.name,
     shopSlug: product.shop.slug,
-    isVerified: product.shop.vendor.status === "APPROVED",
+    isVerified: isShopVerified(product.shop.settings, product.shop.vendor.status),
     categoryId: product.categoryId,
     name: product.name,
     slug: product.slug,
@@ -280,7 +281,7 @@ export class CatalogService {
   async shops(cursor: string | undefined, limit: number) {
     return this.publicCache.getOrCreate(`shops:${cursor ?? "first"}:${limit}`, 60_000, async () => {
       const result = await this.repository.listShops(cursor, limit);
-      return { data: result.data.map((shop) => ({ id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, isVerified: shop.vendor.status === "APPROVED", description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, followerCount: shop._count.followers, version: shop.version })), pageInfo: result.pageInfo };
+      return { data: result.data.map((shop) => ({ id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, isVerified: isShopVerified(shop.settings, shop.vendor.status), description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, followerCount: shop._count.followers, version: shop.version })), pageInfo: result.pageInfo };
     }, 5 * 60_000);
   }
 
@@ -302,7 +303,7 @@ export class CatalogService {
     ]);
     const servicePromise = shopServicePromise(questionCount, answeredQuestionCount);
     const offers = vouchers.map((voucher) => publicStoreOffer(voucher, shop)).filter((offer): offer is NonNullable<typeof offer> => Boolean(offer?.showOnShop));
-    return { id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, isVerified: shop.vendor.status === "APPROVED", description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, followerCount: shop._count.followers, version: shop.version, servicePromise, offers, products };
+    return { id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, isVerified: isShopVerified(shop.settings, shop.vendor.status), description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, followerCount: shop._count.followers, version: shop.version, servicePromise, offers, products };
   }
 
   async shopFollowStatus(session: Session, identifier: string) {
@@ -329,7 +330,7 @@ export class CatalogService {
 
   async followedShops(session: Session) {
     const rows = await this.client.shopFollow.findMany({ where: { userId: session.principal.userId, shop: { status: "ACTIVE" } }, include: { shop: { include: { vendor: { select: { status: true } }, _count: { select: { products: { where: { status: "APPROVED" } }, followers: true } } } } }, orderBy: { createdAt: "desc" }, take: 100 });
-    return rows.map(({ shop }) => ({ id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, isVerified: shop.vendor.status === "APPROVED", description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, followerCount: shop._count.followers, version: shop.version }));
+    return rows.map(({ shop }) => ({ id: shop.id, vendorId: shop.vendorId, name: shop.name, slug: shop.slug, isVerified: isShopVerified(shop.settings, shop.vendor.status), description: shop.description, logoUrl: mediaUrl(shop.logoStorageKey), bannerUrl: mediaUrl(shop.bannerStorageKey), storefront: publicStorefront(shop.settings), productCount: shop._count.products, followerCount: shop._count.followers, version: shop.version }));
   }
 
   async createProduct(session: Session, input: CreateProductInput, correlationId?: string) {
