@@ -9,6 +9,7 @@ export function toHomeProduct(product: ProductSummaryDto): HomeProduct {
     slug: product.slug,
     title: product.name,
     shop: product.shopName,
+    isVerified: product.isVerified,
     image: product.thumbnailUrl || fallbackProductImage,
     priceMinor: product.minimumPrice.amountMinor,
     rating: product.rating,

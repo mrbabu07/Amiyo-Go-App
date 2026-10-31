@@ -11,6 +11,7 @@ export type HomeProduct = {
   slug?: string;
   title: string;
   shop: string;
+  isVerified?: boolean;
   image: string;
   priceMinor: string;
   originalPriceMinor?: string;

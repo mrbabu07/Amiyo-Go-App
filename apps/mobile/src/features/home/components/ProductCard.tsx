@@ -79,12 +79,12 @@ export function ProductCard({ lowData = false, product }: { lowData?: boolean; p
       <Pressable accessibilityRole="link" onPress={() => router.push(`/product/${product.slug || product.id}` as never)} style={({ pressed }) => [styles.openArea, pressed && styles.pressed]}>
         <View style={styles.imageWrap}>
           {dataSaver ? <View accessibilityLabel={`${product.title} image hidden to save data`} accessibilityRole="image" style={[styles.image, styles.lowDataImage]}><Ionicons color={colors.accent} name="leaf-outline" size={26} /><Text style={styles.lowDataLabel}>DATA SAVER</Text></View> : <Image accessibilityLabel={product.title} resizeMode="cover" source={{ uri: product.image || fallbackImage }} style={styles.image} />}
-          <View style={styles.topBadge}>{discount ? <Text style={styles.discountText}>-{discount}%</Text> : <Text style={styles.verifiedText}>VERIFIED</Text>}</View>
+          {discount ? <View style={styles.topBadge}><Text style={styles.discountText}>-{discount}%</Text></View> : null}
         </View>
         <View style={styles.body}>
           {product.badge ? <Text numberOfLines={1} style={styles.badge}>{product.badge}</Text> : null}
           <Text numberOfLines={2} style={styles.title}>{product.title}</Text>
-          <View style={styles.shopRow}><Ionicons color={colors.success} name="checkmark-circle" size={12} /><Text numberOfLines={1} style={styles.shop}>{product.shop}</Text></View>
+          <View style={styles.shopRow}><Text numberOfLines={1} style={styles.shop}>{product.shop}</Text>{product.isVerified ? <View style={styles.verified}><Ionicons color={colors.primary} name="checkmark-circle" size={12} /><Text style={styles.verifiedText}>Verified shop</Text></View> : null}</View>
           <View style={styles.priceRow}><Text style={styles.price}>{money(product.priceMinor)}</Text>{product.originalPriceMinor ? <Text style={styles.original}>{money(product.originalPriceMinor)}</Text> : null}</View>
           <View style={styles.metaRow}><Ionicons color={colors.warning} name="star" size={13} /><Text style={styles.rating}>{product.rating}</Text><Text style={styles.sold}>{product.reviewCount} reviews</Text></View>
         </View>
@@ -110,7 +110,8 @@ const styles = StyleSheet.create({
   image: { height: "100%", width: "100%" }, lowDataImage: { alignItems: "center", backgroundColor: colors.accentSoft, justifyContent: "center" }, lowDataLabel: { color: colors.accent, fontSize: 9, fontWeight: "700", marginTop: 5 },
   topBadge: { backgroundColor: colors.accent, borderRadius: 4, left: 7, paddingHorizontal: 7, paddingVertical: 5, position: "absolute", top: 7 },
   discountText: { color: colors.surface, fontSize: 9, fontWeight: "700" },
-  verifiedText: { color: colors.surface, fontSize: 8, fontWeight: "700" },
+  verified: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: radius.pill, flexDirection: "row", gap: 2, paddingHorizontal: 5, paddingVertical: 2 },
+  verifiedText: { color: colors.primary, fontSize: 8, fontWeight: "700" },
   heart: { alignItems: "center", backgroundColor: "rgba(255,255,255,0.96)", borderRadius: radius.pill, height: 36, justifyContent: "center", position: "absolute", right: 7, top: 7, width: 36 },
   heartActive: { backgroundColor: colors.accent },
   heartBusy: { opacity: 0.65 },

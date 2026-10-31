@@ -2,7 +2,7 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 import type { CatalogQuery } from "@amiyo/contracts";
 
 export const publicProductInclude = {
-  shop: true,
+  shop: { include: { vendor: { select: { status: true } } } },
   category: { select: { returnPolicy: true } },
   media: { orderBy: { displayOrder: "asc" as const } },
   variants: { where: { active: true }, orderBy: { priceMinor: "asc" as const }, include: { inventory: true } },
@@ -10,7 +10,7 @@ export const publicProductInclude = {
 } satisfies Prisma.ProductInclude;
 
 export const publicProductSummaryInclude = {
-  shop: true,
+  shop: { include: { vendor: { select: { status: true } } } },
   media: { orderBy: { displayOrder: "asc" as const }, take: 1 },
   variants: { where: { active: true }, orderBy: { priceMinor: "asc" as const }, take: 1, include: { inventory: true } },
   _count: { select: { reviews: true } }
@@ -76,7 +76,7 @@ export class CatalogRepository {
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       take: limit + 1,
-      include: { _count: { select: { products: { where: { status: "APPROVED" } }, followers: true } } }
+      include: { vendor: { select: { status: true } }, _count: { select: { products: { where: { status: "APPROVED" } }, followers: true } } }
     });
     const hasNextPage = rows.length > limit;
     const data = hasNextPage ? rows.slice(0, limit) : rows;
@@ -86,7 +86,7 @@ export class CatalogRepository {
   getShop(identifier: string) {
     return this.client.vendorShop.findFirst({
       where: { ...shopIdentifierWhere(identifier), status: "ACTIVE", vendor: { status: "APPROVED" } },
-      include: { _count: { select: { products: { where: { status: "APPROVED" } }, followers: true } } }
+      include: { vendor: { select: { status: true } }, _count: { select: { products: { where: { status: "APPROVED" } }, followers: true } } }
     });
   }
 }
